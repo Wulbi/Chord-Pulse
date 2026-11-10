@@ -10,18 +10,25 @@ public sealed class SoundManager : SingletonBehaviour<SoundManager>
     public const double SecondsPerBeat = 60.0 / BeatsPerMinute;
 
     const int StepsPerBeat = 2;
+    const int StepsPerBar = BeatsPerBar * StepsPerBeat;
     const double StepDuration = SecondsPerBeat / StepsPerBeat;
     const double ScheduleLead = 0.06;
     const double RhythmLookahead = 0.15;
     const int SampleRate = 44100;
     const float NoteDuration = 0.55f;
 
-    static readonly float[] Frequencies = { 261.626f, 329.628f, 391.995f };
-    static readonly string[] NoteNames = { "C4", "E4", "G4" };
+    static readonly (string Name, int Root, int Third, int Fifth)[] Progression =
+    {
+        ("C", 60, 64, 67),
+        ("Am", 57, 60, 64),
+        ("F", 53, 57, 60),
+        ("G", 55, 59, 62)
+    };
 
     // Instrument order follows the pulse colors: red, blue, yellow.
     static readonly string[] InstrumentNames = { "Lead Synth", "Electric Guitar", "Pluck Synth" };
-    readonly AudioClip[,] _notes = new AudioClip[InstrumentNames.Length, Frequencies.Length];
+    readonly AudioClip[,] _chords = new AudioClip[InstrumentNames.Length, Progression.Length];
+    readonly AudioClip[] _bassNotes = new AudioClip[Progression.Length];
     readonly List<Voice> _voices = new List<Voice>();
     AudioClip _kick;
     AudioClip _snare;
@@ -50,12 +57,18 @@ public sealed class SoundManager : SingletonBehaviour<SoundManager>
         if (Instance != this)
             return;
 
-        for (int instrument = 0; instrument < InstrumentNames.Length; instrument++)
+        for (int harmony = 0; harmony < Progression.Length; harmony++)
         {
-            for (int note = 0; note < Frequencies.Length; note++)
+            var chord = Progression[harmony];
+            _bassNotes[harmony] = CreateBass(chord.Name, Frequency(chord.Root - 24));
+
+            for (int instrument = 0; instrument < InstrumentNames.Length; instrument++)
             {
-                _notes[instrument, note] = CreateNote(
-                    InstrumentNames[instrument] + " " + NoteNames[note], Frequencies[note], instrument);
+                var samples = new float[Mathf.RoundToInt(SampleRate * NoteDuration)];
+                MixNote(samples, Frequency(chord.Root), instrument);
+                MixNote(samples, Frequency(chord.Third), instrument);
+                MixNote(samples, Frequency(chord.Fifth), instrument);
+                _chords[instrument, harmony] = CreateClip(InstrumentNames[instrument] + " " + chord.Name, samples);
             }
         }
 
@@ -83,17 +96,17 @@ public sealed class SoundManager : SingletonBehaviour<SoundManager>
         }
     }
 
-    // Each pulse owns its phrase. Separate pulses may share an eighth-note slot.
-    public int ScheduleChordTone(int colorIndex, int toneIndex, int earliestStep)
+    public void ScheduleChord(int colorIndex)
     {
         if (!_musicPlaying)
-            return earliestStep;
+            return;
 
         double now = AudioSettings.dspTime;
-        int step = Math.Max(earliestStep, GetNextSchedulableStep(now));
-        ScheduleClip(_notes[colorIndex, toneIndex % Frequencies.Length], _startTime + step * StepDuration, now);
-        return step + 1;
+        int step = GetNextSchedulableStep(now);
+        ScheduleClip(_chords[colorIndex, HarmonyAtStep(step)], _startTime + step * StepDuration, now);
     }
+
+    static int HarmonyAtStep(int step) => step / StepsPerBar % Progression.Length;
 
     void Update()
     {
@@ -111,7 +124,15 @@ public sealed class SoundManager : SingletonBehaviour<SoundManager>
             if (_nextRhythmStep % StepsPerBeat == 0)
             {
                 int beat = _nextRhythmStep / StepsPerBeat;
-                ScheduleClip(IsKickBeat(beat) ? _kick : _snare, playAt, now);
+                if (IsKickBeat(beat))
+                {
+                    ScheduleClip(_kick, playAt, now);
+                    ScheduleClip(_bassNotes[HarmonyAtStep(_nextRhythmStep)], playAt, now);
+                }
+                else
+                {
+                    ScheduleClip(_snare, playAt, now);
+                }
             }
 
             _nextRhythmStep++;
@@ -186,9 +207,27 @@ public sealed class SoundManager : SingletonBehaviour<SoundManager>
         return CreateClip("Eighth-note Hat", samples);
     }
 
-    static AudioClip CreateNote(string noteName, float frequency, int instrument)
+    static float Frequency(int midiNote) => 440f * Mathf.Pow(2f, (midiNote - 69) / 12f);
+
+    static AudioClip CreateBass(string chordName, float frequency)
     {
-        var samples = new float[Mathf.RoundToInt(SampleRate * NoteDuration)];
+        const float duration = 0.76f;
+        var samples = new float[Mathf.RoundToInt(SampleRate * duration)];
+        for (int i = 0; i < samples.Length; i++)
+        {
+            float time = i / (float)SampleRate;
+            float phase = 2f * Mathf.PI * frequency * time;
+            float attack = Mathf.Clamp01(time / 0.018f);
+            float release = Mathf.Clamp01((duration - time) / 0.14f);
+            float tone = 0.7f * Mathf.Sin(phase) + 0.25f * Mathf.Sin(2f * phase)
+                + 0.08f * Mathf.Sin(3f * phase);
+            samples[i] = 0.20f * attack * release * Mathf.Exp(-2.2f * time) * tone;
+        }
+        return CreateClip("Bass " + chordName, samples);
+    }
+
+    static void MixNote(float[] samples, float frequency, int instrument)
+    {
         float attackTime = instrument == 0 ? 0.018f : 0.004f;
         for (int i = 0; i < samples.Length; i++)
         {
@@ -202,10 +241,8 @@ public sealed class SoundManager : SingletonBehaviour<SoundManager>
                 1 => ElectricGuitar(phase, time),
                 _ => PluckSynth(phase, time)
             };
-            samples[i] = attack * release * tone;
+            samples[i] += 0.52f * attack * release * tone;
         }
-
-        return CreateClip(noteName, samples);
     }
 
     static float LeadSynth(float phase, float time)
@@ -246,8 +283,9 @@ public sealed class SoundManager : SingletonBehaviour<SoundManager>
         Destroy(_kick);
         Destroy(_snare);
         Destroy(_hat);
-        foreach (var note in _notes)
-            if (note != null)
-                Destroy(note);
+        foreach (var chord in _chords)
+            Destroy(chord);
+        foreach (var bass in _bassNotes)
+            Destroy(bass);
     }
 }

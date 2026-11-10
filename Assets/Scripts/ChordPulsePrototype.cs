@@ -51,8 +51,7 @@ public sealed class ChordPulsePrototype : MonoBehaviour
         public LineRenderer Ring;
         public int ColorIndex;
         public float Radius;
-        public int HitCount;
-        public int NextToneStep;
+        public bool ChordScheduled;
     }
 
     readonly List<Enemy> _enemies = new List<Enemy>();
@@ -137,7 +136,7 @@ public sealed class ChordPulsePrototype : MonoBehaviour
 
     void SpawnOpeningEnemies()
     {
-        // One opening shot plays the three notes before meeting the blue blocker.
+        // One opening shot can shatter all three red enemies before meeting the blue blocker.
         float openingGap = Mathf.Min(0.25f, 0.46f / _arenaRadius);
         Spawn(Vector2.right, 0, 1f - 3f * openingGap);
         Spawn(Vector2.up, 0, 1f - 2f * openingGap);
@@ -294,9 +293,11 @@ public sealed class ChordPulsePrototype : MonoBehaviour
                 Shatter(contact.Enemy.Instance.transform.position, Colors[contact.Enemy.ColorIndex]);
                 _poolManager.ReturnToPool(contact.Enemy.Instance);
                 _enemies.Remove(contact.Enemy);
-                wave.NextToneStep = _soundManager.ScheduleChordTone(
-                    wave.ColorIndex, wave.ColorIndex + wave.HitCount, wave.NextToneStep);
-                wave.HitCount++;
+                if (!wave.ChordScheduled)
+                {
+                    _soundManager.ScheduleChord(wave.ColorIndex);
+                    wave.ChordScheduled = true;
+                }
                 _hits++;
                 UpdateHud();
             }
