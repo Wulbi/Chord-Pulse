@@ -31,7 +31,7 @@ public sealed class ChordPulsePrototype : MonoBehaviour
     const float WaveSpeed = 5f;
     const float ArenaInset = 0.45f;
     const float SameColorChance = 0.8f;
-    const int MaxGroupSize = 3;
+    const int FeverThreshold = 8;
 
     [SerializeField] Camera playCamera;
     [SerializeField] GamePanel gamePanel;
@@ -51,7 +51,8 @@ public sealed class ChordPulsePrototype : MonoBehaviour
         public LineRenderer Ring;
         public int ColorIndex;
         public float Radius;
-        public bool ChordScheduled;
+        public bool HasKill;
+        public bool IsFeverPulse;
     }
 
     readonly List<Enemy> _enemies = new List<Enemy>();
@@ -72,12 +73,16 @@ public sealed class ChordPulsePrototype : MonoBehaviour
     float _arenaRadius;
     int _selectedColor;
     int _spawnCount;
+    int _openingEnemiesSpawned;
     int _groupColor;
     int _groupSize;
     float _spawnAngle;
     int _hits;
     int _health;
-    int _nextSpawnBeat;
+    int _nextSpawnStep;
+    int _feverCharge;
+    int _lastHudBeat;
+    bool _wasFeverActive;
 
     void Awake()
     {
@@ -122,27 +127,20 @@ public sealed class ChordPulsePrototype : MonoBehaviour
 
         _selectedColor = 0;
         _spawnCount = 0;
+        _openingEnemiesSpawned = 0;
         _groupSize = 0;
         _spawnAngle = Random.Range(0f, 360f);
         _hits = 0;
         _health = MaxHealth;
-        _nextSpawnBeat = 0;
+        _nextSpawnStep = 0;
+        _feverCharge = 0;
+        _lastHudBeat = -1;
+        _wasFeverActive = false;
         _soundManager.StartMusic();
         _core.startColor = _core.endColor = Colors[0];
         UIManager.Instance.PushPanel(UIPanelType.GAME_PANEL);
 
         UpdateHud();
-    }
-
-    void SpawnOpeningEnemies()
-    {
-        // One opening shot can shatter all three red enemies before meeting the blue blocker.
-        float openingGap = Mathf.Min(0.25f, 0.46f / _arenaRadius);
-        Spawn(Vector2.right, 0, 1f - 3f * openingGap);
-        Spawn(Vector2.up, 0, 1f - 2f * openingGap);
-        Spawn(Vector2.left, 0, 1f - openingGap);
-        Spawn(new Vector2(1f, 1f).normalized, 1);
-        Spawn(Vector2.down, 2);
     }
 
     void Update()
@@ -153,10 +151,21 @@ public sealed class ChordPulsePrototype : MonoBehaviour
         double beatPosition = _soundManager.BeatPosition;
         int beat = _soundManager.CurrentBeat;
         AnimateArena((float)beatPosition, beat);
-        if (_nextSpawnBeat == 0 && beat >= 0)
+        int step = _soundManager.CurrentStep;
+        bool fever = _soundManager.FeverActive;
+        if (fever != _wasFeverActive)
         {
-            SpawnOpeningEnemies();
-            _nextSpawnBeat = SoundManager.BeatsPerBar;
+            _wasFeverActive = fever;
+            _groupSize = 0;
+            _nextSpawnStep = step;
+            if (!fever)
+                _feverCharge = 0;
+            UpdateHud();
+        }
+        if (beat != _lastHudBeat)
+        {
+            _lastHudBeat = beat;
+            UpdateHud();
         }
 
         var keyboard = Keyboard.current;
@@ -171,7 +180,8 @@ public sealed class ChordPulsePrototype : MonoBehaviour
         {
             _waves.Add(new Wave
             {
-                Ring = CreateRing("Pulse", Colors[_selectedColor], CoreRadius, WaveWidth),
+                Ring = CreateRing("Pulse", fever ? Color.white : Colors[_selectedColor], CoreRadius, WaveWidth),
+                IsFeverPulse = fever,
                 ColorIndex = _selectedColor,
                 Radius = CoreRadius
             });
@@ -201,43 +211,55 @@ public sealed class ChordPulsePrototype : MonoBehaviour
                 enemy.Instance.transform.position, transform.position, EnemySpeed * deltaTime);
         }
 
-        if (beat >= _nextSpawnBeat)
+        if (step >= _nextSpawnStep)
+            SpawnNextEnemy(step, fever);
+    }
+
+    static int NextDownbeat(int step) =>
+        (step / SoundManager.StepsPerBar + 1) * SoundManager.StepsPerBar;
+
+    void SpawnNextEnemy(int step, bool fever)
+    {
+        bool hidden = _soundManager.RoundSeconds >= HiddenEnemyStart && _spawnCount % 2 == 0;
+        if (fever)
         {
-            // Keep a new group on a downbeat even if a frame skipped its original slot.
-            if (_groupSize == 0 && beat % SoundManager.BeatsPerBar != 0)
-                _nextSpawnBeat = NextDownbeat(beat);
-            else
-                SpawnNextEnemy(beat);
+            SpawnFromNewDirection(Random.Range(0, Colors.Length), hidden);
+            _spawnCount++;
+            _nextSpawnStep = (step / SoundManager.StepsPerBeat + 1) * SoundManager.StepsPerBeat;
+            return;
         }
-    }
 
-    static int NextDownbeat(int beat)
-    {
-        return (beat / SoundManager.BeatsPerBar + 1) * SoundManager.BeatsPerBar;
-    }
+        if (_groupSize == 0 && step % SoundManager.StepsPerBar != 0)
+        {
+            _nextSpawnStep = NextDownbeat(step);
+            return;
+        }
 
-    void SpawnNextEnemy(int beat)
-    {
+        if (_openingEnemiesSpawned < Colors.Length)
+        {
+            SpawnFromNewDirection(_openingEnemiesSpawned++);
+            _nextSpawnStep = NextDownbeat(step);
+            return;
+        }
+
         if (_groupSize == 0)
             _groupColor = Random.Range(0, Colors.Length);
 
-        // Keep consecutive spawns at least 60 degrees apart, including within a color group.
-        _spawnAngle = Mathf.Repeat(_spawnAngle + Random.Range(60f, 300f), 360f);
-        float radians = _spawnAngle * Mathf.Deg2Rad;
-        var direction = new Vector2(Mathf.Cos(radians), Mathf.Sin(radians));
-        bool hidden = beat * SoundManager.SecondsPerBeat >= HiddenEnemyStart && _spawnCount % 2 == 0;
-        Spawn(direction, _groupColor, hidden: hidden);
+        SpawnFromNewDirection(_groupColor, hidden);
         _spawnCount++;
         _groupSize++;
 
-        if (_groupSize < MaxGroupSize && Random.value < SameColorChance)
+        int stage = _soundManager.TempoStage;
+        int maxGroupSize = stage == 0 ? 2 : 3;
+        if (_groupSize < maxGroupSize && Random.value < SameColorChance)
         {
-            _nextSpawnBeat = beat + 1;
+            bool halfBeat = stage >= 2 && Random.value < 0.45f;
+            _nextSpawnStep = step + (halfBeat ? 1 : SoundManager.StepsPerBeat);
         }
         else
         {
             _groupSize = 0;
-            _nextSpawnBeat = NextDownbeat(beat);
+            _nextSpawnStep = NextDownbeat(step);
         }
     }
 
@@ -274,7 +296,7 @@ public sealed class ChordPulsePrototype : MonoBehaviour
                 if (contact.Radius > contactLimit)
                     break;
 
-                if (contact.Enemy.ColorIndex != wave.ColorIndex)
+                if (!wave.IsFeverPulse && contact.Enemy.ColorIndex != wave.ColorIndex)
                 {
                     if (contact.Enemy.IsHidden)
                     {
@@ -293,10 +315,13 @@ public sealed class ChordPulsePrototype : MonoBehaviour
                 Shatter(contact.Enemy.Instance.transform.position, Colors[contact.Enemy.ColorIndex]);
                 _poolManager.ReturnToPool(contact.Enemy.Instance);
                 _enemies.Remove(contact.Enemy);
-                if (!wave.ChordScheduled)
+                _soundManager.QueueKillChord(contact.Enemy.ColorIndex);
+                if (!wave.IsFeverPulse && !wave.HasKill)
                 {
-                    _soundManager.ScheduleChord(wave.ColorIndex);
-                    wave.ChordScheduled = true;
+                    wave.HasKill = true;
+                    if (!_soundManager.FeverActive && !_soundManager.FeverPending &&
+                        ++_feverCharge == FeverThreshold)
+                        _soundManager.QueueFever();
                 }
                 _hits++;
                 UpdateHud();
@@ -316,9 +341,13 @@ public sealed class ChordPulsePrototype : MonoBehaviour
         }
     }
 
-    void Spawn(Vector2 direction, int colorIndex, float edgeFraction = 1f, bool hidden = false)
+    void SpawnFromNewDirection(int colorIndex, bool hidden = false)
     {
-        float distance = _arenaRadius * edgeFraction;
+        // Keep consecutive spawns at least 60 degrees apart, including within a color group.
+        _spawnAngle = Mathf.Repeat(_spawnAngle + Random.Range(60f, 300f), 360f);
+        float radians = _spawnAngle * Mathf.Deg2Rad;
+        var direction = new Vector2(Mathf.Cos(radians), Mathf.Sin(radians));
+        float distance = _arenaRadius;
         float angle = Vector2.SignedAngle(Vector2.up, -direction);
         var rotation = Quaternion.Euler(0f, 0f, angle);
         var instance = _poolManager.GetFromPool(EnemyPoolKey,
@@ -482,7 +511,13 @@ public sealed class ChordPulsePrototype : MonoBehaviour
 
     void UpdateHud()
     {
-        gamePanel.SetStatus(ColorNames[_selectedColor], Colors[_selectedColor], _hits, _health, MaxHealth);
+        bool fever = _soundManager.FeverActive;
+        string feverText = fever ? "FEVER!  Press Space" : _soundManager.FeverPending
+            ? "FEVER READY"
+            : $"Fever: {_feverCharge}/{FeverThreshold}";
+        gamePanel.SetStatus(fever ? "All colors" : ColorNames[_selectedColor],
+            fever ? Color.white : Colors[_selectedColor], _hits, _health, MaxHealth,
+            $"{_soundManager.CurrentBpm} BPM     {feverText}");
     }
 
     void OnDestroy()

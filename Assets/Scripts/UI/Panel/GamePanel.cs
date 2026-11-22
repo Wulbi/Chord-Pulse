@@ -7,6 +7,7 @@ public sealed class GamePanel : BasePanel
     public bool IsPlaying { get; private set; }
 
     Text _status;
+    Text _musicStatus;
 
     public override void OnEnter(params object[] datas)
     {
@@ -23,17 +24,19 @@ public sealed class GamePanel : BasePanel
         base.OnExit();
     }
 
-    public void SetStatus(string pulseColor, Color color, int hits, int health, int maxHealth)
+    public void SetStatus(string pulseColor, Color color, int hits, int health, int maxHealth, string musicStatus)
     {
         if (_status == null)
         {
             var font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
             CreateLabel("Controls", "A  Change color     Space  Fire", 24, font);
             _status = CreateLabel("Pulse status", "", 64, font);
+            _musicStatus = CreateLabel("Music status", "", 104, font);
         }
 
         _status.text = $"Pulse: {pulseColor}     Hits: {hits}     Core HP: {health}/{maxHealth}";
         _status.color = color;
+        _musicStatus.text = musicStatus;
     }
 
     Text CreateLabel(string labelName, string value, float top, Font font)
@@ -52,4 +55,3 @@ public sealed class GamePanel : BasePanel
         return label;
     }
 }
-
