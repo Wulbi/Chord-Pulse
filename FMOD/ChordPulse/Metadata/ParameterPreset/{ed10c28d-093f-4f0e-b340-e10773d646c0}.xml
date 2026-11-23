@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<objects serializationModel="Studio.02.02.00">
+	<object class="ParameterPreset" id="{ed10c28d-093f-4f0e-b340-e10773d646c0}">
+		<property name="name">
+			<value>KillChordMix</value>
+		</property>
+		<relationship name="folder">
+			<destination>{a418e0de-c7d0-05c9-280a-b529dc02e12e}</destination>
+		</relationship>
+		<relationship name="parameter">
+			<destination>{022ce299-0753-4df0-8aa8-16761697846a}</destination>
+		</relationship>
+	</object>
+	<object class="GameParameter" id="{022ce299-0753-4df0-8aa8-16761697846a}">
+		<property name="initialValue">
+			<value>1</value>
+		</property>
+	</object>
+</objects>

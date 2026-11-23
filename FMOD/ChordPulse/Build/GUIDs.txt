@@ -1,5 +1,10 @@
 {b546ed08-0746-4732-8d95-f62ca5e6d13e} bank:/ChordPulse
 {2d5bcddc-763d-0b70-0bdc-7cd25415d7a6} bank:/ChordPulse.strings
 {af9d027a-3a1f-49a8-a9ef-4cbe20673632} bus:/
+{3d468f15-e95b-49c7-89e5-8b0245d9bf6d} event:/Music/ChordPulseGame
 {21218e09-b2a2-4e64-a918-319d65fe08b2} event:/Music/ChordPulsePreview
+{46333c08-8d2b-4f40-ade0-f6351292e7da} parameter:/BlueKills
 {3ada5bed-631d-4484-83b9-b5fd25f20dd4} parameter:/Fever
+{8674f7a2-130a-4515-8ff0-5d6c0bb583e2} parameter:/Fever (2)
+{2cca817b-8791-4e96-abc2-fc888a5386de} parameter:/RedKills
+{75224b73-e6f6-452d-a998-38af2129fb1c} parameter:/YellowKills

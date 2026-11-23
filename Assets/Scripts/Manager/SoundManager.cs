@@ -1,181 +1,264 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
+using FMODUnity;
 using UnityEngine;
 
-[DisallowMultipleComponent]
+[DefaultExecutionOrder(-100), DisallowMultipleComponent]
 public sealed class SoundManager : SingletonBehaviour<SoundManager>
 {
     public const int BeatsPerBar = 4;
-
     public const int StepsPerBeat = 2;
     public const int StepsPerBar = BeatsPerBar * StepsPerBeat;
-    const int StepsPerTempo = 8 * StepsPerBar;
+
+    const string BankName = "ChordPulse";
+    const string MusicPath = "event:/Music/ChordPulseGame";
     const int MaxChordVoicing = 3;
-    const double ChordLookahead = 0.09;
     const int FeverSteps = 4 * StepsPerBar;
-    const double ScheduleLead = 0.06;
+    const int FeverBuildSteps = StepsPerBar;
+
+    public const int MaxIntensity = 3;
+
+    enum FeverPhase { Fever, Build, Impact, Outro }
+    static readonly string[] FeverParameters = { "Fever", "FeverBuild", "FeverImpact", "FeverOutro" };
+    const double ChordLookahead = 0.09;
     const double RhythmLookahead = 0.15;
-    const int SampleRate = 44100;
-    const float NoteDuration = 0.55f;
 
-    static readonly int[] Tempos = { 108, 116, 124, 132 };
-    static readonly int[] FeverMelody = { 0, -1, 1, 2, -1, 1, 2, -1 };
-    static readonly (string Name, int Root, int Third, int Fifth)[] Progression =
-    {
-        ("C", 60, 64, 67),
-        ("Am", 57, 60, 64),
-        ("F", 53, 57, 60),
-        ("G", 55, 59, 62)
-    };
+    static readonly string[] KillParameters = { "RedKills", "BlueKills", "YellowKills" };
 
-    // Instrument order follows the pulse colors: red, blue, yellow.
-    static readonly string[] InstrumentNames = { "Lead Synth", "Electric Guitar", "Pluck Synth" };
-    readonly AudioClip[,] _chords = new AudioClip[InstrumentNames.Length, Progression.Length];
-    readonly AudioClip[,,] _expandedVoicings =
-        new AudioClip[InstrumentNames.Length, Progression.Length, MaxChordVoicing - 1];
+    [Tooltip("Shifts visuals later to match audible output latency (measure per device).")]
+    [SerializeField] float visualLatencyMs;
+    [Tooltip("Accompaniment level (drums, bass, harmony). Drives the FMOD MusicMix parameter.")]
+    [SerializeField, Range(0f, 1f)] float musicMix = 1f;
+    [Tooltip("Kill chord level, mixed independently of the accompaniment. Drives KillChordMix.")]
+    [SerializeField, Range(0f, 1f)] float killChordMix = 1f;
+
+    float _appliedMusicMix = -1f;
+    float _appliedKillChordMix = -1f;
+
+    int _intensity;
+    int _appliedIntensity = -1;
+
+    /// <summary>
+    /// Arrangement density for normal sections: 0 kick/snare/closed hat/bass, 1 +pluck, 2 +open hats, 3 +clap.
+    /// Fever always plays the full arrangement.
+    /// </summary>
+    public int Intensity { get => _intensity; set => _intensity = Mathf.Clamp(value, 0, MaxIntensity); }
+
+    public float MusicMix { get => musicMix; set => musicMix = Mathf.Clamp01(value); }
+    public float KillChordMix { get => killChordMix; set => killChordMix = Mathf.Clamp01(value); }
+
     readonly SortedDictionary<int, int[]> _pendingKillChords = new SortedDictionary<int, int[]>();
-    readonly AudioClip[,] _lead = new AudioClip[Progression.Length, 3];
-    readonly AudioClip[] _bassFifths = new AudioClip[Progression.Length];
-    readonly AudioClip[] _bassNotes = new AudioClip[Progression.Length];
-    readonly List<Voice> _voices = new List<Voice>();
-    AudioClip _kick;
-    AudioClip _snare;
-    AudioClip _hat;
-    double _startTime;
-    int _nextRhythmStep;
+    readonly MusicConductor _conductor = new MusicConductor();
+    FMOD.Studio.EventInstance _music;
+    Coroutine _startRoutine;
+    bool _ownsBank;
     bool _musicPlaying;
+    readonly bool[] _appliedFever = new bool[FeverParameters.Length];
     int _feverStart = -1;
+    int _lastChordStep = -1;
+    // Beat position as FMOD is mixing it (drives audio scheduling) and as the player hears it (drives visuals).
+    double _audioBeat = -1;
+    double _visualBeat = -1;
+    double _roundSeconds;
 
-    public double RoundSeconds => AudioSettings.dspTime - _startTime;
-    public double BeatPosition => _musicPlaying ? StepPositionAt(RoundSeconds) / StepsPerBeat : -1;
-    public int CurrentBeat => (int)Math.Floor(BeatPosition);
-    public int CurrentStep => (int)Math.Floor(BeatPosition * StepsPerBeat);
-    public int TempoStage => StageAt(CurrentStep);
-    public int CurrentBpm => Tempos[TempoStage];
-    public bool FeverActive => _musicPlaying && IsFeverStep(CurrentStep);
-    public bool FeverPending => _musicPlaying && _feverStart >= 0 && CurrentStep < _feverStart;
+    bool Running => _musicPlaying && _conductor.HasStarted;
+
+    /// <summary>Play time since the first beat (stops while paused); use for difficulty, not for rhythm.</summary>
+    public double RoundSeconds => Running ? _roundSeconds : 0;
+    public double BeatPosition => Running ? _visualBeat : -1;
+    public int CurrentBeat => Running ? (int)Math.Floor(_visualBeat) : -1;
+    public int CurrentStep => Running ? (int)Math.Floor(_visualBeat * StepsPerBeat) : -1;
+    public int CurrentBpm => Running ? (int)Math.Round(_conductor.Tempo) : 0;
+    public string CurrentSection => _conductor.Section;
+    public bool FeverActive => Running && IsFeverStep(CurrentStep);
+    public bool FeverPending => Running && _feverStart >= 0 && CurrentStep < _feverStart;
+    /// <summary>True during the build-up bar right before fever lands (for visual tension cues).</summary>
+    public bool FeverBuilding => FeverPending && CurrentStep >= _feverStart - FeverBuildSteps;
 
     public static bool IsKickBeat(int beat) => beat % 2 == 0;
 
-    static int StageAt(int step) => Math.Max(0, Math.Min(step / StepsPerTempo, Tempos.Length - 1));
-    static double StepLength(int stage) => 60.0 / (Tempos[stage] * StepsPerBeat);
-
-    static double StepPositionAt(double seconds)
-    {
-        int stage = 0;
-        while (stage < Tempos.Length - 1 && seconds >= StepsPerTempo * StepLength(stage))
-        {
-            seconds -= StepsPerTempo * StepLength(stage);
-            stage++;
-        }
-
-        return stage * StepsPerTempo + seconds / StepLength(stage);
-    }
-
-    double TimeAtStep(int step)
-    {
-        int stage = StageAt(step);
-        double elapsed = 0;
-        for (int i = 0; i < stage; i++)
-            elapsed += StepsPerTempo * StepLength(i);
-        return _startTime + elapsed + (step - stage * StepsPerTempo) * StepLength(stage);
-    }
+    int AudioStep => (int)Math.Floor(_audioBeat * StepsPerBeat);
+    double AudioStepPosition => _audioBeat * StepsPerBeat;
+    double LookaheadSteps(double seconds) => _conductor.SecondsToBeats(seconds) * StepsPerBeat;
 
     bool IsFeverStep(int step) =>
         _feverStart >= 0 && step >= _feverStart && step < _feverStart + FeverSteps;
 
-    public void QueueFever()
-    {
-        int nextBar = (CurrentStep / StepsPerBar + 1) * StepsPerBar;
-        while (nextBar < _nextRhythmStep)
-            nextBar += StepsPerBar;
-        _feverStart = nextBar;
-    }
-
-    sealed class Voice
-    {
-        public AudioSource Source;
-        public double EndsAt;
-    }
-
-    protected override void Awake()
-    {
-        base.Awake();
-        if (Instance != this)
-            return;
-
-        for (int harmony = 0; harmony < Progression.Length; harmony++)
-        {
-            var chord = Progression[harmony];
-            _bassNotes[harmony] = CreateBass(chord.Name, Frequency(chord.Root - 24));
-            _bassFifths[harmony] = CreateBass(chord.Name + " Fifth", Frequency(chord.Fifth - 24));
-            _lead[harmony, 0] = CreateLead(chord.Name, chord.Root + 12);
-            _lead[harmony, 1] = CreateLead(chord.Name, chord.Third + 12);
-            _lead[harmony, 2] = CreateLead(chord.Name, chord.Fifth + 12);
-
-            for (int instrument = 0; instrument < InstrumentNames.Length; instrument++)
-            {
-                var samples = new float[Mathf.RoundToInt(SampleRate * NoteDuration)];
-                MixNote(samples, Frequency(chord.Root), instrument);
-                MixNote(samples, Frequency(chord.Third), instrument);
-                MixNote(samples, Frequency(chord.Fifth), instrument);
-                string clipName = InstrumentNames[instrument] + " " + chord.Name;
-                _chords[instrument, harmony] = CreateClip(clipName, samples);
-                MixNote(samples, Frequency(chord.Root + 12), instrument);
-                _expandedVoicings[instrument, harmony, 0] = CreateClip(clipName + " High Root", samples);
-                MixNote(samples, Frequency(chord.Fifth + 12), instrument);
-                _expandedVoicings[instrument, harmony, 1] = CreateClip(clipName + " High Fifth", samples);
-            }
-        }
-
-        _kick = CreateKick();
-        _snare = CreateSnare();
-        _hat = CreateHat();
-    }
-
     public void StartMusic()
     {
         StopMusic();
-        _startTime = AudioSettings.dspTime + RhythmLookahead;
-        _nextRhythmStep = 0;
+        _audioBeat = _visualBeat = -1;
+        _roundSeconds = 0;
         _feverStart = -1;
+        Array.Clear(_appliedFever, 0, _appliedFever.Length);
+        _intensity = 0;
+        _appliedIntensity = -1;
+        _lastChordStep = -1;
+        _startRoutine = StartCoroutine(LoadAndStartMusic());
+    }
+
+    IEnumerator LoadAndStartMusic()
+    {
+        try
+        {
+            if (!RuntimeManager.HasBankLoaded(BankName))
+            {
+                RuntimeManager.LoadBank(BankName, true);
+                _ownsBank = true;
+            }
+        }
+        catch (Exception exception)
+        {
+            ReportFailure(exception.Message);
+            yield break;
+        }
+
+        FMOD.Studio.Bank bank;
+        if (!Check(RuntimeManager.StudioSystem.getBank("bank:/" + BankName, out bank)))
+            yield break;
+        if (!Check(bank.loadSampleData()))
+            yield break;
+
+        while (true)
+        {
+            FMOD.Studio.LOADING_STATE state;
+            if (!Check(bank.getSampleLoadingState(out state)))
+                yield break;
+            if (state == FMOD.Studio.LOADING_STATE.LOADED)
+                break;
+            if (state == FMOD.Studio.LOADING_STATE.ERROR)
+            {
+                ReportFailure("Music sample data failed to load.");
+                yield break;
+            }
+            yield return null;
+        }
+
+        try
+        {
+            _music = RuntimeManager.CreateInstance(MusicPath);
+        }
+        catch (Exception exception)
+        {
+            ReportFailure(exception.Message);
+            yield break;
+        }
+
+        _conductor.Attach(_music);
+        _appliedMusicMix = _appliedKillChordMix = -1f;
+        if (!ApplyMix())
+            yield break;
+        foreach (var parameter in FeverParameters)
+            if (!Check(_music.setParameterByName(parameter, 0f, true)))
+                yield break;
+        foreach (var parameter in KillParameters)
+            if (!Check(_music.setParameterByName(parameter, 0f, true)))
+                yield break;
+        if (!Check(_music.start()))
+            yield break;
+
         _musicPlaying = true;
-        ScheduleRhythm(AudioSettings.dspTime);
+        _startRoutine = null;
     }
 
     public void StopMusic()
     {
-        _musicPlaying = false;
-        _pendingKillChords.Clear();
-        foreach (var voice in _voices)
+        if (_startRoutine != null)
         {
-            voice.Source.Stop();
-            voice.EndsAt = 0;
+            StopCoroutine(_startRoutine);
+            _startRoutine = null;
         }
+        _musicPlaying = false;
+        _conductor.Detach();
+        _pendingKillChords.Clear();
+        if (_music.isValid())
+        {
+            _music.stop(FMOD.Studio.STOP_MODE.IMMEDIATE);
+            _music.release();
+            _music.clearHandle();
+        }
+    }
+
+    public void QueueFever()
+    {
+        if (!Running || FeverActive || FeverPending)
+            return;
+        double earliest = AudioStepPosition + LookaheadSteps(RhythmLookahead);
+        int nextBar = (AudioStep / StepsPerBar + 1) * StepsPerBar;
+        while (nextBar < earliest)
+            nextBar += StepsPerBar;
+        // The next whole bar is the build-up (snare roll + riser, kick drops out); fever lands on the bar after.
+        _feverStart = nextBar + FeverBuildSteps;
     }
 
     public void QueueKillChord(int colorIndex)
     {
-        if (!_musicPlaying)
+        if (!Running || colorIndex < 0 || colorIndex >= KillParameters.Length)
             return;
 
-        double now = AudioSettings.dspTime;
-        // Collect kills until shortly before the next beat so the whole chord can be scheduled together.
-        int target = (CurrentStep / StepsPerBeat + 1) * StepsPerBeat;
-        if (TimeAtStep(target) <= now + ChordLookahead)
+        int target = (AudioStep / StepsPerBeat + 1) * StepsPerBeat;
+        if (target <= AudioStepPosition + LookaheadSteps(ChordLookahead))
             target += StepsPerBeat;
-
-        if (!_pendingKillChords.TryGetValue(target, out var kills))
+        int[] kills;
+        if (!_pendingKillChords.TryGetValue(target, out kills))
         {
-            kills = new int[InstrumentNames.Length];
+            kills = new int[KillParameters.Length];
             _pendingKillChords.Add(target, kills);
         }
-
         kills[colorIndex] = Math.Min(kills[colorIndex] + 1, MaxChordVoicing);
     }
 
-    void ScheduleKillChords(double now)
+    void Update()
     {
+        if (!_musicPlaying)
+            return;
+        if (!ApplyMix())
+            return;
+        _conductor.Update();
+        if (!_conductor.HasStarted)
+            return;
+        _audioBeat = _conductor.BeatPosition();
+        _visualBeat = Math.Max(0, _audioBeat - _conductor.SecondsToBeats(visualLatencyMs / 1000.0));
+        _roundSeconds += Time.deltaTime;
+
+        UpdateFever();
+        UpdateKillChords();
+    }
+
+    void UpdateFever()
+    {
+        // Parameters are set slightly ahead so FMOD sees them before the instruments they gate start.
+        double step = AudioStepPosition + LookaheadSteps(RhythmLookahead);
+        bool scheduled = _feverStart >= 0;
+        SetFeverParameter(FeverPhase.Build, scheduled && step >= _feverStart - FeverBuildSteps && step < _feverStart);
+        SetFeverParameter(FeverPhase.Impact, scheduled && step >= _feverStart && step < _feverStart + StepsPerBeat);
+        bool fever = scheduled && step >= _feverStart && step < _feverStart + FeverSteps;
+        SetFeverParameter(FeverPhase.Fever, fever);
+        SetFeverParameter(FeverPhase.Outro, fever && step >= _feverStart + FeverSteps - StepsPerBar);
+
+        int intensity = fever ? MaxIntensity : _intensity;
+        if (intensity != _appliedIntensity && Check(_music.setParameterByName("Intensity", intensity)))
+            _appliedIntensity = intensity;
+    }
+
+    void SetFeverParameter(FeverPhase phase, bool on)
+    {
+        int index = (int)phase;
+        if (_appliedFever[index] == on)
+            return;
+        if (Check(_music.setParameterByName(FeverParameters[index], on ? 1f : 0f, true)))
+            _appliedFever[index] = on;
+    }
+
+    void UpdateKillChords()
+    {
+        int target = (AudioStep / StepsPerBeat + 1) * StepsPerBeat;
+        if (target == _lastChordStep || target > AudioStepPosition + LookaheadSteps(ChordLookahead))
+            return;
+
+        var totals = new int[KillParameters.Length];
+        // Carry delayed frames forward to the next playable beat instead of dropping kills.
         while (_pendingKillChords.Count > 0)
         {
             int step;
@@ -186,242 +269,55 @@ public sealed class SoundManager : SingletonBehaviour<SoundManager>
                 step = pending.Current.Key;
                 kills = pending.Current.Value;
             }
-
-            double playAt = TimeAtStep(step);
-            if (playAt > now + ChordLookahead)
-                return;
-
+            if (step > target)
+                break;
             _pendingKillChords.Remove(step);
-            if (playAt <= now)
-            {
-                int nextBeat = (GetNextSchedulableStep(now) + StepsPerBeat - 1) / StepsPerBeat;
-                int nextStep = nextBeat * StepsPerBeat;
-                if (!_pendingKillChords.TryGetValue(nextStep, out var nextKills))
-                    _pendingKillChords.Add(nextStep, kills);
-                else
-                    for (int color = 0; color < kills.Length; color++)
-                        nextKills[color] = Math.Min(nextKills[color] + kills[color], MaxChordVoicing);
-                continue;
-            }
-
-            int harmony = HarmonyAtStep(step);
-            for (int color = 0; color < kills.Length; color++)
-            {
-                int count = kills[color];
-                if (count == 0)
-                    continue;
-
-                var clip = count == 1 ? _chords[color, harmony] : _expandedVoicings[color, harmony, count - 2];
-                ScheduleClip(clip, playAt, now, 0.36f);
-            }
+            for (int color = 0; color < totals.Length; color++)
+                totals[color] = Math.Min(totals[color] + kills[color], MaxChordVoicing);
         }
+
+        for (int color = 0; color < totals.Length; color++)
+            if (!Check(_music.setParameterByName(KillParameters[color], totals[color], true)))
+                return;
+        _lastChordStep = target;
     }
 
-    static int HarmonyAtStep(int step) => step / StepsPerBar % Progression.Length;
-
-    void Update()
+    // Accompaniment and kill chords sit on separate FMOD group tracks; only push values when they change.
+    bool ApplyMix()
     {
-        if (!_musicPlaying)
-            return;
-
-        double now = AudioSettings.dspTime;
-        ScheduleRhythm(now);
-        ScheduleKillChords(now);
-    }
-
-    void ScheduleRhythm(double now)
-    {
-        _nextRhythmStep = Math.Max(_nextRhythmStep, GetNextSchedulableStep(now));
-        double playAt = TimeAtStep(_nextRhythmStep);
-        while (playAt <= now + RhythmLookahead)
+        if (!Mathf.Approximately(musicMix, _appliedMusicMix))
         {
-            int step = _nextRhythmStep;
-            int harmony = HarmonyAtStep(step);
-            bool fever = IsFeverStep(step);
-            ScheduleClip(_hat, playAt, now);
-            if (step % StepsPerBeat == 0)
-            {
-                bool kick = IsKickBeat(step / StepsPerBeat);
-                ScheduleClip(kick ? _kick : _snare, playAt, now);
-                if (kick || fever)
-                    ScheduleClip(kick ? _bassNotes[harmony] : _bassFifths[harmony], playAt, now);
-            }
-
-            if (fever)
-            {
-                int tone = FeverMelody[step % StepsPerBar];
-                if (tone >= 0)
-                    ScheduleClip(_lead[harmony, tone], playAt, now);
-                int feverStep = step - _feverStart;
-                if (feverStep == 1 || feverStep == 3)
-                    ScheduleClip(_snare, playAt, now, 0.75f);
-            }
-
-            _nextRhythmStep++;
-            playAt = TimeAtStep(_nextRhythmStep);
+            if (!Check(_music.setParameterByName("MusicMix", musicMix)))
+                return false;
+            _appliedMusicMix = musicMix;
         }
-    }
-
-    int GetNextSchedulableStep(double now)
-    {
-        return Math.Max(0, (int)Math.Ceiling(StepPositionAt(now + ScheduleLead - _startTime)));
-    }
-
-    void ScheduleClip(AudioClip clip, double playAt, double now, float volume = 1f)
-    {
-        var voice = _voices.Find(candidate => candidate.EndsAt <= now);
-        if (voice == null)
+        if (!Mathf.Approximately(killChordMix, _appliedKillChordMix))
         {
-            var source = gameObject.AddComponent<AudioSource>();
-            source.playOnAwake = false;
-            source.spatialBlend = 0f;
-            voice = new Voice { Source = source };
-            _voices.Add(voice);
+            if (!Check(_music.setParameterByName("KillChordMix", killChordMix)))
+                return false;
+            _appliedKillChordMix = killChordMix;
         }
-
-        voice.Source.clip = clip;
-        voice.Source.volume = volume;
-        voice.Source.PlayScheduled(playAt);
-        voice.EndsAt = playAt + (double)clip.samples / clip.frequency;
+        return true;
     }
 
-    static AudioClip CreateKick()
+    bool Check(FMOD.RESULT result)
     {
-        var samples = new float[Mathf.RoundToInt(SampleRate * 0.22f)];
-        for (int i = 0; i < samples.Length; i++)
-        {
-            float t = i / (float)SampleRate;
-            float phase = 2f * Mathf.PI * (45f * t + 2.2f * (1f - Mathf.Exp(-45f * t)));
-            samples[i] = 0.28f * Mathf.Sin(phase) * Mathf.Exp(-23f * t);
-        }
-        return CreateClip("Kick", samples);
+        if (result == FMOD.RESULT.OK)
+            return true;
+        ReportFailure(result.ToString());
+        return false;
     }
 
-    static AudioClip CreateSnare()
+    void ReportFailure(string message)
     {
-        var samples = new float[Mathf.RoundToInt(SampleRate * 0.17f)];
-        var noise = new System.Random(240);
-        float previous = 0f;
-        for (int i = 0; i < samples.Length; i++)
-        {
-            float time = i / (float)SampleRate;
-            float sample = (float)(2.0 * noise.NextDouble() - 1.0);
-            float snap = (sample - 0.65f * previous) * Mathf.Exp(-27f * time);
-            float body = Mathf.Sin(2f * Mathf.PI * 175f * time) * Mathf.Exp(-47f * time);
-            float attack = Mathf.Clamp01(time / 0.002f);
-            samples[i] = attack * (0.13f * snap + 0.07f * body);
-            previous = sample;
-        }
-        return CreateClip("Snare", samples);
-    }
-
-    static AudioClip CreateHat()
-    {
-        var samples = new float[Mathf.RoundToInt(SampleRate * 0.065f)];
-        var noise = new System.Random(120);
-        float previous = 0f;
-        for (int i = 0; i < samples.Length; i++)
-        {
-            float t = i / (float)SampleRate;
-            float sample = (float)(2.0 * noise.NextDouble() - 1.0);
-            samples[i] = 0.065f * (sample - previous) * Mathf.Exp(-75f * t);
-            previous = sample;
-        }
-        return CreateClip("Eighth-note Hat", samples);
-    }
-
-    static float Frequency(int midiNote) => 440f * Mathf.Pow(2f, (midiNote - 69) / 12f);
-
-    static AudioClip CreateBass(string chordName, float frequency)
-    {
-        const float duration = 0.76f;
-        var samples = new float[Mathf.RoundToInt(SampleRate * duration)];
-        for (int i = 0; i < samples.Length; i++)
-        {
-            float time = i / (float)SampleRate;
-            float phase = 2f * Mathf.PI * frequency * time;
-            float attack = Mathf.Clamp01(time / 0.018f);
-            float release = Mathf.Clamp01((duration - time) / 0.14f);
-            float tone = 0.7f * Mathf.Sin(phase) + 0.25f * Mathf.Sin(2f * phase)
-                + 0.08f * Mathf.Sin(3f * phase);
-            samples[i] = 0.20f * attack * release * Mathf.Exp(-2.2f * time) * tone;
-        }
-        return CreateClip("Bass " + chordName, samples);
-    }
-
-    static AudioClip CreateLead(string chordName, int note)
-    {
-        var samples = new float[Mathf.RoundToInt(SampleRate * 0.24f)];
-        MixNote(samples, Frequency(note), 0);
-        return CreateClip("Fever Lead " + chordName + " " + note, samples);
-    }
-
-    static void MixNote(float[] samples, float frequency, int instrument)
-    {
-        float attackTime = instrument == 0 ? 0.018f : 0.004f;
-        for (int i = 0; i < samples.Length; i++)
-        {
-            float time = i / (float)SampleRate;
-            float phase = 2f * Mathf.PI * frequency * time;
-            float attack = Mathf.Clamp01(time / attackTime);
-            float release = Mathf.Clamp01((samples.Length / (float)SampleRate - time) / 0.06f);
-            float tone = instrument switch
-            {
-                0 => LeadSynth(phase, time),
-                1 => ElectricGuitar(phase, time),
-                _ => PluckSynth(phase, time)
-            };
-            samples[i] += 0.52f * attack * release * tone;
-        }
-    }
-
-    static float LeadSynth(float phase, float time)
-    {
-        float body = 0.6f * Mathf.Sin(phase) + 0.4f * Mathf.Sin(phase * 1.004f);
-        float buzz = 0.25f * Mathf.Sin(2f * phase) + 0.16f * Mathf.Sin(3f * phase)
-            + 0.1f * Mathf.Sin(5f * phase);
-        return 0.16f * (body + buzz * Mathf.Exp(-5f * time)) * Mathf.Exp(-2.8f * time);
-    }
-
-    static float ElectricGuitar(float phase, float time)
-    {
-        float stringTone = Mathf.Sin(phase) + 0.52f * Mathf.Sin(2f * phase)
-            + 0.32f * Mathf.Sin(3f * phase);
-        float pick = (0.4f * Mathf.Sin(5f * phase) + 0.22f * Mathf.Sin(7f * phase))
-            * Mathf.Exp(-19f * time);
-        float drive = (float)Math.Tanh(1.35f * (stringTone + pick));
-        return 0.18f * drive * Mathf.Exp(-4.5f * time);
-    }
-
-    static float PluckSynth(float phase, float time)
-    {
-        float modulation = 1.7f * Mathf.Exp(-23f * time);
-        float tone = Mathf.Sin(phase + modulation * Mathf.Sin(2f * phase));
-        return 0.22f * tone * Mathf.Exp(-11f * time);
-    }
-
-    static AudioClip CreateClip(string clipName, float[] samples)
-    {
-        var clip = AudioClip.Create(clipName, samples.Length, 1, SampleRate, false);
-        clip.SetData(samples, 0);
-        return clip;
+        StopMusic();
+        Debug.LogError("[SoundManager / FMOD] " + message, this);
     }
 
     void OnDestroy()
     {
         StopMusic();
-        Destroy(_kick);
-        Destroy(_snare);
-        Destroy(_hat);
-        foreach (var chord in _chords)
-            Destroy(chord);
-        foreach (var voicing in _expandedVoicings)
-            Destroy(voicing);
-        foreach (var bass in _bassNotes)
-            Destroy(bass);
-        foreach (var bass in _bassFifths)
-            Destroy(bass);
-        foreach (var lead in _lead)
-            Destroy(lead);
+        if (_ownsBank)
+            RuntimeManager.UnloadBank(BankName);
     }
 }

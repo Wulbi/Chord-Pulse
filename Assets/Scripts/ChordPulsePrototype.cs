@@ -32,6 +32,8 @@ public sealed class ChordPulsePrototype : MonoBehaviour
     const float ArenaInset = 0.45f;
     const float SameColorChance = 0.8f;
     const int FeverThreshold = 8;
+    // Survival seconds at which difficulty steps up (same timing as the original 8-bar tempo stages).
+    static readonly double[] DifficultyThresholds = { 17.8, 34.3, 49.8 };
 
     [SerializeField] Camera playCamera;
     [SerializeField] GamePanel gamePanel;
@@ -151,6 +153,8 @@ public sealed class ChordPulsePrototype : MonoBehaviour
         double beatPosition = _soundManager.BeatPosition;
         int beat = _soundManager.CurrentBeat;
         AnimateArena((float)beatPosition, beat);
+        // The arrangement fills in as the round gets harder; slower music later can still lower density on its own.
+        _soundManager.Intensity = DifficultyLevel(_soundManager.RoundSeconds);
         int step = _soundManager.CurrentStep;
         bool fever = _soundManager.FeverActive;
         if (fever != _wasFeverActive)
@@ -215,6 +219,14 @@ public sealed class ChordPulsePrototype : MonoBehaviour
             SpawnNextEnemy(step, fever);
     }
 
+    static int DifficultyLevel(double survivalSeconds)
+    {
+        int level = 0;
+        while (level < DifficultyThresholds.Length && survivalSeconds >= DifficultyThresholds[level])
+            level++;
+        return level;
+    }
+
     static int NextDownbeat(int step) =>
         (step / SoundManager.StepsPerBar + 1) * SoundManager.StepsPerBar;
 
@@ -249,11 +261,12 @@ public sealed class ChordPulsePrototype : MonoBehaviour
         _spawnCount++;
         _groupSize++;
 
-        int stage = _soundManager.TempoStage;
-        int maxGroupSize = stage == 0 ? 2 : 3;
+        // Difficulty follows survival time, not tempo, so calmer music sections can still be hard later on.
+        int difficulty = DifficultyLevel(_soundManager.RoundSeconds);
+        int maxGroupSize = difficulty == 0 ? 2 : 3;
         if (_groupSize < maxGroupSize && Random.value < SameColorChance)
         {
-            bool halfBeat = stage >= 2 && Random.value < 0.45f;
+            bool halfBeat = difficulty >= 2 && Random.value < 0.45f;
             _nextSpawnStep = step + (halfBeat ? 1 : SoundManager.StepsPerBeat);
         }
         else
@@ -512,7 +525,9 @@ public sealed class ChordPulsePrototype : MonoBehaviour
     void UpdateHud()
     {
         bool fever = _soundManager.FeverActive;
-        string feverText = fever ? "FEVER!  Press Space" : _soundManager.FeverPending
+        string feverText = fever ? "FEVER!  Press Space" : _soundManager.FeverBuilding
+            ? "FEVER INCOMING..."
+            : _soundManager.FeverPending
             ? "FEVER READY"
             : $"Fever: {_feverCharge}/{FeverThreshold}";
         gamePanel.SetStatus(fever ? "All colors" : ColorNames[_selectedColor],

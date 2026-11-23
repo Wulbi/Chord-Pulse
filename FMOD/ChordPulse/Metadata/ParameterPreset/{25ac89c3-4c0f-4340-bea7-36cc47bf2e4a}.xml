@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<objects serializationModel="Studio.02.02.00">
+	<object class="ParameterPreset" id="{25ac89c3-4c0f-4340-bea7-36cc47bf2e4a}">
+		<property name="name">
+			<value>BlueKills</value>
+		</property>
+		<relationship name="folder">
+			<destination>{a418e0de-c7d0-05c9-280a-b529dc02e12e}</destination>
+		</relationship>
+		<relationship name="parameter">
+			<destination>{46333c08-8d2b-4f40-ade0-f6351292e7da}</destination>
+		</relationship>
+	</object>
+	<object class="GameParameter" id="{46333c08-8d2b-4f40-ade0-f6351292e7da}">
+		<property name="maximum">
+			<value>3</value>
+		</property>
+	</object>
+</objects>
