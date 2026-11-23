@@ -32,6 +32,12 @@ public sealed class SoundManager : SingletonBehaviour<SoundManager>
     [SerializeField, Range(0f, 1f)] float musicMix = 1f;
     [Tooltip("Kill chord level, mixed independently of the accompaniment. Drives KillChordMix.")]
     [SerializeField, Range(0f, 1f)] float killChordMix = 1f;
+    [Tooltip("Seed for the per-phrase section choice. 0 = different every round.")]
+    [SerializeField] int sectionSeed;
+
+    SectionSelector _sections = new SectionSelector(0);
+    int _lastPhrase = -1;
+    int _phraseStartStep;
 
     float _appliedMusicMix = -1f;
     float _appliedKillChordMix = -1f;
@@ -40,8 +46,9 @@ public sealed class SoundManager : SingletonBehaviour<SoundManager>
     int _appliedIntensity = -1;
 
     /// <summary>
-    /// Arrangement density for normal sections: 0 kick/snare/closed hat/bass, 1 +pluck, 2 +open hats, 3 +clap.
-    /// Fever always plays the full arrangement.
+    /// Target musical energy (set from difficulty). Drives arrangement density for normal sections
+    /// (0 kick/snare/closed hat/bass, 1 +pluck, 2 +open hats, 3 +clap) and which tempo sections get picked.
+    /// Fever always plays the full arrangement; breath phrases drop back to the sparse one.
     /// </summary>
     public int Intensity { get => _intensity; set => _intensity = Mathf.Clamp(value, 0, MaxIntensity); }
 
@@ -71,6 +78,22 @@ public sealed class SoundManager : SingletonBehaviour<SoundManager>
     public int CurrentStep => Running ? (int)Math.Floor(_visualBeat * StepsPerBeat) : -1;
     public int CurrentBpm => Running ? (int)Math.Round(_conductor.Tempo) : 0;
     public string CurrentSection => _conductor.Section;
+    public const int StepsPerPhrase = SectionSelector.BarsPerPhrase * StepsPerBar;
+    /// <summary>Section (0 = slowest ... 3 = fastest) of the phrase being heard.</summary>
+    public int SectionIndex => _sections.Current.Section;
+    /// <summary>The phrase being heard is a low-energy breather: thinner music, fewer enemies.</summary>
+    public bool IsBreath => Running && _sections.Current.Breath && !FeverActive;
+    /// <summary>Already-decided phrase that starts at <see cref="NextPhraseStep"/>.</summary>
+    public SectionSelector.Phrase UpcomingPhrase => _sections.Next;
+    public int NextPhraseStep => _phraseStartStep + StepsPerPhrase;
+    /// <summary>Bar being heard, counted from the first beat (-1 before the music starts).</summary>
+    public int CurrentBar => Running ? CurrentBeat / BeatsPerBar : -1;
+    /// <summary>Chord of the bar being heard: 0 C, 1 Am, 2 F, 3 G (every section starts on C, phrases are 4 bars).</summary>
+    public int ChordIndex => Running ? CurrentBar % SectionSelector.BarsPerPhrase : 0;
+    /// <summary>Arrangement density FMOD is actually playing (fever and breath already applied).</summary>
+    public int ArrangementIntensity => Math.Max(0, _appliedIntensity);
+    /// <summary>Whether the kick drum plays on this beat (it drops out during the fever build-up bar).</summary>
+    public bool KickOn(int beat) => beat >= 0 && IsKickBeat(beat) && !FeverBuilding;
     public bool FeverActive => Running && IsFeverStep(CurrentStep);
     public bool FeverPending => Running && _feverStart >= 0 && CurrentStep < _feverStart;
     /// <summary>True during the build-up bar right before fever lands (for visual tension cues).</summary>
@@ -94,6 +117,9 @@ public sealed class SoundManager : SingletonBehaviour<SoundManager>
         Array.Clear(_appliedFever, 0, _appliedFever.Length);
         _intensity = 0;
         _appliedIntensity = -1;
+        _sections = new SectionSelector(sectionSeed);
+        _lastPhrase = -1;
+        _phraseStartStep = 0;
         _lastChordStep = -1;
         _startRoutine = StartCoroutine(LoadAndStartMusic());
     }
@@ -152,6 +178,8 @@ public sealed class SoundManager : SingletonBehaviour<SoundManager>
         foreach (var parameter in FeverParameters)
             if (!Check(_music.setParameterByName(parameter, 0f, true)))
                 yield break;
+        if (!Check(_music.setParameterByName("NextSection", 0f, true)))
+            yield break;
         foreach (var parameter in KillParameters)
             if (!Check(_music.setParameterByName(parameter, 0f, true)))
                 yield break;
@@ -222,8 +250,22 @@ public sealed class SoundManager : SingletonBehaviour<SoundManager>
         _visualBeat = Math.Max(0, _audioBeat - _conductor.SecondsToBeats(visualLatencyMs / 1000.0));
         _roundSeconds += Time.deltaTime;
 
+        UpdatePhrase();
         UpdateFever();
         UpdateKillChords();
+    }
+
+    // Each 4-bar phrase: the queued phrase becomes current and the one after it is chosen and sent to FMOD,
+    // which jumps (or plays on) at the next phrase boundary. That leaves a whole phrase of lead time.
+    void UpdatePhrase()
+    {
+        int phrase = _conductor.Bar / SectionSelector.BarsPerPhrase;
+        if (phrase <= _lastPhrase)
+            return;
+        _lastPhrase = phrase;
+        _phraseStartStep = phrase * StepsPerPhrase;
+        var next = _sections.Advance(_intensity, allowBreath: _feverStart < 0 || AudioStep >= _feverStart + FeverSteps);
+        Check(_music.setParameterByName("NextSection", next.Section));
     }
 
     void UpdateFever()
@@ -237,7 +279,9 @@ public sealed class SoundManager : SingletonBehaviour<SoundManager>
         SetFeverParameter(FeverPhase.Fever, fever);
         SetFeverParameter(FeverPhase.Outro, fever && step >= _feverStart + FeverSteps - StepsPerBar);
 
-        int intensity = fever ? MaxIntensity : _intensity;
+        // Look ahead into the next phrase too, so a breath's thinner arrangement starts on its first downbeat.
+        bool breath = step >= NextPhraseStep ? _sections.Next.Breath : _sections.Current.Breath;
+        int intensity = fever ? MaxIntensity : breath ? 0 : _intensity;
         if (intensity != _appliedIntensity && Check(_music.setParameterByName("Intensity", intensity)))
             _appliedIntensity = intensity;
     }

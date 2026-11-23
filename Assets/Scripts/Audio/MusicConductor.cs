@@ -111,23 +111,31 @@ public sealed class MusicConductor
             }
 
             double stamp = signal.Timestamp * s_tickSeconds;
+            int beatsPerBar = Math.Max(1, signal.BeatsPerBar);
+            int beatInBar = Math.Max(0, signal.BeatInBar - 1);
             if (_anchorBeat < 0)
             {
-                _anchorBeat = 0;
+                _anchorBeat = beatInBar;
                 _anchorSeconds = stamp;
             }
             else
             {
-                double predicted = _anchorSeconds + 60.0 / _tempo;
+                double beatSeconds = 60.0 / _tempo;
+                // A timeline jump can report the same beat twice; ignore the echo.
+                if (stamp - _anchorSeconds < beatSeconds * 0.25 && beatInBar == _anchorBeat % beatsPerBar)
+                    continue;
+                // ...or skip one; FMOD's beat-in-bar is authoritative, so step forward to match it.
+                int next = _anchorBeat + 1;
+                int skipped = ((beatInBar - next % beatsPerBar) % beatsPerBar + beatsPerBar) % beatsPerBar;
+                double predicted = _anchorSeconds + (1 + skipped) * beatSeconds;
                 double error = stamp - predicted;
-                _anchorBeat++;
+                _anchorBeat = next + skipped;
                 _anchorSeconds = Math.Abs(error) < SmoothWindowSeconds ? predicted + error * SmoothFactor : stamp;
             }
 
             _tempo = signal.Tempo;
-            BeatsPerBar = Math.Max(1, signal.BeatsPerBar);
-            if (signal.BeatInBar == 1 || Bar < 0)
-                Bar++;
+            BeatsPerBar = beatsPerBar;
+            Bar = _anchorBeat / beatsPerBar;
             BeatChanged?.Invoke(_anchorBeat);
         }
     }

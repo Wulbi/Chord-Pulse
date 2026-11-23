@@ -13,8 +13,6 @@ public sealed class ChordPulsePrototype : MonoBehaviour
     const float SimultaneousContactTolerance = 0.01f;
     const int CircleSegments = 96;
     static readonly Color BoundaryColor = new Color(0.27f, 0.34f, 0.46f);
-    static readonly Color KickAccent = new Color(0.59f, 0.73f, 0.90f);
-    static readonly Color SnareAccent = new Color(0.75f, 0.84f, 0.94f);
 
     static readonly Color[] Colors =
     {
@@ -70,6 +68,7 @@ public sealed class ChordPulsePrototype : MonoBehaviour
     readonly Sprite[] _enemyShapes = new Sprite[4];
     LineRenderer _core;
     LineRenderer _boundary;
+    MusicReactiveVisuals _visuals;
     ParticleSystem _shards;
     Mesh _shardMesh;
     float _arenaRadius;
@@ -101,6 +100,8 @@ public sealed class ChordPulsePrototype : MonoBehaviour
         _arenaRadius = playCamera.orthographicSize * Mathf.Min(1f, playCamera.aspect) - ArenaInset;
         _boundary = CreateRing("Arena Boundary", BoundaryColor, _arenaRadius, 0.025f);
         _boundary.sortingOrder = -1;
+        _visuals = gameObject.AddComponent<MusicReactiveVisuals>();
+        _visuals.Init(playCamera, _boundary, BoundaryColor, _arenaRadius, _ringMaterial);
         CreateShatterEffect();
 
         CreateEnemyShapes();
@@ -138,6 +139,7 @@ public sealed class ChordPulsePrototype : MonoBehaviour
         _feverCharge = 0;
         _lastHudBeat = -1;
         _wasFeverActive = false;
+        _visuals.ResetVisuals();
         _soundManager.StartMusic();
         _core.startColor = _core.endColor = Colors[0];
         UIManager.Instance.PushPanel(UIPanelType.GAME_PANEL);
@@ -150,9 +152,7 @@ public sealed class ChordPulsePrototype : MonoBehaviour
         if (!gamePanel.IsPlaying || !_gameManager.IsPlaying)
             return;
 
-        double beatPosition = _soundManager.BeatPosition;
         int beat = _soundManager.CurrentBeat;
-        AnimateArena((float)beatPosition, beat);
         // The arrangement fills in as the round gets harder; slower music later can still lower density on its own.
         _soundManager.Intensity = DifficultyLevel(_soundManager.RoundSeconds);
         int step = _soundManager.CurrentStep;
@@ -262,8 +262,10 @@ public sealed class ChordPulsePrototype : MonoBehaviour
         _groupSize++;
 
         // Difficulty follows survival time, not tempo, so calmer music sections can still be hard later on.
+        // Breath phrases (chosen by the music) are the deliberate rests: single enemies, an extra bar apart.
         int difficulty = DifficultyLevel(_soundManager.RoundSeconds);
-        int maxGroupSize = difficulty == 0 ? 2 : 3;
+        bool breath = _soundManager.IsBreath;
+        int maxGroupSize = breath ? 1 : difficulty == 0 ? 2 : 3;
         if (_groupSize < maxGroupSize && Random.value < SameColorChance)
         {
             bool halfBeat = difficulty >= 2 && Random.value < 0.45f;
@@ -272,7 +274,7 @@ public sealed class ChordPulsePrototype : MonoBehaviour
         else
         {
             _groupSize = 0;
-            _nextSpawnStep = NextDownbeat(step);
+            _nextSpawnStep = NextDownbeat(step) + (breath ? SoundManager.StepsPerBar : 0);
         }
     }
 
@@ -439,18 +441,6 @@ public sealed class ChordPulsePrototype : MonoBehaviour
         return ring;
     }
 
-    void AnimateArena(float beatPosition, int beat)
-    {
-        bool kick = beat >= 0 && SoundManager.IsKickBeat(beat);
-        float decay = kick ? 12f : 30f;
-        float impact = beat >= 0 ? Mathf.Exp(-decay * Mathf.Max(0f, beatPosition - beat)) : 0f;
-        float scale = 1f + (kick ? 0.025f * impact : 0f);
-        _boundary.transform.localScale = new Vector3(scale, scale, 1f);
-        _boundary.startWidth = _boundary.endWidth = 0.025f + (kick ? 0.025f : 0.012f) * impact;
-        _boundary.startColor = _boundary.endColor =
-            Color.Lerp(BoundaryColor, kick ? KickAccent : SnareAccent, impact);
-    }
-
     static void DrawCircle(LineRenderer ring, float radius)
     {
         for (int i = 0; i < CircleSegments; i++)
@@ -532,7 +522,7 @@ public sealed class ChordPulsePrototype : MonoBehaviour
             : $"Fever: {_feverCharge}/{FeverThreshold}";
         gamePanel.SetStatus(fever ? "All colors" : ColorNames[_selectedColor],
             fever ? Color.white : Colors[_selectedColor], _hits, _health, MaxHealth,
-            $"{_soundManager.CurrentBpm} BPM     {feverText}");
+            $"{_soundManager.CurrentBpm} BPM{(_soundManager.IsBreath ? "  ~breathe~" : "")}     {feverText}");
     }
 
     void OnDestroy()
