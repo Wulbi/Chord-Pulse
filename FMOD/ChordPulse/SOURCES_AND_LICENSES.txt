@@ -1,0 +1,154 @@
+﻿Chord Pulse - Audio sample sources and licenses
+확인일: 2026-11-23 (Asia/Seoul)
+제작자: Audio Tools / Digital Hub
+원본 배포 페이지: https://audiotools.com.ar/samplepack/
+라이선스: CC0 1.0 Universal
+공식 설명: https://creativecommons.org/publicdomain/zero/1.0/
+전문: https://creativecommons.org/publicdomain/zero/1.0/legalcode
+확인 근거: 배포 페이지 License 절 및 각 ZIP의 README.txt. 원본 README 3개를 함께 보존했습니다.
+CC0는 상업적 이용, 수정, 원본 복제 및 재배포를 허용하므로 공개 GitHub 저장소에 포함할 수 있습니다.
+사이트 소프트웨어의 AGPL과 샘플의 CC0는 별개입니다.
+원본 WAV는 자르기, 정규화, 리샘플링 없이 그대로 복사했습니다.
+상태: 임포트 후보. 청음 및 실측 튜닝 검증 전이며 게임 재생 코드는 연결하지 않았습니다.
+기준음은 제작자 파일명 기준이며 옥타브 표기 관례와 실측 피치는 검증 전입니다.
+임포트 목표: PCM, Decompress On Load, Preload Audio Data ON, Load In Background OFF, Preserve Sample Rate, Force To Mono OFF.
+
+다운로드한 팩 (프로젝트에는 아래 12개 원샷만 포함):
+https://audiotools.com.ar/downloads/AudioTools-SamplePack-AT101V.zip
+ZIP SHA-256: 23738b9ebbbbee8276cee4fd58b2ab2ead9909422d9eae1e6b6a9c591c570ce3
+https://audiotools.com.ar/downloads/AudioTools-SamplePack-ATMD.zip
+ZIP SHA-256: 21ebbee036b94a2cad175c8eaae68a2805570d3c9a1ea70f10f329229ed79db6
+https://audiotools.com.ar/downloads/AudioTools-SamplePack-Pallor.zip
+ZIP SHA-256: dca381f13b2bdc0ca535fa08f9caf864cf71e0eed8f2645416e555d1935f4d09
+
+Drums/Pallor_Kick_Synthpop_v115.wav
+제작자: Audio Tools (Digital Hub)
+팩: Pallor
+출처: https://audiotools.com.ar/downloads/AudioTools-SamplePack-Pallor.zip
+라이선스: CC0-1.0; 근거: Pallor-ORIGINAL-README.txt
+기준음: 미지정 / 드럼
+용도: Kick
+형식: 44100 Hz / 24-bit / 2 channels / 0.355306 sec
+가공: 없음
+SHA-256: ffb372ef65a2239aeca153732a88932aa8384d66cb1a4df2eed05a03dec69ae0
+
+Drums/Pallor_Snare_Synthpop_v115.wav
+제작자: Audio Tools (Digital Hub)
+팩: Pallor
+출처: https://audiotools.com.ar/downloads/AudioTools-SamplePack-Pallor.zip
+라이선스: CC0-1.0; 근거: Pallor-ORIGINAL-README.txt
+기준음: 미지정 / 드럼
+용도: Snare
+형식: 44100 Hz / 24-bit / 2 channels / 0.601905 sec
+가공: 없음
+SHA-256: 2a860bd2e8ab3bb942f0672c053acc21da7038ebc231d3f21dec39a699b70885
+
+Drums/Pallor_Clap_Synthpop_v110.wav
+제작자: Audio Tools (Digital Hub)
+팩: Pallor
+출처: https://audiotools.com.ar/downloads/AudioTools-SamplePack-Pallor.zip
+라이선스: CC0-1.0; 근거: Pallor-ORIGINAL-README.txt
+기준음: 미지정 / 드럼
+용도: Clap
+형식: 44100 Hz / 24-bit / 2 channels / 0.614966 sec
+가공: 없음
+SHA-256: 166910b7a33488215549ad031e7634c0a322af77cb1e803c8674686143f7f703
+
+Drums/Pallor_ClosedHat_Synthpop_v110.wav
+제작자: Audio Tools (Digital Hub)
+팩: Pallor
+출처: https://audiotools.com.ar/downloads/AudioTools-SamplePack-Pallor.zip
+라이선스: CC0-1.0; 근거: Pallor-ORIGINAL-README.txt
+기준음: 미지정 / 드럼
+용도: Closed hi-hat
+형식: 44100 Hz / 24-bit / 2 channels / 0.12 sec
+가공: 없음
+SHA-256: c8b82ef78694cd38ff8978ebadfb4744ee7df72f825ce1ffead49f7066013435
+
+Drums/Pallor_OpenHat_Synthpop_v110.wav
+제작자: Audio Tools (Digital Hub)
+팩: Pallor
+출처: https://audiotools.com.ar/downloads/AudioTools-SamplePack-Pallor.zip
+라이선스: CC0-1.0; 근거: Pallor-ORIGINAL-README.txt
+기준음: 미지정 / 드럼
+용도: Open hi-hat
+형식: 44100 Hz / 24-bit / 2 channels / 0.791474 sec
+가공: 없음
+SHA-256: f394e3d4cc359a23adb85f5c510d2a764322662f5c75cfae4015320cf7c4ab12
+
+Drums/Pallor_Shaker_Synthpop_v110.wav
+제작자: Audio Tools (Digital Hub)
+팩: Pallor
+출처: https://audiotools.com.ar/downloads/AudioTools-SamplePack-Pallor.zip
+라이선스: CC0-1.0; 근거: Pallor-ORIGINAL-README.txt
+기준음: 미지정 / 드럼
+용도: Percussion
+형식: 44100 Hz / 24-bit / 2 channels / 0.282426 sec
+가공: 없음
+SHA-256: 1410ae0b50a3d0b51fecd95d443453a730876bcc0d3f9ce1f71916efe0b5575f
+
+Bass/AT101V_101Bass_C2_v100.wav
+제작자: Audio Tools (Digital Hub)
+팩: AT101V
+출처: https://audiotools.com.ar/downloads/AudioTools-SamplePack-AT101V.zip
+라이선스: CC0-1.0; 근거: AT101V-ORIGINAL-README.txt
+기준음: C2
+용도: Bass
+형식: 44100 Hz / 24-bit / 2 channels / 1.7 sec
+가공: 없음
+SHA-256: a348f29c71e0c5e9f47623811216240baa33d208dd00255a8ed802e39741eae4
+
+Bass/AT101V_PulseBass_C2_v100.wav
+제작자: Audio Tools (Digital Hub)
+팩: AT101V
+출처: https://audiotools.com.ar/downloads/AudioTools-SamplePack-AT101V.zip
+라이선스: CC0-1.0; 근거: AT101V-ORIGINAL-README.txt
+기준음: C2
+용도: Bass alternative
+형식: 44100 Hz / 24-bit / 2 channels / 0.834875 sec
+가공: 없음
+SHA-256: d905bc3d405996395eb627056fdee553be3c346d3b178f1d832bb6c2d34b129a
+
+Lead/AT101V_ClassicLead_C4_v100.wav
+제작자: Audio Tools (Digital Hub)
+팩: AT101V
+출처: https://audiotools.com.ar/downloads/AudioTools-SamplePack-AT101V.zip
+라이선스: CC0-1.0; 근거: AT101V-ORIGINAL-README.txt
+기준음: C4
+용도: Lead
+형식: 44100 Hz / 24-bit / 2 channels / 2.5 sec
+가공: 없음
+SHA-256: cd3b699b8c5d3556561ee80516a4b67355997ad54f2cb8ca4b106d5c508a1080
+
+Lead/ATMD_LuckyLead_E4_v100.wav
+제작자: Audio Tools (Digital Hub)
+팩: ATMD
+출처: https://audiotools.com.ar/downloads/AudioTools-SamplePack-ATMD.zip
+라이선스: CC0-1.0; 근거: ATMD-ORIGINAL-README.txt
+기준음: E4
+용도: Fever lead candidate
+형식: 44100 Hz / 24-bit / 2 channels / 2.5 sec
+가공: 없음
+SHA-256: dc2d6ce82e186de3aed76da650ecf7f731e15c810c9dda3fb236e9a5c5551294
+
+Pluck/AT101V_PolyPluck_C3_v100.wav
+제작자: Audio Tools (Digital Hub)
+팩: AT101V
+출처: https://audiotools.com.ar/downloads/AudioTools-SamplePack-AT101V.zip
+라이선스: CC0-1.0; 근거: AT101V-ORIGINAL-README.txt
+기준음: C3
+용도: Kill chord / arpeggio
+형식: 44100 Hz / 24-bit / 2 channels / 1.8 sec
+가공: 없음
+SHA-256: 67dfc984074bab80771d4f0a90437177a5ec0a60adb8908e7656b463ef661feb
+
+Pluck/AT101V_PolyPluck_C4_v100.wav
+제작자: Audio Tools (Digital Hub)
+팩: AT101V
+출처: https://audiotools.com.ar/downloads/AudioTools-SamplePack-AT101V.zip
+라이선스: CC0-1.0; 근거: AT101V-ORIGINAL-README.txt
+기준음: C4
+용도: Kill chord / arpeggio
+형식: 44100 Hz / 24-bit / 2 channels / 1.8 sec
+가공: 없음
+SHA-256: 2a476ab7247e99056b7f6fd52cd3c6033339342251213d061ddb05700034c157

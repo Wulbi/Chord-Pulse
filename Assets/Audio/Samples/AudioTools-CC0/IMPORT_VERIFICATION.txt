@@ -1,0 +1,16 @@
+Unity audio import verification
+Project: D:/GitHub/Chord-Pulse
+Unity: 6000.3.25f1
+Assets/Audio/Samples/AudioTools-CC0/Bass/AT101V_101Bass_C2_v100.wav | 1.7 sec | 44100 Hz | stereo | PCM | DecompressOnLoad | Preload ON
+Assets/Audio/Samples/AudioTools-CC0/Bass/AT101V_PulseBass_C2_v100.wav | 0.8348753 sec | 44100 Hz | stereo | PCM | DecompressOnLoad | Preload ON
+Assets/Audio/Samples/AudioTools-CC0/Drums/Pallor_Clap_Synthpop_v110.wav | 0.614966 sec | 44100 Hz | stereo | PCM | DecompressOnLoad | Preload ON
+Assets/Audio/Samples/AudioTools-CC0/Drums/Pallor_ClosedHat_Synthpop_v110.wav | 0.12 sec | 44100 Hz | stereo | PCM | DecompressOnLoad | Preload ON
+Assets/Audio/Samples/AudioTools-CC0/Drums/Pallor_Kick_Synthpop_v115.wav | 0.3553061 sec | 44100 Hz | stereo | PCM | DecompressOnLoad | Preload ON
+Assets/Audio/Samples/AudioTools-CC0/Drums/Pallor_OpenHat_Synthpop_v110.wav | 0.7914739 sec | 44100 Hz | stereo | PCM | DecompressOnLoad | Preload ON
+Assets/Audio/Samples/AudioTools-CC0/Drums/Pallor_Shaker_Synthpop_v110.wav | 0.2824263 sec | 44100 Hz | stereo | PCM | DecompressOnLoad | Preload ON
+Assets/Audio/Samples/AudioTools-CC0/Drums/Pallor_Snare_Synthpop_v115.wav | 0.6019047 sec | 44100 Hz | stereo | PCM | DecompressOnLoad | Preload ON
+Assets/Audio/Samples/AudioTools-CC0/Lead/AT101V_ClassicLead_C4_v100.wav | 2.5 sec | 44100 Hz | stereo | PCM | DecompressOnLoad | Preload ON
+Assets/Audio/Samples/AudioTools-CC0/Lead/ATMD_LuckyLead_E4_v100.wav | 2.5 sec | 44100 Hz | stereo | PCM | DecompressOnLoad | Preload ON
+Assets/Audio/Samples/AudioTools-CC0/Pluck/AT101V_PolyPluck_C3_v100.wav | 1.8 sec | 44100 Hz | stereo | PCM | DecompressOnLoad | Preload ON
+Assets/Audio/Samples/AudioTools-CC0/Pluck/AT101V_PolyPluck_C4_v100.wav | 1.8 sec | 44100 Hz | stereo | PCM | DecompressOnLoad | Preload ON
+PASS: 12 imported clips. Audition and gameplay integration pending.

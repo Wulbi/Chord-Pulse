@@ -1,0 +1,5 @@
+{b546ed08-0746-4732-8d95-f62ca5e6d13e} bank:/ChordPulse
+{2d5bcddc-763d-0b70-0bdc-7cd25415d7a6} bank:/ChordPulse.strings
+{af9d027a-3a1f-49a8-a9ef-4cbe20673632} bus:/
+{21218e09-b2a2-4e64-a918-319d65fe08b2} event:/Music/ChordPulsePreview
+{3ada5bed-631d-4484-83b9-b5fd25f20dd4} parameter:/Fever
