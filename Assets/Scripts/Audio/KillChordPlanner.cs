@@ -123,15 +123,26 @@ public sealed class KillChordPlanner
 
     /// <summary>
     /// The bed state changed for beats from <paramref name="fromBeat"/> on (fever was queued): re-reads it for every
-    /// still-open beat there and outputs that beat's complete note list. The caller cancels the old notes first
-    /// (<c>CancelFrom(fromBeat, planner)</c>) and schedules everything in <paramref name="into"/>.
+    /// open beat there and outputs that beat's complete note list. Returns the first beat that can be restated; the
+    /// caller then cancels the old notes with <c>CancelFrom(returned, planner)</c> and schedules everything in
+    /// <paramref name="into"/>.
+    /// Only beats at least <see cref="ChordLeadBeats"/> ahead of <paramref name="nowBeat"/> are touched (the lead a fresh
+    /// kill needs): a nearer beat may already have notes that started (their onset is shifted before the beat), and
+    /// CancelFrom keeps those, so re-emitting the full chord could double them. Nearer beats keep their old voicing
+    /// and their already-scheduled notes.
     /// </summary>
-    public void Restate(int fromBeat, IKillBedState bed, List<OneShotNote> into)
+    public int Restate(double nowBeat, int fromBeat, IKillBedState bed, List<OneShotNote> into)
     {
+        _lastChordStep = Math.Max(_lastChordStep, (int)Math.Floor(nowBeat) * StepsPerBeat);
+        int first = fromBeat;
+        if (first - nowBeat < ChordLeadBeats)
+            first = (int)Math.Ceiling(nowBeat + ChordLeadBeats);
+        while (first - nowBeat < ChordLeadBeats)
+            first++;
         foreach (var pair in _beats)
         {
             int beat = pair.Key;
-            if (beat < fromBeat || beat * StepsPerBeat <= _lastChordStep)
+            if (beat < first || beat * StepsPerBeat <= _lastChordStep)
                 continue;
             var chord = pair.Value;
             ReadState(chord, beat, bed);
@@ -146,6 +157,7 @@ public sealed class KillChordPlanner
                     into.Add(ToOneShot(note, beat));
             }
         }
+        return first;
     }
 
     /// <summary>Forgets beats that ended more than a beat ago.</summary>

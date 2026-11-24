@@ -376,11 +376,14 @@ public sealed class SoundManager : SingletonBehaviour<SoundManager>, IKillBedSta
         _feverStart = feverStart;
 
         // Kill beats already queued from the build-up bar on were voiced for the old bed; re-voice them as fever's sound.
-        int buildBeat = (feverStart - FeverBuildSteps) / StepsPerBeat;
-        KillScheduler.CancelFrom(buildBeat, _killPlanner);
-        _killNotes.Clear();
-        _killPlanner.Restate(buildBeat, this, _killNotes);
-        ScheduleKillNotes();
+        if (_conductor.Clock.BeatAt(MusicConductor.MasterDsp(), out double nowBeat))
+        {
+            int buildBeat = (feverStart - FeverBuildSteps) / StepsPerBeat;
+            _killNotes.Clear();
+            int firstBeat = _killPlanner.Restate(nowBeat, buildBeat, this, _killNotes);
+            KillScheduler.CancelFrom(firstBeat, _killPlanner); // exactly the beats Restate re-emitted
+            ScheduleKillNotes();
+        }
 
         // The guest loop already picked for the next phrase would either be silenced by fever or still be playing
         // in the build-up bar, so drop it. FeatureSelector will not pick another one until fever is over.
