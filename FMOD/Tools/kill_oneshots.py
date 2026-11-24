@@ -4,7 +4,7 @@ timeline notes; now Unity schedules them as one-shots of the shared instrument e
 
 Registers every note a kill chord can play with the instrument library (LAYERS in instruments.py) and writes
 Assets/Scripts/Audio/Generated/KillChordTable.g.cs and kill_oneshots.js (the FMOD project step that removes the old
-timeline kill chords and sets up the kill-chord mixing; see the comment above JS_PATH). Run
+timeline kill chords; the kill-chord mixing is in mixer.py; see the comment above JS_PATH). Run
 `python FMOD/Tools/instruments.py` (it calls register() and also writes both files); running this file alone rewrites
 only the table and the .js.
 
@@ -130,51 +130,39 @@ def cs_text():
     return "\n".join(L)
 
 
+def write_if_different(path, text):
+    """Writes only when the content changed (a second run leaves the file and its mtime alone)."""
+    old = None
+    if os.path.exists(path):
+        with open(path, "r", encoding="utf-8", newline="") as f:
+            old = f.read()
+    if old == text:
+        return False
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    with open(path, "w", encoding="utf-8", newline="\n") as f:
+        f.write(text)
+    return True
+
+
 def write_table():
-    os.makedirs(os.path.dirname(CS_PATH), exist_ok=True)
-    with open(CS_PATH, "w", encoding="utf-8", newline="\n") as f:
-        f.write(cs_text())
+    write_if_different(CS_PATH, cs_text())
 
 
-# --- FMOD project step: kill_oneshots.js (run after instruments.js) ---------------------------------------------------
-# Removes the old timeline kill chords from the music event and moves their mixing to the global mixer:
-#   - deletes the Red/Blue/Yellow kill chord tracks, leftover Kill combo/punch/<style> tracks, the in-event "Kill Chords"
-#     group, and the RedKills/BlueKills/YellowKills, *KillsEven/Odd and KillChordMix parameters (only if present);
-#   - bus:/Kill Chords gets the in-event group's chain: Sidechain (ducking key), compressor, limiter, and a fader at the
-#     music event master's level (the old kill chords went through it). KillChordMix is now Unity's bus setVolume.
-#   - Ducking: a sidechain from bus:/Kill Chords into a compressor INSIDE the music event never engages at runtime
-#     (Task 3), so the ducked groups leave the event through a pre-fader send to a mixer return that holds the
-#     kill-keyed compressor. Return buses can only be automated by global parameters, and MusicMix / Danger / Hurt are
-#     event parameters, so the Music Bed processing Harmony used to get (MusicMix volume, Danger low-pass, Hurt EQ and
-#     gain) is copied into the Harmony group itself, before the send (same curves, read from Music Bed).
-#       Harmony: [compressor keyed by Feature, low-pass, 3-EQ, gain (Hurt), gain (MusicMix), send 0 dB, fader -80]
-#                -> return:/Harmony Duck [compressor keyed by bus:/Kill Chords, fader = event master]
-#       Feature: [Sidechain (keys the Harmony compressor), send 0 dB, fader -80]
-#                -> return:/Feature Duck [compressor keyed by bus:/Kill Chords, reverb, limiter, fader = event master]
+# --- FMOD project step: kill_oneshots.js (run after mixer.js) ------------------------------------------------------
+# Removes what is left of the old timeline kill chords in the music event: the Red/Blue/Yellow kill chord tracks,
+# leftover Kill combo/punch/<style> tracks, the in-event "Kill Chords" group, and the RedKills/BlueKills/YellowKills,
+# *KillsEven/Odd and KillChordMix parameters (only if present; KillChordMix is now Unity's bus setVolume).
+# The kill-chord mixing (bus:/Kill Chords chain, ducking of Harmony and Feature) moved to mixer.py.
 # Idempotent. Run with FMOD Studio closed, then build as a SEPARATE command (the CLI can crash after saving):
 #     fmodstudiocl.exe -script FMOD/Tools/kill_oneshots.js FMOD/ChordPulse/ChordPulse.fspro
 #     fmodstudiocl.exe -build FMOD/ChordPulse/ChordPulse.fspro
 JS_PATH = os.path.join(HERE, "kill_oneshots.js")
-MIX = {
-    "eventMasterDb": -8.0,   # music event master volume; the old in-event kill chords and groups went through it
-    "killCompressor": {"threshold": -20, "ratio": 3, "attackTime": 3, "releaseTime": 120, "gain": 2},
-    "killLimiter": {"ceiling": -3, "release": 40},
-    # Was -32 / 4:1 / 5 / 180 in the event. The one-shot chords ring their full length (0.78 beat + 120 ms fade, not
-    # ~0.36 beat), so that ducked Harmony by 11-15 dB for ~1 s; retuned on the duck capture to ~3.5 dB, back within
-    # 1 dB when the chord's fade ends (Docs/Captures/README.md, Task 6 fix round 1).
-    "harmonyDuck": {"threshold": -20, "ratio": 2, "attackTime": 5, "releaseTime": 60},
-    "featureDuck": {"threshold": -24, "ratio": 3, "attackTime": 3, "releaseTime": 140},
-    "featureReverb": {"decayTime": 900, "earlyDelay": 10, "lateDelay": 20, "highCut": 6000, "wetLevel": -14, "dryLevel": 0},
-    "featureLimiter": {"ceiling": -4, "release": 30},
-    "mutedFaderDb": -80.0,
-}
 OLD_TRACKS = ["Red kill chord", "Blue kill chord", "Yellow kill chord"]
 OLD_TRACK_PATTERN = r"^Kill (combo|punch|latin|funk|dreamy)$"
 OLD_PARAMETERS = [c + s for c in COLORS for s in ("Kills", "KillsEven", "KillsOdd")] + ["KillChordMix"]
 
 JS_TEMPLATE = r"""// Generated by FMOD/Tools/kill_oneshots.py - edit the Python file, not this one.
-// Kill chords as Unity one-shots: removes the timeline kill chords and moves their mixing to the global mixer.
-var MIX = __MIX__;
+// Kill chords as Unity one-shots: removes what is left of the timeline kill chords (mixing: mixer.js).
 var OLD_TRACKS = __OLD_TRACKS__;
 var OLD_TRACK_PATTERN = new RegExp(__OLD_PATTERN__);
 var OLD_PARAMETERS = __OLD_PARAMETERS__;
@@ -183,163 +171,22 @@ function log(m) { console.log("[kill-oneshots] " + m); }
 var project = studio.project;
 var ev = project.lookup("event:/Music/ChordPulseGame");
 if (!ev) throw "event:/Music/ChordPulseGame not found";
-var killBus = project.lookup("bus:/Kill Chords");
-if (!killBus) throw "bus:/Kill Chords not found - run instruments.js first";
 
 function countNotes() { var n = 0; ev.groupTracks.forEach(function (t) { n += t.modules.length; }); return n; }
-function group(name) {
-    var found = null;
-    ev.groupTracks.forEach(function (t) { if (t.mixerGroup.name === name) found = t; });
-    return found;
-}
-function set(obj, values) { for (var k in values) obj[k] = values[k]; }
-function effectsOf(bus, entity) { return bus.effectChain.effects.filter(function (e) { return e.entity === entity; }); }
-function fader(bus) { return effectsOf(bus, "MixerBusFader")[0]; }
-// Adds an effect right before the bus fader (addEffect alone appends after it, i.e. post-fader).
-function addPreFader(bus, entity) {
-    var chain = bus.effectChain;
-    var e = chain.addEffect(entity);
-    chain.relationships.effects.remove(e);
-    var at = -1, f = fader(bus);
-    chain.effects.forEach(function (x, i) { if (x.id === f.id) at = i; });
-    chain.relationships.effects.insert(at, e);
-    return e;
-}
-function removeEffects(bus, keep) {
-    bus.effectChain.effects.slice().forEach(function (e) {
-        if (e.entity !== "MixerBusFader" && !keep(e)) project.deleteObject(e);
-    });
-}
-function automationOf(owner, property) {
-    var points = null, preset = null;
-    owner.automators.forEach(function (a) {
-        if (a.nameOfPropertyBeingAutomated !== property) return;
-        a.automationCurves.forEach(function (c) {
-            preset = c.parameter;
-            points = c.automationPoints.map(function (p) {
-                return { position: p.position, value: p.value, curveShape: p.curveShape, isSCurve: p.isSCurve };
-            });
-        });
-    });
-    if (!points) throw "no automation of " + property;
-    return { parameter: preset, points: points };
-}
-function automate(owner, property, source) {
-    var curve = owner.addAutomator(property).addAutomationCurve(source.parameter);
-    source.points.forEach(function (p) {
-        var pt = curve.addAutomationPoint(p.position, p.value);
-        if (pt) { pt.curveShape = p.curveShape; pt.isSCurve = p.isSCurve; }
-    });
-}
-function automatedBy(e, name) {
-    var hit = false;
-    e.automators.forEach(function (a) {
-        a.automationCurves.forEach(function (c) { if (c.parameter && c.parameter.presetOwner && c.parameter.presetOwner.name === name) hit = true; });
-    });
-    return hit;
-}
-function mixerReturn(name) {
-    var found = null;
-    project.model.MixerReturn.findInstances().forEach(function (r) { if (r.isValid && r.name === name) found = r; });
-    if (!found) {
-        found = project.create("MixerReturn");
-        found.name = name;
-        found.output = project.workspace.mixer.masterBus;
-        log("created return " + name);
-    }
-    return found;
-}
-
 var notesBefore = countNotes();
 
-// --- 1. old timeline kill chords ---
+// --- 1. old timeline kill chords and the in-event Kill Chords group (it only fed them) ---
 var removed = [];
 ev.groupTracks.slice().forEach(function (t) {
     var n = t.mixerGroup.name;
-    if (OLD_TRACKS.indexOf(n) >= 0 || OLD_TRACK_PATTERN.test(n)) {
+    if (OLD_TRACKS.indexOf(n) >= 0 || OLD_TRACK_PATTERN.test(n) || n === "Kill Chords") {
         removed.push(n + " (" + t.modules.length + ")");
         project.deleteObject(t);
     }
 });
 log("removed tracks: " + (removed.join(", ") || "none"));
 
-// --- 2. bus:/Kill Chords: key, compressor, limiter, event-master level ---
-removeEffects(killBus, function () { return false; });
-var killKey = addPreFader(killBus, "Sidechain");
-set(addPreFader(killBus, "CompressorEffect"), MIX.killCompressor);
-set(addPreFader(killBus, "LimiterEffect"), MIX.killLimiter);
-killBus.volume = MIX.eventMasterDb;
-log("bus:/Kill Chords: " + killBus.effectChain.effects.map(function (e) { return e.entity; }).join(", ") + ", volume " + killBus.volume);
-
-// --- 3. the in-event Kill Chords group (only fed the removed tracks) ---
-var oldKill = group("Kill Chords");
-var oldKey = oldKill ? effectsOf(oldKill.mixerGroup, "Sidechain")[0] : null;
-var harmony = group("Harmony").mixerGroup;
-var feature = group("Feature").mixerGroup;
-var musicBed = group("Music Bed").mixerGroup;
-var harmonyComp = effectsOf(harmony, "CompressorEffect")[0];
-if (!harmonyComp) throw "Harmony compressor not found";
-if (oldKey) harmonyComp.relationships.sidechains.remove(oldKey);
-
-// --- 4. Harmony: Music Bed processing copied in, pre-fader send to return:/Harmony Duck ---
-var danger = null, hurtEq = null, hurtGain = null;
-musicBed.effectChain.effects.forEach(function (e) {
-    if (e.entity === "LowpassEffect" && automatedBy(e, "Danger")) danger = e;
-    if (e.entity === "ThreeEQEffect" && automatedBy(e, "Hurt")) hurtEq = e;
-    if (e.entity === "GainEffect" && automatedBy(e, "Hurt")) hurtGain = e;
-});
-if (!danger || !hurtEq || !hurtGain) throw "Music Bed Danger/Hurt effects not found";
-removeEffects(harmony, function (e) { return e.id === harmonyComp.id; });
-var lp = addPreFader(harmony, "LowpassEffect");
-lp.cutoff = danger.cutoff; lp.resonance = danger.resonance;
-automate(lp, "cutoff", automationOf(danger, "cutoff"));
-var eq = addPreFader(harmony, "ThreeEQEffect");
-["lowGain", "midGain", "highGain", "lowCrossover", "highCrossover", "crossoverSlope"].forEach(function (k) { eq[k] = hurtEq[k]; });
-automate(eq, "lowGain", automationOf(hurtEq, "lowGain"));
-var hg = addPreFader(harmony, "GainEffect");
-automate(hg, "gain", automationOf(hurtGain, "gain"));
-var mix = addPreFader(harmony, "GainEffect");
-automate(mix, "gain", automationOf(musicBed, "volume"));
-var harmonyDuck = mixerReturn("Harmony Duck");
-var hSend = addPreFader(harmony, "MixerSend");
-hSend.mixerReturn = harmonyDuck;
-hSend.level = 0;
-harmony.volume = MIX.mutedFaderDb;
-removeEffects(harmonyDuck, function () { return false; });
-var hDuck = addPreFader(harmonyDuck, "CompressorEffect");
-set(hDuck, MIX.harmonyDuck);
-hDuck.relationships.sidechains.add(killKey);
-harmonyDuck.volume = MIX.eventMasterDb;
-log("Harmony: " + harmony.effectChain.effects.map(function (e) { return e.entity; }).join(", ") + ", volume " + harmony.volume);
-
-// --- 5. Feature: keeps its key for Harmony, everything else moves to return:/Feature Duck ---
-var featureKey = effectsOf(feature, "Sidechain")[0];
-if (!featureKey) throw "Feature sidechain not found";
-removeEffects(feature, function (e) { return e.id === featureKey.id; });
-// the key goes before the fader (it used to sit after the fader, which was at 0 dB)
-feature.effectChain.relationships.effects.remove(featureKey);
-var fAt = -1, ff = fader(feature);
-feature.effectChain.effects.forEach(function (x, i) { if (x.id === ff.id) fAt = i; });
-feature.effectChain.relationships.effects.insert(fAt, featureKey);
-var featureDuck = mixerReturn("Feature Duck");
-var fSend = addPreFader(feature, "MixerSend");
-fSend.mixerReturn = featureDuck;
-fSend.level = 0;
-feature.volume = MIX.mutedFaderDb;
-removeEffects(featureDuck, function () { return false; });
-var fDuck = addPreFader(featureDuck, "CompressorEffect");
-set(fDuck, MIX.featureDuck);
-fDuck.relationships.sidechains.add(killKey);
-set(addPreFader(featureDuck, "SFXReverbEffect"), MIX.featureReverb);
-set(addPreFader(featureDuck, "LimiterEffect"), MIX.featureLimiter);
-featureDuck.volume = MIX.eventMasterDb;
-log("Feature: " + feature.effectChain.effects.map(function (e) { return e.entity; }).join(", ") + "; Feature Duck: " +
-    featureDuck.effectChain.effects.map(function (e) { return e.entity; }).join(", "));
-log("Harmony Duck: " + harmonyDuck.effectChain.effects.map(function (e) { return e.entity; }).join(", "));
-
-if (oldKill) { project.deleteObject(oldKill); log("removed the in-event Kill Chords group"); }
-
-// --- 6. parameters ---
+// --- 2. parameters ---
 var gone = [];
 OLD_PARAMETERS.forEach(function (name) {
     var preset = null;
@@ -352,25 +199,19 @@ OLD_PARAMETERS.forEach(function (name) {
     gone.push(name);
 });
 log("removed parameters: " + (gone.join(", ") || "none"));
-
-log("Harmony compressor keys: " + harmonyComp.sidechains.map(function (k) {
-    return (k.id === featureKey.id ? "Feature" : k.id) + (k.isValid ? "" : " (invalid)"); }).join(", "));
 log("notes in event: " + notesBefore + " -> " + countNotes());
-project.save();
-log("saved");
+if (removed.length || gone.length) { project.save(); log("saved"); } else log("nothing to do");
 """
 
 
 def js_text():
-    return (JS_TEMPLATE.replace("__MIX__", json.dumps(MIX))
-            .replace("__OLD_TRACKS__", json.dumps(OLD_TRACKS))
+    return (JS_TEMPLATE.replace("__OLD_TRACKS__", json.dumps(OLD_TRACKS))
             .replace("__OLD_PATTERN__", json.dumps(OLD_TRACK_PATTERN))
             .replace("__OLD_PARAMETERS__", json.dumps(OLD_PARAMETERS)))
 
 
 def write_js():
-    with open(JS_PATH, "w", encoding="utf-8", newline="\n") as f:
-        f.write(js_text())
+    write_if_different(JS_PATH, js_text())
 
 
 if __name__ == "__main__":

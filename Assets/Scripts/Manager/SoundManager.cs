@@ -212,8 +212,9 @@ public sealed class SoundManager : SingletonBehaviour<SoundManager>, IKillBedSta
     bool IsFeverStep(int step) =>
         _feverStart >= 0 && step >= _feverStart && step < _feverStart + FeverSteps;
 
-    // Return buses that keep ringing (reverb tails) after the music event is stopped; muted by StopMusic, unmuted before the next start.
-    static readonly string[] TailBuses = { "bus:/Feature Duck" };
+    // Buses that keep ringing (reverb tails) after the music event is stopped; muted by StopMusic, unmuted before the next
+    // start. Since FMOD/Tools/mixer.py the feature reverb is on bus:/Feature (return:/Feature Duck only routes into it).
+    static readonly string[] TailBuses = { "bus:/Feature", "bus:/Music Bed/Harmony" };
 
     // A bus the loaded banks do not have, or FMOD shutting down, is not an error: the lookup throws and is ignored.
     static void MuteTailBuses(bool mute)
@@ -750,10 +751,16 @@ public sealed class SoundManager : SingletonBehaviour<SoundManager>, IKillBedSta
     /// <summary>Raised after every music-event parameter write that FMOD accepted (capture / diagnostics).</summary>
     public event Action<string, float> MusicParameterSet;
 
+    static readonly string[] GlobalMusicParameters = { "Tension", "Danger", "Hurt" };
+
     /// <summary>The one place the music event's parameters are written.</summary>
     FMOD.RESULT SetMusicParameter(string name, float value, bool ignoreSeek = false)
     {
         var result = _music.setParameterByName(name, value, ignoreSeek);
+        // Tension / Danger / Hurt are global since FMOD/Tools/mixer.py (they also drive bus effects): the event rejects
+        // them with ERR_INVALID_PARAM, the Studio system takes them. Banks built before that keep the event write.
+        if (result == FMOD.RESULT.ERR_INVALID_PARAM && Array.IndexOf(GlobalMusicParameters, name) >= 0)
+            result = RuntimeManager.StudioSystem.setParameterByName(name, value, ignoreSeek);
         if (result == FMOD.RESULT.OK)
             MusicParameterSet?.Invoke(name, value);
         return result;

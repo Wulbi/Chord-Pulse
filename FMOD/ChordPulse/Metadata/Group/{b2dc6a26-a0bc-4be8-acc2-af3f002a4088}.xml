@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<objects serializationModel="Studio.02.02.00">
+	<object class="MixerGroup" id="{b2dc6a26-a0bc-4be8-acc2-af3f002a4088}">
+		<property name="volume">
+			<value>-8</value>
+		</property>
+		<property name="name">
+			<value>Harmony</value>
+		</property>
+		<relationship name="effectChain">
+			<destination>{8e7f3861-d598-4fe3-b665-9ea5afa0657c}</destination>
+		</relationship>
+		<relationship name="panner">
+			<destination>{a4b04cd1-e9f9-4e4a-a1b7-7f939a0db4ea}</destination>
+		</relationship>
+		<relationship name="output">
+			<destination>{47ca9e00-e730-4837-8a9d-c8960dce4c1f}</destination>
+		</relationship>
+	</object>
+	<object class="MixerBusEffectChain" id="{8e7f3861-d598-4fe3-b665-9ea5afa0657c}">
+		<relationship name="effects">
+			<destination>{cdb10f85-bd4d-487c-abc7-b8d94d090807}</destination>
+			<destination>{31548f54-4cab-4982-a37b-ed97d7fce882}</destination>
+			<destination>{7dfb5e3d-012f-4b26-a6ce-2fbecc3f4014}</destination>
+		</relationship>
+	</object>
+	<object class="MixerBusPanner" id="{a4b04cd1-e9f9-4e4a-a1b7-7f939a0db4ea}" />
+	<object class="CompressorEffect" id="{cdb10f85-bd4d-487c-abc7-b8d94d090807}">
+		<property name="threshold">
+			<value>-32</value>
+		</property>
+		<property name="ratio">
+			<value>4</value>
+		</property>
+		<property name="attackTime">
+			<value>5</value>
+		</property>
+		<property name="releaseTime">
+			<value>180</value>
+		</property>
+		<relationship name="sidechains">
+			<destination>{42bd7ed5-96bb-4034-bda3-728dc4726025}</destination>
+		</relationship>
+	</object>
+	<object class="CompressorEffect" id="{31548f54-4cab-4982-a37b-ed97d7fce882}">
+		<property name="threshold">
+			<value>-20</value>
+		</property>
+		<property name="ratio">
+			<value>2</value>
+		</property>
+		<property name="attackTime">
+			<value>5</value>
+		</property>
+		<property name="releaseTime">
+			<value>60</value>
+		</property>
+		<relationship name="sidechains">
+			<destination>{43939973-8e91-4e0f-a9ac-78be015ed88e}</destination>
+		</relationship>
+	</object>
+	<object class="MixerBusFader" id="{7dfb5e3d-012f-4b26-a6ce-2fbecc3f4014}" />
+</objects>

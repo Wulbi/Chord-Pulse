@@ -19,14 +19,30 @@ public enum Instrument
     Vibes,
 }
 
-/// <summary>Mixer bus an instrument event plays through (bus:/<name>).</summary>
+/// <summary>Global mixer bus an instrument event plays through (path: InstrumentTable.BusPath).</summary>
 public enum OutputBus
 {
     KillChords,
+    MusicBed,
+    Harmony,
+    Feature,
 }
 
 public static class InstrumentTable
 {
+    /// <summary>FMOD path of the bus (bus:/Music Bed/Harmony, ...); null for an unknown value.</summary>
+    public static string BusPath(OutputBus bus)
+    {
+        switch (bus)
+        {
+            case OutputBus.KillChords: return "bus:/Kill Chords";
+            case OutputBus.MusicBed: return "bus:/Music Bed";
+            case OutputBus.Harmony: return "bus:/Music Bed/Harmony";
+            case OutputBus.Feature: return "bus:/Feature";
+        }
+        return null;
+    }
+
     /// <summary>FMOD event path of the instrument on that bus; null if the combination does not exist.</summary>
     public static string EventPath(Instrument instrument, OutputBus bus)
     {

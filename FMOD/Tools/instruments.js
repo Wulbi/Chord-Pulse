@@ -1512,19 +1512,22 @@ if (!folder) {
     log("created folder " + FOLDER);
 }
 
-// --- buses (bus:/Kill Chords is created here; later layers add their own) ---
+// --- buses: found by path (mixer.js sets up their effects and levels); a missing one is created, parents first ---
 var buses = {};
-INSTRUMENTS.forEach(function (inst) {
-    if (buses[inst.bus]) return;
-    var b = project.lookup("bus:/" + inst.bus);
+function busFor(path) {
+    if (buses[path]) return buses[path];
+    var b = project.lookup("bus:/" + path);
     if (!b) {
+        var cut = path.lastIndexOf("/");
         b = project.create("MixerGroup");
-        b.name = inst.bus;
-        b.output = project.workspace.mixer.masterBus;
-        log("created bus " + inst.bus);
+        b.name = path.substr(cut + 1);
+        b.output = cut < 0 ? project.workspace.mixer.masterBus : busFor(path.substr(0, cut));
+        log("created bus " + path);
     }
-    buses[inst.bus] = b;
-});
+    buses[path] = b;
+    return b;
+}
+INSTRUMENTS.forEach(function (inst) { busFor(inst.bus); });
 
 // --- parameter Note: one project preset (each event keeps its own value), 0-127 ---
 // Continuous, not discrete: on a discrete parameter FMOD widened each note's [m-0.4, m+0.4] condition to reach m+1, so

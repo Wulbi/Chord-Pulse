@@ -104,7 +104,7 @@ public sealed class CaptureScenario : MonoBehaviour
     // per-frame visual beat (dt, beat, bpm) and every music parameter write (beat_now, name, value)
     readonly List<string> _frameLog = new List<string>();
     readonly List<string> _paramLog = new List<string>();
-    // duck: input / output RMS of the Harmony Duck compressor per mixer block (gain reduction = out - in)
+    // duck: input / output RMS of the kill-keyed Harmony compressor (bus:/Music Bed/Harmony) per mixer block (gain reduction = out - in)
     FMOD.DSP _duckComp;
     int _duckLastSamples = -1;
     float _duckLastIn = -1f;
@@ -175,7 +175,7 @@ public sealed class CaptureScenario : MonoBehaviour
             // return muted, the other Music Bed tracks muted once the event has built them.
             sound.Intensity = SoundManager.MaxIntensity; // the offbeat pluck plays from intensity 1
             StartCoroutine(QuietKillBus());
-            RuntimeManager.GetBus("bus:/Feature Duck").setMute(true);
+            RuntimeManager.GetBus("bus:/Feature").setMute(true);
             StartCoroutine(MuteMusicBed(sound));
             StartCoroutine(MeterDuckCompressor());
         }
@@ -402,10 +402,12 @@ public sealed class CaptureScenario : MonoBehaviour
         Debug.LogError("[CaptureScenario] duck: Music Bed channel group not found");
     }
 
-    // Metering on the return's compressor: with an external key, out - in is exactly the gain reduction.
+    // Metering on the kill-keyed compressor of bus:/Music Bed/Harmony (FMOD/Tools/mixer.py; until Task 7 it was on
+    // return:/Harmony Duck). The bus holds [Feature-keyed, kill-keyed] compressors in signal order; DSP index 0 is the
+    // fader (head), so the first compressor found from index 0 is the kill-keyed one, the last before the fader.
     IEnumerator MeterDuckCompressor()
     {
-        var bus = RuntimeManager.GetBus("bus:/Harmony Duck");
+        var bus = RuntimeManager.GetBus("bus:/Music Bed/Harmony");
         bus.lockChannelGroup();
         for (int frame = 0; frame < 20000; frame++)
         {
@@ -419,14 +421,14 @@ public sealed class CaptureScenario : MonoBehaviour
                     {
                         dsp.setMeteringEnabled(true, true);
                         _duckComp = dsp;
-                        Debug.Log("[CaptureScenario] duck: metering the Harmony Duck compressor");
+                        Debug.Log("[CaptureScenario] duck: metering the kill-keyed Harmony compressor");
                         yield break;
                     }
                 }
             }
             yield return null;
         }
-        Debug.LogError("[CaptureScenario] duck: Harmony Duck compressor not found");
+        Debug.LogError("[CaptureScenario] duck: kill-keyed Harmony compressor not found");
     }
 
     void LogDuckMeter()

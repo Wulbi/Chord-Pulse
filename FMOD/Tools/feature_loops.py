@@ -313,7 +313,7 @@ harmony.effectChain.effects.forEach(function (e) { if (e.entity === "CompressorE
 if (killChords) killChords.effectChain.effects.forEach(function (e) { if (e.entity === "Sidechain") killSidechain = e; });
 old.forEach(function (t) {
     t.mixerGroup.effectChain.effects.forEach(function (e) {
-        if (e.entity === "Sidechain") harmonyComp.relationships.sidechains.remove(e);
+        if (e.entity === "Sidechain" && harmonyComp) harmonyComp.relationships.sidechains.remove(e);
     });
     project.deleteObject(t);
 });
@@ -355,7 +355,9 @@ if (killSidechain) {
 var room = bus.mixerGroup.effectChain.addEffect("SFXReverbEffect");
 room.decayTime = 900; room.earlyDelay = 10; room.lateDelay = 20; room.highCut = 6000; room.wetLevel = -14; room.dryLevel = 0;
 var key = bus.mixerGroup.effectChain.addEffect("Sidechain");
-harmonyComp.relationships.sidechains.add(key);
+// Since mixer.py the Feature duck of Harmony is on bus:/Music Bed/Harmony (keyed by bus:/Feature), and mixer.js, run
+// after this script, strips this group back to its send; the in-event Harmony compressor no longer exists.
+if (harmonyComp) harmonyComp.relationships.sidechains.add(key);
 var limiter = bus.mixerGroup.effectChain.addEffect("LimiterEffect");
 limiter.ceiling = -4; limiter.release = 30;
 

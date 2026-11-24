@@ -1,9 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <objects serializationModel="Studio.02.02.00">
 	<object class="MixerReturn" id="{2657b003-3bb4-49db-905b-0fb32563e846}">
-		<property name="volume">
-			<value>-8</value>
-		</property>
 		<property name="name">
 			<value>Harmony Duck</value>
 		</property>
@@ -14,32 +11,14 @@
 			<destination>{aaa8ce15-3e47-4cc3-938c-14ca4455a8d9}</destination>
 		</relationship>
 		<relationship name="output">
-			<destination>{af9d027a-3a1f-49a8-a9ef-4cbe20673632}</destination>
+			<destination>{b2dc6a26-a0bc-4be8-acc2-af3f002a4088}</destination>
 		</relationship>
 	</object>
 	<object class="MixerBusEffectChain" id="{7041c2e1-2f68-44fe-bfae-05f2106b5348}">
 		<relationship name="effects">
-			<destination>{53d6d1c7-4f94-444f-a1a2-e0aa11c6a607}</destination>
 			<destination>{0838f2f7-7258-459c-b755-9b9ef1d5dec6}</destination>
 		</relationship>
 	</object>
 	<object class="MixerBusPanner" id="{aaa8ce15-3e47-4cc3-938c-14ca4455a8d9}" />
-	<object class="CompressorEffect" id="{53d6d1c7-4f94-444f-a1a2-e0aa11c6a607}">
-		<property name="threshold">
-			<value>-20</value>
-		</property>
-		<property name="ratio">
-			<value>2</value>
-		</property>
-		<property name="attackTime">
-			<value>5</value>
-		</property>
-		<property name="releaseTime">
-			<value>60</value>
-		</property>
-		<relationship name="sidechains">
-			<destination>{43939973-8e91-4e0f-a9ac-78be015ed88e}</destination>
-		</relationship>
-	</object>
 	<object class="MixerBusFader" id="{0838f2f7-7258-459c-b755-9b9ef1d5dec6}" />
 </objects>
