@@ -461,16 +461,23 @@ def cmd_tail(args):
     cpu = os.path.splitext(args.wav)[0] + ".cpu.txt"
     if not os.path.isfile(cpu):
         raise SystemExit("cpu.txt not found: " + cpu)
-    match = re.search(r"STOP frame (\d+)", open(cpu).read())
+    text = open(cpu).read()
+    match = re.search(r"STOP frame (\d+)", text)
     if not match:
         raise SystemExit("no 'STOP frame N' in " + cpu + " (record with stopTailSeconds > 0)")
     stop = int(match.group(1))
-    restart = re.search(r"RESTART frame (\d+)", open(cpu).read())
+    restart = re.search(r"RESTART frame (\d+)", text)
     audio, rate = read_wav(args.wav)
     mono = audio.mean(axis=1)
     split = stop + int(0.1 * rate)
+    if restart and int(restart.group(1)) <= stop:
+        print("RESTART frame %s is not after STOP frame %d in %s" % (restart.group(1), stop, cpu))
+        return 2
     head = rms_db(mono, stop, split)
     end = int(restart.group(1)) if restart else len(mono)  # the tail ends where a restart begins
+    if end <= split:
+        print("tail window is empty (end frame %d <= stop + 100 ms = %d); record with a longer stopTailSeconds" % (end, split))
+        return 2
     tail = rms_db(mono, split, end)
     print("%s: stop frame %d (%.2f s), tail end %.2f s" % (args.wav, stop, stop / rate, end / rate))
     print("RMS [stop, stop+100 ms]      %s dBFS" % fmt_db(head))

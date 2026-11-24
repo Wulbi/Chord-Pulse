@@ -587,13 +587,33 @@ All takes 2 s tail, 0 stalls.
 | heavy beats 110 (`_s6_before_b110`) | -36.2 | -83.3 |
 | heavy beats 111 (`_s6_before_b111`) | -39.0 | -83.1 |
 
-**The problem does not reproduce at the -80 dBFS line.** Before the fix there is a decaying tail (heavy beats 111, 100 ms
-steps after the stop: -63.4, -68.5, -75.2 dBFS, -86.3 at +300 ms), but it is quiet enough that the mean over the rest of
-the tail stays below -80 dBFS in every take, so the "before" take does not fail the criterion. After the fix
-(`heavy_seed7_s6_after_b111_r2`, same stop point, restart on): [stop, +100 ms] -38.9 dBFS (the music itself, stopped
-mid-block), [+100 ms, end of tail] silent (below -150 dBFS), every 50 ms window after the first 100 ms silent. So the fix
-removes a real but short, faint tail (peak about -63 dBFS right after the cut); the numeric -80 dBFS criterion cannot tell
-before from after.
+**The problem does not reproduce at the -80 dBFS line.** Before the fix there is a decaying tail, but it is quiet enough
+that the mean over the rest of the tail stays below -80 dBFS in every take, so the "before" take does not fail the
+criterion. First 100 ms after `STOP frame`, heavy beats 111 (dBFS):
+
+| window | before (`_s6_before_b111`) | after (`_s6_after_b111_r2`) |
+|---|---:|---:|
+| 0-10 ms | -31.6 | -31.3 |
+| 10-20 ms | -33.1 | -33.2 |
+| 20-30 ms | -41.7 | -42.7 |
+| 30-40 ms | -49.0 | -51.1 |
+| 40-50 ms | -52.3 | -59.4 |
+| 50-60 ms | -61.4 | silent |
+| 60-70 ms | -64.0 | silent |
+| 70-80 ms | -63.2 | silent |
+| 80-90 ms | -63.4 | silent |
+| 90-100 ms | -66.3 | silent |
+| **0-50 ms** | -36.0 | -35.9 |
+| **50-100 ms** | -63.4 | silent |
+
+In both takes the output keeps decaying for roughly the first 50 ms after `StopMusic()`: the stop and the bus mute do not
+act instantly (probably they take effect on FMOD's next update, with a short ramp; not measured), so this window is not a
+measure of the music. After the fix the output is silent from about 50 ms on. Before the fix the return's tail continued
+(-63 to -75 dBFS in 100 ms steps, -86.3 at +300 ms) and was silent by +1 s. The fix removes a real but short, faint
+tail; the numeric -80 dBFS criterion cannot tell before from after.
+
+`restartAfterStop` re-applies only the baseline/heavy scenario state (kills, Combo, Tension); it is not valid for
+`killsOnly`, `styles`, `duck` or `holdArrangement` takes.
 
 Restart check (`heavy_seed7_s6_after_b111_r2`): first 4 beats at start -30.09 dBFS, first 4 beats after restart
 -30.12 dBFS, difference -0.03 dB (limit 1 dB), so the unmute works and the return is audible again. (A first take,

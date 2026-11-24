@@ -34,7 +34,7 @@ public sealed class CaptureScenario : MonoBehaviour
     [Tooltip("> 0: after the last beat call StopMusic() and keep recording this many seconds (return-bus tail check); " +
              "the capture frame of the StopMusic() call is written to .cpu.txt as 'STOP frame N'. 0 = end at the last beat.")]
     [SerializeField] float stopTailSeconds;
-    [Tooltip("With stopTailSeconds > 0: after the tail call StartMusic() again and record 8 more beats (restart check). " +
+    [Tooltip("With stopTailSeconds > 0: after the tail call StartMusic() again and record 8 more beats (restart check). Only the baseline/heavy state (kills, Combo, Tension) is re-applied; not valid for killsOnly, styles, duck or holdArrangement takes. " +
              "Their beat log goes to <take>.beats2.csv (beats restart from 0).")]
     [SerializeField] bool restartAfterStop;
 
