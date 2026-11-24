@@ -5,16 +5,19 @@ using System;
 /// Every <see cref="Update"/> hands over the notes whose beat lies in (scheduledUntil, now + lookahead]; which clips
 /// play is decided per note by <see cref="IArrangement"/> at the note's own step. Pure: no FMOD, no Unity API, and no
 /// allocation on the Update path (apart from what OneShotScheduler.Schedule itself allocates per note).
+/// The lookahead must be long enough that a note is handed over before its start: at the fastest tempo it (in seconds)
+/// has to exceed <see cref="MaxOnsetSeconds"/> plus the dispatch lead (the dispatch window, 1 beat after a phrase
+/// boundary), or early-onset notes on phrase starts would be late. Notes are never scheduled before beat 0.
 /// </summary>
 public sealed class PatternScheduler
 {
-    // The arrangement is asked once per 8th-note step (SoundManager.StepsPerBeat), at floor(beat * StepsPerBeat) of each
+    /// <summary>Steps per beat of <c>IArrangement.At</c>. Must equal SoundManager.StepsPerBeat (EditMode test); kept here so this file has no game-code dependency.</summary>
+    public const int StepsPerBeat = 2;
+
+    // The arrangement is asked once per 8th-note step (StepsPerBeat), at floor(beat * StepsPerBeat) of each
     // note, not per 16th: every state boundary the game has (phrase, bar, step) is a multiple of a step, so a note on a
     // 16th position (x.25, x.75) shares the state of the 8th step it lies in. Exact for those boundaries.
-    const int StepsPerBeat = SoundManager.StepsPerBeat;
     const double PhraseBeats = PatternTable.PhraseBeats;
-    // Beats are multiples of 1/4, so this keeps "just before" distinct from the beat itself.
-    const double Epsilon = 1e-6;
 
     /// <summary>
     /// Slack on top of <see cref="MaxOnsetSeconds"/> for Invalidate: the schedule offset (about 2.3 ms) and a mixer block or
@@ -29,10 +32,14 @@ public sealed class PatternScheduler
     readonly double _dispatchWindow;
     ArrangementState[] _states = new ArrangementState[64];
     double _scheduledUntil = double.NaN; // NaN: nothing scheduled yet, the first Update starts at its own beat
+    bool _includeLower; // the next window includes its lower bound (set by Invalidate: notes at >= from were cancelled)
 
+    /// <param name="layerMask">Bit = <see cref="PatternClip.Layer"/>. Layers of 64 and above cannot be masked (always on); the table has 13.</param>
     public PatternScheduler(OneShotScheduler shots, IArrangement arrangement, double lookaheadBeats = 1.0,
         ulong layerMask = ulong.MaxValue, double dispatchWindowBeats = 0)
     {
+        if (!(lookaheadBeats > 0))
+            throw new ArgumentOutOfRangeException(nameof(lookaheadBeats), "the lookahead must be positive");
         _shots = shots ?? throw new ArgumentNullException(nameof(shots));
         _arrangement = arrangement ?? throw new ArgumentNullException(nameof(arrangement));
         _lookahead = lookaheadBeats;
@@ -53,17 +60,31 @@ public sealed class PatternScheduler
     /// <summary>A note was handed to the one-shot scheduler; the second argument is its absolute beat.</summary>
     public event Action<PatternNote, double> NoteScheduled;
 
-    /// <summary>Hands over the notes in (scheduledUntil, nowBeat + lookahead]; notes at or before nowBeat are never scheduled.</summary>
+    /// <summary>
+    /// Hands over the notes in (scheduledUntil, nowBeat + lookahead]; notes at or before nowBeat are never scheduled and
+    /// nothing before beat 0 is. A first call with nowBeat &lt; 0 takes beat 0's notes, so to hear them the caller must
+    /// start calling this before beat 0 (e.g. from the moment the clock has an anchor); a first call at or after beat 0
+    /// starts with (nowBeat, ...].
+    /// </summary>
     public void Update(double nowBeat)
     {
         double hi = nowBeat + _lookahead;
         double lo = double.IsNaN(_scheduledUntil) ? nowBeat : Math.Max(_scheduledUntil, nowBeat);
-        if (hi > lo)
-            ScheduleRange(lo, hi);
-        _scheduledUntil = Math.Max(hi, lo);
+        // Invalidate's inclusive cut only applies while it is still ahead of now (a note at or before now is never taken).
+        bool include = _includeLower && _scheduledUntil > nowBeat;
+        _includeLower = false;
+        double scheduledTo = Math.Max(hi, lo);
+        if (lo < 0)
+        {
+            lo = 0; // beat 0's notes are taken, nothing before them
+            include = true;
+        }
+        if (hi >= lo)
+            ScheduleRange(lo, hi, include);
+        _scheduledUntil = scheduledTo;
     }
 
-    void ScheduleRange(double lo, double hi)
+    void ScheduleRange(double lo, double hi, bool includeLo)
     {
         int loStep = (int)Math.Floor(lo * StepsPerBeat);
         int hiStep = (int)Math.Floor(hi * StepsPerBeat);
@@ -82,13 +103,13 @@ public sealed class PatternScheduler
             double phraseStart = phrase * PhraseBeats;
             for (int c = 0; c < clips.Length; c++)
             {
-                if (clips[c].Layer < 64 && (_layerMask & (1UL << clips[c].Layer)) == 0)
+                if (clips[c].Layer < 0 || (clips[c].Layer < 64 && (_layerMask & (1UL << clips[c].Layer)) == 0))
                     continue;
                 int end = clips[c].First + clips[c].Count;
                 for (int i = clips[c].First; i < end; i++)
                 {
                     double beat = phraseStart + notes[i].Beat;
-                    if (beat <= lo)
+                    if (includeLo ? beat < lo : beat <= lo)
                         continue;
                     if (beat > hi)
                         break; // the clip's notes are sorted by beat
@@ -118,21 +139,28 @@ public sealed class PatternScheduler
     /// <paramref name="fromBeat"/> and the first beat whose note cannot have started yet (a note starts up to
     /// <see cref="MaxOnsetSeconds"/> before its beat, and CancelFrom keeps started notes, so re-scheduling those would
     /// double them): nearer notes keep their old state's sound. <paramref name="nowBeat"/> and
-    /// <paramref name="beatsPerSecond"/> (clock BPM / 60) convert that onset to beats. Notes of other owners are untouched.
+    /// <paramref name="beatsPerSecond"/> (clock BPM / 60, must be positive) convert that onset to beats. Notes of other
+    /// owners are untouched. Exactly the notes with beat >= the effective start are cancelled and re-stated.
     /// </summary>
     public void Invalidate(double fromBeat, double nowBeat, double beatsPerSecond)
     {
-        double safe = nowBeat + (MaxOnsetSeconds + OnsetMarginSeconds) * Math.Max(0, beatsPerSecond);
+        if (!(beatsPerSecond > 0))
+            throw new ArgumentOutOfRangeException(nameof(beatsPerSecond), "the tempo is needed for the onset safety");
+        double safe = nowBeat + (MaxOnsetSeconds + OnsetMarginSeconds) * beatsPerSecond;
         double from = Math.Max(fromBeat, safe);
         _shots.CancelFrom(from, this);
-        if (!double.IsNaN(_scheduledUntil))
-            _scheduledUntil = Math.Min(_scheduledUntil, from - Epsilon);
+        if (_scheduledUntil >= from) // (false for NaN)
+        {
+            _scheduledUntil = from;
+            _includeLower = true; // the note at `from` itself was cancelled and is taken again
+        }
     }
 
     /// <summary>Forgets what was scheduled (the instances are cleaned up by <see cref="OneShotScheduler.StopAll"/>).</summary>
     public void Reset()
     {
         _scheduledUntil = double.NaN;
+        _includeLower = false;
         ScheduledCount = 0;
     }
 }

@@ -314,8 +314,9 @@ public static class OneShotArming
 /// FMOD Studio backend: one event instance of event:/Inst/&lt;name&gt; per note, Note parameter set per instance.
 /// The instance is paused, then start()ed at once: Studio creates its channel group (and the voice) on its own
 /// update thread, paused. The start time is applied through that group (ChannelGroup.setDelay, sample accurate) on
-/// the first <see cref="Update"/> that finds the group, and only then is the group unpaused (directly, so the start
-/// does not wait for a Studio update; the instance's own unpause follows for Studio's bookkeeping). A note can therefore
+/// the first <see cref="Update"/> that finds the group, and only then are the instance and then
+/// the group unpaused (the group directly, so the start does not wait for a Studio update; the instance first, so a Studio
+/// update between the two calls cannot re-assert its pause on the group). A note can therefore
 /// never sound before its delay is in effect (Task 5b: without the pause, a main-thread frame longer than one Studio
 /// update let the voice sound at dispatch, up to the lead early). Call Update every frame. (Task 3 spike:
 /// EVENT_PROPERTY.SCHEDULE_DELAY was as precise but about 24 ms late on average, an offset that depends on the Studio
@@ -351,7 +352,7 @@ public sealed class FmodOneShotBackend : IOneShotBackend
 
     /// <summary>
     /// Notes stopped without sounding: their start time came within one mixer block before their channel group could
-    /// be given it (or the instance became invalid). They are never played late.
+    /// be given it, the instance became invalid, or pausing it / setting its delay failed. They are never played late.
     /// </summary>
     public int DroppedCount { get; private set; }
     public int StartedCount { get; private set; }
@@ -454,8 +455,15 @@ public sealed class FmodOneShotBackend : IOneShotBackend
             return;
         }
         n.Stop = dspStop;
-        if (n.Applied)
-            ApplyTimes(n.Group, n);
+        if (n.Applied && !ApplyTimes(n.Group, n))
+        {
+            // The stop time could not be set: never let the note run on unbounded.
+            DroppedCount++;
+            n.Instance.stop(FMOD.Studio.STOP_MODE.IMMEDIATE);
+            n.Instance.release();
+            _notes.Remove(handle);
+            return;
+        }
         _notes[handle] = n;
     }
 
@@ -560,6 +568,8 @@ public sealed class FmodOneShotBackend : IOneShotBackend
                 // The delay is in effect. Unpause the instance first, then the group (core call, immediate, so the
                 // start does not wait for a Studio update): the other order leaves a window in which a Studio update
                 // between the two calls re-asserts the instance's pause on the group.
+                // (Results not checked: the delay is already in effect, so a failed unpause can only keep the note silent,
+                // never early or late.)
                 n.Instance.setPaused(false);
                 group.setPaused(false);
                 n.Group = group;

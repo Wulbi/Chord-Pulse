@@ -9,6 +9,7 @@ public class PatternSchedulerTests
         public readonly List<(int handle, Instrument inst, int midi, float gainDb, ulong dspStart)> Starts =
             new List<(int, Instrument, int, float, ulong)>();
         public readonly List<(int handle, ulong dspStop)> Stops = new List<(int, ulong)>();
+        public readonly List<ulong> NowAtStart = new List<ulong>();
         public ulong Now;
         int _next;
         public ulong NowDsp => Now;
@@ -17,6 +18,7 @@ public class PatternSchedulerTests
         {
             int handle = _next++;
             Starts.Add((handle, inst, midi, gainDb, dspStart));
+            NowAtStart.Add(Now);
             return handle;
         }
 
@@ -28,7 +30,12 @@ public class PatternSchedulerTests
     sealed class FakeArrangement : IArrangement
     {
         public Func<int, ArrangementState> F;
-        public ArrangementState At(int step) => F(step);
+        public int MinStep = int.MaxValue;
+        public ArrangementState At(int step)
+        {
+            MinStep = Math.Min(MinStep, step);
+            return F(step);
+        }
     }
 
     const double SamplesPerBeat = 24000; // 120 BPM at 48 kHz
@@ -415,26 +422,209 @@ public class PatternSchedulerTests
                 Assert.Less(s.dspStart, boundary, "starts before the boundary by its onset");
             }
         Assert.IsTrue(found, "handed to the backend while the boundary is still half a beat away");
+        for (int i = 0; i < _backend.Starts.Count; i++)
+            if (_backend.Starts[i].inst == Instrument.Choir && _backend.Starts[i].midi == midi)
+                Assert.LessOrEqual(_backend.NowAtStart[i], boundary - 12000, "handed over at least 0.5 beat before the boundary");
         Assert.AreEqual(0, _shots.LateCount);
     }
 
+    // Choir chord on beat 16 at 120 BPM (onsets 71.0 / 56.4 / 47.4 ms for MIDI 60 / 64 / 67), so the starts are
+    // 71.0, 56.4 and 47.4 ms before the boundary.
     [Test]
     public void Invalidate_DoesNotDuplicateStartedEarlyOnsetNote()
     {
         _state.Style = 3;
         var p = Make();
         At(15.0);
-        p.Update(15.0); // choir chord on beat 16 handed over, its attack starts about 0.15 beat early
+        p.Update(15.0); // choir chord on beat 16 handed over
         int choirBefore = CountOf("DreamyChoir", 16.0);
-        Assert.Greater(choirBefore, 0);
+        Assert.AreEqual(3, choirBefore);
         int startsBefore = _backend.Starts.Count;
+        int stopsBefore = _backend.Stops.Count; // (Stop is also called once per note with its end time)
 
-        At(15.9); // the early-onset notes have started sounding
-        p.Invalidate(16, 15.9, 2.0);
-        p.Update(15.9);
+        // 30 ms before the boundary (beat 15.94): all three have started, by 41 / 26 / 17 ms.
+        At(15.94);
+        p.Invalidate(16, 15.94, 2.0);
+        Assert.AreEqual(stopsBefore, _backend.Stops.Count, "nothing started was cancelled");
+        p.Update(15.94);
         Assert.AreEqual(choirBefore, CountOf("DreamyChoir", 16.0), "no choir note scheduled twice");
-        foreach (var s in _backend.Starts.GetRange(startsBefore, _backend.Starts.Count - startsBefore))
-            Assert.AreNotEqual(Instrument.Choir, s.inst);
+        foreach (var st in _backend.Starts.GetRange(startsBefore, _backend.Starts.Count - startsBefore))
+            Assert.AreNotEqual(Instrument.Choir, st.inst);
+        Assert.AreEqual(0, _shots.LateCount, "a started note was handed over again and dropped as late");
+    }
+
+    [Test]
+    public void Invalidate_RestatesNotStartedEarlyOnsetNotes_Once()
+    {
+        _state.Style = 3;
+        var p = Make();
+        At(15.0);
+        p.Update(15.0);
+        Assert.AreEqual(3, CountOf("DreamyChoir", 16.0));
+
+        // beat 15.5 (250 ms before the boundary): none has started; the arrangement changes from beat 16.
+        At(15.5);
+        _state.Combo = 3;
+        int stopsBefore = _backend.Stops.Count;
+        p.Invalidate(16, 15.5, 2.0);
+        Assert.GreaterOrEqual(_backend.Stops.Count - stopsBefore, 3, "the handed-over beat 16 notes were cancelled");
+        _events.Clear();
+        p.Update(15.5);
+        int choirAgain = 0;
+        foreach (var e in _events)
+            if (e.beat == 16.0 && e.note.Instrument == Instrument.Choir)
+                choirAgain++;
+        Assert.AreEqual(3, choirAgain);
+        Assert.AreEqual(0, _shots.LateCount);
+    }
+
+    [Test]
+    public void Invalidate_RestatesNoteExactlyAtFromBeat_Once()
+    {
+        var p = Make(lookahead: 4.0);
+        At(0.5);
+        p.Update(0.5); // until 4.5
+        int before = 0;
+        bool onFour = false;
+        foreach (var e in _events)
+            if (e.beat >= 4.0)
+            {
+                before++;
+                onFour |= e.beat == 4.0;
+            }
+        Assert.Greater(before, 0);
+        Assert.IsTrue(onFour, "a note exactly on beat 4");
+        _events.Clear();
+        p.Invalidate(4, 0.5, 2.0);
+        p.Update(0.5);
+        Assert.AreEqual(before, _events.Count);
+        foreach (var e in _events)
+            Assert.GreaterOrEqual(e.beat, 4.0);
+        p.Update(0.5);
+        Assert.AreEqual(before, _events.Count, "taken once");
+    }
+
+    [Test]
+    public void Invalidate_NonPositiveTempo_Throws()
+    {
+        var p = Make();
+        Assert.Throws<ArgumentOutOfRangeException>(() => p.Invalidate(4, 0, 0));
+        Assert.Throws<ArgumentOutOfRangeException>(() => p.Invalidate(4, 0, -1));
+        Assert.Throws<ArgumentOutOfRangeException>(() => p.Invalidate(4, 0, double.NaN));
+    }
+
+    [Test]
+    public void Constructor_NonPositiveLookahead_Throws()
+    {
+        Assert.Throws<ArgumentOutOfRangeException>(() => new PatternScheduler(_shots, _arr, 0));
+        Assert.Throws<ArgumentOutOfRangeException>(() => new PatternScheduler(_shots, _arr, -1));
+    }
+
+    [Test]
+    public void StepsPerBeat_EqualsSoundManager()
+    {
+        Assert.AreEqual(SoundManager.StepsPerBeat, PatternScheduler.StepsPerBeat);
+    }
+
+    [Test]
+    public void Update_NegativeNow_SchedulesNothingBeforeBeatZero()
+    {
+        _state.Variation = 1;
+        _clock.Anchor(0, 48000, 120); // beat 0 sounds at DSP 48000
+        _backend.Now = 36000;          // beat -0.5
+        var p = Make();
+        p.Update(-0.5); // window -0.5 .. 0.5
+        Assert.GreaterOrEqual(_arr.MinStep, 0, "At was asked for a negative step");
+        Assert.Greater(_events.Count, 0);
+        bool drive0 = false;
+        foreach (var e in _events)
+        {
+            Assert.GreaterOrEqual(e.beat, 0.0);
+            if (e.beat == 0.0 && IsNoteOf("BassDrive", e.note, 0))
+                drive0 = true;
+        }
+        Assert.IsTrue(drive0, "beat 0 notes are taken");
+    }
+
+    [Test]
+    public void Update_FromNegativeNow_TakesBeatZeroOnce()
+    {
+        _clock.Anchor(0, 48000, 120);
+        _backend.Now = 36000;
+        var p = Make();
+        p.Update(-0.5);
+        int zero = 0;
+        foreach (var e in _events)
+            if (e.beat == 0.0)
+                zero++;
+        Assert.Greater(zero, 0);
+        _backend.Now = 48000 + 4800; // beat 0.2
+        p.Update(0.2);
+        int zeroAfter = 0;
+        foreach (var e in _events)
+            if (e.beat == 0.0)
+                zeroAfter++;
+        Assert.AreEqual(zero, zeroAfter);
+    }
+
+    [Test]
+    public void Update_FarBeforeZero_SchedulesNothingThenBeatZero()
+    {
+        _clock.Anchor(0, 96000, 120);
+        _backend.Now = 24000;
+        var p = Make();
+        p.Update(-3.0); // window ends at -2
+        Assert.AreEqual(0, _events.Count);
+        Assert.AreEqual(int.MaxValue, _arr.MinStep, "At is not asked for a window before beat 0");
+        _backend.Now = 96000 - 12000;
+        p.Update(-0.5);
+        Assert.Greater(_events.Count, 0);
+        foreach (var e in _events)
+            Assert.GreaterOrEqual(e.beat, 0.0);
+        Assert.GreaterOrEqual(_arr.MinStep, 0);
+    }
+
+    [Test]
+    public void Update_MultiBeatJump_TakesEachNoteOnceAndSkipsPast()
+    {
+        var p = Make();
+        At(0.5);
+        p.Update(0.5);
+        _events.Clear();
+        At(6.3);
+        p.Update(6.3); // a hitch: (6.3, 7.3]
+        var reference = new List<(PatternNote, double)>();
+        var p2 = new PatternScheduler(_shots, _arr, 1.0);
+        p2.NoteScheduled += (n, b) => reference.Add((n, b));
+        p2.Update(6.3);
+        Assert.AreEqual(reference.Count, _events.Count);
+        Assert.Greater(_events.Count, 0);
+        foreach (var e in _events)
+            Assert.That(e.beat, Is.GreaterThan(6.3).And.LessThanOrEqualTo(7.3));
+        Assert.AreEqual(0, _shots.LateCount);
+    }
+
+    [Test]
+    public void Update_NowGoingBackwards_SchedulesNothing()
+    {
+        var p = Make();
+        At(5.0);
+        p.Update(5.0);
+        _events.Clear();
+        p.Update(3.0);
+        Assert.AreEqual(0, _events.Count);
+    }
+
+    [Test]
+    public void Matches_FeverZero_IsNone_AndEachPhase()
+    {
+        Assert.IsTrue(PatternMatch.Matches(Clip(fever: FeverPhaseMask.None), S(fever: 0)));
+        Assert.IsFalse(PatternMatch.Matches(Clip(fever: FeverPhaseMask.Fever), S(fever: 0)));
+        foreach (var phase in new[] { FeverPhaseMask.Build, FeverPhaseMask.Impact, FeverPhaseMask.Outro })
+        {
+            Assert.IsTrue(PatternMatch.Matches(Clip(fever: phase), S(fever: phase)), phase.ToString());
+            Assert.IsFalse(PatternMatch.Matches(Clip(fever: FeverPhaseMask.None | FeverPhaseMask.Fever), S(fever: phase)), phase.ToString());
+        }
     }
 
     [Test]
