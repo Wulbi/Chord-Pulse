@@ -815,3 +815,66 @@ docstring run order (instruments.js -> mixer.js -> kill_oneshots.js; `instrument
 `feature_loops.py` comment and log line (mixer.js sets up the Feature ducking; `feature_loops.js` differs only in that
 comment and log string, no FMOD run); `mixer.py` docstring (the buses are owned by the script, hand edits of their effect chains
 are discarded; `mixer.js` unchanged). `analyze_capture.py` got `bands` and `duck`.
+
+## Task 9: pattern table + bed pitched-layer data (nothing scheduled yet)
+
+New generators: `FMOD/Tools/patterns.py` (Inst / Layer / Clip / N, C# generation, `register(lib)`, `--compare-legacy`) and
+`FMOD/Tools/pattern_bed.py` (data). `python -I FMOD/Tools/instruments.py` writes `Assets/Scripts/Audio/Generated/PatternTable.g.cs`:
+13 layers, 20 clips, 404 notes, and registers 15 new (instrument, bus) events (106 sounds). `PatternClip` has one field the
+brief did not list, **`SectionPhrase`** (0 any, 1 = bars 1-4 of a section, 2 = bars 5-8): the original off-beat pluck (Pluck A,
+hand-made, never generated) is an 8-bar pattern, so it is two clips. Bass A (also hand-made, regular) is data too. Every other
+migrated track is the same in both phrases and in all four sections apart from tempo (`--compare-legacy` prints it).
+`bed_notes.py` reads the pattern data; `BedNotes.g.cs` is byte-identical. `measure_sample.py` reproduces `samples.py`
+(150 ms window: 22 entries within 0.05 dB, onsets exact).
+
+Nothing audible changes: no Unity code schedules the patterns, the timeline layers still play (`legacyLayers` true), and the
+new buses carry no signal.
+
+### Buses (`mixer.py` SUB_BUSES): one-shot path = timeline track path
+
+| layer (old track) | event group | one-shot bus | sub-bus processing |
+|---|---|---|---|
+| Bass A/B/C, Latin, Funk bass (`Bass - C Am F G`) | Music Bed | `Music Bed/Layers/Bass` | gain automated by global `Tension` (bass crossfade curve) |
+| Tension strings | Music Bed | `Music Bed/Layers/Tension Strings` | HP 140 Hz, gain by `Tension` |
+| Tension sub | Music Bed | `Music Bed/Layers/Tension Sub` | gain by `Tension` |
+| Tension acid bass | Music Bed | `Music Bed/Layers/Tension Acid` | LP 3500 Hz, gain by `Tension` |
+| Dreamy sub | Music Bed | `Music Bed/Layers` (OutputBus.MusicBed) | - |
+| Offbeat pluck, Combo bells | Harmony | `Music Bed/Harmony` | - |
+| Combo pad / Latin marimba / Funk keys / Funk guitar / Dreamy choir / Dreamy bells | Harmony | `Music Bed/Harmony/<name>` | HP 300 / 200 / 250 / 180 / 150 / 300 Hz |
+
+`Music Bed/Layers` = the music event master: limiter (ceiling -1 dB, release 30 ms, from the event XML) and fader -8 dB, then
+`bus:/Music Bed` (Danger / Hurt). Harmony layers get `bus:/Music Bed/Harmony`'s two keyed compressors and -8 dB. Tension
+curves (`bed_tension.CURVES`) sit on a gain effect bound to the global `Tension`. `OutputBus.MusicBed` is now
+`bus:/Music Bed/Layers` (no code used it; `SoundManager` uses literal bus paths). While layers are split between the
+timeline and one-shots, two limiters act in parallel (event master on the timeline part, Layers on the one-shots) instead of
+one on the sum. ADSR: instruments of tracks without ADSR are registered with attack 0 / release 0 (`ReleaseSeconds` 0).
+
+### `--compare-legacy` (all four sections, both phrases; timeline notes read from the event XML)
+
+The old generators' `build()` notes (2912) are all on the timeline; the remaining 192 are the hand-made Bass A (64) and
+Pluck A (128). Every timeline note of the 13 migrated tracks (776 per section, 3104 in all) pairs with a table note on
+(track, start, sample, pitch, volume, conditions, length, ADSR): **unexplained 0**. Per section (108 BPM): exact 32,
+volume split (NORMALIZE_DB - rms + GainDb) 744, onset rule 600, ADSR as its own event 296, no ADSR -> 0/0 480. Clamped notes
+0. Max Instances (132 BPM, + 4): 5-10 per event.
+
+Onsets now applied on every note (sample onset / pitch ratio) against the old start shift; differences over 5 ms:
+
+| clip | old shift | new onset | difference |
+|---|---|---|---|
+| Combo pad (GlassPad, onset 116 ms) | 0 | 36-65 ms | +36 .. +65 ms (pad had no shift; 300 ms attack) |
+| Tension strings, phrase's first bar | 0 (other bars already shifted) | 30-48 ms | +30 .. +48 ms |
+| Dreamy choir, phrase's first bar | 0 | 47-71 ms | +47 .. +71 ms |
+| Dreamy choir, other bars | 60 ms fixed | 53-75 ms | -6.8 .. +15.2 ms (MIDI 65, 59, 60) |
+| Funk guitar | 25 ms fixed | 17-22 ms | -6.3, -8.3 ms (MIDI 67, 69) |
+| Latin marimba | 0 | 4.5-5.9 ms | +5.0 .. +5.9 ms (MIDI 67, 69, 71, 76, 77) |
+
+### No audible change (Editor, seed 7, 128 beats, `rms --compare` against Task 8's after-takes, 4-beat windows)
+
+| take | max abs diff (dB) | Studio update avg / max | Core dsp avg / max | one-shots started |
+|---|---:|---:|---:|---:|
+| baseline_seed7_s9_after vs s8_after | 0.14 | 5.93 / 78.14 (was 6.36 / 79.92) | 1.68 / 2.65 (was 1.70 / 2.71) | 288 |
+| heavy_seed7_s9_after vs s8_after | 0.33 (beat 116) | 6.84 / 80.55 (was 7.65 / 86.04) | 5.44 / 8.35 (was 5.38 / 7.00) | 3069 |
+
+Both takes 0 stalls after the first beat, late 0 / dropped 0 / cancelled 0. The idle events and buses cost no measurable CPU.
+Bank `ChordPulse.bank` 6,352,096 -> 6,416,320 bytes (strings 2,410 -> 3,680); no new audio files (all samples were in the
+bank already).
