@@ -423,39 +423,52 @@ All takes below are inside it (Editor heavy Core 5.9 - 6.1 %, Studio 8.9 - 9.9 %
 |---|---:|---|---|---|---|---:|
 | baseline_seed7_s5_fps60 (Editor) | 60 | 7.03 / 78.57 | 1.86 / 2.90 | 288 / 0 / 0 (0) / 0 | not measured | - |
 | heavy_seed33_s5_fps60c (Editor) | 60 | 8.90 / 69.65 | 6.14 / 7.82 | 1629 / 0 / 0 (0) / 24 | +288 / +256 / +344 / +401, no gap | 0 ms |
-| heavy_seed33_s5_fps30 (Editor) | 30 | 8.94 / 71.47 | 5.87 / 7.37 | 1629 / 0 / 0 (0) / 0 | +280 / +330 / +346 / +275, no gap | 0 ms |
-| heavy_seed33_s5_fps15 (Editor) | 15 | 9.85 / 78.20 | 5.96 / 7.77 | 1629 / 0 / 0 (0) / 0 | +419 / +394 / +569 / +426, no gap | 0 ms |
+| heavy_seed33_s5_fps30 (Editor; kill chords may be early, see below) | 30 | 8.94 / 71.47 | 5.87 / 7.37 | 1629 / 0 / 0 (0) / 0 | +280 / +330 / +346 / +275, no gap | 0 ms |
+| heavy_seed33_s5_fps15 (Editor; kill chords may be early, see below) | 15 | 9.85 / 78.20 | 5.96 / 7.77 | 1629 / 0 / 0 (0) / 0 | +419 / +394 / +569 / +426, no gap | 0 ms |
 | spike_seed33_s5_fps60 (Editor) | 60 | 6.84 / 62.25 | 1.72 / 2.42 | 64 / 0 / 0 (0) / 0 | - | - |
 | spike_seed33_s5_fps30 (Editor) | 30 | 7.50 / 65.65 | 1.57 / 2.41 | 64 / 0 / 0 (0) / 0 | - | - |
 | spike_seed33_s5_fps15 (Editor) | 15 | 7.61 / 66.71 | 1.72 / 2.56 | 64 / 0 / 0 (0) / 0 | - | - |
 | baseline_seed7_s5_standalone60 | 60 | 4.06 / 65.84 | 1.59 / 2.57 | 288 / 0 / 0 (0) / 0 | not measured | - |
 | heavy_seed33_s5_standalone60 | 60 | 5.32 / 51.20 | 3.33 / 4.86 | 1629 / 0 / 0 (0) / 24 | +166 / +155 / +175 / +257, gap 285+55 ms at 64 | 0 ms |
 | spike_seed33_s5_standalone60 (+ run2, run3) | 60 | 4.76 / 50.72 | 1.34 / 2.08 | 64 / 0 / 0 (0) / 0 | - | - |
-| spike_seed33_s5_standalone (frame rate not capped, about 1100 fps) | ~1100 | 5.24 / 54.38 | 0.94 / 2.14 | 64 / 0 / **60** / 0 | - | - |
+| spike_seed33_s5_standalone (frame rate not capped, about 2050 fps) | ~2050 | 5.24 / 54.38 | 0.94 / 2.14 | 64 / 0 / **60** / 0 | - | - |
 
 `landings` delay is the beat-log callback delay (not audible); the 16 / 32 / 48 / 64 landings had no digital silence in any Editor take
-and the audio first / second half beat after the boundary is within 1.5 dB of one phrase earlier (-29.6 .. -31.3 dB vs -28.6 .. -29.7 dB).
-In the standalone `heavy` take the half beat after each landing is 10 - 13 dB quieter than one phrase earlier (-39 .. -44 dB vs -29.5 dB),
-with a silent run at 64; not seen in the Editor, cause not investigated. A first Editor `heavy` 60 fps take (`_s5_fps60`) had 7 stalls and
+and the audio first / second half beat after the boundary is within about 2.5 dB of one phrase earlier (largest: 15 fps beat 48, -31.3 / -31.2 dB vs -28.8 dB; 60 fps beat 64, -30.6 vs -28.6 dB).
+The take suffix `c` in `heavy_seed33_s5_fps60c` is the third attempt at that take: `_s5_fps60` is invalid (see below) and `_s5_fps60b` was cut short at beat ~12 (919 ms frame stall, no `.cpu.txt`, invalid). In the standalone `heavy` take the half beat after each landing is 10 - 13 dB quieter than one phrase earlier (-39 .. -44 dB vs -29.5 dB),
+with a silent run at 64; not seen in the Editor, cause not investigated. The standalone `baseline` take ran while the Editor was building the heavy player (stalls 0, CPU may be slightly perturbed).
+A first Editor `heavy` 60 fps take (`_s5_fps60`, listed as invalid above) had 7 stalls and
 24 late / 48 landing drops and is not a valid reference (landing drops at beat 33.4 and 66.0, 24 late at 50.1).
 Landing drops (kills created inside FMOD Studio's stall after a jump) did not occur in any valid take here.
 
+Attack-criterion verdict (mean <= 2 ms, max <= 5 ms, `spike`): **60 fps pass, 30 fps FAIL, 15 fps FAIL**. At 30 / 15 fps the heavy rows
+show ONESHOTS late 0 / dropped 0, but the kill chords use the same backend as the spike clicks and may also sound early (not measured).
+
+ONESHOTS `cancelled` is 24 in the 60 fps `heavy` takes (Editor and standalone) and 0 at 30 / 15 fps; not verified. In the code, only
+`CancelFrom` (fever re-voicing, not used in these scenarios), `StopAll` and `RescheduleFrom` can cancel; `RescheduleFrom` runs from
+`OnNextSectionChanged` and cancels notes already handed to FMOD whose start is still ahead, so 24 is most likely the notes pending at the
+moment one NextSection write arrived (`.params.csv` shows one at about beats 16.6 / 32.5 / 48.7 / 64.8); which frame that lands on would
+differ with the frame rate.
+
 ### Attack error against the beat (`analyze_capture.py spike`, SpikeClick one-shots, offset -110 samples)
 
-| take | paired beats | mean signed error before correction | mean / max abs after correction | clicks audible > 10 ms BEFORE their beat |
+| take | paired beats | mean signed error before correction | mean / max abs after correction | clicks audible > 5 ms BEFORE their beat (see counting note) |
 |---|---:|---:|---:|---:|
-| spike_seed33_s5_fps60 (Editor) | 60 | +0.17 ms (+8 samples) | 0.91 / 2.77 ms | 0 (4 matches at the jump landings are the analyser pairing across a silent beat) |
+| spike_seed33_s5_fps60 (Editor) | 60 | +0.17 ms (+8 samples) | 0.91 / 2.77 ms | 0 of 54 |
 | spike_seed33_s5_fps60_run2 (Editor) | 60 | +0.29 ms (+14 samples) | 0.92 / 2.58 ms | 0 |
-| spike_seed33_s5_fps30 (Editor) | 33 of 64 | +0.12 ms (+6) on the 33 that paired | 1.19 / 3.92 ms on those 33 | about 24 |
-| spike_seed33_s5_fps15 (Editor) | 0 of 64 | - | - | about 55 (all but the landing beats), 59 - 250 ms early |
+| spike_seed33_s5_fps30 (Editor) | 33 of 64 | +0.12 ms (+6) on the 33 that paired | 1.19 / 3.92 ms on those 33 | 25 of the 54 non-landing clicks, 112 - 253 ms early (29 within 5 ms) |
+| spike_seed33_s5_fps15 (Editor) | 0 of 64 | - | - | 54 of the 54 non-landing clicks, 59 - 256 ms early (0 within 5 ms) |
 | spike_seed33_s5_standalone60 | 60 | -0.50 ms (-24 samples) | 0.56 / 2.52 ms | 0 |
 | spike_seed33_s5_standalone60_run2 | 60 | +0.03 ms (+2) | 1.04 / 3.30 ms | 0 |
 | spike_seed33_s5_standalone60_run3 | 60 | -0.14 ms (-6) | 0.96 / 3.34 ms | 0 |
 
 - 60 fps (Editor and standalone) passes the attack criterion (mean <= 2 ms, max <= 5 ms) with a wide margin.
 - 30 and 15 fps do not: the scheduler reports `started 64, late 0, dropped 0`, but the clicks that sound early were never reported.
-  A click sounds at (about) the moment its instance is dispatched instead of at its DSP time: the analyser sees them 59 - 288 ms
-  before the beat, the amount being the lead the note was dispatched with (long lead: window of 0.5 beat; short lead: 0.3 beat).
+  A click sounds at (about) the moment its instance is dispatched instead of at its DSP time: the analyser sees them 59 - 256 ms
+  before the beat, by at most the lead the note was dispatched with (long lead: window of 0.5 beat; short lead: 0.3 beat, 167 ms at 108 BPM;
+  at 15 fps the 0.3-beat clicks are 59 - 140 ms early because dispatch is up to a frame later than due).
+  Counting: every 2.8 - 3.2 kHz onset of the WAV is matched to the nearest 1 kHz reference onset; the 10 onsets within 0.8 s of a jump-landing
+  beat (16 / 32 / 48 / 64, where the music, and so the reference, is silent) are left out, which leaves 54 of 64.
   Cause (hypothesis, not tested): `FmodOneShotBackend` applies `ChannelGroup.setDelay` on the first main-thread `Update` after
   Studio created the group, and Studio un-pauses the voice on its own update (about 20 ms); with a frame longer than that the voice has
   already sounded. Widening the dispatch window does not help (it only dispatches earlier). R12 (never late) holds at 15 / 30 fps,
@@ -463,8 +476,8 @@ Landing drops (kills created inside FMOD Studio's stall after a jump) did not oc
 - Standalone offset: mean signed error -24 / +2 / -6 samples (mean -9) against the Editor's +8 / +14 (mean +11): a 20-sample difference,
   inside the 24-sample limit and inside the run-to-run spread (sd of one take is about 1.1 ms), so `DefaultScheduleOffsetSamples` stays -110
   for both.
-- Standalone with the frame rate left unlimited (about 1100 fps, tiny window): 60 of 64 clicks dropped, because the backend gives
-  a channel group 30 frames to appear and 30 frames last only about 27 ms there. A capped or vsynced build is fine; an uncapped one is not.
+- Standalone with the frame rate left unlimited (76,901 frames in 37.6 s = about 2050 fps, tiny window): 60 of 64 clicks dropped, probably because the backend gives
+  a channel group 30 frames to appear and 30 frames last only about 14 - 15 ms there (not tested). A capped or vsynced build is fine; an uncapped one is not.
 
 ### Standalone build
 

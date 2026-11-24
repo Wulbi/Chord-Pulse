@@ -47,6 +47,9 @@ public sealed class CaptureScenario : MonoBehaviour
     const int Colors = 3;
 
     string _wavPath;
+    // targetFps: the previous settings, put back in OnDestroy so a capped take does not leak into the next Editor play session.
+    int _savedFrameRate, _savedVSync;
+    bool _frameCapApplied;
     // Beat times come from the conductor's own stamps (taken on the FMOD thread), read through reflection so the
     // game code stays untouched; polling CurrentBeat in Update would smear them by every frame hitch.
     readonly List<(int beat, double seconds, double tempo)> _beats = new List<(int, double, double)>();
@@ -92,6 +95,9 @@ public sealed class CaptureScenario : MonoBehaviour
     {
         if (targetFps > 0)
         {
+            _savedFrameRate = Application.targetFrameRate;
+            _savedVSync = QualitySettings.vSyncCount;
+            _frameCapApplied = true;
             QualitySettings.vSyncCount = 0;
             Application.targetFrameRate = targetFps;
         }
@@ -513,6 +519,11 @@ public sealed class CaptureScenario : MonoBehaviour
 
     void OnDestroy()
     {
+        if (_frameCapApplied)
+        {
+            Application.targetFrameRate = _savedFrameRate;
+            QualitySettings.vSyncCount = _savedVSync;
+        }
         if (AudioCapture.IsCapturing && !_finished)
         {
             Debug.LogWarning("[CaptureScenario] Stopped early at beat " + _lastBeat + " of " + beats + "; recording is incomplete.");
