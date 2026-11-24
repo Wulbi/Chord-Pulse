@@ -4,11 +4,12 @@
 
 **Goal:** 처치 화음 다음으로 음악 타임라인의 나머지 음정·스타일 레이어(배경, 스타일 드럼, 특색 루프, 피버)를 Unity가 박에 맞춰 예약하는 원샷으로 옮기고, 음악 이벤트의 들리는 노트를 0으로 줄인다(시계 전환과 이벤트 삭제는 `2026-11-25-unity-music-clock.md` Part C).
 
-**Architecture:** 1차(0c378a3)가 만든 `BeatClock` → `OneShotScheduler` → `FmodOneShotBackend` 경로를 그대로 쓴다. 무엇을 울릴지는 Python 생성기가 만든 `PatternTable.g.cs`(4마디 프레이즈 단위 노트 + 적용 조건)를 새 `PatternScheduler`가 1박 룩어헤드로 읽어 정하고, 편성 상태(스타일·변형·콤보·인텐시티·피버 단계·특색 루프)는 `SoundManager`가 `IArrangement`로 넘긴다. 레벨·필터·덕킹은 FMOD 전역 믹서 버스와 전역 파라미터로 옮겨 타임라인 노트와 원샷에 똑같이 걸린다.
+**Architecture:** 1차(0c378a3)가 만든 `BeatClock` → `OneShotScheduler` → `FmodOneShotBackend` 경로를 그대로 쓴다. 무엇을 울릴지는 Python 생성기가 만든 `PatternTable.g.cs`(4마디 프레이즈 단위 노트 + 적용 조건)를 새 `PatternScheduler`가 1박 룩어헤드(코어 드럼은 한 마디)로 읽어 정하고, 편성 상태(스타일·변형·콤보·인텐시티·피버 단계·특색 루프)는 `SoundManager`가 `IArrangement`로 넘긴다. 레벨·필터·덕킹은 FMOD 전역 믹서 버스와 전역 파라미터로 옮겨 타임라인 노트와 원샷에 똑같이 걸린다.
 
 **Tech Stack:** Unity 6 + FMOD for Unity 2.02 (Studio API), FMOD Studio 2.02.35 (`fmodstudiocl.exe` 스크립트), Python 3 + numpy/scipy (생성기·분석), Unity Test Framework 1.6 (EditMode, `Assets/Tests/Editor/`, asmdef 없음).
 
 **Spec:** `Docs/superpowers/specs/2026-11-24-fmod-scheduled-layers-design.md` — 이 계획은 스펙 6장 3~8단계와, 0~2단계 최종 리뷰가 남긴 선행 정리(Part A)를 다룬다. 0~2단계 계획: `Docs/superpowers/plans/2026-11-24-fmod-scheduled-kill-chords.md`. 측정 방법: `Docs/Captures/README.md`.
+
 시계와 코어 드럼은 `Docs/superpowers/specs/2026-11-25-unity-music-clock-design.md`가 이 계획의 결정을 대체한다 — Task 10·12·15와 '타임라인 점프 정지' 절 참고.
 
 ## Global Constraints
@@ -34,11 +35,11 @@
 2. **구간 점프 착지 직후 노트** — 착지 박과 다음 박의 배경 노트도 처치 화음처럼 1박 앞서 FMOD에 넘겨야(R15) Studio 정지 중 채널 그룹 생성 실패로 사라지지 않는다. → Task 10 `LandingBeats_UseWideDispatchWindow`.
 3. **정지·재시작 중 남은 예약과 꼬리** — `StopMusic()` 뒤 원샷, 리버브 꼬리, 0길이(샘플 끝까지) 노트가 계속 울리면 안 된다. → Task 2 `StopAll_StopsZeroLengthNotes`, Task 6 캡처 꼬리 검사, Task 10 `Reset_ClearsScheduledUntil`.
 4. **숨 고르기 프레이즈·인텐시티 0** — 드리미 스타일과 인텐시티 0에서 성긴 편성만 나와야 한다(플럭 없음, 인텐시티 조건 레이어 없음). → Task 10 `Breath_IntensityZero_DropsIntensityClips`.
-5. **0.4박 미만 선행의 처치 화음과 배경 노트가 한 악기 상한을 공유** — 같은 (악기, 버스) 이벤트를 배경과 처치가 함께 쓰면 스틸링이 처치 화음을 빼먹는다. 키를 (악기, 버스)로 나눠 막는다. → Task 1 `instruments.py` 단언(같은 이름·다른 버스는 다른 이벤트) + Task 4 `EveryVoicedNoteExists`.
+5. **0.4박 미만 선행의 처치 화음과 배경 노트가 한 악기 상한을 공유** — 같은 (악기, 버스) 이벤트를 배경과 처치가 함께 쓰면 스틸링이 처치 화음을 빼먹는다. 키를 (악기, 버스)로 나눠 막는다. → Task 1 `instruments.py` 단언(같은 이름·다른 버스는 다른 이벤트) + Task 4 `EveryVoicedKillNoteExists`.
 
 ## 타임라인 점프 정지(0.5 s) — 이 계획에서 고치지 않는다
 
-원인은 타임라인 점프로 확인됐고(위 스펙 1장) 해법은 시계 전환이다. 이 계획의 캡처는 `landings`로 착지 지연을 기록만 한다.
+원인은 타임라인 점프로 확인됐고(`Docs/superpowers/specs/2026-11-25-unity-music-clock-design.md` 1장) 해법은 시계 전환이다. 이 계획의 캡처는 `landings`로 착지 지연을 기록만 한다.
 
 ---
 
@@ -142,22 +143,21 @@
 - [ ] **Step 2:** 일부러 깨 보기: `KillChordTable`의 한 MIDI를 임시로 바꿔 `EveryVoicedKillNoteExists`가 FAIL하는지 확인 후 되돌림. **Step 3:** `run_tests` PASS.
 - [ ] **Step 4:** Commit `test: instrument sample coverage and section tempo vs FMOD markers`.
 
-### Task 5: 측정 기반 — 점프 정지, 낮은 프레임레이트, 스탠드얼론 오프셋, CPU 예산
+### Task 5: 측정 기반 — 낮은 프레임레이트, 스탠드얼론 오프셋, CPU 예산
 
 **Files:**
-- Modify: `FMOD/Tools/analyze_capture.py` (`gaps` 하위 명령)
 - Modify: `Assets/Scripts/Audio/Capture/CaptureScenario.cs` (`targetFps` 필드, `.cpu.txt`에 `KILLS`처럼 `ONESHOTS started/late/dropped/cancelled` 한 줄)
 - Modify: `Docs/Captures/README.md`
 
 **Interfaces:**
-- Produces: `python -I FMOD/Tools/analyze_capture.py gaps <wav> [--threshold-db -90] [--min-ms 50]` → 무음 구간 목록 (시작 박·길이 ms)과 합계. 이후 모든 단계 표에 "점프 정지 최대/합계" 열.
+- 착지 지연·공백은 이미 있는 `python FMOD/Tools/analyze_capture.py landings <wav>`로, 화면 박은 `frames <wav>`로 잰다(`Docs/Captures/README.md` 'Part A'). 이후 단계 표에는 `landings`의 경계별 지연(ms)과 gap 유무를 기록만 한다.
 - Produces: `CaptureScenario.targetFps`(0 = 제한 없음) → `Application.targetFrameRate`, `QualitySettings.vSyncCount = 0`.
 
-- [ ] **Step 1:** `gaps` 구현, `spike_seed33_task6.wav`에서 착지 4곳 450~570 ms가 나오는지 확인.
+- [ ] **Step 1:** `landings`를 `heavy` seed 33 기준 테이크에 돌려 착지 4곳(16/32/48/64)의 지연과 gap을 README '2차 출발점' 표에 기록(구현 없음).
 - [ ] **Step 2:** 낮은 프레임레이트: `heavy` seed 33을 `targetFps` 60 / 30 / 15로 녹음. 기준: 30 fps에서 late·dropped 0, 15 fps에서 dropped ≤ 1%, 어택 오차 기준 통과. **15 fps에서 넘치면** `OneShotScheduler`의 넘김 창을 `max(창 박, 3 × 평활 프레임 시간)`으로 바꾸고(`SetFrameSeconds(double)`를 `SoundManager.Update`에서 호출, 테스트 `Window_GrowsWithFrameTime`) 다시 녹음.
 - [ ] **Step 3:** 스탠드얼론 오프셋: Windows Development 빌드(`CaptureScenario`가 있는 씬, `spike` seed 33, `shortLeadOnDsp`)로 녹음 → `analyze_capture.py spike`의 평균 부호 오차. -110 샘플과 24 샘플(0.5 ms) 넘게 다르면 `DefaultScheduleOffsetSamples`를 `#if UNITY_EDITOR` 분기로 둘로 나눈다. 같은 빌드로 baseline·heavy CPU도 기록.
-- [ ] **Step 4:** README에 "2차 출발점" 표: Studio update / Core dsp 평균·최대, 점프 정지, ONESHOTS 줄 (Editor·스탠드얼론). Global Constraints의 Core 예산을 이 표 옆에 적는다.
-- [ ] **Step 5:** Commit `capture: jump-gap metric, low frame rate and standalone offset measurements`.
+- [ ] **Step 4:** README에 "2차 출발점" 표: Studio update / Core dsp 평균·최대, `landings` 경계별 지연(ms)·gap 유무, ONESHOTS 줄 (Editor·스탠드얼론). Global Constraints의 Core 예산을 이 표 옆에 적는다.
+- [ ] **Step 5:** Commit `capture: low frame rate and standalone offset measurements`.
 
 ### Task 6: `StopMusic` 뒤 리버브 꼬리 끊기
 
@@ -281,7 +281,7 @@
   - `StyleChange_AtPhraseBoundary` → step 32부터 스타일 1 → 박 16 노트는 라틴, 박 15.5는 신스팝.
   - `LandingBeats_UseWideDispatchWindow` → 박 16 노트가 1박 앞(now 15)에서 백엔드로 넘어감.
   - `LayerMask_SkipsOtherLayers` → 마스크에 없는 레이어의 노트 0.
-  - `DispatchWindow_Override_HandsOverEarly` → `dispatchWindowBeats` 4.0 → 박 4 노트가 now 0에서 백엔드로 넘어감.
+  - `DispatchWindow_Override_HandsOverEarly` → 룩어헤드 4.0, `dispatchWindowBeats` 4.0으로 만든 스케줄러 → 박 4 노트가 now 0에서 백엔드로 넘어감.
   - `Legacy_SchedulesNothing`, `Reset_ClearsScheduledUntil`.
 - [ ] **Step 2:** `run_tests` FAIL. **Step 3:** 구현. **Step 4:** `run_tests` PASS.
 - [ ] **Step 5:** Commit `audio: pattern scheduler and arrangement state`.
@@ -314,15 +314,15 @@
 **Files:**
 - Create: `FMOD/Tools/pattern_drums.py` (코어 드럼(`Core kick`·`Core snare`·`Core hat`)과 펑크 드럼(스네어·고스트·클랩·16분 햇·오픈 햇), 라틴 퍼커션(콩가·카우벨·봉고·클라베스), 라틴·펑크 셰이커(8분 + 콤보 ≥1의 16분), 드리미 퍼커션(클라베스·셰이커), `Snare variations`(고스트·필), `Combo hats`, `Clap layer`, `Eighth-note hats`의 오픈 햇 — 값은 `bed_style.py`·`bed_variation.py`·`bed_combo.py`에서)
 - Modify: `FMOD/Tools/samples.py` (`PERC` 표: 타악기는 `root` = 타악기 번호, `pitch` 0)
-- Modify: `FMOD/Tools/patterns.py` (`PATTERN_LAYERS`, `LEGACY_TRACKS`에 위 트랙과 코어 타임라인 트랙 세 개 — 다른 트랙처럼 `LegacyLayers`로 게이트; `STYLE_USES_CORE_BACKBEAT` 표에서 `PatternTable.StyleUsesCoreBackbeat`를 `bool[]`로 생성)
-- Modify: `Assets/Scripts/Manager/SoundManager.cs` (`PatternScheduler` 둘: 일반 `_patterns`와 코어 `_corePatterns`; `Invalidate`·`Reset`·`Update`는 둘 다에 호출)
+- Modify: `FMOD/Tools/patterns.py` (`PATTERN_LAYERS`, `LEGACY_TRACKS`에 위 트랙과 코어 타임라인 트랙 세 개(`Kick - beats 1 and 3`, `Snare - beats 2 and 4`, `Eighth-note hats`의 닫힌 햇; 오픈 햇 노트는 위에서 이미 옮김) — 다른 트랙처럼 `LegacyLayers`로 게이트; `STYLE_USES_CORE_BACKBEAT` 표에서 `PatternTable.StyleUsesCoreBackbeat`를 `bool[]`로 생성)
+- Modify: `Assets/Scripts/Manager/SoundManager.cs` (`PatternScheduler` 둘: 일반 `_patterns`와 코어 `_corePatterns`; `_patterns.Invalidate/Reset/Update`를 부르는 모든 곳(스타일·변형·콤보·인텐시티·피버·`StopMusic`)이 `_corePatterns`에도 똑같이 호출)
 - Modify: `Assets/Tests/Editor/InstrumentCoverageTests.cs`
 
 **Interfaces:**
 - 드럼 노트: `LengthBeats = 0`(샘플 끝까지, Task 2), `Bus = MusicBed`. 드럼 키트는 `Instrument` 하나에 `Note` = 타악기 번호(스펙 4-2).
 - **코어 드럼도 패턴 클립이다.** `pattern_drums.py`에 코어 레이어를 추가한다: `Core kick`(박 0·2마다, 옛 `Kick - beats 1 and 3` 값), `Core snare`(옛 `Snare - beats 2 and 4`), `Core hat`(옛 `Eighth-note hats`의 닫힌 햇). 조건 — `Core kick`: `Fever` 마스크 = `None | Impact | Fever | Outro`(빌드업 마디에서만 꺼짐). `Core snare`·`Core hat`: `StyleMask` = `STYLE_USES_CORE_BACKBEAT`가 참인 스타일 비트(신스팝만; 피버 구간은 `ArrangementState.Style`이 이미 신스팝). 이벤트 파라미터 `CoreKick`·`CoreBackbeat`는 만들지 않는다. 새 스타일은 `STYLE_USES_CORE_BACKBEAT`에 한 칸 추가 — 이벤트는 바뀌지 않는다. 코어 노트 수 ≈ 킥 64 + 스네어 64 + 닫힌 햇 128.
 - 생성물 추가: `PatternTable.CoreLayerMask`(`ulong`, 코어 세 레이어의 비트), `PatternTable.CoreLookaheadBeats = 4.0`.
-- `SoundManager`의 `PatternScheduler` 둘: `_patterns`(`layerMask = ~PatternTable.CoreLayerMask`, 룩어헤드 1.0)와 `_corePatterns`(`layerMask = CoreLayerMask`, 룩어헤드 `CoreLookaheadBeats` 4.0, `dispatchWindowBeats` 4.0). 코어 드럼은 한 프레이즈 앞서 정해지는 것(스타일·피버)에만 달려 있으므로 한 마디 앞까지 미리 넘겨 일반적인 프레임 정지에도 끊기지 않게 한다. `Invalidate`·`Reset`·`Update`는 둘 다에 호출.
+- `SoundManager`의 `PatternScheduler` 둘: `_patterns`(`layerMask = ~PatternTable.CoreLayerMask`, 룩어헤드 1.0)와 `_corePatterns`(`layerMask = CoreLayerMask`, 룩어헤드 `CoreLookaheadBeats` 4.0, `dispatchWindowBeats` 4.0). 코어 드럼은 한 프레이즈 앞서 정해지는 것(스타일·피버)에만 달려 있으므로 한 마디 앞까지 미리 넘겨 일반적인 프레임 정지에도 끊기지 않게 한다. `_patterns.Invalidate/Reset/Update`를 부르는 모든 곳(스타일·변형·콤보·인텐시티·피버·`StopMusic`)이 `_corePatterns`에도 똑같이 호출한다.
 - `Clap layer`(BedStyle 0 · Intensity ≥2.5)와 오픈 햇(Intensity 1.5~3)은 스타일·인텐시티 축이므로 원샷으로 옮긴다.
 
 - [ ] **Step 1: 실패하는 테스트** `EveryPatternNoteExists`가 드럼 포함으로 FAIL, `PatternSchedulerTests.Funk_Combo1_Adds16thShaker`, `DrumNotes_PlayToSampleEnd`(드럼 노트의 `LengthBeats` = 0), `CoreKick_SilentInBuildBar`(Fever = Build인 마디에 킥 노트 0), `CoreBackbeat_OnlyInSynthpop`(스타일 1에서 Core snare·hat 노트 0), `Core_LookaheadIsOneBar`(now 0에서 박 4의 킥이 예약됨).
@@ -364,7 +364,7 @@
 - Create: `FMOD/Tools/extract_fever.py` (한 번 쓰는 도구: 음악 이벤트 XML에서 피버 8트랙 — lead, shaker, bass fifths, build roll, build riser, impact, outro fall, outro snare — 의 **첫 구간 한 마디 또는 한 프레이즈 분량** 노트(위치, 길이, 샘플, 피치, 볼륨, 트랙 ADSR)를 읽어 `pattern_fever.py`의 데이터 블록을 출력)
 - Create: `FMOD/Tools/pattern_fever.py` (추출된 데이터 — 이후 원천. 손으로 만든 트랙이라 생성기가 없었음)
 - Modify: `FMOD/Tools/patterns.py` (`LEGACY_TRACKS`에 피버 8트랙)
-- Modify: `Assets/Scripts/Manager/SoundManager.cs` (`ArrangementState.Fever` = `UpdateFever`의 단계 규칙을 step 함수로; `QueueFever` → `_patterns.Invalidate(빌드업 첫 박)`을 Task 3 처치 재보이싱과 같은 자리에서)
+- Modify: `Assets/Scripts/Manager/SoundManager.cs` (`ArrangementState.Fever` = `UpdateFever`의 단계 규칙을 step 함수로; `QueueFever` → `_patterns`와 `_corePatterns` 둘 다 `Invalidate(빌드업 첫 박)`(코어 `Core kick`은 빌드업 마디에서 꺼져야 하고 한 마디 앞서 이미 넘어갔을 수 있다)을 Task 3 처치 재보이싱과 같은 자리에서)
 - Modify: `Assets/Tests/Editor/InstrumentCoverageTests.cs`
 
 **Interfaces:**
@@ -372,7 +372,7 @@
 - `extract_fever.py`는 같은 위치에 겹친 복사본(구간 4개 × 마디 8개)이 모두 같은지 단언하고, 다르면 차이를 출력하고 멈춘다(손으로 고친 마디가 있을 수 있음 → 사용자에게 보고).
 
 - [ ] **Step 1:** `extract_fever.py` 실행 → 단언 통과 → `pattern_fever.py` 생성, 노트 수가 인벤토리(160/256/64/384/256/96/256/256)를 반복 횟수로 나눈 값과 맞는지 출력으로 확인.
-- [ ] **Step 2: 실패하는 테스트** `PatternSchedulerTests.FeverQueued_ReplacesBuildBar`(빌드업 박의 스타일 노트가 `Invalidate` 후 롤·라이저로), `Impact_OnlyFirstBeat`.
+- [ ] **Step 2: 실패하는 테스트** `PatternSchedulerTests.FeverQueued_ReplacesBuildBar`(빌드업 박의 스타일 노트가 `Invalidate` 후 롤·라이저로), `Impact_OnlyFirstBeat`, `FeverQueued_CancelsCoreKickInBuildBar`(코어 스케줄러 — `CoreLayerMask`, 룩어헤드 4.0, 넘김 창 4.0 — 가 빌드업 마디의 킥을 백엔드로 넘긴 뒤 피버를 큐잉하고 `Invalidate(빌드업 첫 박)` + `Update` → 그 킥 handle들이 시작 전에 Stop + Release되고 빌드업 마디 안에 킥이 다시 예약되지 않음).
 - [ ] **Step 3:** 생성 → FMOD 순서 → `-build` 별도 → 복사. `run_tests` PASS.
 - [ ] **Step 4:** 캡처: `CaptureScenario`에 `fever` 시나리오(박 24에 `QueueFever`, 처치 매 박) → 빌드업·임팩트·피버·아웃트로 구간 RMS가 `legacyLayers` 테이크 대비 ±1 dB, `Core kick`이 빌드업 마디에서 꺼짐, 피버 중 처치 화음 = 스타일 0.
 - [ ] **Step 5:** README 표 + Commit `audio: fever layers as scheduled one-shots (data extracted from the hand-made tracks)`.
