@@ -118,6 +118,7 @@ InitTestScene*.unity*
 /Docs/Captures/*.duck.csv
 /Docs/Captures/*.frames.csv
 /Docs/Captures/*.params.csv
+/Docs/Captures/*.oneshots.csv
 
 # FMOD Studio scratch/cache (regenerated)
 /FMOD/ChordPulse/.unsaved/

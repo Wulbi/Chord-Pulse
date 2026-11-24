@@ -486,3 +486,79 @@ differ with the frame rate.
 `BuildPipeline.BuildPlayer`, scene list of that one scene, `BuildOptions.Development`, `EditorBuildSettings` and ProjectSettings untouched.
 The player writes to `Docs/Captures` next to the exe (`Application.dataPath/..`), i.e. `Builds/Capture/<scenario>/Docs/Captures/`, and does
 not quit by itself (the exe has to be closed after the `.cpu.txt` appears). Analyse the files from there.
+
+## Task 5b: one-shots never early; channel-group wait in DSP time
+
+`analyze_capture.py spike` now also classifies every test-band click against the beat it belongs to (a click up to 0.7
+beat early still counts for its own beat): `early` (> 5 ms before the beat), `late` (> 5 ms after), `missing` (no click;
+those within one beat after a jump landing are listed apart), and exits 1 if early or late > 0. The paired mean / max
+statistics are unchanged. `CaptureScenario.logOneShots` (off by default) writes `<take>.oneshots.csv`: the backends'
+`FmodOneShotBackend.DiagnosticLog` (per note: `start` with the DSP clock at `start()` and the scheduled start; `apply`
+with the frames waited and the channel group's delay, pause flag and first channel's position at that moment; six
+`check` lines after; `drop`) plus one `clock` line per frame (beat-clock anchor beat, its DSP time, the conductor's poll
+count for it). With logging off the backend only tests one null delegate.
+
+### Cause (confirmed)
+
+Diagnosis take `spike_seed33_s5b_diag_fps15` (old backend + logging, 15 fps): every `apply` (setDelay) came one or two
+frames (64-128 ms) after `start()`, and at that moment 59 of 64 instances had no channel left (the 5 ms click had already
+played and ended), 3 were mid-play (position > 0), 2 at position 0. Each click was heard `lead at start() - about 21 ms`
+early (beat 1: lead 106 ms, heard 85 ms early; beat 2: 255 / 235; beat 3: 150 / 129): the voice sounds at the first
+Studio update after `start()`, and `setDelay` arrives after it. At 60 fps the frame (17 ms) is shorter than a Studio
+update, so the delay usually won the race.
+
+### Fix (commits 84d4d10, 0063da9)
+
+- The instance is paused before `start()`. Studio then creates the channel group *and the voice* paused (every `apply`
+  line of the fixed takes, 64 spike clicks per take and the 1629 kill-chord notes of `heavy_seed33_s5b_killsonly_fps15`:
+  group paused, channel at position 0). `Update` applies `setDelay` / fade points, then unpauses the group directly
+  (core call, immediate) and the instance (Studio bookkeeping). In every `check` line before the start time the channel
+  position is 0 (3771 such checks for the 1629 kill notes at 15 fps): nothing sounds before the delay.
+- Wait is in DSP time (`OneShotArming.Decide`, EditMode tests): wait while the start is at least one mixer block (DSP
+  buffer, 1024 samples) ahead, apply when the group exists, otherwise drop (`DroppedCount`). The one-block margin comes
+  from `spike_seed33_s5b_fps15` (on 84d4d10, margin 0): beat 51 was applied 798 samples before its start and never
+  sounded, invisible to every counter.
+- Placement accuracy of the backend itself: frame in the WAV of each test click minus its `setDelay` start (one constant
+  capture-to-DSP offset per take) is within +-0.6 ms for every click of every take below (60, 30, 15 fps, standalone).
+
+Rejected / not needed:
+- Studio-only unpause (`spike_seed33_s5b_a_fps15`, `instance.setPaused(false)` after `setDelay`): early 0 and placement
+  equally exact, but the unpause waits for Studio's next update (or a 0.2-0.8 s landing stall), which can come after the
+  start: a note could then play late. Unpausing the group directly (`_a2_fps15`, then the commits) has no such window.
+- `EVENT_PROPERTY.SCHEDULE_DELAY` as a guard (approach b) and other variants: not tried. The paused start already places
+  every click within 0.6 ms of its `setDelay` time; what remains at 15 / 30 fps is in the start time itself (below), which
+  no backend variant can correct.
+
+### Results (Editor unless stated; seed 33, 68 beats, `shortLeadOnDsp`; every take `stalls 0`; attack = `spike` "after correction")
+
+| take | code | fps | early | late | missing / dropped | attack mean / max (ms) | Studio / Core dsp avg % |
+|---|---|---:|---:|---:|---|---:|---|
+| spike_seed33_s5_fps60 (Task 5) | old | 60 | 0 | 0 | 0 / 0 | 0.91 / 2.77 | 6.84 / 1.72 |
+| spike_seed33_s5_fps30 (Task 5) | old | 30 | 30 | 0 | 0 / 0 | (33 paired) | 7.50 / 1.57 |
+| spike_seed33_s5_fps15 (Task 5) | old | 15 | 64 | 0 | 0 / 0 | (0 paired) | 7.61 / 1.72 |
+| spike_seed33_s5_standalone (Task 5) | old | ~2050 | 1 | 0 | 59 / 60 dropped | (4 paired) | 5.24 / 0.94 |
+| spike_seed33_s5b_diag_fps15 | old + log | 15 | 62 | 0 | 0 / 0 | (1 paired) | 7.93 / 1.54 |
+| spike_seed33_s5b_a_fps15 | Studio unpause | 15 | 0 | 10 (+6..+7) | 0 / 0 | 1.99 / 6.14 | 6.87 / 1.54 |
+| spike_seed33_s5b_a2_fps15 | group unpause | 15 | 0 | 12 (+6..+10) | 0 / 0 | 2.40 / 9.47 | 6.33 / 1.54 |
+| spike_seed33_s5b_fps15 | 84d4d10 | 15 | 0 | 9 | 1 (beat 51, silent) / 0 | 2.12 / 6.49 | 6.39 / 1.48 |
+| spike_seed33_s5b_c_fps60 | 0063da9 | 60 | 0 | 0 | 0 / 0 | 0.90 / 3.17 | 6.52 / 1.45 |
+| spike_seed33_s5b_c_fps30 | 0063da9 | 30 | 0 | 2 (+5.0, +5.1) | 0 / 0 | 1.29 / 4.96 | 6.79 / 1.50 |
+| spike_seed33_s5b_c_fps15 | 0063da9 | 15 | 0 | 8 (+5..+7) | 0 / 0 | 1.55 / 7.22 | 6.92 / 1.53 |
+| spike_seed33_s5b_standalone_uncapped (Development player) | 0063da9 | ~2150 | 0 | 0 | 0 / 0 | 0.33 / 1.42 | 5.51 / 1.40 |
+
+(`spike_seed33_s5b_fps60` / `_fps30` on 84d4d10: 0 / 0 / 0, 0.83 / 2.30 ms and 0 / 1 / 0, 1.40 / 5.27 ms.) Uncapped
+standalone: 81,662 frames in about 38 s; 59 of the 64 clicks waited more than 30 frames for their channel group (up to
+75 frames, at most one mixer block of DSP time), so the old 30-frame limit would have dropped them.
+
+Heavy (kill chords on the same backend): `heavy_seed33_s5b_fps60` Studio 8.20 / Core 5.42 %, one-shots 1629 started,
+late 0, dropped 0, cancelled 24 (Task 5 `_s5_fps60c`: 8.90 / 6.14 %, same counts); `heavy_seed33_s5b_fps15` 7.55 / 5.56 %,
+1629 / 0 / 0 / 0; `heavy_seed7_s5b_fps60` (128 beats) 7.31 / 5.47 %, 3069 / 0 / 0 / 0. No landing drops in any take.
+
+### Still failing at 15 and 30 fps: the beat clock, not the backend
+
+The late clicks at 15 / 30 fps are placed exactly on their `setDelay` start (+-0.6 ms); the start itself is 6-10 ms late.
+Compared with the reference click of the same beat, the beat clock's anchor (`MusicConductor.PollAnchor`, running mean of
+the main-thread polls within half a beat) is about +1 to +2 ms for most beats but +7 to +9 ms for about 10 of 64 beats
+at 15 fps, where only 3-4 polls go into each anchor (14-17 at 60 fps, 6-8 at 30 fps); a click scheduled from such an
+anchor is late by that much. This needs a change in `MusicConductor` (out of scope here), so the 15 fps line of the
+attack criterion (max <= 5 ms, late 0) is not met, and the 30 fps line only marginally (2 clicks at +5.0 / +5.1 ms raw).
