@@ -210,12 +210,29 @@ Every scheduled click lands within 2 / 5 ms; beat 33 (post-landing, 0.3-beat lea
 
 - `SoundManager.BeatPosition` is capped at anchor + 0.999 beat (`MusicConductor.MaxExtrapolationBeats`), so while the
   landing beat's callback is late it sits at 15.999 and a beat-position trigger fires only after beat 17 has passed.
-- With the DSP trigger, the pending tempo gives the right time (`DspAt(16.7)` = anchor 15 + 1 beat at 108 + 0.7 at 116,
-  exactly), but anchor B's running mean for beat 15 drifts later every frame from about beat 15.9 (583296 -> 585600+
-  samples, still growing at the boundary): the timeline position stalls ahead of the jump while the DSP clock runs on,
-  and those polls are still averaged in. The drift pushes beat 17 late in 2 of 3 takes. Fix belongs in
-  `MusicConductor.PollAnchor` (e.g. stop averaging once a beat is settled or the timeline stops advancing) and
-  game triggers should use DSP time, not the capped beat position (Task 6).
+  Game code should take "now in beats" from `BeatClock.BeatAt(MasterDsp())` instead (ruling R14; the clamp stays for
+  visuals).
+- Anchor B's running mean for beat 15 drifted later every frame from about beat 15.9 (583296 -> 585600+ samples, still
+  growing at the boundary): the timeline position stalls ahead of the jump while the DSP clock runs on. That moves every
+  `DspAt` past the boundary late, i.e. notes triggered earlier would have played tens of ms late without R12 noticing.
+
+Fix (R14): `MusicConductor.PollAnchor` averages only polls up to half a beat after the beat; a beat whose callback
+arrives later than that (jump landings) gets no anchor, and the clock keeps extrapolating from the previous anchor plus
+`SetTempoFrom` (an unanchored pending change is folded into a predicted anchor when the next one is announced).
+An intermediate version that still took one poll from such a late beat placed beat 50 (`_r14`) and beats 18 / 34
+(`_r14_dsp`) 8-21 ms late; those takes are kept as evidence.
+
+| take (after R14) | trigger | paired | raw mean / max | after correction mean / max | 4 beats after change | late > 5 ms |
+|---|---|---:|---:|---:|---:|---:|
+| `spike_seed33_B2` (Task 3 reference) | BeatPosition | 57 | 2.29 / 4.58 | 0.79 / 2.30 | 0.81 / 1.61 | - |
+| `spike_seed33_r14b` | BeatPosition | 57 | 0.76 / 1.67 | 0.48 / 1.50 | 0.39 / 0.75 | 0 |
+| `spike_seed33_r14b_dsp` | beat clock DSP | 57 | 0.76 / 2.67 | 0.53 / 1.96 | 0.59 / 1.39 | 0 |
+
+In `_r14b_dsp` the post-landing 0.3-beat clicks 17, 33, 49 were all scheduled on time (lead 6640-7821 samples from
+anchor 15/31/47 + pending tempo). 33 played (+1.27 ms). 17 and 49 were dropped by the backend because their channel
+group appeared only after the start (R12, never late): Studio is stalled around a jump landing, the same stall that
+silences the music for about 0.5 s. Beat 18 (scheduled from the late beat-17 callback) was already past and was
+counted late. So one-shots due within about 0.5 s after a jump landing can be lost, but none plays late.
 
 ### Note parameter is per instance
 

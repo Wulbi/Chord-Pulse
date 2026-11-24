@@ -193,6 +193,12 @@ public sealed class MusicConductor
         // Before the timeline reached this beat, or after a jump that has not been reported yet: no estimate.
         if (sinceBeat < -beatSeconds || sinceBeat > 2 * beatSeconds)
             return;
+        // Settled after half a beat: later polls are not averaged in. Before a jump the timeline position stalls while
+        // the DSP clock runs on, and those polls dragged the anchor tens of ms late; a beat whose callback arrives more
+        // than half a beat late (jump landings) gets no anchor at all, its lone poll was up to 21 ms off (Task 5
+        // captures, ruling R14). The clock keeps extrapolating from the previous anchor (plus SetTempoFrom) instead.
+        if (sinceBeat > 0.5 * beatSeconds)
+            return;
         _pollSum += now - sinceBeat * Clock.SampleRate;
         _pollCount++;
         Clock.Anchor(_anchorBeat, (ulong)Math.Round(_pollSum / _pollCount), _tempo);
