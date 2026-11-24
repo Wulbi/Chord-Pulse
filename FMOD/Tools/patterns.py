@@ -375,10 +375,17 @@ def _sections():
 
 
 def _legacy_conditions(conds):
-    """XML trigger conditions -> (styles, variation min, max, combo min, intensity min), or a string if one does not map."""
+    """XML trigger conditions -> (styles, variation min, max, combo min, intensity min), or a string if one does not map.
+    Every migrated note must carry the legacy_gate.py gate (LegacyLayers in GATE); it is not part of the conditions."""
+    import legacy_gate
     styles, var, combo, inten = (0, 1, 2, 3), (0, 4), 0, 0.0
+    if legacy_gate.PARAMETER not in conds:
+        return f"no {legacy_gate.PARAMETER} gate (run legacy_gate.js)"
     for name, (lo, hi) in conds.items():
-        if name == "BedStyle":
+        if name == legacy_gate.PARAMETER:
+            if abs(lo - legacy_gate.GATE[0]) > 1e-6 or abs(hi - legacy_gate.GATE[1]) > 1e-6:
+                return f"{name} gate [{lo}, {hi}] is not {list(legacy_gate.GATE)}"
+        elif name == "BedStyle":
             styles = tuple(s for s in range(STYLE_COUNT) if lo <= s <= hi)
         elif name == "Variation":
             var = (round(lo + 0.4), round(hi - 0.4))
