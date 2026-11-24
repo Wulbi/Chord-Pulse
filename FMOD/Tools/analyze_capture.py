@@ -30,8 +30,8 @@
       previous beat and its BPM (ms), RMS of the first and the next half beat after the predicted boundary, RMS of the
       same place one phrase (boundary b-8) earlier, and silent runs (>= 20 ms, 5 ms windows with peak below -70 dBFS)
       within one beat after the predicted boundary. A run is printed as a "rest" (separately from the gaps) only if the
-      window at the same offset (same ms) after the previous bar's downbeat (beat b-4, its logged frame) is entirely
-      silent by the same rule; a run starting less than 20 ms after the boundary, or any run when beat b-4 is not in the
+      window at the same offset in beats (ms scaled by bpm[b] / bpm[b-4]) after the previous bar's downbeat (beat b-4,
+      its logged frame) is entirely silent by the same rule; a run starting less than 20 ms after the boundary, or any run when beat b-4 is not in the
       beat log, is always a gap.
 
 Needs numpy and scipy. Note: numpy lives in the user site-packages here, so `python -I` (isolated mode) cannot import
@@ -351,12 +351,14 @@ def cmd_landings(args):
         gaps, rests = [], []
         thr = 10 ** (-70.0 / 20.0)
         for off, length in runs:
-            # A rest: the window at the same offset (same ms) after the previous bar's downbeat (beat b-4, logged frame)
-            # is entirely silent too. Never for a run starting within 20 ms of the downbeat, nor without a b-4 stamp.
+            # A rest: the window at the same offset in beats after the previous bar's downbeat (beat b-4, logged frame;
+            # ms scaled by bpm[b] / bpm[b-4]) is entirely silent too. Never for a run starting within 20 ms of the
+            # downbeat, nor without a b-4 stamp.
             rest = False
             if off >= 20.0 and b - 4 in beats:
-                a0 = beats[b - 4][0] + int(round(off * rate / 1000.0))
-                seg = mono[a0:a0 + int(round(length * rate / 1000.0))]
+                k = bpm / beats[b - 4][1]
+                a0 = beats[b - 4][0] + int(round(off * k * rate / 1000.0))
+                seg = mono[a0:a0 + int(round(length * k * rate / 1000.0))]
                 rest = len(seg) > 0 and float(np.max(np.abs(seg))) < thr
             (rests if rest else gaps).append("%.0f+%.0f" % (off, length))
         sil = ", ".join(gaps) if gaps else "-"
