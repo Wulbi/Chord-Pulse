@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<objects serializationModel="Studio.02.02.00">
+	<object class="MixerGroup" id="{691d4b88-48e7-469a-98fd-e2ee60ad1abb}">
+		<property name="name">
+			<value>Kill Chords</value>
+		</property>
+		<relationship name="effectChain">
+			<destination>{900f98ba-485a-40ea-aab3-ff9c4852c85c}</destination>
+		</relationship>
+		<relationship name="panner">
+			<destination>{2d8fa645-f5d4-45bd-90df-7911337057ec}</destination>
+		</relationship>
+		<relationship name="output">
+			<destination>{af9d027a-3a1f-49a8-a9ef-4cbe20673632}</destination>
+		</relationship>
+	</object>
+	<object class="MixerBusEffectChain" id="{900f98ba-485a-40ea-aab3-ff9c4852c85c}">
+		<relationship name="effects">
+			<destination>{eb9f1c38-d713-4ebd-b33c-de1531f4f96f}</destination>
+		</relationship>
+	</object>
+	<object class="MixerBusPanner" id="{2d8fa645-f5d4-45bd-90df-7911337057ec}" />
+	<object class="MixerBusFader" id="{eb9f1c38-d713-4ebd-b33c-de1531f4f96f}" />
+</objects>
