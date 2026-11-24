@@ -205,7 +205,7 @@ public sealed class OneShotScheduler
 /// Call Update every frame. (Task 3 spike: EVENT_PROPERTY.SCHEDULE_DELAY was as precise but about 24 ms late on
 /// average, an offset that depends on the Studio update timing; see Docs/Captures/README.md.)
 /// <see cref="Stop"/> with a time at or before now, or at or before the note's start, cancels the note at once.
-/// A note stopped at its end time fades out over <see cref="ReleaseSeconds"/> from that time (like the 120 ms ADSR
+/// A note stopped at its end time fades out over <see cref="InstrumentTable.ReleaseSeconds"/> from that time (like the 120 ms ADSR
 /// release of the timeline notes it replaces) instead of being cut.
 /// </summary>
 public sealed class FmodOneShotBackend : IOneShotBackend
@@ -223,12 +223,12 @@ public sealed class FmodOneShotBackend : IOneShotBackend
 
     readonly Dictionary<int, Note> _notes = new Dictionary<int, Note>();
     readonly List<int> _keys = new List<int>();
-    readonly Dictionary<Instrument, FMOD.Studio.EventDescription> _descriptions = new Dictionary<Instrument, FMOD.Studio.EventDescription>();
+    readonly Dictionary<(Instrument, OutputBus), FMOD.Studio.EventDescription> _descriptions = new Dictionary<(Instrument, OutputBus), FMOD.Studio.EventDescription>();
     int _next;
     ulong _releaseSamples;
 
-    /// <summary>Fade-out after a note's stop time (the instrument events' ADSR release).</summary>
-    public const double ReleaseSeconds = 0.12;
+    /// <summary>The bus every note of this backend plays on (the scheduler only drives kill chords so far).</summary>
+    const OutputBus Bus = OutputBus.KillChords;
 
     /// <summary>
     /// Notes stopped without sounding: their channel group appeared only after the start time had passed, or never
@@ -243,11 +243,13 @@ public sealed class FmodOneShotBackend : IOneShotBackend
 
     public int Start(Instrument inst, int midi, float gainDb, ulong dspStart)
     {
-        if (!_descriptions.TryGetValue(inst, out var description))
+        var key = (inst, Bus);
+        if (!_descriptions.TryGetValue(key, out var description))
         {
-            if (FMODUnity.RuntimeManager.StudioSystem.getEvent(InstrumentTable.EventPath(inst), out description) != FMOD.RESULT.OK)
+            string path = InstrumentTable.EventPath(inst, Bus);
+            if (path == null || FMODUnity.RuntimeManager.StudioSystem.getEvent(path, out description) != FMOD.RESULT.OK)
                 return -1;
-            _descriptions[inst] = description;
+            _descriptions[key] = description;
         }
         if (description.createInstance(out var instance) != FMOD.RESULT.OK)
             return -1;
@@ -256,7 +258,7 @@ public sealed class FmodOneShotBackend : IOneShotBackend
         if (_releaseSamples == 0)
         {
             FMODUnity.RuntimeManager.CoreSystem.getSoftwareFormat(out int rate, out _, out _);
-            _releaseSamples = (ulong)Math.Round(ReleaseSeconds * (rate > 0 ? rate : 48000));
+            _releaseSamples = (ulong)Math.Round(InstrumentTable.ReleaseSeconds(inst, Bus) * (rate > 0 ? rate : 48000));
         }
         if (instance.start() != FMOD.RESULT.OK)
         {

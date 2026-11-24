@@ -21,6 +21,7 @@ sys.path.insert(0, HERE)
 import samples  # noqa: E402
 
 CS_PATH = os.path.join(HERE, "..", "..", "Assets", "Scripts", "Audio", "Generated", "KillChordTable.g.cs")
+BUS = "Kill Chords"    # mixer bus the instrument events play through (bus:/Kill Chords)
 NORMALIZE_DB = -27.0   # keep equal to instruments.NORMALIZE_DB (not imported: instruments imports this module)
 MAX_INSTANCES = 24     # one beat can stack 3 colours x 5 voices + extras on the same instrument
 
@@ -71,9 +72,9 @@ def all_notes():
 def register(lib):
     for name, table in TABLES.items():
         # the original synth leads/plucks are one sample each and were pitched up to +19 semitones on the timeline
-        lib.add(name, table, MAX_INSTANCES, max_pitch=24 if name.startswith("Orig") else 15)
+        lib.add(name, table, MAX_INSTANCES, bus=BUS, max_pitch=24 if name.startswith("Orig") else 15)
     for inst, midi in all_notes():
-        lib.need(inst, midi)
+        lib.need(inst, BUS, midi)
 
 
 def _arr(values):

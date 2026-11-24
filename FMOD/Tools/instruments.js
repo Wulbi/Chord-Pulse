@@ -2,7 +2,11 @@
 var INSTRUMENTS = [
  {
   "name": "Bass",
+  "bus": "Kill Chords",
+  "busFolder": "KillChords",
   "max": 24,
+  "attack": 1,
+  "release": 120,
   "notes": [
    {
     "midi": 41,
@@ -36,7 +40,11 @@ var INSTRUMENTS = [
  },
  {
   "name": "Bells",
+  "bus": "Kill Chords",
+  "busFolder": "KillChords",
   "max": 24,
+  "attack": 1,
+  "release": 120,
   "notes": [
    {
     "midi": 65,
@@ -147,7 +155,11 @@ var INSTRUMENTS = [
  },
  {
   "name": "Brass",
+  "bus": "Kill Chords",
+  "busFolder": "KillChords",
   "max": 24,
+  "attack": 1,
+  "release": 120,
   "notes": [
    {
     "midi": 53,
@@ -258,7 +270,11 @@ var INSTRUMENTS = [
  },
  {
   "name": "Clav",
+  "bus": "Kill Chords",
+  "busFolder": "KillChords",
   "max": 24,
+  "attack": 1,
+  "release": 120,
   "notes": [
    {
     "midi": 65,
@@ -369,7 +385,11 @@ var INSTRUMENTS = [
  },
  {
   "name": "Glass",
+  "bus": "Kill Chords",
+  "busFolder": "KillChords",
   "max": 24,
+  "attack": 1,
+  "release": 120,
   "notes": [
    {
     "midi": 53,
@@ -480,7 +500,11 @@ var INSTRUMENTS = [
  },
  {
   "name": "Glock",
+  "bus": "Kill Chords",
+  "busFolder": "KillChords",
   "max": 24,
+  "attack": 1,
+  "release": 120,
   "notes": [
    {
     "midi": 77,
@@ -591,7 +615,11 @@ var INSTRUMENTS = [
  },
  {
   "name": "Guitar",
+  "bus": "Kill Chords",
+  "busFolder": "KillChords",
   "max": 24,
+  "attack": 1,
+  "release": 120,
   "notes": [
    {
     "midi": 41,
@@ -702,7 +730,11 @@ var INSTRUMENTS = [
  },
  {
   "name": "Harp",
+  "bus": "Kill Chords",
+  "busFolder": "KillChords",
   "max": 24,
+  "attack": 1,
+  "release": 120,
   "notes": [
    {
     "midi": 53,
@@ -813,7 +845,11 @@ var INSTRUMENTS = [
  },
  {
   "name": "Marimba",
+  "bus": "Kill Chords",
+  "busFolder": "KillChords",
   "max": 24,
+  "attack": 1,
+  "release": 120,
   "notes": [
    {
     "midi": 53,
@@ -924,7 +960,11 @@ var INSTRUMENTS = [
  },
  {
   "name": "OrigBlue",
+  "bus": "Kill Chords",
+  "busFolder": "KillChords",
   "max": 24,
+  "attack": 1,
+  "release": 120,
   "notes": [
    {
     "midi": 53,
@@ -1035,7 +1075,11 @@ var INSTRUMENTS = [
  },
  {
   "name": "OrigRed",
+  "bus": "Kill Chords",
+  "busFolder": "KillChords",
   "max": 24,
+  "attack": 1,
+  "release": 120,
   "notes": [
    {
     "midi": 53,
@@ -1146,7 +1190,11 @@ var INSTRUMENTS = [
  },
  {
   "name": "OrigYellow",
+  "bus": "Kill Chords",
+  "busFolder": "KillChords",
   "max": 24,
+  "attack": 1,
+  "release": 120,
   "notes": [
    {
     "midi": 53,
@@ -1257,7 +1305,11 @@ var INSTRUMENTS = [
  },
  {
   "name": "SpikeClick",
+  "bus": "Kill Chords",
+  "busFolder": "KillChords",
   "max": 8,
+  "attack": 1,
+  "release": 120,
   "notes": [
    {
     "midi": 72,
@@ -1270,7 +1322,11 @@ var INSTRUMENTS = [
  },
  {
   "name": "Sub",
+  "bus": "Kill Chords",
+  "busFolder": "KillChords",
   "max": 24,
+  "attack": 1,
+  "release": 120,
   "notes": [
    {
     "midi": 41,
@@ -1304,7 +1360,11 @@ var INSTRUMENTS = [
  },
  {
   "name": "Vibes",
+  "bus": "Kill Chords",
+  "busFolder": "KillChords",
   "max": 24,
+  "attack": 1,
+  "release": 120,
   "notes": [
    {
     "midi": 53,
@@ -1415,9 +1475,11 @@ var INSTRUMENTS = [
  }
 ];
 var FOLDER = "Inst";
-var BUS = "Kill Chords";
+var EPS = 0.001;
 
+var counts = { moved: 0, updated: 0, added: 0, removed: 0 };
 function log(m) { console.log("[inst] " + m); }
+function differs(a, b) { return Math.abs(a - b) > EPS; }
 var project = studio.project;
 var assetsRoot = project.filePath.replace(/[^\/\\]+$/, "") + "Assets/";
 
@@ -1426,9 +1488,23 @@ if (!bank) throw "bank ChordPulse not found";
 var music = project.lookup("event:/Music/ChordPulseGame");
 if (!music) throw "event:/Music/ChordPulseGame not found";
 
-// --- folder event:/Inst ---
+function childFolder(parent, name) {
+    var found = null;
+    project.model.EventFolder.findInstances().forEach(function (f) {
+        if (f.isValid && f.name === name && f.folder && f.folder.id === parent.id) found = f;
+    });
+    if (!found) {
+        found = project.create("EventFolder");
+        found.name = name;
+        found.folder = parent;
+        log("created folder " + name);
+    }
+    return found;
+}
+
+// --- folder event:/Inst (next to event:/Music) ---
 var folder = null;
-project.model.EventFolder.findInstances().forEach(function (f) { if (f.name === FOLDER) folder = f; });
+project.model.EventFolder.findInstances().forEach(function (f) { if (f.isValid && f.name === FOLDER) folder = f; });
 if (!folder) {
     folder = project.create("EventFolder");
     folder.name = FOLDER;
@@ -1436,14 +1512,19 @@ if (!folder) {
     log("created folder " + FOLDER);
 }
 
-// --- bus:/Kill Chords ---
-var killBus = project.lookup("bus:/" + BUS);
-if (!killBus) {
-    killBus = project.create("MixerGroup");
-    killBus.name = BUS;
-    killBus.output = project.workspace.mixer.masterBus;
-    log("created bus " + BUS);
-}
+// --- buses (bus:/Kill Chords is created here; later layers add their own) ---
+var buses = {};
+INSTRUMENTS.forEach(function (inst) {
+    if (buses[inst.bus]) return;
+    var b = project.lookup("bus:/" + inst.bus);
+    if (!b) {
+        b = project.create("MixerGroup");
+        b.name = inst.bus;
+        b.output = project.workspace.mixer.masterBus;
+        log("created bus " + inst.bus);
+    }
+    buses[inst.bus] = b;
+});
 
 // --- parameter Note: one project preset (each event keeps its own value), 0-127 ---
 // Continuous, not discrete: on a discrete parameter FMOD widened each note's [m-0.4, m+0.4] condition to reach m+1, so
@@ -1455,17 +1536,11 @@ if (!noteParam) {
     noteParam = project.lookup("parameter:/Note") || noteParam;
     log("created parameter Note");
 }
-noteParam.parameter.parameterType = project.parameterType.User;
-noteParam.parameter.seekSpeed = 0;
-noteParam.parameter.minimum = 0;
-noteParam.parameter.maximum = 127;
-noteParam.parameter.initialValue = 0;
-
-// --- undo an earlier run ---
-INSTRUMENTS.forEach(function (inst) {
-    var old = project.lookup("event:/" + FOLDER + "/" + inst.name);
-    if (old) { project.deleteObject(old); log("removed old " + inst.name); }
-});
+if (noteParam.parameter.parameterType !== project.parameterType.User) noteParam.parameter.parameterType = project.parameterType.User;
+if (noteParam.parameter.seekSpeed !== 0) noteParam.parameter.seekSpeed = 0;
+if (noteParam.parameter.minimum !== 0) noteParam.parameter.minimum = 0;
+if (noteParam.parameter.maximum !== 127) noteParam.parameter.maximum = 127;
+if (noteParam.parameter.initialValue !== 0) noteParam.parameter.initialValue = 0;
 
 var files = {};
 function audioFile(rel) {
@@ -1483,31 +1558,123 @@ function audioFile(rel) {
     return found;
 }
 
-var eventCount = 0, soundCount = 0;
-INSTRUMENTS.forEach(function (inst) {
-    var ev = project.workspace.addEvent(inst.name, false);
-    ev.folder = folder;
-    ev.relationships.banks.add(bank);
-    ev.mixerInput.output = killBus;
-    ev.automatableProperties.maxVoices = inst.max;      // "Max Instances" in the Studio UI
-    ev.automatableProperties.voiceStealing = 0;         // Oldest (enum: Oldest, Quietest, Virtualize, None, Furthest)
-    ev.addGameParameter(noteParam);
-    var track = ev.addGroupTrack("Notes");
-    inst.notes.forEach(function (n) {
-        var af = audioFile(n.file);
-        var s = track.addSound(ev.timeline, "SingleSound", 0, Math.max(0.5, af.length));
+function noteCondition(s) {
+    var found = null;
+    s.triggerConditions.forEach(function (c) { if (c.parameter && c.parameter.id === noteParam.parameter.id) found = c; });
+    return found;
+}
+
+function adsr(s) {
+    var found = [];
+    s.modulators.forEach(function (m) { if (m.entity === "ADSRModulator" && m.nameOfPropertyBeingModulated === "volume") found.push(m); });
+    return found;
+}
+
+// Brings one sound in line with the wanted note; returns true when anything was written.
+function syncSound(s, n, inst, isNew) {
+    var changed = false;
+    var af = audioFile(n.file);
+    if (isNew || !s.audioFile || s.audioFile.id !== af.id) {
         s.audioFile = af;
-        s.pitch = n.pitch;
-        s.volume = n.volume;
-        s.addParameterCondition(noteParam, n.midi - 0.4, n.midi + 0.4);
-        var env = project.create("ADSRModulator");
+        var len = Math.max(0.5, af.length);
+        if (differs(s.length, len)) s.length = len;
+        changed = true;
+    }
+    if (differs(s.pitch, n.pitch)) { s.pitch = n.pitch; changed = true; }
+    if (differs(s.volume, n.volume)) { s.volume = n.volume; changed = true; }
+    var c = noteCondition(s);
+    if (!c) { s.addParameterCondition(noteParam, n.midi - 0.4, n.midi + 0.4); changed = true; }
+    else {
+        if (differs(c.minimum, n.midi - 0.4)) { c.minimum = n.midi - 0.4; changed = true; }
+        if (differs(c.maximum, n.midi + 0.4)) { c.maximum = n.midi + 0.4; changed = true; }
+    }
+    var mods = adsr(s);
+    mods.slice(1).forEach(function (m) { project.deleteObject(m); changed = true; });
+    var env = mods[0];
+    if (!env) {
+        env = project.create("ADSRModulator");
         env.nameOfPropertyBeingModulated = "volume";
-        env.attackTime = 1; env.releaseTime = 120;
         env.objectBeingModulated = s;
+        changed = true;
+    }
+    if (differs(env.attackTime, inst.attack)) { env.attackTime = inst.attack; changed = true; }
+    if (differs(env.releaseTime, inst.release)) { env.releaseTime = inst.release; changed = true; }
+    return changed;
+}
+
+var wanted = {};   // event paths this run owns
+var soundCount = 0;
+INSTRUMENTS.forEach(function (inst) {
+    var sub = childFolder(folder, inst.busFolder);
+    var path = "event:/" + FOLDER + "/" + inst.busFolder + "/" + inst.name;
+    wanted[path] = true;
+    var ev = project.lookup(path);
+    var isNewEvent = false, evChanged = false;
+    if (!ev) {
+        // the first-generation event event:/Inst/<Name>: move it into the bus folder (same GUID, so no "Events Renamed")
+        var old = project.lookup("event:/" + FOLDER + "/" + inst.name);
+        if (old) {
+            old.folder = sub;
+            ev = old;
+            counts.moved++;
+        } else {
+            ev = project.workspace.addEvent(inst.name, false);
+            ev.folder = sub;
+            counts.added++;
+            isNewEvent = true;
+        }
+    }
+    var inBank = false;
+    ev.banks.forEach(function (b) { if (b.id === bank.id) inBank = true; });
+    if (!inBank) { ev.relationships.banks.add(bank); evChanged = true; }
+    var out = buses[inst.bus];
+    if (!ev.mixerInput.output || ev.mixerInput.output.id !== out.id) { ev.mixerInput.output = out; evChanged = true; }
+    var ap = ev.automatableProperties;
+    if (ap.maxVoices !== inst.max) { ap.maxVoices = inst.max; evChanged = true; }   // "Max Instances" in the Studio UI
+    if (ap.voiceStealing !== 0) { ap.voiceStealing = 0; evChanged = true; }         // Oldest (enum: Oldest, Quietest, Virtualize, None, Furthest)
+    // the event's parameter proxy points at the GameParameter (noteParam.parameter), not at the preset; keep exactly one
+    var noteProxies = [];
+    ev.parameters.forEach(function (p) { if (p.preset && p.preset.id === noteParam.parameter.id) noteProxies.push(p); });
+    noteProxies.slice(1).forEach(function (p) { project.deleteObject(p); evChanged = true; });
+    if (noteProxies.length === 0) { ev.addGameParameter(noteParam); evChanged = true; }
+
+    var track = null;
+    ev.groupTracks.forEach(function (t) { if (t.mixerGroup.name === "Notes") track = t; });
+    if (!track) { track = ev.addGroupTrack("Notes"); evChanged = true; }
+
+    // match the track's sounds to the wanted notes by the MIDI number in their Note condition
+    var byMidi = {}, drop = [];
+    track.modules.forEach(function (s) {
+        var c = noteCondition(s);
+        var midi = c ? Math.round((c.minimum + c.maximum) / 2) : -1;
+        if (midi < 0 || byMidi[midi]) drop.push(s); else byMidi[midi] = s;
+    });
+    inst.notes.forEach(function (n) {
+        var s = byMidi[n.midi], isNew = false;
+        if (s) delete byMidi[n.midi];
+        else {
+            s = track.addSound(ev.timeline, "SingleSound", 0, 0.5);
+            isNew = true;
+            counts.added++;
+        }
+        if (syncSound(s, n, inst, isNew) && !isNew) counts.updated++;
         soundCount++;
     });
-    eventCount++;
+    Object.keys(byMidi).forEach(function (k) { drop.push(byMidi[k]); });
+    drop.forEach(function (s) { project.deleteObject(s); counts.removed++; });
+    if (evChanged && !isNewEvent) counts.updated++;
 });
-log("events " + eventCount + ", sounds " + soundCount);
+
+// --- events under event:/Inst that this generator no longer lists ---
+var stale = [];
+project.model.Event.findInstances().forEach(function (ev) {
+    if (!ev.isValid) return;
+    var p = ev.getPath();
+    if (p.indexOf("event:/" + FOLDER + "/") === 0 && !wanted[p]) stale.push(ev);
+});
+stale.forEach(function (ev) { log("removing " + ev.getPath()); project.deleteObject(ev); counts.removed++; });
+
+log("moved " + counts.moved + ", updated " + counts.updated + ", added " + counts.added + ", removed " + counts.removed);
+log("events " + INSTRUMENTS.length + ", sounds " + soundCount);
 project.save();
 log("saved");

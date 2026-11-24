@@ -13,7 +13,7 @@ Writes:
 - spike_click.js: adds a "Spike ref" group track to event:/Music/ChordPulseGame with a 1 kHz click on every beat of
   all 32 bars (4 sections x 8 bars). Every click has a parameter condition SpikeRef in [0.5, 1], so the track is
   silent unless Unity sets the event-local parameter SpikeRef = 1. Idempotent (removes its old track first).
-- register(lib): the SpikeClick instrument (3 kHz click) for instruments.py -> event:/Inst/SpikeClick.
+- register(lib): the SpikeClick instrument (3 kHz click) for instruments.py -> event:/Inst/KillChords/SpikeClick.
 """
 import json
 import math
@@ -78,8 +78,8 @@ CLICK_3K_RMS_DB = round(short_term_rms_db(click_samples(3000)), 1)
 
 def register(lib):
     """instruments.py layer: one note (MIDI 72) of the 3 kHz click; onset 0."""
-    lib.add("SpikeClick", [(REL_3K, 72, CLICK_3K_RMS_DB, 0.0)], 8)
-    lib.need("SpikeClick", 72)
+    lib.add("SpikeClick", [(REL_3K, 72, CLICK_3K_RMS_DB, 0.0)], 8, bus="Kill Chords")
+    lib.need("SpikeClick", "Kill Chords", 72)
 
 
 def beat_times():

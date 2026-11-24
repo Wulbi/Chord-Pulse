@@ -118,3 +118,8 @@ InitTestScene*.unity*
 /Docs/Captures/*.duck.csv
 /Docs/Captures/*.frames.csv
 /Docs/Captures/*.params.csv
+
+# FMOD Studio scratch/cache (regenerated)
+/FMOD/ChordPulse/.unsaved/
+/FMOD/ChordPulse/.cache/
+FMOD/Tools/__pycache__/

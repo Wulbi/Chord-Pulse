@@ -15,14 +15,14 @@ MonoBehaviour:
   Path: FMOD/ChordPulse/Build/Desktop/ChordPulse.bank
   Name: ChordPulse
   StudioPath: bank:/ChordPulse
-  lastModified: 639311672253483001
+  lastModified: 639311729437797199
   FileSizes:
   - Name: Desktop
     Value: 6352288
   - Name: HTML5
     Value: 6352192
   Exists: 1
---- !u!114 &-9034059678146390921
+--- !u!114 &-8899148703420884499
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -31,25 +31,21 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: ceb653cd98e289a4e8697a1af55201f2, type: 3}
-  m_Name: event:/Inst/OrigRed
-  m_EditorClassIdentifier: FMODUnityEditor::FMODUnity.EditorEventRef
-  Path: event:/Inst/OrigRed
-  Guid:
-    Data1: -1841475350
-    Data2: 1117990352
-    Data3: 956258434
-    Data4: 1517065213
-  Banks:
-  - {fileID: -9072669451329646237}
-  IsStream: 0
-  Is3D: 0
-  IsOneShot: 1
-  Parameters:
-  - {fileID: 2616908180617588180}
-  MinDistance: 1
-  MaxDistance: 20
-  Length: 2500
+  m_Script: {fileID: 11500000, guid: fecb8ef7f94ca804a8ab72049b86782e, type: 3}
+  m_Name: parameter:/Vibes/Note
+  m_EditorClassIdentifier: FMODUnityEditor::FMODUnity.EditorParamRef
+  Name: Note
+  StudioPath: 
+  Min: 0
+  Max: 127
+  Default: 0
+  ID:
+    data1: 1425377495
+    data2: 884273564
+  Type: 0
+  IsGlobal: 0
+  Labels: []
+  Exists: 1
 --- !u!114 &-8895210728577187947
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -74,7 +70,7 @@ MonoBehaviour:
   IsGlobal: 0
   Labels: []
   Exists: 1
---- !u!114 &-8890222873441795079
+--- !u!114 &-7734871560173993927
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -84,7 +80,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: fecb8ef7f94ca804a8ab72049b86782e, type: 3}
-  m_Name: parameter:/Vibes/Note
+  m_Name: parameter:/Harp/Note
   m_EditorClassIdentifier: FMODUnityEditor::FMODUnity.EditorParamRef
   Name: Note
   StudioPath: 
@@ -98,86 +94,6 @@ MonoBehaviour:
   IsGlobal: 0
   Labels: []
   Exists: 1
---- !u!114 &-8826839000994399744
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: fecb8ef7f94ca804a8ab72049b86782e, type: 3}
-  m_Name: parameter:/Sub/Note
-  m_EditorClassIdentifier: FMODUnityEditor::FMODUnity.EditorParamRef
-  Name: Note
-  StudioPath: 
-  Min: 0
-  Max: 127
-  Default: 0
-  ID:
-    data1: 1425377495
-    data2: 884273564
-  Type: 0
-  IsGlobal: 0
-  Labels: []
-  Exists: 1
---- !u!114 &-8510566530889590969
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: ceb653cd98e289a4e8697a1af55201f2, type: 3}
-  m_Name: event:/Inst/Bells
-  m_EditorClassIdentifier: FMODUnityEditor::FMODUnity.EditorEventRef
-  Path: event:/Inst/Bells
-  Guid:
-    Data1: -173740651
-    Data2: 1143733196
-    Data3: 1209180604
-    Data4: 1479791989
-  Banks:
-  - {fileID: -9072669451329646237}
-  IsStream: 0
-  Is3D: 0
-  IsOneShot: 1
-  Parameters:
-  - {fileID: -2283694599388701470}
-  MinDistance: 1
-  MaxDistance: 20
-  Length: 4000
---- !u!114 &-7779565962889977913
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: ceb653cd98e289a4e8697a1af55201f2, type: 3}
-  m_Name: event:/Inst/Glass
-  m_EditorClassIdentifier: FMODUnityEditor::FMODUnity.EditorEventRef
-  Path: event:/Inst/Glass
-  Guid:
-    Data1: -850050466
-    Data2: 1140643574
-    Data3: -1865362520
-    Data4: 159390620
-  Banks:
-  - {fileID: -9072669451329646237}
-  IsStream: 0
-  Is3D: 0
-  IsOneShot: 1
-  Parameters:
-  - {fileID: -6613723932641671694}
-  MinDistance: 1
-  MaxDistance: 20
-  Length: 2400
 --- !u!114 &-7248762725815871656
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -220,155 +136,7 @@ MonoBehaviour:
   MinDistance: 1
   MaxDistance: 20
   Length: 89478485
---- !u!114 &-6804321875849038354
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: fecb8ef7f94ca804a8ab72049b86782e, type: 3}
-  m_Name: parameter:/OrigBlue/Note
-  m_EditorClassIdentifier: FMODUnityEditor::FMODUnity.EditorParamRef
-  Name: Note
-  StudioPath: 
-  Min: 0
-  Max: 127
-  Default: 0
-  ID:
-    data1: 1425377495
-    data2: 884273564
-  Type: 0
-  IsGlobal: 0
-  Labels: []
-  Exists: 1
---- !u!114 &-6613723932641671694
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: fecb8ef7f94ca804a8ab72049b86782e, type: 3}
-  m_Name: parameter:/Glass/Note
-  m_EditorClassIdentifier: FMODUnityEditor::FMODUnity.EditorParamRef
-  Name: Note
-  StudioPath: 
-  Min: 0
-  Max: 127
-  Default: 0
-  ID:
-    data1: 1425377495
-    data2: 884273564
-  Type: 0
-  IsGlobal: 0
-  Labels: []
-  Exists: 1
---- !u!114 &-6338075839938316138
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: fecb8ef7f94ca804a8ab72049b86782e, type: 3}
-  m_Name: parameter:/SpikeClick/Note
-  m_EditorClassIdentifier: FMODUnityEditor::FMODUnity.EditorParamRef
-  Name: Note
-  StudioPath: 
-  Min: 0
-  Max: 127
-  Default: 0
-  ID:
-    data1: 1425377495
-    data2: 884273564
-  Type: 0
-  IsGlobal: 0
-  Labels: []
-  Exists: 1
---- !u!114 &-6192894172642821651
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: fecb8ef7f94ca804a8ab72049b86782e, type: 3}
-  m_Name: parameter:/Harp/Note
-  m_EditorClassIdentifier: FMODUnityEditor::FMODUnity.EditorParamRef
-  Name: Note
-  StudioPath: 
-  Min: 0
-  Max: 127
-  Default: 0
-  ID:
-    data1: 1425377495
-    data2: 884273564
-  Type: 0
-  IsGlobal: 0
-  Labels: []
-  Exists: 1
---- !u!114 &-5827941423621711538
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: ceb653cd98e289a4e8697a1af55201f2, type: 3}
-  m_Name: event:/Inst/OrigYellow
-  m_EditorClassIdentifier: FMODUnityEditor::FMODUnity.EditorEventRef
-  Path: event:/Inst/OrigYellow
-  Guid:
-    Data1: -176272308
-    Data2: 1081208388
-    Data3: 145669822
-    Data4: -2064289284
-  Banks:
-  - {fileID: -9072669451329646237}
-  IsStream: 0
-  Is3D: 0
-  IsOneShot: 1
-  Parameters:
-  - {fileID: -3114214742955270534}
-  MinDistance: 1
-  MaxDistance: 20
-  Length: 1800
---- !u!114 &-5580263392861684631
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: fecb8ef7f94ca804a8ab72049b86782e, type: 3}
-  m_Name: parameter:/Marimba/Note
-  m_EditorClassIdentifier: FMODUnityEditor::FMODUnity.EditorParamRef
-  Name: Note
-  StudioPath: 
-  Min: 0
-  Max: 127
-  Default: 0
-  ID:
-    data1: 1425377495
-    data2: 884273564
-  Type: 0
-  IsGlobal: 0
-  Labels: []
-  Exists: 1
---- !u!114 &-5533356416709067316
+--- !u!114 &-6894251266616211721
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -392,7 +160,63 @@ MonoBehaviour:
   IsGlobal: 0
   Labels: []
   Exists: 1
---- !u!114 &-4504607875792995418
+--- !u!114 &-5476727847390472001
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ceb653cd98e289a4e8697a1af55201f2, type: 3}
+  m_Name: event:/Inst/KillChords/OrigRed
+  m_EditorClassIdentifier: FMODUnityEditor::FMODUnity.EditorEventRef
+  Path: event:/Inst/KillChords/OrigRed
+  Guid:
+    Data1: -1841475350
+    Data2: 1117990352
+    Data3: 956258434
+    Data4: 1517065213
+  Banks:
+  - {fileID: -9072669451329646237}
+  IsStream: 0
+  Is3D: 0
+  IsOneShot: 1
+  Parameters:
+  - {fileID: -4426090644019086293}
+  MinDistance: 1
+  MaxDistance: 20
+  Length: 2500
+--- !u!114 &-4515454643110210854
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ceb653cd98e289a4e8697a1af55201f2, type: 3}
+  m_Name: event:/Inst/KillChords/Marimba
+  m_EditorClassIdentifier: FMODUnityEditor::FMODUnity.EditorEventRef
+  Path: event:/Inst/KillChords/Marimba
+  Guid:
+    Data1: -346545420
+    Data2: 1288899368
+    Data3: 1641582525
+    Data4: 1079648246
+  Banks:
+  - {fileID: -9072669451329646237}
+  IsStream: 0
+  Is3D: 0
+  IsOneShot: 1
+  Parameters:
+  - {fileID: 8199460472619364756}
+  MinDistance: 1
+  MaxDistance: 20
+  Length: 6008
+--- !u!114 &-4426090644019086293
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -402,7 +226,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: fecb8ef7f94ca804a8ab72049b86782e, type: 3}
-  m_Name: parameter:/Bass/Note
+  m_Name: parameter:/OrigRed/Note
   m_EditorClassIdentifier: FMODUnityEditor::FMODUnity.EditorParamRef
   Name: Note
   StudioPath: 
@@ -416,7 +240,7 @@ MonoBehaviour:
   IsGlobal: 0
   Labels: []
   Exists: 1
---- !u!114 &-3983283869529774880
+--- !u!114 &-4343503391460633553
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -425,25 +249,21 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: ceb653cd98e289a4e8697a1af55201f2, type: 3}
-  m_Name: event:/Inst/Harp
-  m_EditorClassIdentifier: FMODUnityEditor::FMODUnity.EditorEventRef
-  Path: event:/Inst/Harp
-  Guid:
-    Data1: 1902770015
-    Data2: 1313607017
-    Data3: 1658326205
-    Data4: -1948227535
-  Banks:
-  - {fileID: -9072669451329646237}
-  IsStream: 0
-  Is3D: 0
-  IsOneShot: 1
-  Parameters:
-  - {fileID: -6192894172642821651}
-  MinDistance: 1
-  MaxDistance: 20
-  Length: 12151
+  m_Script: {fileID: 11500000, guid: fecb8ef7f94ca804a8ab72049b86782e, type: 3}
+  m_Name: parameter:/SpikeClick/Note
+  m_EditorClassIdentifier: FMODUnityEditor::FMODUnity.EditorParamRef
+  Name: Note
+  StudioPath: 
+  Min: 0
+  Max: 127
+  Default: 0
+  ID:
+    data1: 1425377495
+    data2: 884273564
+  Type: 0
+  IsGlobal: 0
+  Labels: []
+  Exists: 1
 --- !u!114 &-3924074002062692307
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -468,7 +288,7 @@ MonoBehaviour:
   IsGlobal: 0
   Labels: []
   Exists: 1
---- !u!114 &-3561296167214243824
+--- !u!114 &-3761523632858594842
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -478,25 +298,25 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: ceb653cd98e289a4e8697a1af55201f2, type: 3}
-  m_Name: event:/Inst/Guitar
+  m_Name: event:/Inst/KillChords/Brass
   m_EditorClassIdentifier: FMODUnityEditor::FMODUnity.EditorEventRef
-  Path: event:/Inst/Guitar
+  Path: event:/Inst/KillChords/Brass
   Guid:
-    Data1: 545372324
-    Data2: 1259914143
-    Data3: 522676106
-    Data4: 518711693
+    Data1: 748965121
+    Data2: 1160122901
+    Data3: 1111538306
+    Data4: -204394519
   Banks:
   - {fileID: -9072669451329646237}
   IsStream: 0
   Is3D: 0
   IsOneShot: 1
   Parameters:
-  - {fileID: 6037592505720508461}
+  - {fileID: 6551957612089296706}
   MinDistance: 1
   MaxDistance: 20
-  Length: 2500
---- !u!114 &-3114214742955270534
+  Length: 2541
+--- !u!114 &-2878379576300710588
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -506,7 +326,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: fecb8ef7f94ca804a8ab72049b86782e, type: 3}
-  m_Name: parameter:/OrigYellow/Note
+  m_Name: parameter:/Guitar/Note
   m_EditorClassIdentifier: FMODUnityEditor::FMODUnity.EditorParamRef
   Name: Note
   StudioPath: 
@@ -520,7 +340,31 @@ MonoBehaviour:
   IsGlobal: 0
   Labels: []
   Exists: 1
---- !u!114 &-2377326752906974962
+--- !u!114 &-2599547416983186903
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fecb8ef7f94ca804a8ab72049b86782e, type: 3}
+  m_Name: parameter:/Bass/Note
+  m_EditorClassIdentifier: FMODUnityEditor::FMODUnity.EditorParamRef
+  Name: Note
+  StudioPath: 
+  Min: 0
+  Max: 127
+  Default: 0
+  ID:
+    data1: 1425377495
+    data2: 884273564
+  Type: 0
+  IsGlobal: 0
+  Labels: []
+  Exists: 1
+--- !u!114 &-2413310391733244881
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -530,9 +374,37 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: ceb653cd98e289a4e8697a1af55201f2, type: 3}
-  m_Name: event:/Inst/SpikeClick
+  m_Name: event:/Inst/KillChords/Guitar
   m_EditorClassIdentifier: FMODUnityEditor::FMODUnity.EditorEventRef
-  Path: event:/Inst/SpikeClick
+  Path: event:/Inst/KillChords/Guitar
+  Guid:
+    Data1: 545372324
+    Data2: 1259914143
+    Data3: 522676106
+    Data4: 518711693
+  Banks:
+  - {fileID: -9072669451329646237}
+  IsStream: 0
+  Is3D: 0
+  IsOneShot: 1
+  Parameters:
+  - {fileID: -2878379576300710588}
+  MinDistance: 1
+  MaxDistance: 20
+  Length: 2500
+--- !u!114 &-2131903320431416024
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ceb653cd98e289a4e8697a1af55201f2, type: 3}
+  m_Name: event:/Inst/KillChords/SpikeClick
+  m_EditorClassIdentifier: FMODUnityEditor::FMODUnity.EditorEventRef
+  Path: event:/Inst/KillChords/SpikeClick
   Guid:
     Data1: -53733612
     Data2: 1117335159
@@ -544,11 +416,11 @@ MonoBehaviour:
   Is3D: 0
   IsOneShot: 1
   Parameters:
-  - {fileID: -6338075839938316138}
+  - {fileID: -4343503391460633553}
   MinDistance: 1
   MaxDistance: 20
   Length: 500
---- !u!114 &-2283694599388701470
+--- !u!114 &-1826488275551673713
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -558,7 +430,31 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: fecb8ef7f94ca804a8ab72049b86782e, type: 3}
-  m_Name: parameter:/Bells/Note
+  m_Name: parameter:/Sub/Note
+  m_EditorClassIdentifier: FMODUnityEditor::FMODUnity.EditorParamRef
+  Name: Note
+  StudioPath: 
+  Min: 0
+  Max: 127
+  Default: 0
+  ID:
+    data1: 1425377495
+    data2: 884273564
+  Type: 0
+  IsGlobal: 0
+  Labels: []
+  Exists: 1
+--- !u!114 &-1739742027381757243
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fecb8ef7f94ca804a8ab72049b86782e, type: 3}
+  m_Name: parameter:/OrigYellow/Note
   m_EditorClassIdentifier: FMODUnityEditor::FMODUnity.EditorParamRef
   Name: Note
   StudioPath: 
@@ -620,34 +516,6 @@ MonoBehaviour:
   IsGlobal: 0
   Labels: []
   Exists: 1
---- !u!114 &-896388533324604344
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: ceb653cd98e289a4e8697a1af55201f2, type: 3}
-  m_Name: event:/Inst/Brass
-  m_EditorClassIdentifier: FMODUnityEditor::FMODUnity.EditorEventRef
-  Path: event:/Inst/Brass
-  Guid:
-    Data1: 748965121
-    Data2: 1160122901
-    Data3: 1111538306
-    Data4: -204394519
-  Banks:
-  - {fileID: -9072669451329646237}
-  IsStream: 0
-  Is3D: 0
-  IsOneShot: 1
-  Parameters:
-  - {fileID: -653116958471553509}
-  MinDistance: 1
-  MaxDistance: 20
-  Length: 2541
 --- !u!114 &-657503318195734969
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -676,7 +544,7 @@ MonoBehaviour:
   MinDistance: 1
   MaxDistance: 20
   Length: 16000
---- !u!114 &-653116958471553509
+--- !u!114 &-612004748955470741
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -685,21 +553,25 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: fecb8ef7f94ca804a8ab72049b86782e, type: 3}
-  m_Name: parameter:/Brass/Note
-  m_EditorClassIdentifier: FMODUnityEditor::FMODUnity.EditorParamRef
-  Name: Note
-  StudioPath: 
-  Min: 0
-  Max: 127
-  Default: 0
-  ID:
-    data1: 1425377495
-    data2: 884273564
-  Type: 0
-  IsGlobal: 0
-  Labels: []
-  Exists: 1
+  m_Script: {fileID: 11500000, guid: ceb653cd98e289a4e8697a1af55201f2, type: 3}
+  m_Name: event:/Inst/KillChords/Bells
+  m_EditorClassIdentifier: FMODUnityEditor::FMODUnity.EditorEventRef
+  Path: event:/Inst/KillChords/Bells
+  Guid:
+    Data1: -173740651
+    Data2: 1143733196
+    Data3: 1209180604
+    Data4: 1479791989
+  Banks:
+  - {fileID: -9072669451329646237}
+  IsStream: 0
+  Is3D: 0
+  IsOneShot: 1
+  Parameters:
+  - {fileID: 5133375287341483962}
+  MinDistance: 1
+  MaxDistance: 20
+  Length: 4000
 --- !u!114 &-520470071568392094
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -724,6 +596,34 @@ MonoBehaviour:
   IsGlobal: 0
   Labels: []
   Exists: 1
+--- !u!114 &-420677660931435073
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ceb653cd98e289a4e8697a1af55201f2, type: 3}
+  m_Name: event:/Inst/KillChords/Bass
+  m_EditorClassIdentifier: FMODUnityEditor::FMODUnity.EditorEventRef
+  Path: event:/Inst/KillChords/Bass
+  Guid:
+    Data1: -1644868591
+    Data2: 1195009299
+    Data3: 575475585
+    Data4: 806102437
+  Banks:
+  - {fileID: -9072669451329646237}
+  IsStream: 0
+  Is3D: 0
+  IsOneShot: 1
+  Parameters:
+  - {fileID: -2599547416983186903}
+  MinDistance: 1
+  MaxDistance: 20
+  Length: 1700
 --- !u!114 &-129102352808777673
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -766,28 +666,56 @@ MonoBehaviour:
   EditorEvents:
   - {fileID: -657503318195734969}
   - {fileID: -7248762725815871656}
-  - {fileID: 1260400307406716535}
-  - {fileID: -2377326752906974962}
-  - {fileID: 6181601078666314584}
-  - {fileID: 2622316576921656134}
-  - {fileID: -3983283869529774880}
-  - {fileID: -8510566530889590969}
-  - {fileID: 3756916728825400467}
-  - {fileID: -3561296167214243824}
-  - {fileID: -896388533324604344}
-  - {fileID: -9034059678146390921}
-  - {fileID: -7779565962889977913}
-  - {fileID: -5827941423621711538}
-  - {fileID: 4805517100203186860}
-  - {fileID: 9084489488739121188}
-  - {fileID: 762049389917512804}
+  - {fileID: -3761523632858594842}
+  - {fileID: -420677660931435073}
+  - {fileID: -2131903320431416024}
+  - {fileID: 467239014022834995}
+  - {fileID: 3775520298231040246}
+  - {fileID: 6899313608251294265}
+  - {fileID: 4833843474174468983}
+  - {fileID: 2897395866244487923}
+  - {fileID: -612004748955470741}
+  - {fileID: -2413310391733244881}
+  - {fileID: 6432560756813351547}
+  - {fileID: 7617233632584894717}
+  - {fileID: 417851344225667453}
+  - {fileID: -5476727847390472001}
+  - {fileID: -4515454643110210854}
   EditorParameters: []
   MasterBanks:
   - {fileID: -9072669451329646237}
   StringsBanks:
   - {fileID: 4610869450805227881}
-  cacheTime: 639311672254751885
+  cacheTime: 639311729438479306
   cacheVersion: 131637
+--- !u!114 &417851344225667453
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ceb653cd98e289a4e8697a1af55201f2, type: 3}
+  m_Name: event:/Inst/KillChords/Sub
+  m_EditorClassIdentifier: FMODUnityEditor::FMODUnity.EditorEventRef
+  Path: event:/Inst/KillChords/Sub
+  Guid:
+    Data1: 1430169060
+    Data2: 1155128697
+    Data3: 1427414162
+    Data4: 1159758597
+  Banks:
+  - {fileID: -9072669451329646237}
+  IsStream: 0
+  Is3D: 0
+  IsOneShot: 1
+  Parameters:
+  - {fileID: -1826488275551673713}
+  MinDistance: 1
+  MaxDistance: 20
+  Length: 1133
 --- !u!114 &443583806692751854
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -812,7 +740,7 @@ MonoBehaviour:
   IsGlobal: 0
   Labels: []
   Exists: 1
---- !u!114 &762049389917512804
+--- !u!114 &467239014022834995
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -822,48 +750,24 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: ceb653cd98e289a4e8697a1af55201f2, type: 3}
-  m_Name: event:/Inst/Vibes
+  m_Name: event:/Inst/KillChords/Clav
   m_EditorClassIdentifier: FMODUnityEditor::FMODUnity.EditorEventRef
-  Path: event:/Inst/Vibes
+  Path: event:/Inst/KillChords/Clav
   Guid:
-    Data1: -826683444
-    Data2: 1173446688
-    Data3: 631361166
-    Data4: -1486951619
+    Data1: 177205050
+    Data2: 1289901000
+    Data3: 1852080267
+    Data4: -1493071934
   Banks:
   - {fileID: -9072669451329646237}
   IsStream: 0
   Is3D: 0
   IsOneShot: 1
   Parameters:
-  - {fileID: -8890222873441795079}
+  - {fileID: -6894251266616211721}
   MinDistance: 1
   MaxDistance: 20
-  Length: 14600
---- !u!114 &863135834250592438
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: fecb8ef7f94ca804a8ab72049b86782e, type: 3}
-  m_Name: parameter:/Glock/Note
-  m_EditorClassIdentifier: FMODUnityEditor::FMODUnity.EditorParamRef
-  Name: Note
-  StudioPath: 
-  Min: 0
-  Max: 127
-  Default: 0
-  ID:
-    data1: 1425377495
-    data2: 884273564
-  Type: 0
-  IsGlobal: 0
-  Labels: []
-  Exists: 1
+  Length: 6642
 --- !u!114 &928805073527780737
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -888,34 +792,6 @@ MonoBehaviour:
   IsGlobal: 0
   Labels: []
   Exists: 1
---- !u!114 &1260400307406716535
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: ceb653cd98e289a4e8697a1af55201f2, type: 3}
-  m_Name: event:/Inst/Marimba
-  m_EditorClassIdentifier: FMODUnityEditor::FMODUnity.EditorEventRef
-  Path: event:/Inst/Marimba
-  Guid:
-    Data1: -346545420
-    Data2: 1288899368
-    Data3: 1641582525
-    Data4: 1079648246
-  Banks:
-  - {fileID: -9072669451329646237}
-  IsStream: 0
-  Is3D: 0
-  IsOneShot: 1
-  Parameters:
-  - {fileID: -5580263392861684631}
-  MinDistance: 1
-  MaxDistance: 20
-  Length: 6008
 --- !u!114 &2598532571508580719
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -940,31 +816,7 @@ MonoBehaviour:
   IsGlobal: 0
   Labels: []
   Exists: 1
---- !u!114 &2616908180617588180
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: fecb8ef7f94ca804a8ab72049b86782e, type: 3}
-  m_Name: parameter:/OrigRed/Note
-  m_EditorClassIdentifier: FMODUnityEditor::FMODUnity.EditorParamRef
-  Name: Note
-  StudioPath: 
-  Min: 0
-  Max: 127
-  Default: 0
-  ID:
-    data1: 1425377495
-    data2: 884273564
-  Type: 0
-  IsGlobal: 0
-  Labels: []
-  Exists: 1
---- !u!114 &2622316576921656134
+--- !u!114 &2897395866244487923
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -974,24 +826,24 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: ceb653cd98e289a4e8697a1af55201f2, type: 3}
-  m_Name: event:/Inst/Bass
+  m_Name: event:/Inst/KillChords/Glock
   m_EditorClassIdentifier: FMODUnityEditor::FMODUnity.EditorEventRef
-  Path: event:/Inst/Bass
+  Path: event:/Inst/KillChords/Glock
   Guid:
-    Data1: -1644868591
-    Data2: 1195009299
-    Data3: 575475585
-    Data4: 806102437
+    Data1: -1154223763
+    Data2: 1195889753
+    Data3: -1097295995
+    Data4: -516165455
   Banks:
   - {fileID: -9072669451329646237}
   IsStream: 0
   Is3D: 0
   IsOneShot: 1
   Parameters:
-  - {fileID: -4504607875792995418}
+  - {fileID: 5019119479380962904}
   MinDistance: 1
   MaxDistance: 20
-  Length: 1700
+  Length: 7206
 --- !u!114 &3295465917546792127
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1016,7 +868,7 @@ MonoBehaviour:
   IsGlobal: 0
   Labels: []
   Exists: 1
---- !u!114 &3756916728825400467
+--- !u!114 &3775520298231040246
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -1026,24 +878,24 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: ceb653cd98e289a4e8697a1af55201f2, type: 3}
-  m_Name: event:/Inst/Glock
+  m_Name: event:/Inst/KillChords/OrigYellow
   m_EditorClassIdentifier: FMODUnityEditor::FMODUnity.EditorEventRef
-  Path: event:/Inst/Glock
+  Path: event:/Inst/KillChords/OrigYellow
   Guid:
-    Data1: -1154223763
-    Data2: 1195889753
-    Data3: -1097295995
-    Data4: -516165455
+    Data1: -176272308
+    Data2: 1081208388
+    Data3: 145669822
+    Data4: -2064289284
   Banks:
   - {fileID: -9072669451329646237}
   IsStream: 0
   Is3D: 0
   IsOneShot: 1
   Parameters:
-  - {fileID: 863135834250592438}
+  - {fileID: -1739742027381757243}
   MinDistance: 1
   MaxDistance: 20
-  Length: 7206
+  Length: 1800
 --- !u!114 &4053508439555920453
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1083,14 +935,14 @@ MonoBehaviour:
   Path: FMOD/ChordPulse/Build/Desktop/ChordPulse.strings.bank
   Name: ChordPulse.strings
   StudioPath: bank:/ChordPulse.strings
-  lastModified: 639311672254751885
+  lastModified: 639311729438479306
   FileSizes:
   - Name: Desktop
-    Value: 2204
+    Value: 2216
   - Name: HTML5
-    Value: 2204
+    Value: 2216
   Exists: 1
---- !u!114 &4805517100203186860
+--- !u!114 &4833843474174468983
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -1100,24 +952,96 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: ceb653cd98e289a4e8697a1af55201f2, type: 3}
-  m_Name: event:/Inst/Sub
+  m_Name: event:/Inst/KillChords/Harp
   m_EditorClassIdentifier: FMODUnityEditor::FMODUnity.EditorEventRef
-  Path: event:/Inst/Sub
+  Path: event:/Inst/KillChords/Harp
   Guid:
-    Data1: 1430169060
-    Data2: 1155128697
-    Data3: 1427414162
-    Data4: 1159758597
+    Data1: 1902770015
+    Data2: 1313607017
+    Data3: 1658326205
+    Data4: -1948227535
   Banks:
   - {fileID: -9072669451329646237}
   IsStream: 0
   Is3D: 0
   IsOneShot: 1
   Parameters:
-  - {fileID: -8826839000994399744}
+  - {fileID: -7734871560173993927}
   MinDistance: 1
   MaxDistance: 20
-  Length: 1133
+  Length: 12151
+--- !u!114 &5019119479380962904
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fecb8ef7f94ca804a8ab72049b86782e, type: 3}
+  m_Name: parameter:/Glock/Note
+  m_EditorClassIdentifier: FMODUnityEditor::FMODUnity.EditorParamRef
+  Name: Note
+  StudioPath: 
+  Min: 0
+  Max: 127
+  Default: 0
+  ID:
+    data1: 1425377495
+    data2: 884273564
+  Type: 0
+  IsGlobal: 0
+  Labels: []
+  Exists: 1
+--- !u!114 &5030944613444266160
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fecb8ef7f94ca804a8ab72049b86782e, type: 3}
+  m_Name: parameter:/Glass/Note
+  m_EditorClassIdentifier: FMODUnityEditor::FMODUnity.EditorParamRef
+  Name: Note
+  StudioPath: 
+  Min: 0
+  Max: 127
+  Default: 0
+  ID:
+    data1: 1425377495
+    data2: 884273564
+  Type: 0
+  IsGlobal: 0
+  Labels: []
+  Exists: 1
+--- !u!114 &5133375287341483962
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fecb8ef7f94ca804a8ab72049b86782e, type: 3}
+  m_Name: parameter:/Bells/Note
+  m_EditorClassIdentifier: FMODUnityEditor::FMODUnity.EditorParamRef
+  Name: Note
+  StudioPath: 
+  Min: 0
+  Max: 127
+  Default: 0
+  ID:
+    data1: 1425377495
+    data2: 884273564
+  Type: 0
+  IsGlobal: 0
+  Labels: []
+  Exists: 1
 --- !u!114 &5332976156732397855
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1142,7 +1066,7 @@ MonoBehaviour:
   IsGlobal: 0
   Labels: []
   Exists: 1
---- !u!114 &6037592505720508461
+--- !u!114 &5439069564297189141
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -1152,7 +1076,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: fecb8ef7f94ca804a8ab72049b86782e, type: 3}
-  m_Name: parameter:/Guitar/Note
+  m_Name: parameter:/OrigBlue/Note
   m_EditorClassIdentifier: FMODUnityEditor::FMODUnity.EditorParamRef
   Name: Note
   StudioPath: 
@@ -1166,7 +1090,7 @@ MonoBehaviour:
   IsGlobal: 0
   Labels: []
   Exists: 1
---- !u!114 &6181601078666314584
+--- !u!114 &6432560756813351547
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -1176,24 +1100,48 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: ceb653cd98e289a4e8697a1af55201f2, type: 3}
-  m_Name: event:/Inst/Clav
+  m_Name: event:/Inst/KillChords/Vibes
   m_EditorClassIdentifier: FMODUnityEditor::FMODUnity.EditorEventRef
-  Path: event:/Inst/Clav
+  Path: event:/Inst/KillChords/Vibes
   Guid:
-    Data1: 177205050
-    Data2: 1289901000
-    Data3: 1852080267
-    Data4: -1493071934
+    Data1: -826683444
+    Data2: 1173446688
+    Data3: 631361166
+    Data4: -1486951619
   Banks:
   - {fileID: -9072669451329646237}
   IsStream: 0
   Is3D: 0
   IsOneShot: 1
   Parameters:
-  - {fileID: -5533356416709067316}
+  - {fileID: -8899148703420884499}
   MinDistance: 1
   MaxDistance: 20
-  Length: 6642
+  Length: 14600
+--- !u!114 &6551957612089296706
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fecb8ef7f94ca804a8ab72049b86782e, type: 3}
+  m_Name: parameter:/Brass/Note
+  m_EditorClassIdentifier: FMODUnityEditor::FMODUnity.EditorParamRef
+  Name: Note
+  StudioPath: 
+  Min: 0
+  Max: 127
+  Default: 0
+  ID:
+    data1: 1425377495
+    data2: 884273564
+  Type: 0
+  IsGlobal: 0
+  Labels: []
+  Exists: 1
 --- !u!114 &6559185024141278374
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1242,6 +1190,86 @@ MonoBehaviour:
   IsGlobal: 0
   Labels: []
   Exists: 1
+--- !u!114 &6899313608251294265
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ceb653cd98e289a4e8697a1af55201f2, type: 3}
+  m_Name: event:/Inst/KillChords/Glass
+  m_EditorClassIdentifier: FMODUnityEditor::FMODUnity.EditorEventRef
+  Path: event:/Inst/KillChords/Glass
+  Guid:
+    Data1: -850050466
+    Data2: 1140643574
+    Data3: -1865362520
+    Data4: 159390620
+  Banks:
+  - {fileID: -9072669451329646237}
+  IsStream: 0
+  Is3D: 0
+  IsOneShot: 1
+  Parameters:
+  - {fileID: 5030944613444266160}
+  MinDistance: 1
+  MaxDistance: 20
+  Length: 2400
+--- !u!114 &7617233632584894717
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ceb653cd98e289a4e8697a1af55201f2, type: 3}
+  m_Name: event:/Inst/KillChords/OrigBlue
+  m_EditorClassIdentifier: FMODUnityEditor::FMODUnity.EditorEventRef
+  Path: event:/Inst/KillChords/OrigBlue
+  Guid:
+    Data1: 1586920397
+    Data2: 1269021666
+    Data3: 1724889274
+    Data4: 2040944201
+  Banks:
+  - {fileID: -9072669451329646237}
+  IsStream: 0
+  Is3D: 0
+  IsOneShot: 1
+  Parameters:
+  - {fileID: 5439069564297189141}
+  MinDistance: 1
+  MaxDistance: 20
+  Length: 2500
+--- !u!114 &8199460472619364756
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fecb8ef7f94ca804a8ab72049b86782e, type: 3}
+  m_Name: parameter:/Marimba/Note
+  m_EditorClassIdentifier: FMODUnityEditor::FMODUnity.EditorParamRef
+  Name: Note
+  StudioPath: 
+  Min: 0
+  Max: 127
+  Default: 0
+  ID:
+    data1: 1425377495
+    data2: 884273564
+  Type: 0
+  IsGlobal: 0
+  Labels: []
+  Exists: 1
 --- !u!114 &8643634194635590365
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1266,34 +1294,6 @@ MonoBehaviour:
   IsGlobal: 0
   Labels: []
   Exists: 1
---- !u!114 &9084489488739121188
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: ceb653cd98e289a4e8697a1af55201f2, type: 3}
-  m_Name: event:/Inst/OrigBlue
-  m_EditorClassIdentifier: FMODUnityEditor::FMODUnity.EditorEventRef
-  Path: event:/Inst/OrigBlue
-  Guid:
-    Data1: 1586920397
-    Data2: 1269021666
-    Data3: 1724889274
-    Data4: 2040944201
-  Banks:
-  - {fileID: -9072669451329646237}
-  IsStream: 0
-  Is3D: 0
-  IsOneShot: 1
-  Parameters:
-  - {fileID: -6804321875849038354}
-  MinDistance: 1
-  MaxDistance: 20
-  Length: 2500
 --- !u!114 &9100905001363050030
 MonoBehaviour:
   m_ObjectHideFlags: 0

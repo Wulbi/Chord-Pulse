@@ -1,21 +1,26 @@
 """
-Shared instrument library: one small FMOD one-shot event per instrument, event:/Inst/<Name>.
+Shared instrument library: one small FMOD one-shot event per (instrument, bus), event:/Inst/<BusFolder>/<Name>
+(BusFolder = the bus name without spaces, e.g. Kill Chords -> KillChords).
 
 Writes instruments.js (next to this file) and Assets/Scripts/Audio/Generated/InstrumentTable.g.cs.
 Run on the FMOD project (FMOD Studio closed), then build the banks as a SEPARATE command:
-    python FMOD/Tools/instruments.py
+    python -I FMOD/Tools/instruments.py
     fmodstudiocl.exe -script FMOD/Tools/instruments.js FMOD/ChordPulse/ChordPulse.fspro
     fmodstudiocl.exe -script FMOD/Tools/kill_oneshots.js FMOD/ChordPulse/ChordPulse.fspro
     fmodstudiocl.exe -build FMOD/ChordPulse/ChordPulse.fspro
-Idempotent: the script deletes the Inst events it made before and recreates them.
+Idempotent: the script updates the events in place (GUIDs stay, so Unity shows no "Events Renamed" dialog). It finds each
+event by path (or moves the first-generation event:/Inst/<Name> into its bus folder), then writes audio file, pitch,
+volume, Note condition and ADSR of each sound, plus Max Instances, stealing and output, only where they differ; sounds the
+list no longer has are deleted, and so are event:/Inst/** events that are not listed.
 
 Each event has an event-local parameter Note (0-127, continuous; Unity sets whole numbers) and, at timeline 0, one SingleSound per MIDI note
 (sample + pitch from samples.pick(), volume = NORMALIZE_DB - sample RMS), enabled only for Note in [m-0.4, m+0.4].
-Unity starts the instrument, sets Note, and schedules it on the beat. Output goes to bus:/Kill Chords.
+Unity starts the instrument, sets Note, and schedules it on the beat. Output goes to bus:/<bus> (Kill Chords for now).
 
 Layer modules (kill_oneshots.py, ...) expose register(lib) and are listed in LAYERS:
-    lib.add("Marimba", samples.MARIMBA, max_instances=16)   # declare an instrument once (max_pitch=15 semitones default)
-    lib.need("Marimba", 72)                                 # request a note
+    lib.add("Marimba", samples.MARIMBA, max_instances=16, bus="Kill Chords")   # declare (instrument, bus) once
+        # (max_pitch=15 semitones, attack_ms=1, release_ms=120 by default; adding the same pair differently asserts)
+    lib.need("Marimba", "Kill Chords", 72)                                    # request a note
 """
 import json
 import os
@@ -35,23 +40,32 @@ VOLUME_MIN, VOLUME_MAX = -60.0, 10.0   # same clamp as the old kill_voices gener
 
 
 class Library:
+    """Instrument events keyed by (name, bus): the same instrument on two buses is two events with their own settings."""
+
     def __init__(self):
-        self.tables = {}   # name -> (sample table, max instances)
-        self.notes = {}    # name -> set of midi
+        self.tables = {}   # (name, bus) -> (sample table, max instances, max pitch, attack ms, release ms)
+        self.notes = {}    # (name, bus) -> set of midi
 
-    def add(self, name, table, max_instances, max_pitch=15):
-        if name in self.tables:
-            assert self.tables[name] == (table, max_instances, max_pitch), f"instrument {name} redefined differently"
-        self.tables[name] = (table, max_instances, max_pitch)
-        self.notes.setdefault(name, set())
+    def add(self, name, table, max_instances, bus, max_pitch=15, attack_ms=1, release_ms=120):
+        key = (name, bus)
+        value = (table, max_instances, max_pitch, attack_ms, release_ms)
+        if key in self.tables:
+            assert self.tables[key] == value, f"instrument {name} on {bus} redefined differently"
+        self.tables[key] = value
+        self.notes.setdefault(key, set())
 
-    def need(self, name, midi):
-        assert name in self.tables, f"instrument {name} not added"
-        self.notes[name].add(int(midi))
+    def need(self, name, bus, midi):
+        assert (name, bus) in self.tables, f"instrument {name} on {bus} not added"
+        self.notes[(name, bus)].add(int(midi))
 
 
 # Layer modules, each with register(lib).
 LAYERS = [kill_oneshots, spike_click]
+
+
+def bus_folder(bus):
+    """Event folder / C# enum member of a bus: its name without spaces (Kill Chords -> KillChords)."""
+    return bus.replace(" ", "")
 
 
 def build():
@@ -59,24 +73,32 @@ def build():
     for layer in LAYERS:
         layer.register(lib)
     insts = []
-    for name in sorted(lib.tables):
-        table, max_inst, max_pitch = lib.tables[name]
+    for name, bus in sorted(lib.tables):
+        table, max_inst, max_pitch, attack_ms, release_ms = lib.tables[(name, bus)]
         notes = []
-        for midi in sorted(lib.notes[name]):
+        for midi in sorted(lib.notes[(name, bus)]):
             s, pitch = samples.pick(table, midi, max_pitch)
             volume = round(max(VOLUME_MIN, min(NORMALIZE_DB - s[2], VOLUME_MAX)), 2)
             onset = s[3] / (2 ** (pitch / 12.0))
             notes.append(dict(midi=midi, file=s[0], pitch=pitch, volume=volume, onset=round(onset, 6)))
-        insts.append(dict(name=name, max=max_inst, notes=notes))
+        insts.append(dict(name=name, bus=bus, busFolder=bus_folder(bus), max=max_inst,
+                          attack=attack_ms, release=release_ms, notes=notes))
+    # OnsetSeconds is keyed by (instrument, midi) only: every bus must give the same onset for the same note.
+    onsets = {}
+    for i in insts:
+        for n in i["notes"]:
+            assert onsets.setdefault((i["name"], n["midi"]), n["onset"]) == n["onset"],                 f"{i['name']} note {n['midi']} has different onsets on different buses"
     return insts
 
 
 JS_TEMPLATE = r"""// Generated by FMOD/Tools/instruments.py - edit the Python file, not this one.
 var INSTRUMENTS = __INSTRUMENTS__;
 var FOLDER = "Inst";
-var BUS = "Kill Chords";
+var EPS = 0.001;
 
+var counts = { moved: 0, updated: 0, added: 0, removed: 0 };
 function log(m) { console.log("[inst] " + m); }
+function differs(a, b) { return Math.abs(a - b) > EPS; }
 var project = studio.project;
 var assetsRoot = project.filePath.replace(/[^\/\\]+$/, "") + "Assets/";
 
@@ -85,9 +107,23 @@ if (!bank) throw "bank ChordPulse not found";
 var music = project.lookup("event:/Music/ChordPulseGame");
 if (!music) throw "event:/Music/ChordPulseGame not found";
 
-// --- folder event:/Inst ---
+function childFolder(parent, name) {
+    var found = null;
+    project.model.EventFolder.findInstances().forEach(function (f) {
+        if (f.isValid && f.name === name && f.folder && f.folder.id === parent.id) found = f;
+    });
+    if (!found) {
+        found = project.create("EventFolder");
+        found.name = name;
+        found.folder = parent;
+        log("created folder " + name);
+    }
+    return found;
+}
+
+// --- folder event:/Inst (next to event:/Music) ---
 var folder = null;
-project.model.EventFolder.findInstances().forEach(function (f) { if (f.name === FOLDER) folder = f; });
+project.model.EventFolder.findInstances().forEach(function (f) { if (f.isValid && f.name === FOLDER) folder = f; });
 if (!folder) {
     folder = project.create("EventFolder");
     folder.name = FOLDER;
@@ -95,14 +131,19 @@ if (!folder) {
     log("created folder " + FOLDER);
 }
 
-// --- bus:/Kill Chords ---
-var killBus = project.lookup("bus:/" + BUS);
-if (!killBus) {
-    killBus = project.create("MixerGroup");
-    killBus.name = BUS;
-    killBus.output = project.workspace.mixer.masterBus;
-    log("created bus " + BUS);
-}
+// --- buses (bus:/Kill Chords is created here; later layers add their own) ---
+var buses = {};
+INSTRUMENTS.forEach(function (inst) {
+    if (buses[inst.bus]) return;
+    var b = project.lookup("bus:/" + inst.bus);
+    if (!b) {
+        b = project.create("MixerGroup");
+        b.name = inst.bus;
+        b.output = project.workspace.mixer.masterBus;
+        log("created bus " + inst.bus);
+    }
+    buses[inst.bus] = b;
+});
 
 // --- parameter Note: one project preset (each event keeps its own value), 0-127 ---
 // Continuous, not discrete: on a discrete parameter FMOD widened each note's [m-0.4, m+0.4] condition to reach m+1, so
@@ -114,17 +155,11 @@ if (!noteParam) {
     noteParam = project.lookup("parameter:/Note") || noteParam;
     log("created parameter Note");
 }
-noteParam.parameter.parameterType = project.parameterType.User;
-noteParam.parameter.seekSpeed = 0;
-noteParam.parameter.minimum = 0;
-noteParam.parameter.maximum = 127;
-noteParam.parameter.initialValue = 0;
-
-// --- undo an earlier run ---
-INSTRUMENTS.forEach(function (inst) {
-    var old = project.lookup("event:/" + FOLDER + "/" + inst.name);
-    if (old) { project.deleteObject(old); log("removed old " + inst.name); }
-});
+if (noteParam.parameter.parameterType !== project.parameterType.User) noteParam.parameter.parameterType = project.parameterType.User;
+if (noteParam.parameter.seekSpeed !== 0) noteParam.parameter.seekSpeed = 0;
+if (noteParam.parameter.minimum !== 0) noteParam.parameter.minimum = 0;
+if (noteParam.parameter.maximum !== 127) noteParam.parameter.maximum = 127;
+if (noteParam.parameter.initialValue !== 0) noteParam.parameter.initialValue = 0;
 
 var files = {};
 function audioFile(rel) {
@@ -142,59 +177,178 @@ function audioFile(rel) {
     return found;
 }
 
-var eventCount = 0, soundCount = 0;
-INSTRUMENTS.forEach(function (inst) {
-    var ev = project.workspace.addEvent(inst.name, false);
-    ev.folder = folder;
-    ev.relationships.banks.add(bank);
-    ev.mixerInput.output = killBus;
-    ev.automatableProperties.maxVoices = inst.max;      // "Max Instances" in the Studio UI
-    ev.automatableProperties.voiceStealing = 0;         // Oldest (enum: Oldest, Quietest, Virtualize, None, Furthest)
-    ev.addGameParameter(noteParam);
-    var track = ev.addGroupTrack("Notes");
-    inst.notes.forEach(function (n) {
-        var af = audioFile(n.file);
-        var s = track.addSound(ev.timeline, "SingleSound", 0, Math.max(0.5, af.length));
+function noteCondition(s) {
+    var found = null;
+    s.triggerConditions.forEach(function (c) { if (c.parameter && c.parameter.id === noteParam.parameter.id) found = c; });
+    return found;
+}
+
+function adsr(s) {
+    var found = [];
+    s.modulators.forEach(function (m) { if (m.entity === "ADSRModulator" && m.nameOfPropertyBeingModulated === "volume") found.push(m); });
+    return found;
+}
+
+// Brings one sound in line with the wanted note; returns true when anything was written.
+function syncSound(s, n, inst, isNew) {
+    var changed = false;
+    var af = audioFile(n.file);
+    if (isNew || !s.audioFile || s.audioFile.id !== af.id) {
         s.audioFile = af;
-        s.pitch = n.pitch;
-        s.volume = n.volume;
-        s.addParameterCondition(noteParam, n.midi - 0.4, n.midi + 0.4);
-        var env = project.create("ADSRModulator");
+        var len = Math.max(0.5, af.length);
+        if (differs(s.length, len)) s.length = len;
+        changed = true;
+    }
+    if (differs(s.pitch, n.pitch)) { s.pitch = n.pitch; changed = true; }
+    if (differs(s.volume, n.volume)) { s.volume = n.volume; changed = true; }
+    var c = noteCondition(s);
+    if (!c) { s.addParameterCondition(noteParam, n.midi - 0.4, n.midi + 0.4); changed = true; }
+    else {
+        if (differs(c.minimum, n.midi - 0.4)) { c.minimum = n.midi - 0.4; changed = true; }
+        if (differs(c.maximum, n.midi + 0.4)) { c.maximum = n.midi + 0.4; changed = true; }
+    }
+    var mods = adsr(s);
+    mods.slice(1).forEach(function (m) { project.deleteObject(m); changed = true; });
+    var env = mods[0];
+    if (!env) {
+        env = project.create("ADSRModulator");
         env.nameOfPropertyBeingModulated = "volume";
-        env.attackTime = 1; env.releaseTime = 120;
         env.objectBeingModulated = s;
+        changed = true;
+    }
+    if (differs(env.attackTime, inst.attack)) { env.attackTime = inst.attack; changed = true; }
+    if (differs(env.releaseTime, inst.release)) { env.releaseTime = inst.release; changed = true; }
+    return changed;
+}
+
+var wanted = {};   // event paths this run owns
+var soundCount = 0;
+INSTRUMENTS.forEach(function (inst) {
+    var sub = childFolder(folder, inst.busFolder);
+    var path = "event:/" + FOLDER + "/" + inst.busFolder + "/" + inst.name;
+    wanted[path] = true;
+    var ev = project.lookup(path);
+    var isNewEvent = false, evChanged = false;
+    if (!ev) {
+        // the first-generation event event:/Inst/<Name>: move it into the bus folder (same GUID, so no "Events Renamed")
+        var old = project.lookup("event:/" + FOLDER + "/" + inst.name);
+        if (old) {
+            old.folder = sub;
+            ev = old;
+            counts.moved++;
+        } else {
+            ev = project.workspace.addEvent(inst.name, false);
+            ev.folder = sub;
+            counts.added++;
+            isNewEvent = true;
+        }
+    }
+    var inBank = false;
+    ev.banks.forEach(function (b) { if (b.id === bank.id) inBank = true; });
+    if (!inBank) { ev.relationships.banks.add(bank); evChanged = true; }
+    var out = buses[inst.bus];
+    if (!ev.mixerInput.output || ev.mixerInput.output.id !== out.id) { ev.mixerInput.output = out; evChanged = true; }
+    var ap = ev.automatableProperties;
+    if (ap.maxVoices !== inst.max) { ap.maxVoices = inst.max; evChanged = true; }   // "Max Instances" in the Studio UI
+    if (ap.voiceStealing !== 0) { ap.voiceStealing = 0; evChanged = true; }         // Oldest (enum: Oldest, Quietest, Virtualize, None, Furthest)
+    // the event's parameter proxy points at the GameParameter (noteParam.parameter), not at the preset; keep exactly one
+    var noteProxies = [];
+    ev.parameters.forEach(function (p) { if (p.preset && p.preset.id === noteParam.parameter.id) noteProxies.push(p); });
+    noteProxies.slice(1).forEach(function (p) { project.deleteObject(p); evChanged = true; });
+    if (noteProxies.length === 0) { ev.addGameParameter(noteParam); evChanged = true; }
+
+    var track = null;
+    ev.groupTracks.forEach(function (t) { if (t.mixerGroup.name === "Notes") track = t; });
+    if (!track) { track = ev.addGroupTrack("Notes"); evChanged = true; }
+
+    // match the track's sounds to the wanted notes by the MIDI number in their Note condition
+    var byMidi = {}, drop = [];
+    track.modules.forEach(function (s) {
+        var c = noteCondition(s);
+        var midi = c ? Math.round((c.minimum + c.maximum) / 2) : -1;
+        if (midi < 0 || byMidi[midi]) drop.push(s); else byMidi[midi] = s;
+    });
+    inst.notes.forEach(function (n) {
+        var s = byMidi[n.midi], isNew = false;
+        if (s) delete byMidi[n.midi];
+        else {
+            s = track.addSound(ev.timeline, "SingleSound", 0, 0.5);
+            isNew = true;
+            counts.added++;
+        }
+        if (syncSound(s, n, inst, isNew) && !isNew) counts.updated++;
         soundCount++;
     });
-    eventCount++;
+    Object.keys(byMidi).forEach(function (k) { drop.push(byMidi[k]); });
+    drop.forEach(function (s) { project.deleteObject(s); counts.removed++; });
+    if (evChanged && !isNewEvent) counts.updated++;
 });
-log("events " + eventCount + ", sounds " + soundCount);
+
+// --- events under event:/Inst that this generator no longer lists ---
+var stale = [];
+project.model.Event.findInstances().forEach(function (ev) {
+    if (!ev.isValid) return;
+    var p = ev.getPath();
+    if (p.indexOf("event:/" + FOLDER + "/") === 0 && !wanted[p]) stale.push(ev);
+});
+stale.forEach(function (ev) { log("removing " + ev.getPath()); project.deleteObject(ev); counts.removed++; });
+
+log("moved " + counts.moved + ", updated " + counts.updated + ", added " + counts.added + ", removed " + counts.removed);
+log("events " + INSTRUMENTS.length + ", sounds " + soundCount);
 project.save();
 log("saved");
 """
 
 
 def cs_text(insts):
+    names = sorted({i["name"] for i in insts})
+    buses = sorted({i["busFolder"] for i in insts})
     lines = [
         "// Generated by FMOD/Tools/instruments.py - edit the Python file, not this one.",
-        "// Instrument one-shot events (event:/Inst/<name>) and the attack onset of each note's sample.",
+        "// Instrument one-shot events (event:/Inst/<bus>/<name>) and the attack onset of each note's sample.",
         "public enum Instrument",
         "{",
     ]
-    lines += [f"    {i['name']}," for i in insts]
+    lines += [f"    {n}," for n in names]
+    lines += ["}", "", "/// <summary>Mixer bus an instrument event plays through (bus:/<name>).</summary>", "public enum OutputBus", "{"]
+    lines += [f"    {b}," for b in buses]
     lines += ["}", "", "public static class InstrumentTable", "{",
-              "    public static string EventPath(Instrument instrument)", "    {",
-              "        switch (instrument)", "        {"]
-    lines += [f'            case Instrument.{i["name"]}: return "event:/Inst/{i["name"]}";' for i in insts]
-    lines += ["            default: return null;", "        }", "    }", "",
+              "    /// <summary>FMOD event path of the instrument on that bus; null if the combination does not exist.</summary>",
+              "    public static string EventPath(Instrument instrument, OutputBus bus)", "    {"]
+    for i in insts:
+        lines.append(f'        if (instrument == Instrument.{i["name"]} && bus == OutputBus.{i["busFolder"]}) return "event:/Inst/{i["busFolder"]}/{i["name"]}";')
+    lines += ["        return null;", "    }", "",
+              "    /// <summary>True if the instrument event on that bus has a sound for the MIDI note.</summary>",
+              "    public static bool Has(Instrument instrument, OutputBus bus, int midi)", "    {"]
+    for i in insts:
+        lines.append(f"        if (instrument == Instrument.{i['name']} && bus == OutputBus.{i['busFolder']})")
+        lines.append("        {")
+        lines.append("            switch (midi)")
+        lines.append("            {")
+        for n in i["notes"]:
+            lines.append(f"                case {n['midi']}: return true;")
+        lines.append("            }")
+        lines.append("            return false;")
+        lines.append("        }")
+    lines += ["        return false;", "    }", "",
+              "    /// <summary>Seconds the event's ADSR release fades a note out after its stop time; 0 if the combination does not exist.</summary>",
+              "    public static double ReleaseSeconds(Instrument instrument, OutputBus bus)", "    {"]
+    for i in insts:
+        lines.append(f"        if (instrument == Instrument.{i['name']} && bus == OutputBus.{i['busFolder']}) return {i['release'] / 1000.0!r};")
+    lines += ["        return 0.0;", "    }", "",
               "    /// <summary>Seconds from the sample start to its attack, after pitch shifting; 0 if the note is not in the library.</summary>",
               "    public static double OnsetSeconds(Instrument instrument, int midi)", "    {",
               "        switch (instrument)", "        {"]
+    onsets = {}   # name -> {midi: onset}, merged over the buses (build() asserts they agree)
     for i in insts:
-        lines.append(f"            case Instrument.{i['name']}:")
+        for n in i["notes"]:
+            onsets.setdefault(i["name"], {})[n["midi"]] = n["onset"]
+    for name in sorted(onsets):
+        lines.append(f"            case Instrument.{name}:")
         lines.append("                switch (midi)")
         lines.append("                {")
-        for n in i["notes"]:
-            lines.append(f"                    case {n['midi']}: return {n['onset']!r};")
+        for midi in sorted(onsets[name]):
+            lines.append(f"                    case {midi}: return {onsets[name][midi]!r};")
         lines.append("                }")
         lines.append("                break;")
     lines += ["        }", "        return 0.0;", "    }", "}", ""]
