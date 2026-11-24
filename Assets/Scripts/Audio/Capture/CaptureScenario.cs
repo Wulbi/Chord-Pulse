@@ -25,6 +25,9 @@ public sealed class CaptureScenario : MonoBehaviour
     [SerializeField] bool exitPlayModeWhenDone = true;
     [Tooltip("MusicMix 0: only the kill chords are heard (styles always does this).")]
     [SerializeField] bool killsOnly;
+    [Tooltip("Every frame: _variationNext = 0, _styleNext = 0 and FeatureSelector.CancelNext(), so nothing about the " +
+             "arrangement changes at a phrase boundary (diagnosis of the beat-64 landing delay).")]
+    [SerializeField] bool holdArrangement;
 
     [Header("spike (scheduling accuracy)")]
     [Tooltip("OneShotScheduler.ScheduleOffsetSamples for this take (default: the measured constant).")]
@@ -71,6 +74,12 @@ public sealed class CaptureScenario : MonoBehaviour
     // styles: 4 phrases (64 beats) per bed style 0..3
     const int StyleBlockBeats = 64;
     FieldInfo _styleCurrent, _styleNext;
+    // holdArrangement
+    FieldInfo _variationNextField, _featuresField;
+    MethodInfo _cancelNext;
+    // per-frame visual beat (dt, beat, bpm) and every music parameter write (beat_now, name, value)
+    readonly List<string> _frameLog = new List<string>();
+    readonly List<string> _paramLog = new List<string>();
     // duck: input / output RMS of the Harmony Duck compressor per mixer block (gain reduction = out - in)
     FMOD.DSP _duckComp;
     int _duckLastSamples = -1;
@@ -90,6 +99,10 @@ public sealed class CaptureScenario : MonoBehaviour
         _conductor = (MusicConductor)typeof(SoundManager).GetField("_conductor", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(sound);
         _anchorSeconds = typeof(MusicConductor).GetField("_anchorSeconds", BindingFlags.Instance | BindingFlags.NonPublic);
         _conductor.BeatChanged += OnBeat;
+        sound.MusicParameterSet += OnMusicParameter;
+        _variationNextField = typeof(SoundManager).GetField("_variationNext", BindingFlags.Instance | BindingFlags.NonPublic);
+        _featuresField = typeof(SoundManager).GetField("_features", BindingFlags.Instance | BindingFlags.NonPublic);
+        _cancelNext = _featuresField.FieldType.GetMethod("CancelNext", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
         _killBackend = (FmodOneShotBackend)typeof(SoundManager).GetField("_killBackend", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(sound);
         _killSchedulerField = typeof(SoundManager).GetField("_killScheduler", BindingFlags.Instance | BindingFlags.NonPublic);
         _styleCurrent = typeof(SoundManager).GetField("_styleCurrent", BindingFlags.Instance | BindingFlags.NonPublic);
@@ -159,6 +172,10 @@ public sealed class CaptureScenario : MonoBehaviour
             _totalMax = Mathf.Max(_totalMax, total);
         }
 
+        if (holdArrangement)
+            HoldArrangement(sound);
+        _frameLog.Add(string.Format(CultureInfo.InvariantCulture, "{0:F6},{1:F5},{2}", dt, sound.BeatPosition, sound.CurrentBpm));
+
         if (scenario == Scenario.spike)
             UpdateSpike(sound);
         if (scenario == Scenario.styles)
@@ -177,6 +194,22 @@ public sealed class CaptureScenario : MonoBehaviour
             }
             QueueKills(sound, _lastBeat);
         }
+    }
+
+    void HoldArrangement(SoundManager sound)
+    {
+        _variationNextField.SetValue(sound, 0);
+        _styleNext.SetValue(sound, 0);
+        var features = _featuresField.GetValue(sound); // FeatureSelector: class or struct, written back either way
+        _cancelNext.Invoke(features, null);
+        _featuresField.SetValue(sound, features);
+    }
+
+    void OnMusicParameter(string name, float value)
+    {
+        if (!AudioCapture.IsCapturing || !_conductor.Clock.BeatAt(MusicConductor.MasterDsp(), out double now))
+            return;
+        _paramLog.Add(string.Format(CultureInfo.InvariantCulture, "{0:F4},{1},{2:G9}", now, name, value));
     }
 
     void OnBeat(int beat)
@@ -409,6 +442,9 @@ public sealed class CaptureScenario : MonoBehaviour
         string path = AudioCapture.End();
         sound.StopMusic();
         _conductor.BeatChanged -= OnBeat;
+        sound.MusicParameterSet -= OnMusicParameter;
+        File.WriteAllText(Path.ChangeExtension(path, ".frames.csv"), "dt,beat,bpm\n" + string.Join("\n", _frameLog) + "\n");
+        File.WriteAllText(Path.ChangeExtension(path, ".params.csv"), "beat_now,name,value\n" + string.Join("\n", _paramLog) + "\n");
         var log = new StringBuilder("beat,frame,bpm\n");
         foreach (var (beat, seconds, tempo) in _beats)
             log.Append(beat).Append(',').Append(Math.Round(AudioCapture.FrameAt(seconds)).ToString("F0", CultureInfo.InvariantCulture))

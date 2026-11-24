@@ -131,4 +131,30 @@ public class DspClockSmootherTests
         Assert.DoesNotThrow(() => v = s.Sample(1024UL, 10.014));
         Assert.Less(v, 4096);
     }
+
+    [Test]
+    public void FollowBeat_LateAnchorJump_IsSpreadOverFrames()
+    {
+        // The shown beat holds at 96.92 while the clock is behind, then the clock is 0.13 beat ahead in one frame.
+        double shown = 96.92, clockLead = 0.13, step = 0.009;
+        double prev = shown;
+        int frames = 0;
+        while (shown < 96.92 + clockLead && frames < 20)
+        {
+            shown = DspClockSmoother.FollowBeat(shown, 96.92 + clockLead, step);
+            Assert.LessOrEqual(shown - prev, step + 0.04 + 1e-9);
+            prev = shown;
+            frames++;
+        }
+        Assert.GreaterOrEqual(frames, 3);
+        Assert.AreEqual(96.92 + clockLead, shown, 1e-9);
+    }
+
+    [Test]
+    public void FollowBeat_NeverGoesBack_AndStartsAtTarget()
+    {
+        Assert.AreEqual(10.0, DspClockSmoother.FollowBeat(10.0, 9.9, 0.01), 1e-12);
+        Assert.AreEqual(3.5, DspClockSmoother.FollowBeat(-1, 3.5, 0.01), 1e-12);
+        Assert.AreEqual(10.005, DspClockSmoother.FollowBeat(10.0, 10.005, 0.01), 1e-12);
+    }
 }

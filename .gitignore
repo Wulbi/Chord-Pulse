@@ -116,3 +116,5 @@ InitTestScene*.unity*
 /Docs/Captures/*.timeline.csv
 /Docs/Captures/*.kills.csv
 /Docs/Captures/*.duck.csv
+/Docs/Captures/*.frames.csv
+/Docs/Captures/*.params.csv

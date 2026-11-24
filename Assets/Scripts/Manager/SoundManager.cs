@@ -333,20 +333,20 @@ public sealed class SoundManager : SingletonBehaviour<SoundManager>
         if (!ApplyMix())
             yield break;
         foreach (var parameter in FeverParameters)
-            if (!Check(_music.setParameterByName(parameter, 0f, true)))
+            if (!Check(SetMusicParameter(parameter, 0f, true)))
                 yield break;
-        if (!Check(_music.setParameterByName("NextSection", 0f, true)))
+        if (!Check(SetMusicParameter("NextSection", 0f, true)))
             yield break;
         // Optional: banks built before the feature loops existed simply play without them.
-        _featuresAvailable = _music.setParameterByName("FeatureLoop", 0f, true) == FMOD.RESULT.OK;
-        _tensionAvailable = _music.setParameterByName("Tension", 0f, true) == FMOD.RESULT.OK &&
-                            _music.setParameterByName("Danger", 0f, true) == FMOD.RESULT.OK;
+        _featuresAvailable = SetMusicParameter("FeatureLoop", 0f, true) == FMOD.RESULT.OK;
+        _tensionAvailable = SetMusicParameter("Tension", 0f, true) == FMOD.RESULT.OK &&
+                            SetMusicParameter("Danger", 0f, true) == FMOD.RESULT.OK;
         _appliedTension = _appliedDanger = 0f;
-        _variationAvailable = _music.setParameterByName("Variation", 0f, true) == FMOD.RESULT.OK;
-        _comboAvailable = _music.setParameterByName("Combo", 0f, true) == FMOD.RESULT.OK &&
-                          _music.setParameterByName("Hurt", 0f, true) == FMOD.RESULT.OK;
+        _variationAvailable = SetMusicParameter("Variation", 0f, true) == FMOD.RESULT.OK;
+        _comboAvailable = SetMusicParameter("Combo", 0f, true) == FMOD.RESULT.OK &&
+                          SetMusicParameter("Hurt", 0f, true) == FMOD.RESULT.OK;
         _appliedCombo = 0;
-        _styleAvailable = _music.setParameterByName("BedStyle", 0f, true) == FMOD.RESULT.OK;
+        _styleAvailable = SetMusicParameter("BedStyle", 0f, true) == FMOD.RESULT.OK;
         _appliedStyle = 0;
         _appliedVariation = 0;
         if (!_tensionAvailable)
@@ -403,7 +403,7 @@ public sealed class SoundManager : SingletonBehaviour<SoundManager>
         // The next section may already have been sent to FMOD; keep the tempo steady through build-up and fever.
         if (FeverHoldsBoundary(NextPhraseStep))
         {
-            Check(_music.setParameterByName("NextSection", _sections.HoldNext().Section));
+            Check(SetMusicParameter("NextSection", _sections.HoldNext().Section));
             OnNextSectionChanged();
         }
     }
@@ -544,7 +544,8 @@ public sealed class SoundManager : SingletonBehaviour<SoundManager>
             visual = clockBeat - latencyBeats;
         else
             visual = _audioBeat - latencyBeats;
-        _visualBeat = Math.Max(_visualBeat, Math.Max(0, visual));
+        _visualBeat = DspClockSmoother.FollowBeat(_visualBeat, Math.Max(0, visual),
+            Time.unscaledDeltaTime * _conductor.Tempo / 60.0);
         _roundSeconds += Time.deltaTime;
 
         // Beats past the next phrase boundary run at the upcoming section's BPM (ruling R11); safe every frame.
@@ -571,7 +572,7 @@ public sealed class SoundManager : SingletonBehaviour<SoundManager>
         var next = _sections.Advance(_intensity,
             allowBreath: _feverStart < 0 || AudioStep >= _feverStart + FeverSteps,
             hold: FeverHoldsBoundary(_phraseStartStep + StepsPerPhrase));
-        Check(_music.setParameterByName("NextSection", next.Section));
+        Check(SetMusicParameter("NextSection", next.Section));
         OnNextSectionChanged();
         bool feverNext = FeverOverlaps(NextPhraseStep, NextPhraseStep + StepsPerPhrase);
         _styleCurrent = _styleNext;
@@ -595,7 +596,7 @@ public sealed class SoundManager : SingletonBehaviour<SoundManager>
         // so the lookahead does not cut the last note of a loop.
         var loop = step >= NextPhraseStep && _features.Next != null ? _features.Next : _features.Current;
         int id = loop == null || FeverOverlaps(step, step) ? 0 : loop.Id;
-        if (id != _appliedFeature && Check(_music.setParameterByName("FeatureLoop", id, true)))
+        if (id != _appliedFeature && Check(SetMusicParameter("FeatureLoop", id, true)))
             _appliedFeature = id;
     }
 
@@ -613,7 +614,7 @@ public sealed class SoundManager : SingletonBehaviour<SoundManager>
         // Look ahead into the next phrase too, so a breath's thinner arrangement starts on its first downbeat.
         bool breath = step >= NextPhraseStep ? _sections.Next.Breath : _sections.Current.Breath;
         int intensity = fever ? MaxIntensity : breath ? 0 : _intensity;
-        if (intensity != _appliedIntensity && Check(_music.setParameterByName("Intensity", intensity)))
+        if (intensity != _appliedIntensity && Check(SetMusicParameter("Intensity", intensity)))
             _appliedIntensity = intensity;
 
         UpdateFeature(step);
@@ -688,7 +689,7 @@ public sealed class SoundManager : SingletonBehaviour<SoundManager>
         int style = step >= NextPhraseStep ? _styleNext : _styleCurrent;
         if (FeverOverlaps(step, step))
             style = StyleSynthpop;
-        if (style != _appliedStyle && Check(_music.setParameterByName("BedStyle", style, true)))
+        if (style != _appliedStyle && Check(SetMusicParameter("BedStyle", style, true)))
             _appliedStyle = style;
     }
 
@@ -700,8 +701,8 @@ public sealed class SoundManager : SingletonBehaviour<SoundManager>
         {
             // Snap to 1, then aim at 0: FMOD's descending seek speed draws the recovery.
             _hurtPending = false;
-            if (Check(_music.setParameterByName("Hurt", 1f, true)))
-                Check(_music.setParameterByName("Hurt", 0f));
+            if (Check(SetMusicParameter("Hurt", 1f, true)))
+                Check(SetMusicParameter("Hurt", 0f));
         }
         // Layers are gated per note, so only change the level on a bar line (just ahead of it).
         int bar = (int)Math.Floor(step / StepsPerBar);
@@ -709,7 +710,7 @@ public sealed class SoundManager : SingletonBehaviour<SoundManager>
             return;
         _comboBar = bar;
         int combo = feverZone ? 0 : _combo;
-        if (combo != _appliedCombo && Check(_music.setParameterByName("Combo", combo, true)))
+        if (combo != _appliedCombo && Check(SetMusicParameter("Combo", combo, true)))
             _appliedCombo = combo;
     }
 
@@ -722,7 +723,7 @@ public sealed class SoundManager : SingletonBehaviour<SoundManager>
         int v = step >= NextPhraseStep ? _variationNext : _variationCurrent;
         if (FeverOverlaps(step, step))
             v = 0;
-        if (v != _appliedVariation && Check(_music.setParameterByName("Variation", v, true)))
+        if (v != _appliedVariation && Check(SetMusicParameter("Variation", v, true)))
             _appliedVariation = v;
     }
 
@@ -734,9 +735,9 @@ public sealed class SoundManager : SingletonBehaviour<SoundManager>
         float tension = feverZone ? 0f : _tension;
         float danger = feverZone || !_danger ? 0f : 1f;
         if (Mathf.Abs(tension - _appliedTension) >= 0.02f || (tension == 0f && _appliedTension != 0f))
-            if (Check(_music.setParameterByName("Tension", tension)))
+            if (Check(SetMusicParameter("Tension", tension)))
                 _appliedTension = tension;
-        if (danger != _appliedDanger && Check(_music.setParameterByName("Danger", danger)))
+        if (danger != _appliedDanger && Check(SetMusicParameter("Danger", danger)))
             _appliedDanger = danger;
     }
 
@@ -745,7 +746,7 @@ public sealed class SoundManager : SingletonBehaviour<SoundManager>
         int index = (int)phase;
         if (_appliedFever[index] == on)
             return;
-        if (Check(_music.setParameterByName(FeverParameters[index], on ? 1f : 0f, true)))
+        if (Check(SetMusicParameter(FeverParameters[index], on ? 1f : 0f, true)))
             _appliedFever[index] = on;
     }
 
@@ -771,7 +772,7 @@ public sealed class SoundManager : SingletonBehaviour<SoundManager>
     {
         if (!Mathf.Approximately(musicMix, _appliedMusicMix))
         {
-            if (!Check(_music.setParameterByName("MusicMix", musicMix)))
+            if (!Check(SetMusicParameter("MusicMix", musicMix)))
                 return false;
             _appliedMusicMix = musicMix;
         }
@@ -795,6 +796,18 @@ public sealed class SoundManager : SingletonBehaviour<SoundManager>
         int i = Mathf.Min((int)x, KillChordMixDb.Length - 2);
         float db = Mathf.Lerp(KillChordMixDb[i], KillChordMixDb[i + 1], x - i);
         return Mathf.Pow(10f, db / 20f);
+    }
+
+    /// <summary>Raised after every music-event parameter write that FMOD accepted (capture / diagnostics).</summary>
+    public event Action<string, float> MusicParameterSet;
+
+    /// <summary>The one place the music event's parameters are written.</summary>
+    FMOD.RESULT SetMusicParameter(string name, float value, bool ignoreSeek = false)
+    {
+        var result = _music.setParameterByName(name, value, ignoreSeek);
+        if (result == FMOD.RESULT.OK)
+            MusicParameterSet?.Invoke(name, value);
+        return result;
     }
 
     bool Check(FMOD.RESULT result)

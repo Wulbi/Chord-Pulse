@@ -90,4 +90,20 @@ public sealed class DspClockSmoother
         _sampleRate = sampleRate;
         Reset();
     }
+
+    /// <summary>
+    /// Moves the on-screen beat towards the mixer clock's beat without ever going back and without a single-frame leap:
+    /// a late beat anchor can pull the clock behind the shown beat (the beat holds) and then push it ahead again by
+    /// tenths of a beat in one frame. The shown beat advances by at most the time-based step plus
+    /// <paramref name="maxCatchUpBeats"/> per frame and catches up over the next few frames.
+    /// </summary>
+    /// <param name="current">Beat shown last frame (negative: not started, takes the target as is).</param>
+    /// <param name="target">Beat the clock gives now.</param>
+    /// <param name="naturalStepBeats">Frame time in beats (dt * bpm / 60).</param>
+    public static double FollowBeat(double current, double target, double naturalStepBeats, double maxCatchUpBeats = 0.04)
+    {
+        if (current < 0 || target <= current)
+            return Math.Max(current, target);
+        return Math.Min(target, current + Math.Max(0, naturalStepBeats) + maxCatchUpBeats);
+    }
 }

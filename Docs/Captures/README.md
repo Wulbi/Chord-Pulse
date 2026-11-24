@@ -320,3 +320,56 @@ Section-jump landings (heavy seed 33, kills every beat, jumps at 16/32/48/64): 0
 L..L+3 for every landing, with the 1-beat post-boundary dispatch window (R15) and without it (0.5 beat): no difference
 in this scenario. Spike re-measure with Task 6 code (`spike_seed33_task6`, DSP trigger): 64 / 64 scheduled and started,
 0 dropped (Task 5 lost 17 and 49), mean 0.48 / max 1.54 ms before correction, 4 beats after a change 0.55 / 1.54 ms.
+
+## Part A: visual beat and phrase-boundary landings (unity-music-clock, Task 2)
+
+`CaptureScenario` also writes `<take>.frames.csv` (`dt,beat,bpm` of `SoundManager.BeatPosition` every Unity frame) and
+`<take>.params.csv` (`beat_now,name,value` of every music-event parameter write, `beat_now` = `Clock.BeatAt(MasterDsp())`;
+all writes go through `SoundManager.SetMusicParameter`). Inspector `holdArrangement` zeroes `_variationNext` / `_styleNext`
+and calls `FeatureSelector.CancelNext()` every frame, so no arrangement parameter changes at a phrase boundary.
+
+```
+python FMOD/Tools/analyze_capture.py frames <wav>      # backward steps, max |delta beat - dt*bpm/60|; exit 1 if any backward step or > 0.05 beat
+python FMOD/Tools/analyze_capture.py landings <wav>    # every 16th beat: log delay, RMS around the boundary, silent runs
+```
+
+`landings` columns: `delay_ms` = beat-log frame of the boundary minus the frame predicted from the previous beat and its BPM
+(this is the timeline-callback clock, i.e. what the old visuals used); `first_half_dB` / `next_half_dB` = mono RMS of the half
+beat after the predicted boundary and the half beat after that; `prev_phrase_dB` = RMS of the same place one phrase (8 beats)
+earlier; `silence` = runs of >= 20 ms of 5 ms windows with peak below -70 dBFS within one beat after the predicted boundary
+(offset+length in ms). `silent` = exact digital silence.
+
+### Visual beat vs beat log (baseline, seed 7)
+
+Reference `baseline_seed7_jumpcheck` (before the DSP-clock visual beat) reproduces the spec table (48: +350 ms / -46.1 dB,
+64: +95, 80: +321 / silent, 96: +823). Boundaries where the beat log is late are 48, 80 and 96 (the timeline jumps); the screen
+beat is read from the DSP clock and shows no stall there.
+
+| take | boundary 48 delay | 64 | 80 | 96 | `frames`: backward / max deviation / frames > 0.05 |
+|---|---:|---:|---:|---:|---|
+| `baseline_seed7_jumpcheck` (old) | +350 ms | +95 | +321 | +823 | (no frame log) |
+| `baseline_seed7_a2` (DSP visual beat, `max()` only) | +348 | +86 | +286 | +458 | 0 / 0.1214 beat at 97.05 / 1 (held 14 frames at 96.92, then leapt) |
+| `baseline_seed7_a2fix2` (+ `DspClockSmoother.FollowBeat`) | +291 | +9 | +326 | +462 | 0 / 0.0400 beat at 96.98 / 0 |
+| `baseline_seed7_a2_hold` (`holdArrangement`) | +365 | +1 | +320 | +368 | 0 / 0.0231 beat / 0 |
+
+`_a2` showed the one flaw: after the late beat-96 anchor the shown beat held for 14 frames and then jumped 0.128 beat in one frame.
+Fix: the shown beat advances by at most the frame's time step plus 0.04 beat (`DspClockSmoother.FollowBeat`), still never backwards.
+The beat log delay at 48 / 80 / 96 stays at several hundred ms by design (timeline callbacks arrive late); the screen no longer follows it.
+All three takes: `stalls >100 ms after the first beat 0`. (An earlier `_a2fix` take was lost to a domain reload at beat 85 and is incomplete.)
+
+### Beat-64 delay
+
+Parameters written (beat_now, name, value), identical in `_a2` and `_a2fix2` apart from timing:
+
+| window | writes |
+|---|---|
+| 15 - 16.5 (no delay) | 15.55 Variation 3; 16.01 NextSection 1 |
+| 111 - 112.5 (no delay) | 111.50 Variation 1; 112.04 NextSection 1; 112.04 FeatureLoop 0 |
+| 63 - 64.5 (delay) | 63.54 Variation 4; 63.54 BedStyle 2; 64.04-64.16 NextSection 0 |
+
+Only 64 has a `BedStyle` write (style 0 to 2 at the phrase start, `ignoreSeek` true) and a Variation of 4. With `holdArrangement`
+(`_hold` take) the window holds only `NextSection` and the delay is +1 ms (below the 10 ms limit). Conclusion: the delay comes
+with the arrangement parameter switch ahead of the boundary (most likely `BedStyle`), which the plan removes anyway; no action.
+Caveat: the delay is not constant (+95, +86 and +9 ms in three takes without `holdArrangement`), so one hold take is supporting
+evidence, not proof. With `holdArrangement` the first half beat after 16 / 32 / 64 / 112 also shows a 65-70 ms silence at 445-490 ms
+and 48 / 80 / 96 are silent for the first 310-360 ms; these gaps are the known jump-landing gaps, not part of this diagnosis.

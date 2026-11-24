@@ -19,6 +19,17 @@
       that were not scheduled or have no click are counted and listed separately, never folded into the stats:
       "GATE: PASS on N measured beats; M not scheduled, K no click" (or FAIL). A PASS with M > 0 is conditional.
 
+  python FMOD/Tools/analyze_capture.py frames <wav>
+      Reads <wav minus .wav>.frames.csv (dt,beat,bpm per Unity frame: the visual beat SoundManager.BeatPosition).
+      Prints the number of backward steps and max |delta beat - dt*bpm/60| (with its beat position); exit 1 if the
+      beat ever goes back or a frame deviates by more than 0.05 beat.
+
+  python FMOD/Tools/analyze_capture.py landings <wav>
+      For every 16th beat of the beat log: delay of the logged boundary frame against the frame predicted from the
+      previous beat and its BPM (ms), RMS of the first and the next half beat after the predicted boundary, RMS of the
+      same place one phrase (8 beats) earlier, and silent runs (>= 20 ms, 5 ms windows with peak below -70 dBFS)
+      within one beat after the predicted boundary.
+
 Needs numpy and scipy. Note: numpy lives in the user site-packages here, so `python -I` (isolated mode) cannot import
 it; run with plain `python` (the WAVs are our own captures, nothing untrusted is loaded).
 """
@@ -278,6 +289,94 @@ def cmd_spike(args):
     return 0
 
 
+def rms_db(mono, a, b):
+    a, b = max(0, int(round(a))), max(0, int(round(b)))
+    seg = mono[a:b].astype(np.float64)
+    if len(seg) == 0:
+        return float("-inf")
+    rms = float(np.sqrt(np.mean(seg ** 2)))
+    return 20 * np.log10(rms) if rms > 0 else float("-inf")
+
+
+def fmt_db(v):
+    return "silent" if not np.isfinite(v) or v < -150.0 else "%.1f" % v
+
+
+def silent_runs(mono, start, length, rate, win_ms=5.0, min_ms=20.0, floor_db=-70.0):
+    """Runs of >= min_ms made of win_ms windows whose peak is below floor_db; returns [(offset_ms, length_ms)]."""
+    win = max(1, int(round(rate * win_ms / 1000.0)))
+    thr = 10 ** (floor_db / 20.0)
+    start = int(round(start))
+    runs, run_start, n = [], None, int(length // win)
+    for i in range(n):
+        seg = mono[start + i * win:start + (i + 1) * win]
+        quiet = len(seg) > 0 and float(np.max(np.abs(seg))) < thr
+        if quiet and run_start is None:
+            run_start = i
+        if (not quiet or i == n - 1) and run_start is not None:
+            end = i + 1 if quiet else i
+            if (end - run_start) * win_ms >= min_ms:
+                runs.append((run_start * win_ms, (end - run_start) * win_ms))
+            run_start = None
+    return runs
+
+
+def cmd_landings(args):
+    audio, rate = read_wav(args.wav)
+    mono = audio.mean(axis=1)
+    path = os.path.splitext(args.wav)[0] + ".beats.csv"
+    if not os.path.isfile(path):
+        raise SystemExit("beat log not found: " + path)
+    beats = {int(r["beat"]): (int(r["frame"]), float(r["bpm"])) for r in read_csv(path)}
+    print("%s" % os.path.basename(args.wav))
+    print("beat   bpm  delay_ms  first_half_dB  next_half_dB  prev_phrase_dB  silence (offset+length ms after the expected boundary)")
+    for b in sorted(beats):
+        if b == 0 or b % 16 != 0 or b - 1 not in beats:
+            continue
+        frame, bpm = beats[b]
+        pf, pbpm = beats[b - 1]
+        expected = pf + rate * 60.0 / pbpm
+        half = 0.5 * rate * 60.0 / bpm
+        first = rms_db(mono, expected, expected + half)
+        nxt = rms_db(mono, expected + half, expected + 2 * half)
+        prev = "n/a"
+        if b - 8 in beats:
+            ef, ebpm = beats[b - 8]
+            prev = fmt_db(rms_db(mono, ef, ef + 0.5 * rate * 60.0 / ebpm))
+        runs = silent_runs(mono, expected, rate * 60.0 / bpm, rate)
+        sil = ", ".join("%.0f+%.0f" % r for r in runs) if runs else "-"
+        print("%4d  %4.0f  %+8.0f  %13s  %12s  %14s  %s" % (
+            b, bpm, (frame - expected) / rate * 1000.0, fmt_db(first), fmt_db(nxt), prev, sil))
+    return 0
+
+
+def cmd_frames(args):
+    path = os.path.splitext(args.wav)[0] + ".frames.csv"
+    if not os.path.isfile(path):
+        raise SystemExit("frame log not found: " + path)
+    rows = [(float(r["dt"]), float(r["beat"]), float(r["bpm"])) for r in read_csv(path)]
+    # Frames before the music runs report a negative beat; start at the first frame with a beat >= 0.
+    first = next((i for i, r in enumerate(rows) if r[1] >= 0), None)
+    if first is None or len(rows) - first < 2:
+        raise SystemExit("no frames with a running beat clock in " + path)
+    backward, worst, worst_at, over, stalled = 0, 0.0, 0.0, 0, 0
+    for i in range(first + 1, len(rows)):
+        dt, beat, bpm = rows[i]
+        delta = beat - rows[i - 1][1]
+        if delta < 0:
+            backward += 1
+        if delta == 0 and dt > 0:
+            stalled += 1
+        dev = abs(delta - dt * bpm / 60.0)
+        if dev > worst:
+            worst, worst_at = dev, beat
+        if dev > 0.05:
+            over += 1
+    print("%s: %d frames, backward steps %d, frozen frames (delta 0) %d, max |delta beat - dt*bpm/60| %.4f beat at beat %.2f, frames over 0.05: %d" % (
+        os.path.basename(path), len(rows) - first, backward, stalled, worst, worst_at, over))
+    return 1 if backward or over else 0
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     sub = parser.add_subparsers(dest="command", required=True)
@@ -299,6 +398,12 @@ def main():
     p.add_argument("--max-pair-ms", type=float, default=40.0)
     p.add_argument("--verbose", action="store_true")
     p.set_defaults(func=cmd_spike)
+    p = sub.add_parser("frames")
+    p.add_argument("wav")
+    p.set_defaults(func=cmd_frames)
+    p = sub.add_parser("landings")
+    p.add_argument("wav")
+    p.set_defaults(func=cmd_landings)
     args = parser.parse_args()
     sys.exit(args.func(args))
 
