@@ -298,12 +298,13 @@ public enum OneShotArm { Wait, Apply, Drop }
 public static class OneShotArming
 {
     /// <summary>
-    /// Drop: the instance is invalid, or the start has been reached without the start time applied (applying it now
-    /// would play the note late). Apply: the channel group exists and the start is still ahead. Otherwise Wait.
+    /// Drop: the instance is invalid, or the start is less than <paramref name="minLeadSamples"/> (at least 1) ahead
+    /// without the start time applied (applying it now could come after the mixer passed the start: late or lost).
+    /// Apply: the channel group exists and the start is far enough ahead. Otherwise Wait.
     /// </summary>
-    public static OneShotArm Decide(bool instanceValid, bool hasGroup, ulong start, ulong now)
+    public static OneShotArm Decide(bool instanceValid, bool hasGroup, ulong start, ulong now, ulong minLeadSamples = 0)
     {
-        if (!instanceValid || start <= now)
+        if (!instanceValid || start < now + Math.Max(1UL, minLeadSamples))
             return OneShotArm.Drop;
         return hasGroup ? OneShotArm.Apply : OneShotArm.Wait;
     }
@@ -344,10 +345,13 @@ public sealed class FmodOneShotBackend : IOneShotBackend
     readonly Dictionary<(Instrument, OutputBus), FMOD.Studio.EventDescription> _descriptions = new Dictionary<(Instrument, OutputBus), FMOD.Studio.EventDescription>();
     int _next;
     int _sampleRate;
+    // Mixer block (DSP buffer) length: a start less than one block ahead may lie in the block being mixed already
+    // (Task 5b: setDelay 798 samples ahead at 15 fps, the note never sounded). Such notes are dropped.
+    ulong _blockSamples = 1024;
 
     /// <summary>
-    /// Notes stopped without sounding: their start time was reached before their channel group appeared (or the
-    /// instance became invalid). They are never played late.
+    /// Notes stopped without sounding: their start time came within one mixer block before their channel group could
+    /// be given it (or the instance became invalid). They are never played late.
     /// </summary>
     public int DroppedCount { get; private set; }
     public int StartedCount { get; private set; }
@@ -404,6 +408,8 @@ public sealed class FmodOneShotBackend : IOneShotBackend
         {
             FMODUnity.RuntimeManager.CoreSystem.getSoftwareFormat(out int rate, out _, out _);
             _sampleRate = rate; // OneShotRelease falls back when this is 0
+            if (FMODUnity.RuntimeManager.CoreSystem.getDSPBufferSize(out uint block, out _) == FMOD.RESULT.OK)
+                _blockSamples = block;
         }
         instance.setPaused(true); // silent until Update has applied the start time to its channel group
         if (instance.start() != FMOD.RESULT.OK)
@@ -526,7 +532,7 @@ public sealed class FmodOneShotBackend : IOneShotBackend
             FMOD.ChannelGroup group = default;
             bool hasGroup = valid && n.Instance.getChannelGroup(out group) == FMOD.RESULT.OK && group.hasHandle();
             n.Frames++;
-            var arm = OneShotArming.Decide(valid, hasGroup, n.Start, now);
+            var arm = OneShotArming.Decide(valid, hasGroup, n.Start, now, _blockSamples);
             if (arm == OneShotArm.Wait)
             {
                 _notes[key] = n;

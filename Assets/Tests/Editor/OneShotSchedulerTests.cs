@@ -460,6 +460,17 @@ public class OneShotSchedulerTests
     }
 
     [Test]
+    public void Arming_StartInsideTheBlockBeingMixed_Drops()
+    {
+        // 1024-sample mixer block: a start less than one block ahead may already be in the block the mixer is
+        // processing, where setDelay can come too late (Task 5b, 15 fps take: applied 798 samples ahead, never sounded).
+        Assert.AreEqual(OneShotArm.Drop, OneShotArming.Decide(true, true, 48000, 48000 - 1023, 1024));
+        Assert.AreEqual(OneShotArm.Drop, OneShotArming.Decide(true, false, 48000, 48000 - 1023, 1024));
+        Assert.AreEqual(OneShotArm.Apply, OneShotArming.Decide(true, true, 48000, 48000 - 1024, 1024));
+        Assert.AreEqual(OneShotArm.Wait, OneShotArming.Decide(true, false, 48000, 48000 - 1024, 1024));
+    }
+
+    [Test]
     public void Arming_InvalidInstance_Drops()
     {
         Assert.AreEqual(OneShotArm.Drop, OneShotArming.Decide(false, false, 200000, 0));
