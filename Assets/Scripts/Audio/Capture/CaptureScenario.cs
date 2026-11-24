@@ -39,6 +39,9 @@ public sealed class CaptureScenario : MonoBehaviour
     [Tooltip("Trigger the 0.3-beat-lead clicks from the beat clock's DSP time instead of SoundManager.BeatPosition, which " +
              "stalls at anchor + 0.999 beat while a jump landing's beat callback is late (Task 5 take spike_seed33_task5).")]
     [SerializeField] bool shortLeadOnDsp;
+    [Tooltip("Write <take>.oneshots.csv: FmodOneShotBackend.DiagnosticLog of the spike and kill-chord backends (frame, " +
+             "event, handle, DSP clock, ...). Off = the backends compute nothing for it.")]
+    [SerializeField] bool logOneShots;
 
     [Header("duck (kill-chord ducking of the Harmony group)")]
     [Tooltip("Off = the same take without kills, the reference the ducked take is compared with.")]
@@ -76,6 +79,8 @@ public sealed class CaptureScenario : MonoBehaviour
     FieldInfo _killSchedulerField;
     int _killDropped, _killLate;
     readonly List<string> _killLossLog = new List<string>();
+    readonly List<string> _oneShotLog = new List<string>();
+    FieldInfo _pollCountField;
     // styles: 4 phrases (64 beats) per bed style 0..3
     const int StyleBlockBeats = 64;
     FieldInfo _styleCurrent, _styleNext;
@@ -111,6 +116,7 @@ public sealed class CaptureScenario : MonoBehaviour
             _wavPath = Path.GetFullPath(Path.Combine(folder, scenario + "_seed" + seed + suffix + "_run" + run + ".wav"));
         _conductor = (MusicConductor)typeof(SoundManager).GetField("_conductor", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(sound);
         _anchorSeconds = typeof(MusicConductor).GetField("_anchorSeconds", BindingFlags.Instance | BindingFlags.NonPublic);
+        _pollCountField = typeof(MusicConductor).GetField("_pollCount", BindingFlags.Instance | BindingFlags.NonPublic);
         _conductor.BeatChanged += OnBeat;
         sound.MusicParameterSet += OnMusicParameter;
         _variationNextField = typeof(SoundManager).GetField("_variationNext", BindingFlags.Instance | BindingFlags.NonPublic);
@@ -124,6 +130,12 @@ public sealed class CaptureScenario : MonoBehaviour
         {
             _backend = new FmodOneShotBackend();
             _scheduler = new OneShotScheduler(_conductor.Clock, _backend) { ScheduleOffsetSamples = scheduleOffsetSamples };
+        }
+        if (logOneShots)
+        {
+            if (_backend != null)
+                _backend.DiagnosticLog = line => _oneShotLog.Add(Time.frameCount + ",spike," + line);
+            _killBackend.DiagnosticLog = line => _oneShotLog.Add(Time.frameCount + ",kill," + line);
         }
 
         yield return null; // let FMOD finish initialising
@@ -189,6 +201,14 @@ public sealed class CaptureScenario : MonoBehaviour
             HoldArrangement(sound);
         _frameLog.Add(string.Format(CultureInfo.InvariantCulture, "{0:F6},{1:F5},{2}", dt, sound.BeatPosition, sound.CurrentBpm));
 
+        if (logOneShots && _conductor.Clock.HasAnchor)
+        {
+            // Beat clock anchor as the conductor's per-frame polls refine it (pollCount from MusicConductor, read only).
+            int anchor = _conductor.Clock.AnchorBeat;
+            _conductor.Clock.DspAt(anchor, out ulong anchorDsp);
+            _oneShotLog.Add(Time.frameCount + ",clock,anchor," + anchor + "," + MusicConductor.MasterDsp() + "," + anchorDsp + "," +
+                            _pollCountField.GetValue(_conductor));
+        }
         if (scenario == Scenario.spike)
             UpdateSpike(sound);
         if (scenario == Scenario.styles)
@@ -494,6 +514,12 @@ public sealed class CaptureScenario : MonoBehaviour
         foreach (var line in _killLossLog)
             losses.Append(line).Append('\n');
         File.WriteAllText(Path.ChangeExtension(path, ".kills.csv"), losses.ToString());
+        if (logOneShots)
+        {
+            _killBackend.DiagnosticLog = null;
+            File.WriteAllText(Path.ChangeExtension(path, ".oneshots.csv"),
+                "frame,backend,event,handle,now_dsp,start_dsp,...\n" + string.Join("\n", _oneShotLog) + "\n");
+        }
         if (scenario == Scenario.duck)
         {
             var duck = new StringBuilder("beat,rms_in,rms_out\n");

@@ -427,4 +427,42 @@ public class OneShotSchedulerTests
         scheduler.Schedule(N(72, 2, 2, 0f, 0, hold: 0.1), Owner); // 2 beats = 1 s
         Assert.AreEqual(48000UL + 48000UL, backend.Stops[0].dspStop);
     }
+
+    // FmodOneShotBackend's wait for the channel group (OneShotArming): time-based, never frame-based.
+
+    [Test]
+    public void Arming_NoGroupStartAhead_WaitsHoweverManyFrames()
+    {
+        // 100000 frames of 1 sample each (an uncapped frame rate) while the start is still ahead: always Wait.
+        for (ulong now = 0; now < 100000; now++)
+            Assert.AreEqual(OneShotArm.Wait, OneShotArming.Decide(true, false, 200000, now));
+    }
+
+    [Test]
+    public void Arming_GroupAndStartAhead_Applies()
+    {
+        Assert.AreEqual(OneShotArm.Apply, OneShotArming.Decide(true, true, 48000, 47999));
+    }
+
+    [Test]
+    public void Arming_StartReachedWithoutGroup_Drops()
+    {
+        Assert.AreEqual(OneShotArm.Drop, OneShotArming.Decide(true, false, 48000, 48000));
+        Assert.AreEqual(OneShotArm.Drop, OneShotArming.Decide(true, false, 48000, 60000));
+    }
+
+    [Test]
+    public void Arming_GroupOnlyAfterStart_Drops()
+    {
+        // Applying a start that has passed would play the note late.
+        Assert.AreEqual(OneShotArm.Drop, OneShotArming.Decide(true, true, 48000, 48000));
+        Assert.AreEqual(OneShotArm.Drop, OneShotArming.Decide(true, true, 48000, 48001));
+    }
+
+    [Test]
+    public void Arming_InvalidInstance_Drops()
+    {
+        Assert.AreEqual(OneShotArm.Drop, OneShotArming.Decide(false, false, 200000, 0));
+        Assert.AreEqual(OneShotArm.Drop, OneShotArming.Decide(false, true, 200000, 0));
+    }
 }

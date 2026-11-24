@@ -288,12 +288,37 @@ public sealed class OneShotScheduler
     }
 }
 
+/// <summary>What <see cref="FmodOneShotBackend"/> does with a started note whose start time is not applied yet.</summary>
+public enum OneShotArm { Wait, Apply, Drop }
+
+/// <summary>
+/// The backend's wait for an instance's channel group, in DSP time (not frames: at an uncapped frame rate 30 frames
+/// were shorter than one Studio update and dropped almost every note). Pure, so it is testable without FMOD.
+/// </summary>
+public static class OneShotArming
+{
+    /// <summary>
+    /// Drop: the instance is invalid, or the start has been reached without the start time applied (applying it now
+    /// would play the note late). Apply: the channel group exists and the start is still ahead. Otherwise Wait.
+    /// </summary>
+    public static OneShotArm Decide(bool instanceValid, bool hasGroup, ulong start, ulong now)
+    {
+        if (!instanceValid || start <= now)
+            return OneShotArm.Drop;
+        return hasGroup ? OneShotArm.Apply : OneShotArm.Wait;
+    }
+}
+
 /// <summary>
 /// FMOD Studio backend: one event instance of event:/Inst/&lt;name&gt; per note, Note parameter set per instance.
-/// start() is called at once; the start time is applied through the event's channel group (ChannelGroup.setDelay,
-/// sample accurate) on the first <see cref="Update"/> after start(), once Studio has created the group.
-/// Call Update every frame. (Task 3 spike: EVENT_PROPERTY.SCHEDULE_DELAY was as precise but about 24 ms late on
-/// average, an offset that depends on the Studio update timing; see Docs/Captures/README.md.)
+/// The instance is paused, then start()ed at once: Studio creates its channel group (and the voice) on its own
+/// update thread, paused. The start time is applied through that group (ChannelGroup.setDelay, sample accurate) on
+/// the first <see cref="Update"/> that finds the group, and only then is the group unpaused (directly, so the start
+/// does not wait for a Studio update; the instance's own unpause follows for Studio's bookkeeping). A note can therefore
+/// never sound before its delay is in effect (Task 5b: without the pause, a main-thread frame longer than one Studio
+/// update let the voice sound at dispatch, up to the lead early). Call Update every frame. (Task 3 spike:
+/// EVENT_PROPERTY.SCHEDULE_DELAY was as precise but about 24 ms late on average, an offset that depends on the Studio
+/// update timing; see Docs/Captures/README.md.)
 /// <see cref="Stop"/> with a time at or before now, or at or before the note's start, cancels the note at once.
 /// A note stopped at its end time fades out over <see cref="InstrumentTable.ReleaseSeconds"/> from that time (like the 120 ms ADSR
 /// release of the timeline notes it replaces) instead of being cut.
@@ -308,7 +333,8 @@ public sealed class FmodOneShotBackend : IOneShotBackend
         public ulong Start;
         public ulong Stop;
         public bool Released;
-        public int Frames;
+        public int Frames; // DiagnosticLog only: Update calls before the start was applied
+        public int Checks; // DiagnosticLog only
         public ulong ReleaseSamples; // fade after Stop, from this note's own (instrument, bus)
     }
 
@@ -320,8 +346,8 @@ public sealed class FmodOneShotBackend : IOneShotBackend
     int _sampleRate;
 
     /// <summary>
-    /// Notes stopped without sounding: their channel group appeared only after the start time had passed, or never
-    /// (30 frames). They are never played late.
+    /// Notes stopped without sounding: their start time was reached before their channel group appeared (or the
+    /// instance became invalid). They are never played late.
     /// </summary>
     public int DroppedCount { get; private set; }
     public int StartedCount { get; private set; }
@@ -329,6 +355,36 @@ public sealed class FmodOneShotBackend : IOneShotBackend
     public int CancelledCount { get; private set; }
 
     public ulong NowDsp => MusicConductor.MasterDsp();
+
+    /// <summary>
+    /// Capture diagnosis only (set by CaptureScenario's logOneShots): CSV lines start / apply / check / drop per note
+    /// with the DSP clock and the channel group's delay, pause flag and first channel position. Null (the default) =
+    /// off: nothing is computed.
+    /// </summary>
+    public Action<string> DiagnosticLog;
+
+    static long FirstChannelPosition(FMOD.ChannelGroup g, int depth)
+    {
+        if (g.getNumChannels(out int nc) == FMOD.RESULT.OK && nc > 0 && g.getChannel(0, out FMOD.Channel ch) == FMOD.RESULT.OK)
+            return ch.getPosition(out uint p, FMOD.TIMEUNIT.PCM) == FMOD.RESULT.OK ? p : -2;
+        if (depth < 4 && g.getNumGroups(out int ng) == FMOD.RESULT.OK)
+            for (int i = 0; i < ng; i++)
+                if (g.getGroup(i, out FMOD.ChannelGroup child) == FMOD.RESULT.OK)
+                {
+                    long p = FirstChannelPosition(child, depth + 1);
+                    if (p != -1)
+                        return p;
+                }
+        return -1;
+    }
+
+    string Probe(FMOD.ChannelGroup g)
+    {
+        g.getDelay(out ulong ds, out ulong de, out _);
+        g.getPaused(out bool paused);
+        g.getDSPClock(out ulong own, out ulong parent);
+        return ds + "," + de + "," + (paused ? 1 : 0) + "," + parent + "," + FirstChannelPosition(g, 0);
+    }
 
     public int Start(Instrument inst, OutputBus bus, int midi, float gainDb, ulong dspStart)
     {
@@ -349,6 +405,7 @@ public sealed class FmodOneShotBackend : IOneShotBackend
             FMODUnity.RuntimeManager.CoreSystem.getSoftwareFormat(out int rate, out _, out _);
             _sampleRate = rate; // OneShotRelease falls back when this is 0
         }
+        instance.setPaused(true); // silent until Update has applied the start time to its channel group
         if (instance.start() != FMOD.RESULT.OK)
         {
             instance.release();
@@ -357,6 +414,7 @@ public sealed class FmodOneShotBackend : IOneShotBackend
         StartedCount++;
         int handle = _next++;
         _notes[handle] = new Note { Instance = instance, Start = dspStart, ReleaseSamples = _release.SamplesFor(inst, bus, _sampleRate) };
+        DiagnosticLog?.Invoke("start," + handle + "," + NowDsp + "," + dspStart);
         return handle;
     }
 
@@ -433,8 +491,9 @@ public sealed class FmodOneShotBackend : IOneShotBackend
     }
 
     /// <summary>
-    /// Applies start / stop times once each instance's channel group exists. A note whose start is already past
-    /// (or whose group never appears) is stopped immediately and dropped, not played late.
+    /// Applies start / stop times once each instance's channel group exists, then unpauses it. A note keeps waiting
+    /// while its start is ahead (however many frames that takes); one whose start is reached first (or whose instance
+    /// is invalid) is stopped immediately and dropped, not played late (<see cref="OneShotArming"/>).
     /// </summary>
     public void Update()
     {
@@ -448,6 +507,12 @@ public sealed class FmodOneShotBackend : IOneShotBackend
             var n = _notes[key];
             if (n.Applied)
             {
+                if (DiagnosticLog != null && n.Checks < 6)
+                {
+                    n.Checks++;
+                    _notes[key] = n;
+                    DiagnosticLog("check," + key + "," + now + "," + n.Start + "," + n.Checks + "," + Probe(n.Group));
+                }
                 bool playedOut = n.Stop == 0 && n.Released && IsFinished(key);
                 if (playedOut || (n.Released && n.Stop > 0 && now >= n.Stop + n.ReleaseSamples))
                 {
@@ -457,21 +522,32 @@ public sealed class FmodOneShotBackend : IOneShotBackend
                 }
                 continue;
             }
-            bool hasGroup = n.Instance.getChannelGroup(out FMOD.ChannelGroup group) == FMOD.RESULT.OK && group.hasHandle();
-            if (!hasGroup && ++n.Frames <= 30)
+            bool valid = n.Instance.isValid();
+            FMOD.ChannelGroup group = default;
+            bool hasGroup = valid && n.Instance.getChannelGroup(out group) == FMOD.RESULT.OK && group.hasHandle();
+            n.Frames++;
+            var arm = OneShotArming.Decide(valid, hasGroup, n.Start, now);
+            if (arm == OneShotArm.Wait)
             {
                 _notes[key] = n;
                 continue;
             }
-            if (hasGroup && n.Start > now)
+            if (arm == OneShotArm.Apply)
             {
+                if (DiagnosticLog != null)
+                    DiagnosticLog("apply," + key + "," + now + "," + n.Start + "," + n.Frames + "," + Probe(group));
                 ApplyTimes(group, n);
+                // The delay is in effect: unpause the group now (core call, immediate) rather than through the
+                // instance alone, whose unpause waits for Studio's next update and could land after the start.
+                group.setPaused(false);
+                n.Instance.setPaused(false);
                 n.Group = group;
                 n.Applied = true;
                 _notes[key] = n;
                 continue;
             }
-            // Too late (start already past) or no channel group after 30 frames: drop it, never play it late.
+            // Start reached before it could be applied, or the instance is gone: drop it, never play it late.
+            DiagnosticLog?.Invoke("drop," + key + "," + now + "," + n.Start + "," + n.Frames + "," + (hasGroup ? 1 : 0));
             DroppedCount++;
             n.Instance.stop(FMOD.Studio.STOP_MODE.IMMEDIATE);
             n.Instance.release();
