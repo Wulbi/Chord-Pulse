@@ -26,10 +26,16 @@ public sealed class ChordPulsePrototype : MonoBehaviour
     static readonly Color HiddenColor = new Color(0.62f, 0.65f, 0.71f);
 
     const float EnemySpeed = 0.65f;
-    const float WaveSpeed = 5f;
+    // A pulse crosses from the core to the arena edge in this many beats, at any tempo,
+    // so one press resolves inside a single beat and its kills share one chord.
+    const float PulseBeats = 0.75f;
     const float ArenaInset = 0.45f;
     const float SameColorChance = 0.8f;
     const int FeverThreshold = 8;
+    // Music tension starts once the nearest enemy is inside this fraction of the arena radius.
+    const float TensionOuterRadius = 0.55f;
+    // Kills in a row (without being hit) for each music combo level 1..3.
+    static readonly int[] ComboThresholds = { 4, 8, 12 };
     // Survival seconds at which difficulty steps up (same timing as the original 8-bar tempo stages).
     static readonly double[] DifficultyThresholds = { 17.8, 34.3, 49.8 };
 
@@ -52,6 +58,8 @@ public sealed class ChordPulsePrototype : MonoBehaviour
         public int ColorIndex;
         public float Radius;
         public bool HasKill;
+        /// <summary>Beat step of this pulse's kill chord (-1 until its first kill).</summary>
+        public int ChordStep = -1;
         public bool IsFeverPulse;
     }
 
@@ -69,6 +77,10 @@ public sealed class ChordPulsePrototype : MonoBehaviour
     LineRenderer _core;
     LineRenderer _boundary;
     MusicReactiveVisuals _visuals;
+    BedStyleVisuals _bedStyleVisuals;
+    BedLayerVisuals _bedLayerVisuals;
+    TensionVignette _tensionVignette;
+    FeatureLoopVisuals _featureVisuals;
     ParticleSystem _shards;
     Mesh _shardMesh;
     float _arenaRadius;
@@ -79,6 +91,7 @@ public sealed class ChordPulsePrototype : MonoBehaviour
     int _groupSize;
     float _spawnAngle;
     int _hits;
+    int _streak;
     int _health;
     int _nextSpawnStep;
     int _feverCharge;
@@ -102,6 +115,14 @@ public sealed class ChordPulsePrototype : MonoBehaviour
         _boundary.sortingOrder = -1;
         _visuals = gameObject.AddComponent<MusicReactiveVisuals>();
         _visuals.Init(playCamera, _boundary, BoundaryColor, _arenaRadius, _ringMaterial);
+        _bedStyleVisuals = gameObject.AddComponent<BedStyleVisuals>();
+        _bedStyleVisuals.Init(playCamera, _visuals.Stage, _ringMaterial);
+        _bedLayerVisuals = gameObject.AddComponent<BedLayerVisuals>();
+        _bedLayerVisuals.Init(_visuals.Stage, _ringMaterial);
+        _tensionVignette = gameObject.AddComponent<TensionVignette>();
+        _tensionVignette.Init(playCamera, _visuals.Stage, _arenaRadius);
+        _featureVisuals = gameObject.AddComponent<FeatureLoopVisuals>();
+        _featureVisuals.Init(playCamera, _arenaRadius, _ringMaterial);
         CreateShatterEffect();
 
         CreateEnemyShapes();
@@ -134,12 +155,17 @@ public sealed class ChordPulsePrototype : MonoBehaviour
         _groupSize = 0;
         _spawnAngle = Random.Range(0f, 360f);
         _hits = 0;
+        _streak = 0;
         _health = MaxHealth;
         _nextSpawnStep = 0;
         _feverCharge = 0;
         _lastHudBeat = -1;
         _wasFeverActive = false;
         _visuals.ResetVisuals();
+        _bedStyleVisuals.ResetVisuals();
+        _bedLayerVisuals.ResetVisuals();
+        _tensionVignette.ResetVisuals();
+        _featureVisuals.ResetVisuals();
         _soundManager.StartMusic();
         _core.startColor = _core.endColor = Colors[0];
         UIManager.Instance.PushPanel(UIPanelType.GAME_PANEL);
@@ -155,6 +181,9 @@ public sealed class ChordPulsePrototype : MonoBehaviour
         int beat = _soundManager.CurrentBeat;
         // The arrangement fills in as the round gets harder; slower music later can still lower density on its own.
         _soundManager.Intensity = DifficultyLevel(_soundManager.RoundSeconds);
+        _soundManager.Tension = MusicTension();
+        _soundManager.Danger = _health == 1;
+        _soundManager.Combo = ComboLevel(_streak);
         int step = _soundManager.CurrentStep;
         bool fever = _soundManager.FeverActive;
         if (fever != _wasFeverActive)
@@ -202,6 +231,8 @@ public sealed class ChordPulsePrototype : MonoBehaviour
                 _poolManager.ReturnToPool(enemy.Instance);
                 _enemies.RemoveAt(i);
                 _health--;
+                _streak = 0;
+                _soundManager.Hurt();
                 UpdateHud();
                 if (_health == 0)
                 {
@@ -217,6 +248,34 @@ public sealed class ChordPulsePrototype : MonoBehaviour
 
         if (step >= _nextSpawnStep)
             SpawnNextEnemy(step, fever);
+    }
+
+    // 0..1 threat for the adaptive music: the nearest enemy closing in on the core (up to 0.85 at contact),
+    // a little more for each extra enemy close by, and a floor from lost lives (0.3 with 2 left, 0.75 with 1).
+    static int ComboLevel(int streak)
+    {
+        int level = 0;
+        while (level < ComboThresholds.Length && streak >= ComboThresholds[level])
+            level++;
+        return level;
+    }
+
+    float MusicTension()
+    {
+        float contact = CoreRadius + EnemyHalfSize;
+        float outer = Mathf.Max(contact + 0.01f, _arenaRadius * TensionOuterRadius);
+        float nearest = float.MaxValue;
+        int close = 0;
+        foreach (var enemy in _enemies)
+        {
+            nearest = Mathf.Min(nearest, enemy.Distance);
+            if (enemy.Distance < outer)
+                close++;
+        }
+        float proximity = _enemies.Count == 0 ? 0f : 1f - Mathf.Clamp01((nearest - contact) / (outer - contact));
+        float crowd = Mathf.Clamp01((close - 1) * 0.15f);
+        float lives = _health <= 1 ? 0.75f : _health < MaxHealth ? 0.3f : 0f;
+        return Mathf.Max(Mathf.Clamp01(proximity * 0.85f + crowd), lives);
     }
 
     static int DifficultyLevel(double survivalSeconds)
@@ -282,11 +341,12 @@ public sealed class ChordPulsePrototype : MonoBehaviour
     {
         float tolerance = EnemyHalfSize + WaveHitPadding;
         float maxRadius = _arenaRadius + EnemyHalfSize + WaveHitPadding * 2f;
+        float waveSpeed = (maxRadius - CoreRadius) / (PulseBeats * (float)_soundManager.BeatSeconds);
 
         for (int i = 0; i < _waves.Count;)
         {
             var wave = _waves[i];
-            float nextRadius = Mathf.Min(maxRadius, wave.Radius + WaveSpeed * deltaTime);
+            float nextRadius = Mathf.Min(maxRadius, wave.Radius + waveSpeed * deltaTime);
             _contacts.Clear();
 
             foreach (var enemy in _enemies)
@@ -296,8 +356,8 @@ public sealed class ChordPulsePrototype : MonoBehaviour
 
                 // Both move during the frame. Solve for when their leading edges meet.
                 float contactTime = Mathf.Max(0f, enemy.Distance - tolerance - wave.Radius)
-                    / (WaveSpeed + EnemySpeed);
-                float contactRadius = wave.Radius + WaveSpeed * contactTime;
+                    / (waveSpeed + EnemySpeed);
+                float contactRadius = wave.Radius + waveSpeed * contactTime;
                 if (contactRadius <= nextRadius + SimultaneousContactTolerance)
                     _contacts.Add((enemy, contactRadius));
             }
@@ -330,7 +390,10 @@ public sealed class ChordPulsePrototype : MonoBehaviour
                 Shatter(contact.Enemy.Instance.transform.position, Colors[contact.Enemy.ColorIndex]);
                 _poolManager.ReturnToPool(contact.Enemy.Instance);
                 _enemies.Remove(contact.Enemy);
-                _soundManager.QueueKillChord(contact.Enemy.ColorIndex);
+                // Every kill of this pulse joins the chord of its first kill: one press, one chord.
+                int chordStep = _soundManager.QueueKillChord(contact.Enemy.ColorIndex, wave.ChordStep);
+                if (wave.ChordStep < 0)
+                    wave.ChordStep = chordStep;
                 if (!wave.IsFeverPulse && !wave.HasKill)
                 {
                     wave.HasKill = true;
@@ -339,6 +402,7 @@ public sealed class ChordPulsePrototype : MonoBehaviour
                         _soundManager.QueueFever();
                 }
                 _hits++;
+                _streak++;
                 UpdateHud();
             }
 
@@ -522,7 +586,8 @@ public sealed class ChordPulsePrototype : MonoBehaviour
             : $"Fever: {_feverCharge}/{FeverThreshold}";
         gamePanel.SetStatus(fever ? "All colors" : ColorNames[_selectedColor],
             fever ? Color.white : Colors[_selectedColor], _hits, _health, MaxHealth,
-            $"{_soundManager.CurrentBpm} BPM{(_soundManager.IsBreath ? "  ~breathe~" : "")}     {feverText}");
+            $"{_soundManager.CurrentBpm} BPM{(_soundManager.IsBreath ? "  ~breathe~" : "")}" +
+            $"{(_soundManager.FeatureSounding ? "  + " + _soundManager.CurrentFeature.Name : "")}     {feverText}");
     }
 
     void OnDestroy()

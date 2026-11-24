@@ -152,3 +152,2859 @@ Pluck/AT101V_PolyPluck_C4_v100.wav
 형식: 44100 Hz / 24-bit / 2 channels / 1.8 sec
 가공: 없음
 SHA-256: 2a476ab7247e99056b7f6fd52cd3c6033339342251213d061ddb05700034c157
+
+
+==============================================================
+추가 수집 2: 특색 루프용 어쿠스틱 악기 원샷 (금관 · 목관 · 건반/말렛/하프 · 월드 타악기)
+확인일: 2026-11-24 (Asia/Seoul)
+라이선스: CC0 1.0 Universal (두 저장소 모두 GitHub 라이선스 감지 결과 CC0-1.0, 원본 LICENSE 파일 보존)
+- VSCO 2 CE: https://github.com/sgossner/VSCO-2-CE  커밋 440300901dfe9275fd84e0b7763af1f8443ae62e  -> VSCO-2-CE-ORIGINAL-LICENSE.txt
+- VCSL:      https://github.com/sgossner/VCSL        커밋 c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e  -> VCSL-ORIGINAL-LICENSE.txt
+- 배포처 소개: https://versilian-studios.com/vsco-community/ , https://versilian-studios.com/vcsl/
+수집 방법: 위 고정 커밋의 raw URL에서 개별 WAV만 받음. 받은 바이트의 git blob SHA-1이 저장소 트리 값과 일치함을 확인.
+원본 WAV는 자르기, 정규화, 리샘플링 없이 그대로 복사했습니다. 파일명도 원본 그대로입니다.
+선택 기준: 악기당 3~6개, 가장 센 셈여림, 라운드로빈 1개.
+기준음은 원본 파일명 표기를 따른 것으로, 옥타브 표기 관례와 실측 피치는 검증 전입니다 (VSCO 트럼펫은 실제보다 한 옥타브 낮게 표기된 것으로 보임).
+상태: 임포트 후보. 청음 전이며 FMOD 이벤트에는 아직 배치하지 않았습니다.
+==============================================================
+
+Brass/Sum_SHTrumpet_stac_C3_v3_rr1.wav
+제작자: VSCO 2 Community Edition (Versilian Studios / Sam Gossner)
+악기: Trumpet
+원본 경로: Brass/Trumpet/stac/Sum_SHTrumpet_stac_C3_v3_rr1.wav
+출처: https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Brass/Trumpet/stac/Sum_SHTrumpet_stac_C3_v3_rr1.wav
+라이선스: CC0-1.0; 근거: VSCO-2-CE-ORIGINAL-LICENSE.txt
+형식: 44100 Hz / 16-bit / 2 ch / 1.218 sec
+가공: 없음
+SHA-256: 6ee12d20bfc94165d3d900e40274c8d4343e683fed2fee64f1bfcb5e94d99aa4
+
+Brass/Sum_SHTrumpet_stac_F3_v3_rr1.wav
+제작자: VSCO 2 Community Edition (Versilian Studios / Sam Gossner)
+악기: Trumpet
+원본 경로: Brass/Trumpet/stac/Sum_SHTrumpet_stac_F3_v3_rr1.wav
+출처: https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Brass/Trumpet/stac/Sum_SHTrumpet_stac_F3_v3_rr1.wav
+라이선스: CC0-1.0; 근거: VSCO-2-CE-ORIGINAL-LICENSE.txt
+형식: 44100 Hz / 16-bit / 2 ch / 1.421 sec
+가공: 없음
+SHA-256: f7804f6694c8b0259337a03816de36540c1329d1e418001db65986060c35554c
+
+Brass/Sum_SHTrumpet_stac_A#3_v3_rr1.wav
+제작자: VSCO 2 Community Edition (Versilian Studios / Sam Gossner)
+악기: Trumpet
+원본 경로: Brass/Trumpet/stac/Sum_SHTrumpet_stac_A#3_v3_rr1.wav
+출처: https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Brass/Trumpet/stac/Sum_SHTrumpet_stac_A%233_v3_rr1.wav
+라이선스: CC0-1.0; 근거: VSCO-2-CE-ORIGINAL-LICENSE.txt
+형식: 44100 Hz / 16-bit / 2 ch / 1.533 sec
+가공: 없음
+SHA-256: 24860bfae8f7825130698c1ea73e129c63d8c817edf59c57c99a9116fe11f024
+
+Brass/Sum_SHTrumpet_stac_D4_v3_rr1.wav
+제작자: VSCO 2 Community Edition (Versilian Studios / Sam Gossner)
+악기: Trumpet
+원본 경로: Brass/Trumpet/stac/Sum_SHTrumpet_stac_D4_v3_rr1.wav
+출처: https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Brass/Trumpet/stac/Sum_SHTrumpet_stac_D4_v3_rr1.wav
+라이선스: CC0-1.0; 근거: VSCO-2-CE-ORIGINAL-LICENSE.txt
+형식: 44100 Hz / 16-bit / 2 ch / 1.754 sec
+가공: 없음
+SHA-256: 7dcf2aec74e544c9cd139e2713c8a8bf358c26633b2fb3be254e998a0b010df9
+
+Brass/Sum_SHTrumpet_stac_F4_v3_rr1.wav
+제작자: VSCO 2 Community Edition (Versilian Studios / Sam Gossner)
+악기: Trumpet
+원본 경로: Brass/Trumpet/stac/Sum_SHTrumpet_stac_F4_v3_rr1.wav
+출처: https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Brass/Trumpet/stac/Sum_SHTrumpet_stac_F4_v3_rr1.wav
+라이선스: CC0-1.0; 근거: VSCO-2-CE-ORIGINAL-LICENSE.txt
+형식: 44100 Hz / 16-bit / 2 ch / 1.535 sec
+가공: 없음
+SHA-256: 437da7831e11cab33263eadefc015b8eea4cd3fad81ebcdea6597b50198d4520
+
+Brass/Sum_SHTrumpet_sus_C3_v3_rr1.wav
+제작자: VSCO 2 Community Edition (Versilian Studios / Sam Gossner)
+악기: Trumpet
+원본 경로: Brass/Trumpet/sus/Sum_SHTrumpet_sus_C3_v3_rr1.wav
+출처: https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Brass/Trumpet/sus/Sum_SHTrumpet_sus_C3_v3_rr1.wav
+라이선스: CC0-1.0; 근거: VSCO-2-CE-ORIGINAL-LICENSE.txt
+형식: 44100 Hz / 16-bit / 2 ch / 6.996 sec
+가공: 없음
+SHA-256: 4a55ab4d867cfa3499fbcf1c5d8d530f757621a9979aee5b46d3fd69a2931c99
+
+Brass/MOHorn_stac_D2_v3_rr1.wav
+제작자: VSCO 2 Community Edition (Versilian Studios / Sam Gossner)
+악기: French horn
+원본 경로: Brass/F Horn/stac/MOHorn_stac_D2_v3_rr1.wav
+출처: https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Brass/F%20Horn/stac/MOHorn_stac_D2_v3_rr1.wav
+라이선스: CC0-1.0; 근거: VSCO-2-CE-ORIGINAL-LICENSE.txt
+형식: 44100 Hz / 16-bit / 2 ch / 0.800 sec
+가공: 없음
+SHA-256: 1960b9d7f8c3cd4e0532fc540d60c3b323e8c91e9e5d3a0b0bf2fbf0803f0951
+
+Brass/MOHorn_stac_F2_v3_rr1.wav
+제작자: VSCO 2 Community Edition (Versilian Studios / Sam Gossner)
+악기: French horn
+원본 경로: Brass/F Horn/stac/MOHorn_stac_F2_v3_rr1.wav
+출처: https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Brass/F%20Horn/stac/MOHorn_stac_F2_v3_rr1.wav
+라이선스: CC0-1.0; 근거: VSCO-2-CE-ORIGINAL-LICENSE.txt
+형식: 44100 Hz / 16-bit / 2 ch / 1.717 sec
+가공: 없음
+SHA-256: 1f6df484f8b62e31f1add13ea2599ecfcfeec5ecbe4701b26480f13478df7ba8
+
+Brass/MOHorn_stac_A2_v3_rr1.wav
+제작자: VSCO 2 Community Edition (Versilian Studios / Sam Gossner)
+악기: French horn
+원본 경로: Brass/F Horn/stac/MOHorn_stac_A2_v3_rr1.wav
+출처: https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Brass/F%20Horn/stac/MOHorn_stac_A2_v3_rr1.wav
+라이선스: CC0-1.0; 근거: VSCO-2-CE-ORIGINAL-LICENSE.txt
+형식: 44100 Hz / 16-bit / 2 ch / 1.560 sec
+가공: 없음
+SHA-256: 71941b2d1ee773e2330aba86d0dc02985cac76cd3ea59d2f6a083935dc8d8410
+
+Brass/MOHorn_stac_C3_v3_rr1.wav
+제작자: VSCO 2 Community Edition (Versilian Studios / Sam Gossner)
+악기: French horn
+원본 경로: Brass/F Horn/stac/MOHorn_stac_C3_v3_rr1.wav
+출처: https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Brass/F%20Horn/stac/MOHorn_stac_C3_v3_rr1.wav
+라이선스: CC0-1.0; 근거: VSCO-2-CE-ORIGINAL-LICENSE.txt
+형식: 44100 Hz / 16-bit / 2 ch / 1.592 sec
+가공: 없음
+SHA-256: 7ea5a48590310d32b29aa3046f7ca2708b8f233067352001e6043095d6dac1b6
+
+Brass/MOHorn_stac_F4_v3_rr1.wav
+제작자: VSCO 2 Community Edition (Versilian Studios / Sam Gossner)
+악기: French horn
+원본 경로: Brass/F Horn/stac/MOHorn_stac_F4_v3_rr1.wav
+출처: https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Brass/F%20Horn/stac/MOHorn_stac_F4_v3_rr1.wav
+라이선스: CC0-1.0; 근거: VSCO-2-CE-ORIGINAL-LICENSE.txt
+형식: 44100 Hz / 16-bit / 2 ch / 0.998 sec
+가공: 없음
+SHA-256: 22cf85150dd1f1d4bc60b83fd63109c2e434afa19c9eb94e961a14c10711dc7b
+
+Brass/tenortbn_stac_F1_v4_rr1.wav
+제작자: VSCO 2 Community Edition (Versilian Studios / Sam Gossner)
+악기: Tenor trombone
+원본 경로: Brass/Tenor Trombone/stac/tenortbn_stac_F1_v4_rr1.wav
+출처: https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Brass/Tenor%20Trombone/stac/tenortbn_stac_F1_v4_rr1.wav
+라이선스: CC0-1.0; 근거: VSCO-2-CE-ORIGINAL-LICENSE.txt
+형식: 44100 Hz / 16-bit / 2 ch / 1.832 sec
+가공: 없음
+SHA-256: 678152687030323cd3e205f74cc39f834c69e88a1c7cf9efe8a074b20bd9b7ba
+
+Brass/tenortbn_stac_A#1_v4_rr1.wav
+제작자: VSCO 2 Community Edition (Versilian Studios / Sam Gossner)
+악기: Tenor trombone
+원본 경로: Brass/Tenor Trombone/stac/tenortbn_stac_A#1_v4_rr1.wav
+출처: https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Brass/Tenor%20Trombone/stac/tenortbn_stac_A%231_v4_rr1.wav
+라이선스: CC0-1.0; 근거: VSCO-2-CE-ORIGINAL-LICENSE.txt
+형식: 44100 Hz / 16-bit / 2 ch / 1.307 sec
+가공: 없음
+SHA-256: 5f825bebf5638d1216e50bcad6a265628fc8472e10c52808319a6d0544f75ea5
+
+Brass/tenortbn_stac_F2_v4_rr1.wav
+제작자: VSCO 2 Community Edition (Versilian Studios / Sam Gossner)
+악기: Tenor trombone
+원본 경로: Brass/Tenor Trombone/stac/tenortbn_stac_F2_v4_rr1.wav
+출처: https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Brass/Tenor%20Trombone/stac/tenortbn_stac_F2_v4_rr1.wav
+라이선스: CC0-1.0; 근거: VSCO-2-CE-ORIGINAL-LICENSE.txt
+형식: 44100 Hz / 16-bit / 2 ch / 1.531 sec
+가공: 없음
+SHA-256: 378b9f790ef731c18f9c8468faf973b0e848b8ff797795681d20812abbb25674
+
+Brass/tenortbn_stac_A#2_v4_rr1.wav
+제작자: VSCO 2 Community Edition (Versilian Studios / Sam Gossner)
+악기: Tenor trombone
+원본 경로: Brass/Tenor Trombone/stac/tenortbn_stac_A#2_v4_rr1.wav
+출처: https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Brass/Tenor%20Trombone/stac/tenortbn_stac_A%232_v4_rr1.wav
+라이선스: CC0-1.0; 근거: VSCO-2-CE-ORIGINAL-LICENSE.txt
+형식: 44100 Hz / 16-bit / 2 ch / 2.029 sec
+가공: 없음
+SHA-256: 27829f7d7a636ef38df6129a83f3eff92f3a5058297a1a49d028464dc2f9d0bb
+
+Brass/tenortbn_stac_D3_v4_rr1.wav
+제작자: VSCO 2 Community Edition (Versilian Studios / Sam Gossner)
+악기: Tenor trombone
+원본 경로: Brass/Tenor Trombone/stac/tenortbn_stac_D3_v4_rr1.wav
+출처: https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Brass/Tenor%20Trombone/stac/tenortbn_stac_D3_v4_rr1.wav
+라이선스: CC0-1.0; 근거: VSCO-2-CE-ORIGINAL-LICENSE.txt
+형식: 44100 Hz / 16-bit / 2 ch / 1.865 sec
+가공: 없음
+SHA-256: 15fc0a2625e4cf3f6f55b4d4e251bb445d52bda4c1b59be49f816168ceec22fb
+
+Brass/tenortbn_stac_F3_v4_rr1.wav
+제작자: VSCO 2 Community Edition (Versilian Studios / Sam Gossner)
+악기: Tenor trombone
+원본 경로: Brass/Tenor Trombone/stac/tenortbn_stac_F3_v4_rr1.wav
+출처: https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Brass/Tenor%20Trombone/stac/tenortbn_stac_F3_v4_rr1.wav
+라이선스: CC0-1.0; 근거: VSCO-2-CE-ORIGINAL-LICENSE.txt
+형식: 44100 Hz / 16-bit / 2 ch / 2.006 sec
+가공: 없음
+SHA-256: bc3ba076da4ae7a1a7e528daa7906faa2507c86754d0478965d59e8cb0ea1d95
+
+Woodwinds/LDFlute_stac_C4_v3_rr1.wav
+제작자: VSCO 2 Community Edition (Versilian Studios / Sam Gossner)
+악기: Flute
+원본 경로: Woodwinds/Flute/stac/LDFlute_stac_C4_v3_rr1.wav
+출처: https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Woodwinds/Flute/stac/LDFlute_stac_C4_v3_rr1.wav
+라이선스: CC0-1.0; 근거: VSCO-2-CE-ORIGINAL-LICENSE.txt
+형식: 44100 Hz / 24-bit / 2 ch / 0.815 sec
+가공: 없음
+SHA-256: 99dce3b0ef1d89d1dbc87d1e29ff6b11bcc78dc2ae4dfdeb18e2fa35241a6672
+
+Woodwinds/LDFlute_stac_E4_v3_rr1.wav
+제작자: VSCO 2 Community Edition (Versilian Studios / Sam Gossner)
+악기: Flute
+원본 경로: Woodwinds/Flute/stac/LDFlute_stac_E4_v3_rr1.wav
+출처: https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Woodwinds/Flute/stac/LDFlute_stac_E4_v3_rr1.wav
+라이선스: CC0-1.0; 근거: VSCO-2-CE-ORIGINAL-LICENSE.txt
+형식: 44100 Hz / 24-bit / 2 ch / 0.888 sec
+가공: 없음
+SHA-256: 15ec8bc4d519e678289da72cfbbf14e93f38a4b2fa6d4e4be7008a7926f7d427
+
+Woodwinds/LDFlute_stac_A4_v3_rr1.wav
+제작자: VSCO 2 Community Edition (Versilian Studios / Sam Gossner)
+악기: Flute
+원본 경로: Woodwinds/Flute/stac/LDFlute_stac_A4_v3_rr1.wav
+출처: https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Woodwinds/Flute/stac/LDFlute_stac_A4_v3_rr1.wav
+라이선스: CC0-1.0; 근거: VSCO-2-CE-ORIGINAL-LICENSE.txt
+형식: 44100 Hz / 24-bit / 2 ch / 0.743 sec
+가공: 없음
+SHA-256: 10eab910f293c0e478d26cbb67e3b9307d56a40602508d94ab82f647f04d37c3
+
+Woodwinds/LDFlute_stac_C5_v3_rr1.wav
+제작자: VSCO 2 Community Edition (Versilian Studios / Sam Gossner)
+악기: Flute
+원본 경로: Woodwinds/Flute/stac/LDFlute_stac_C5_v3_rr1.wav
+출처: https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Woodwinds/Flute/stac/LDFlute_stac_C5_v3_rr1.wav
+라이선스: CC0-1.0; 근거: VSCO-2-CE-ORIGINAL-LICENSE.txt
+형식: 44100 Hz / 24-bit / 2 ch / 0.736 sec
+가공: 없음
+SHA-256: e1a08c8f8333c6b4cace01bb6a61e852808a6925c0a4dbde358878f313b5cc55
+
+Woodwinds/LDFlute_stac_E5_v3_rr1.wav
+제작자: VSCO 2 Community Edition (Versilian Studios / Sam Gossner)
+악기: Flute
+원본 경로: Woodwinds/Flute/stac/LDFlute_stac_E5_v3_rr1.wav
+출처: https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Woodwinds/Flute/stac/LDFlute_stac_E5_v3_rr1.wav
+라이선스: CC0-1.0; 근거: VSCO-2-CE-ORIGINAL-LICENSE.txt
+형식: 44100 Hz / 24-bit / 2 ch / 0.832 sec
+가공: 없음
+SHA-256: 705fd3584fbdbc187c5bf1411683dc6193d62e79a33fad713aed7a28f3af6c65
+
+Woodwinds/LDFlute_stac_A5_v3_rr1.wav
+제작자: VSCO 2 Community Edition (Versilian Studios / Sam Gossner)
+악기: Flute
+원본 경로: Woodwinds/Flute/stac/LDFlute_stac_A5_v3_rr1.wav
+출처: https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Woodwinds/Flute/stac/LDFlute_stac_A5_v3_rr1.wav
+라이선스: CC0-1.0; 근거: VSCO-2-CE-ORIGINAL-LICENSE.txt
+형식: 44100 Hz / 24-bit / 2 ch / 1.024 sec
+가공: 없음
+SHA-256: 9161e3d9ee07c15d6dbc08162f6f077e0c869719467490db598b2a4153c62b6b
+
+Woodwinds/DCClar_stac_D3_v3_rr1_sum.wav
+제작자: VSCO 2 Community Edition (Versilian Studios / Sam Gossner)
+악기: Clarinet
+원본 경로: Woodwinds/Clarinet/stac/DCClar_stac_D3_v3_rr1_sum.wav
+출처: https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Woodwinds/Clarinet/stac/DCClar_stac_D3_v3_rr1_sum.wav
+라이선스: CC0-1.0; 근거: VSCO-2-CE-ORIGINAL-LICENSE.txt
+형식: 44100 Hz / 16-bit / 2 ch / 0.667 sec
+가공: 없음
+SHA-256: 1086ee354b1bcd04e09994097b0c63f8ef3a6fffaae497f143843f2bd523163c
+
+Woodwinds/DCClar_stac_F3_v3_rr1_sum.wav
+제작자: VSCO 2 Community Edition (Versilian Studios / Sam Gossner)
+악기: Clarinet
+원본 경로: Woodwinds/Clarinet/stac/DCClar_stac_F3_v3_rr1_sum.wav
+출처: https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Woodwinds/Clarinet/stac/DCClar_stac_F3_v3_rr1_sum.wav
+라이선스: CC0-1.0; 근거: VSCO-2-CE-ORIGINAL-LICENSE.txt
+형식: 44100 Hz / 16-bit / 2 ch / 0.536 sec
+가공: 없음
+SHA-256: 9198f696e1b7138c6e0185f03f8db51b95b737d24fc6a5710d88a6b0c0e9f133
+
+Woodwinds/DCClar_stac_A#3_v3_rr1_sum.wav
+제작자: VSCO 2 Community Edition (Versilian Studios / Sam Gossner)
+악기: Clarinet
+원본 경로: Woodwinds/Clarinet/stac/DCClar_stac_A#3_v3_rr1_sum.wav
+출처: https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Woodwinds/Clarinet/stac/DCClar_stac_A%233_v3_rr1_sum.wav
+라이선스: CC0-1.0; 근거: VSCO-2-CE-ORIGINAL-LICENSE.txt
+형식: 44100 Hz / 16-bit / 2 ch / 0.613 sec
+가공: 없음
+SHA-256: 8de93277e8d4a52d37723b4ea929d3235eb8fabdcdd9222675542d4fbb67c26a
+
+Woodwinds/DCClar_stac_D4_v3_rr1_sum.wav
+제작자: VSCO 2 Community Edition (Versilian Studios / Sam Gossner)
+악기: Clarinet
+원본 경로: Woodwinds/Clarinet/stac/DCClar_stac_D4_v3_rr1_sum.wav
+출처: https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Woodwinds/Clarinet/stac/DCClar_stac_D4_v3_rr1_sum.wav
+라이선스: CC0-1.0; 근거: VSCO-2-CE-ORIGINAL-LICENSE.txt
+형식: 44100 Hz / 16-bit / 2 ch / 0.625 sec
+가공: 없음
+SHA-256: f181c58a5a9337106722aaf5f1b4e0a9231c6ab74d46444838d914a6af6efcad
+
+Woodwinds/DCClar_stac_F4_v3_rr1_sum.wav
+제작자: VSCO 2 Community Edition (Versilian Studios / Sam Gossner)
+악기: Clarinet
+원본 경로: Woodwinds/Clarinet/stac/DCClar_stac_F4_v3_rr1_sum.wav
+출처: https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Woodwinds/Clarinet/stac/DCClar_stac_F4_v3_rr1_sum.wav
+라이선스: CC0-1.0; 근거: VSCO-2-CE-ORIGINAL-LICENSE.txt
+형식: 44100 Hz / 16-bit / 2 ch / 0.611 sec
+가공: 없음
+SHA-256: c77eec8fac60d790a481a2c7793fc035f5ac8b50439da7c3766dd673a17a674f
+
+Woodwinds/BrettTenor_Staccato_Main_C3_vl1_rr4.wav
+제작자: Versilian Community Sample Library (Versilian Studios / Sam Gossner)
+악기: Tenor saxophone
+원본 경로: Aerophones/Reed Aerophones/Tenor Saxophone/Staccato/BrettTenor_Staccato_Main_C3_vl1_rr4.wav
+출처: https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Aerophones/Reed%20Aerophones/Tenor%20Saxophone/Staccato/BrettTenor_Staccato_Main_C3_vl1_rr4.wav
+라이선스: CC0-1.0; 근거: VCSL-ORIGINAL-LICENSE.txt
+형식: 48000 Hz / 24-bit / 2 ch / 0.498 sec
+가공: 없음
+SHA-256: e13e2a8575231caba175e31ca61cb824c20b2e948ae1ef5e337228d47a1a2ea6
+
+Woodwinds/BrettTenor_Staccato_Main_E3_vl1_rr4.wav
+제작자: Versilian Community Sample Library (Versilian Studios / Sam Gossner)
+악기: Tenor saxophone
+원본 경로: Aerophones/Reed Aerophones/Tenor Saxophone/Staccato/BrettTenor_Staccato_Main_E3_vl1_rr4.wav
+출처: https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Aerophones/Reed%20Aerophones/Tenor%20Saxophone/Staccato/BrettTenor_Staccato_Main_E3_vl1_rr4.wav
+라이선스: CC0-1.0; 근거: VCSL-ORIGINAL-LICENSE.txt
+형식: 48000 Hz / 24-bit / 2 ch / 0.537 sec
+가공: 없음
+SHA-256: 17e78655324db2dd70f63f092b69338a1b3b49195fdac19a076d07388715c63f
+
+Woodwinds/BrettTenor_Staccato_Main_A#3_vl1_rr3.wav
+제작자: Versilian Community Sample Library (Versilian Studios / Sam Gossner)
+악기: Tenor saxophone
+원본 경로: Aerophones/Reed Aerophones/Tenor Saxophone/Staccato/BrettTenor_Staccato_Main_A#3_vl1_rr3.wav
+출처: https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Aerophones/Reed%20Aerophones/Tenor%20Saxophone/Staccato/BrettTenor_Staccato_Main_A%233_vl1_rr3.wav
+라이선스: CC0-1.0; 근거: VCSL-ORIGINAL-LICENSE.txt
+형식: 48000 Hz / 24-bit / 2 ch / 0.652 sec
+가공: 없음
+SHA-256: 5154c3dd155b22523a4805b601274256191440eeaeece60c282062773fcd9cc4
+
+Woodwinds/BrettTenor_Staccato_Main_C4_vl1_rr7.wav
+제작자: Versilian Community Sample Library (Versilian Studios / Sam Gossner)
+악기: Tenor saxophone
+원본 경로: Aerophones/Reed Aerophones/Tenor Saxophone/Staccato/BrettTenor_Staccato_Main_C4_vl1_rr7.wav
+출처: https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Aerophones/Reed%20Aerophones/Tenor%20Saxophone/Staccato/BrettTenor_Staccato_Main_C4_vl1_rr7.wav
+라이선스: CC0-1.0; 근거: VCSL-ORIGINAL-LICENSE.txt
+형식: 48000 Hz / 24-bit / 2 ch / 0.584 sec
+가공: 없음
+SHA-256: fcd685570733bbfe469d4e8e6b3ac19bf162170c69896a14e78737b4b18034a3
+
+Woodwinds/BrettTenor_Staccato_Main_E4_vl1_rr1.wav
+제작자: Versilian Community Sample Library (Versilian Studios / Sam Gossner)
+악기: Tenor saxophone
+원본 경로: Aerophones/Reed Aerophones/Tenor Saxophone/Staccato/BrettTenor_Staccato_Main_E4_vl1_rr1.wav
+출처: https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Aerophones/Reed%20Aerophones/Tenor%20Saxophone/Staccato/BrettTenor_Staccato_Main_E4_vl1_rr1.wav
+라이선스: CC0-1.0; 근거: VCSL-ORIGINAL-LICENSE.txt
+형식: 48000 Hz / 24-bit / 2 ch / 0.617 sec
+가공: 없음
+SHA-256: 9f6003b0756e3979db86939643b4c60fc5dfaf2882760a5fa24b033d0203d401
+
+Woodwinds/BrettTenor_Staccato_Main_A4_vl1_rr5.wav
+제작자: Versilian Community Sample Library (Versilian Studios / Sam Gossner)
+악기: Tenor saxophone
+원본 경로: Aerophones/Reed Aerophones/Tenor Saxophone/Staccato/BrettTenor_Staccato_Main_A4_vl1_rr5.wav
+출처: https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Aerophones/Reed%20Aerophones/Tenor%20Saxophone/Staccato/BrettTenor_Staccato_Main_A4_vl1_rr5.wav
+라이선스: CC0-1.0; 근거: VCSL-ORIGINAL-LICENSE.txt
+형식: 48000 Hz / 24-bit / 2 ch / 0.645 sec
+가공: 없음
+SHA-256: 233858c45f2e2ba33707cbf6e312d232c4651e25ecfb53978a811a5099ce5c5f
+
+Woodwinds/Main_BallWhistle_Short-001.wav
+제작자: Versilian Community Sample Library (Versilian Studios / Sam Gossner)
+악기: Ball whistle
+원본 경로: Aerophones/Edge-blown Aerophones/Ball Whistle/Main_BallWhistle_Short-001.wav
+출처: https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Aerophones/Edge-blown%20Aerophones/Ball%20Whistle/Main_BallWhistle_Short-001.wav
+라이선스: CC0-1.0; 근거: VCSL-ORIGINAL-LICENSE.txt
+형식: 44100 Hz / 16-bit / 2 ch / 1.094 sec
+가공: 없음
+SHA-256: d96cf1504f09d12443a3ab3d94c0e8485d22f2447438f8d2aaa6e887087af8bb
+
+Woodwinds/Main_BallWhistle_Long-001.wav
+제작자: Versilian Community Sample Library (Versilian Studios / Sam Gossner)
+악기: Ball whistle
+원본 경로: Aerophones/Edge-blown Aerophones/Ball Whistle/Main_BallWhistle_Long-001.wav
+출처: https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Aerophones/Edge-blown%20Aerophones/Ball%20Whistle/Main_BallWhistle_Long-001.wav
+라이선스: CC0-1.0; 근거: VCSL-ORIGINAL-LICENSE.txt
+형식: 44100 Hz / 16-bit / 2 ch / 2.048 sec
+가공: 없음
+SHA-256: 4155f8bf5ca8794708678decfa2b97ec70da757f1a214145ee5f312715ffdbf1
+
+Mallets/glock_medium_G4.wav
+제작자: VSCO 2 Community Edition (Versilian Studios / Sam Gossner)
+악기: Glockenspiel
+원본 경로: Percussion/Glock/glock_medium_G4.wav
+출처: https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Percussion/Glock/glock_medium_G4.wav
+라이선스: CC0-1.0; 근거: VSCO-2-CE-ORIGINAL-LICENSE.txt
+형식: 44100 Hz / 16-bit / 2 ch / 7.207 sec
+가공: 없음
+SHA-256: 6c4649b13e24fa01e4634edad8fe8edf18aef33facc5d49fe53097b376bac4da
+
+Mallets/glock_medium_C5.wav
+제작자: VSCO 2 Community Edition (Versilian Studios / Sam Gossner)
+악기: Glockenspiel
+원본 경로: Percussion/Glock/glock_medium_C5.wav
+출처: https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Percussion/Glock/glock_medium_C5.wav
+라이선스: CC0-1.0; 근거: VSCO-2-CE-ORIGINAL-LICENSE.txt
+형식: 44100 Hz / 16-bit / 2 ch / 7.207 sec
+가공: 없음
+SHA-256: 635f898e0bcb6975b96b18efd9c896f6f1b97ff12174a339ada4814e49675660
+
+Mallets/glock_medium_G5.wav
+제작자: VSCO 2 Community Edition (Versilian Studios / Sam Gossner)
+악기: Glockenspiel
+원본 경로: Percussion/Glock/glock_medium_G5.wav
+출처: https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Percussion/Glock/glock_medium_G5.wav
+라이선스: CC0-1.0; 근거: VSCO-2-CE-ORIGINAL-LICENSE.txt
+형식: 44100 Hz / 16-bit / 2 ch / 6.954 sec
+가공: 없음
+SHA-256: 7045c0ef7260e2f1ad11a64406cf7575ed898d1207a91104d33d78caefac63e4
+
+Mallets/glock_medium_C6.wav
+제작자: VSCO 2 Community Edition (Versilian Studios / Sam Gossner)
+악기: Glockenspiel
+원본 경로: Percussion/Glock/glock_medium_C6.wav
+출처: https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Percussion/Glock/glock_medium_C6.wav
+라이선스: CC0-1.0; 근거: VSCO-2-CE-ORIGINAL-LICENSE.txt
+형식: 44100 Hz / 16-bit / 2 ch / 7.207 sec
+가공: 없음
+SHA-256: e942cbf502cf6731df2925945fe3234c876cb63f047d91007b6929887f9e4904
+
+Mallets/Marimba_hit_Outrigger_F3_loud_01.wav
+제작자: VSCO 2 Community Edition (Versilian Studios / Sam Gossner)
+악기: Marimba
+원본 경로: Percussion/Marimba/Marimba_hit_Outrigger_F3_loud_01.wav
+출처: https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Percussion/Marimba/Marimba_hit_Outrigger_F3_loud_01.wav
+라이선스: CC0-1.0; 근거: VSCO-2-CE-ORIGINAL-LICENSE.txt
+형식: 44100 Hz / 24-bit / 2 ch / 6.008 sec
+가공: 없음
+SHA-256: 379e749add43b12959fae06cc272f1871899cc05460faf41ead77b93e5d01843
+
+Mallets/Marimba_hit_Outrigger_C4_loud_01.wav
+제작자: VSCO 2 Community Edition (Versilian Studios / Sam Gossner)
+악기: Marimba
+원본 경로: Percussion/Marimba/Marimba_hit_Outrigger_C4_loud_01.wav
+출처: https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Percussion/Marimba/Marimba_hit_Outrigger_C4_loud_01.wav
+라이선스: CC0-1.0; 근거: VSCO-2-CE-ORIGINAL-LICENSE.txt
+형식: 44100 Hz / 24-bit / 2 ch / 3.842 sec
+가공: 없음
+SHA-256: 4af539d47a452d7fad26e171b1c8adcca272cee97191f040d192680462c880b8
+
+Mallets/Marimba_hit_Outrigger_G4_loud_01.wav
+제작자: VSCO 2 Community Edition (Versilian Studios / Sam Gossner)
+악기: Marimba
+원본 경로: Percussion/Marimba/Marimba_hit_Outrigger_G4_loud_01.wav
+출처: https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Percussion/Marimba/Marimba_hit_Outrigger_G4_loud_01.wav
+라이선스: CC0-1.0; 근거: VSCO-2-CE-ORIGINAL-LICENSE.txt
+형식: 44100 Hz / 24-bit / 2 ch / 3.024 sec
+가공: 없음
+SHA-256: 36f39f9f24789001add2b4c440defb7641178b0e8449c5cb7f1960bccaf0aaaf
+
+Mallets/Marimba_hit_Outrigger_F5_loud_01.wav
+제작자: VSCO 2 Community Edition (Versilian Studios / Sam Gossner)
+악기: Marimba
+원본 경로: Percussion/Marimba/Marimba_hit_Outrigger_F5_loud_01.wav
+출처: https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Percussion/Marimba/Marimba_hit_Outrigger_F5_loud_01.wav
+라이선스: CC0-1.0; 근거: VSCO-2-CE-ORIGINAL-LICENSE.txt
+형식: 44100 Hz / 24-bit / 2 ch / 2.083 sec
+가공: 없음
+SHA-256: a434c15978b2ea4b8921feeb3fd1f177447324d06c177801e0e46c12a97abc86
+
+Mallets/Marimba_hit_Outrigger_C6_loud_01.wav
+제작자: VSCO 2 Community Edition (Versilian Studios / Sam Gossner)
+악기: Marimba
+원본 경로: Percussion/Marimba/Marimba_hit_Outrigger_C6_loud_01.wav
+출처: https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Percussion/Marimba/Marimba_hit_Outrigger_C6_loud_01.wav
+라이선스: CC0-1.0; 근거: VSCO-2-CE-ORIGINAL-LICENSE.txt
+형식: 44100 Hz / 24-bit / 2 ch / 1.784 sec
+가공: 없음
+SHA-256: 2e42b1b6f6923f32e3daadc12b063e94d15af20fa410ddcb267eb906fd6e0e89
+
+Mallets/Xylo_Medium_G4_ff_01_far.wav
+제작자: VSCO 2 Community Edition (Versilian Studios / Sam Gossner)
+악기: Xylophone
+원본 경로: Percussion/Xylo/Xylo_Medium_G4_ff_01_far.wav
+출처: https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Percussion/Xylo/Xylo_Medium_G4_ff_01_far.wav
+라이선스: CC0-1.0; 근거: VSCO-2-CE-ORIGINAL-LICENSE.txt
+형식: 44100 Hz / 24-bit / 2 ch / 2.510 sec
+가공: 없음
+SHA-256: f7e72d629db9b1f7d37b050cc1abf18bbde9629d616c91647d7abe5d7fb249b8
+
+Mallets/Xylo_Medium_C5_ff_01_far.wav
+제작자: VSCO 2 Community Edition (Versilian Studios / Sam Gossner)
+악기: Xylophone
+원본 경로: Percussion/Xylo/Xylo_Medium_C5_ff_01_far.wav
+출처: https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Percussion/Xylo/Xylo_Medium_C5_ff_01_far.wav
+라이선스: CC0-1.0; 근거: VSCO-2-CE-ORIGINAL-LICENSE.txt
+형식: 44100 Hz / 24-bit / 2 ch / 1.887 sec
+가공: 없음
+SHA-256: b2ceeb64877d9975afbdf2fafb8892c416ac760c63bb2bc544007ef2331d35fd
+
+Mallets/Xylo_Medium_G5_ff_01_far.wav
+제작자: VSCO 2 Community Edition (Versilian Studios / Sam Gossner)
+악기: Xylophone
+원본 경로: Percussion/Xylo/Xylo_Medium_G5_ff_01_far.wav
+출처: https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Percussion/Xylo/Xylo_Medium_G5_ff_01_far.wav
+라이선스: CC0-1.0; 근거: VSCO-2-CE-ORIGINAL-LICENSE.txt
+형식: 44100 Hz / 24-bit / 2 ch / 1.617 sec
+가공: 없음
+SHA-256: d5b45edd0c164356c0425b663b9307bbb77a647ba7554423c6a8aa455ac8b2b3
+
+Mallets/Xylo_Medium_C6_ff_01_far.wav
+제작자: VSCO 2 Community Edition (Versilian Studios / Sam Gossner)
+악기: Xylophone
+원본 경로: Percussion/Xylo/Xylo_Medium_C6_ff_01_far.wav
+출처: https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Percussion/Xylo/Xylo_Medium_C6_ff_01_far.wav
+라이선스: CC0-1.0; 근거: VSCO-2-CE-ORIGINAL-LICENSE.txt
+형식: 44100 Hz / 24-bit / 2 ch / 1.470 sec
+가공: 없음
+SHA-256: 183d04381c44705f65c3750383f28695f4b2576311ace8fdbe567134f416ff27
+
+Mallets/Vibes_hard_C3_v3_rr1_Main.wav
+제작자: Versilian Community Sample Library (Versilian Studios / Sam Gossner)
+악기: Vibraphone
+원본 경로: Idiophones/Struck Idiophones/Vibraphone/Hard Mallets/Vibes_hard_C3_v3_rr1_Main.wav
+출처: https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Idiophones/Struck%20Idiophones/Vibraphone/Hard%20Mallets/Vibes_hard_C3_v3_rr1_Main.wav
+라이선스: CC0-1.0; 근거: VCSL-ORIGINAL-LICENSE.txt
+형식: 44100 Hz / 16-bit / 2 ch / 12.401 sec
+가공: 없음
+SHA-256: 1e4c472f6630be1b0c4ff1e8a63ad61d2c1dc561bd764fedaf87e8e46bdd706d
+
+Mallets/Vibes_hard_E3_v3_rr1_Main.wav
+제작자: Versilian Community Sample Library (Versilian Studios / Sam Gossner)
+악기: Vibraphone
+원본 경로: Idiophones/Struck Idiophones/Vibraphone/Hard Mallets/Vibes_hard_E3_v3_rr1_Main.wav
+출처: https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Idiophones/Struck%20Idiophones/Vibraphone/Hard%20Mallets/Vibes_hard_E3_v3_rr1_Main.wav
+라이선스: CC0-1.0; 근거: VCSL-ORIGINAL-LICENSE.txt
+형식: 44100 Hz / 16-bit / 2 ch / 14.270 sec
+가공: 없음
+SHA-256: beb8a14c7e63fa22927c6566562f1eabd9eb42982bf344ea886e38fd50808e1c
+
+Mallets/Vibes_hard_D4_v3_rr1_Main.wav
+제작자: Versilian Community Sample Library (Versilian Studios / Sam Gossner)
+악기: Vibraphone
+원본 경로: Idiophones/Struck Idiophones/Vibraphone/Hard Mallets/Vibes_hard_D4_v3_rr1_Main.wav
+출처: https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Idiophones/Struck%20Idiophones/Vibraphone/Hard%20Mallets/Vibes_hard_D4_v3_rr1_Main.wav
+라이선스: CC0-1.0; 근거: VCSL-ORIGINAL-LICENSE.txt
+형식: 44100 Hz / 16-bit / 2 ch / 14.600 sec
+가공: 없음
+SHA-256: 147cec54acf3a26fc985dcfb78d9593177369c9bd1a8cb3bc908f796616195e2
+
+Mallets/Vibes_hard_A4_v3_rr1_Main.wav
+제작자: Versilian Community Sample Library (Versilian Studios / Sam Gossner)
+악기: Vibraphone
+원본 경로: Idiophones/Struck Idiophones/Vibraphone/Hard Mallets/Vibes_hard_A4_v3_rr1_Main.wav
+출처: https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Idiophones/Struck%20Idiophones/Vibraphone/Hard%20Mallets/Vibes_hard_A4_v3_rr1_Main.wav
+라이선스: CC0-1.0; 근거: VCSL-ORIGINAL-LICENSE.txt
+형식: 44100 Hz / 16-bit / 2 ch / 10.994 sec
+가공: 없음
+SHA-256: 651d8210d3f83596380481c46726bbf82bd07c24c5048a815aa5db218d094ae4
+
+Mallets/Vibes_hard_C5_v3_rr1_Main.wav
+제작자: Versilian Community Sample Library (Versilian Studios / Sam Gossner)
+악기: Vibraphone
+원본 경로: Idiophones/Struck Idiophones/Vibraphone/Hard Mallets/Vibes_hard_C5_v3_rr1_Main.wav
+출처: https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Idiophones/Struck%20Idiophones/Vibraphone/Hard%20Mallets/Vibes_hard_C5_v3_rr1_Main.wav
+라이선스: CC0-1.0; 근거: VCSL-ORIGINAL-LICENSE.txt
+형식: 44100 Hz / 16-bit / 2 ch / 6.207 sec
+가공: 없음
+SHA-256: 2aa1bde8ca38dcfccb07641d7d8514f3df6e8f523287055f7fdc4b54d8224bdb
+
+Mallets/KSHarp_C3_mf.wav
+제작자: VSCO 2 Community Edition (Versilian Studios / Sam Gossner)
+악기: Harp
+원본 경로: Strings/Harp/KSHarp_C3_mf.wav
+출처: https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Strings/Harp/KSHarp_C3_mf.wav
+라이선스: CC0-1.0; 근거: VSCO-2-CE-ORIGINAL-LICENSE.txt
+형식: 44100 Hz / 16-bit / 2 ch / 8.963 sec
+가공: 없음
+SHA-256: e5d232771704e140959819de8cf2a3e0ba49d021ca77354c42664ce4fce6d9f3
+
+Mallets/KSHarp_D4_mf.wav
+제작자: VSCO 2 Community Edition (Versilian Studios / Sam Gossner)
+악기: Harp
+원본 경로: Strings/Harp/KSHarp_D4_mf.wav
+출처: https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Strings/Harp/KSHarp_D4_mf.wav
+라이선스: CC0-1.0; 근거: VSCO-2-CE-ORIGINAL-LICENSE.txt
+형식: 44100 Hz / 16-bit / 2 ch / 10.894 sec
+가공: 없음
+SHA-256: ebfde8aab4411019e37e3426f4dd88d6a52a38c2d0261d7f10ec63d8ff584dc7
+
+Mallets/KSHarp_F4_mf.wav
+제작자: VSCO 2 Community Edition (Versilian Studios / Sam Gossner)
+악기: Harp
+원본 경로: Strings/Harp/KSHarp_F4_mf.wav
+출처: https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Strings/Harp/KSHarp_F4_mf.wav
+라이선스: CC0-1.0; 근거: VSCO-2-CE-ORIGINAL-LICENSE.txt
+형식: 44100 Hz / 16-bit / 2 ch / 10.847 sec
+가공: 없음
+SHA-256: db27ebbb37334c10e06f2ae63f4d9ff555e4d11704fcc6f0bcf503863867e577
+
+Mallets/KSHarp_A4_mf.wav
+제작자: VSCO 2 Community Edition (Versilian Studios / Sam Gossner)
+악기: Harp
+원본 경로: Strings/Harp/KSHarp_A4_mf.wav
+출처: https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Strings/Harp/KSHarp_A4_mf.wav
+라이선스: CC0-1.0; 근거: VSCO-2-CE-ORIGINAL-LICENSE.txt
+형식: 44100 Hz / 16-bit / 2 ch / 12.152 sec
+가공: 없음
+SHA-256: 3665f3975cad4a33f46784aa4f896f4b4319ba2b7831e892d975bc38c9f09f23
+
+Mallets/KSHarp_C5_mf.wav
+제작자: VSCO 2 Community Edition (Versilian Studios / Sam Gossner)
+악기: Harp
+원본 경로: Strings/Harp/KSHarp_C5_mf.wav
+출처: https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Strings/Harp/KSHarp_C5_mf.wav
+라이선스: CC0-1.0; 근거: VSCO-2-CE-ORIGINAL-LICENSE.txt
+형식: 44100 Hz / 16-bit / 2 ch / 7.013 sec
+가공: 없음
+SHA-256: 7c8b862f6fd3f1442ed87537af976d84bda8c05a5b4900e8907d570b5202a517
+
+Mallets/KSHarp_E5_mf.wav
+제작자: VSCO 2 Community Edition (Versilian Studios / Sam Gossner)
+악기: Harp
+원본 경로: Strings/Harp/KSHarp_E5_mf.wav
+출처: https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Strings/Harp/KSHarp_E5_mf.wav
+라이선스: CC0-1.0; 근거: VSCO-2-CE-ORIGINAL-LICENSE.txt
+형식: 44100 Hz / 16-bit / 2 ch / 6.641 sec
+가공: 없음
+SHA-256: 95dd9ddb0bd15bee7687906e00f25aafcaa43020cc9501f0e8b6cabf0e9a53ec
+
+Mallets/Mbira6_Normal_MainSpirit_C#4_k2_vl3_rr2.wav
+제작자: Versilian Community Sample Library (Versilian Studios / Sam Gossner)
+악기: Kalimba
+원본 경로: Idiophones/Plucked Idiophones/Kalimba, Kenya/Mbira6_Normal_MainSpirit_C#4_k2_vl3_rr2.wav
+출처: https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Idiophones/Plucked%20Idiophones/Kalimba%2C%20Kenya/Mbira6_Normal_MainSpirit_C%234_k2_vl3_rr2.wav
+라이선스: CC0-1.0; 근거: VCSL-ORIGINAL-LICENSE.txt
+형식: 48000 Hz / 24-bit / 2 ch / 4.808 sec
+가공: 없음
+SHA-256: 79643a37ffc158acb9995390c3c20aa8d0246375e074e2ea38661313e58b6a5f
+
+Mallets/Mbira6_Normal_MainSpirit_D#4_k13_vl3_rr2.wav
+제작자: Versilian Community Sample Library (Versilian Studios / Sam Gossner)
+악기: Kalimba
+원본 경로: Idiophones/Plucked Idiophones/Kalimba, Kenya/Mbira6_Normal_MainSpirit_D#4_k13_vl3_rr2.wav
+출처: https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Idiophones/Plucked%20Idiophones/Kalimba%2C%20Kenya/Mbira6_Normal_MainSpirit_D%234_k13_vl3_rr2.wav
+라이선스: CC0-1.0; 근거: VCSL-ORIGINAL-LICENSE.txt
+형식: 48000 Hz / 24-bit / 2 ch / 3.011 sec
+가공: 없음
+SHA-256: 25cee2aabafa43a0acac052a93f95e43b61f12686c0b0f47176f80a06e10deee
+
+Mallets/Mbira6_Normal_MainSpirit_F#4_k14_vl3_rr2.wav
+제작자: Versilian Community Sample Library (Versilian Studios / Sam Gossner)
+악기: Kalimba
+원본 경로: Idiophones/Plucked Idiophones/Kalimba, Kenya/Mbira6_Normal_MainSpirit_F#4_k14_vl3_rr2.wav
+출처: https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Idiophones/Plucked%20Idiophones/Kalimba%2C%20Kenya/Mbira6_Normal_MainSpirit_F%234_k14_vl3_rr2.wav
+라이선스: CC0-1.0; 근거: VCSL-ORIGINAL-LICENSE.txt
+형식: 48000 Hz / 24-bit / 2 ch / 4.122 sec
+가공: 없음
+SHA-256: 534754f601c2a16577bd26e87b8c8241b5d76c53a01ed196e54bf53f22cea7bc
+
+Mallets/Mbira6_Normal_MainSpirit_A4_k1_vl3_rr2.wav
+제작자: Versilian Community Sample Library (Versilian Studios / Sam Gossner)
+악기: Kalimba
+원본 경로: Idiophones/Plucked Idiophones/Kalimba, Kenya/Mbira6_Normal_MainSpirit_A4_k1_vl3_rr2.wav
+출처: https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Idiophones/Plucked%20Idiophones/Kalimba%2C%20Kenya/Mbira6_Normal_MainSpirit_A4_k1_vl3_rr2.wav
+라이선스: CC0-1.0; 근거: VCSL-ORIGINAL-LICENSE.txt
+형식: 48000 Hz / 24-bit / 2 ch / 3.295 sec
+가공: 없음
+SHA-256: 153c55100dc25cdbec013b1153018e78fa094e5c0ee0b9f050ee57c2b198a500
+
+Mallets/Mbira6_Normal_MainSpirit_B4_k15_vl3_rr2.wav
+제작자: Versilian Community Sample Library (Versilian Studios / Sam Gossner)
+악기: Kalimba
+원본 경로: Idiophones/Plucked Idiophones/Kalimba, Kenya/Mbira6_Normal_MainSpirit_B4_k15_vl3_rr2.wav
+출처: https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Idiophones/Plucked%20Idiophones/Kalimba%2C%20Kenya/Mbira6_Normal_MainSpirit_B4_k15_vl3_rr2.wav
+라이선스: CC0-1.0; 근거: VCSL-ORIGINAL-LICENSE.txt
+형식: 48000 Hz / 24-bit / 2 ch / 3.288 sec
+가공: 없음
+SHA-256: b26d42ab0fe80fd54ec8cfb1cea72ef26cd07ef2dae914e1ffa00471a05f1698
+
+WorldPerc/Quinto_HitN_v3_rr1_Sum.wav
+제작자: Versilian Community Sample Library (Versilian Studios / Sam Gossner)
+악기: Conga
+원본 경로: Membranophones/Struck Membranophones/Conga/Quinto_HitN_v3_rr1_Sum.wav
+출처: https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Membranophones/Struck%20Membranophones/Conga/Quinto_HitN_v3_rr1_Sum.wav
+라이선스: CC0-1.0; 근거: VCSL-ORIGINAL-LICENSE.txt
+형식: 44100 Hz / 16-bit / 2 ch / 1.175 sec
+가공: 없음
+SHA-256: 07fe0922f97a57969a3cbb706126de2d09d23f42f6390a9a9adac027d7741c7e
+
+WorldPerc/Conga_HitN_v3_rr1_Sum.wav
+제작자: Versilian Community Sample Library (Versilian Studios / Sam Gossner)
+악기: Conga
+원본 경로: Membranophones/Struck Membranophones/Conga/Conga_HitN_v3_rr1_Sum.wav
+출처: https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Membranophones/Struck%20Membranophones/Conga/Conga_HitN_v3_rr1_Sum.wav
+라이선스: CC0-1.0; 근거: VCSL-ORIGINAL-LICENSE.txt
+형식: 44100 Hz / 16-bit / 2 ch / 1.310 sec
+가공: 없음
+SHA-256: 664365ac735d819c69cabbbae8a78d225fa73059e698ad8ca292c46cc03c6961
+
+WorldPerc/Conga_HitFM_v2_rr1_Sum.wav
+제작자: Versilian Community Sample Library (Versilian Studios / Sam Gossner)
+악기: Conga
+원본 경로: Membranophones/Struck Membranophones/Conga/Conga_HitFM_v2_rr1_Sum.wav
+출처: https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Membranophones/Struck%20Membranophones/Conga/Conga_HitFM_v2_rr1_Sum.wav
+라이선스: CC0-1.0; 근거: VCSL-ORIGINAL-LICENSE.txt
+형식: 44100 Hz / 16-bit / 2 ch / 0.901 sec
+가공: 없음
+SHA-256: 1a24a11a7dae6fdc05405a706768a5b6d96ad534c95bee5d451aa49eedd84855
+
+WorldPerc/Tumba_HitFM_v3_rr1_Sum.wav
+제작자: Versilian Community Sample Library (Versilian Studios / Sam Gossner)
+악기: Conga
+원본 경로: Membranophones/Struck Membranophones/Conga/Tumba_HitFM_v3_rr1_Sum.wav
+출처: https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Membranophones/Struck%20Membranophones/Conga/Tumba_HitFM_v3_rr1_Sum.wav
+라이선스: CC0-1.0; 근거: VCSL-ORIGINAL-LICENSE.txt
+형식: 44100 Hz / 16-bit / 2 ch / 0.522 sec
+가공: 없음
+SHA-256: 5573840d97955f2efb0115f48f57b2a12f5ac04e03aea8a69f27c3f9fd64a017
+
+WorldPerc/BongoH_Hit1_v3_rr1_Mid.wav
+제작자: Versilian Community Sample Library (Versilian Studios / Sam Gossner)
+악기: Bongos
+원본 경로: Membranophones/Struck Membranophones/Bongos/BongoH_Hit1_v3_rr1_Mid.wav
+출처: https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Membranophones/Struck%20Membranophones/Bongos/BongoH_Hit1_v3_rr1_Mid.wav
+라이선스: CC0-1.0; 근거: VCSL-ORIGINAL-LICENSE.txt
+형식: 44100 Hz / 16-bit / 2 ch / 1.163 sec
+가공: 없음
+SHA-256: e93ed5c0fbafc3f122ced7c56c3f08021d8616e96c81c42aa62c5f368111d001
+
+WorldPerc/BongoL_Hit1_v3_rr1_Mid.wav
+제작자: Versilian Community Sample Library (Versilian Studios / Sam Gossner)
+악기: Bongos
+원본 경로: Membranophones/Struck Membranophones/Bongos/BongoL_Hit1_v3_rr1_Mid.wav
+출처: https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Membranophones/Struck%20Membranophones/Bongos/BongoL_Hit1_v3_rr1_Mid.wav
+라이선스: CC0-1.0; 근거: VCSL-ORIGINAL-LICENSE.txt
+형식: 44100 Hz / 16-bit / 2 ch / 1.185 sec
+가공: 없음
+SHA-256: 07986a1bc54b31dafd9c7dc250e42a613977b320b33b2e4652d21332064de4eb
+
+WorldPerc/BongoH_HitMuted1_v3_rr1_Mid.wav
+제작자: Versilian Community Sample Library (Versilian Studios / Sam Gossner)
+악기: Bongos
+원본 경로: Membranophones/Struck Membranophones/Bongos/BongoH_HitMuted1_v3_rr1_Mid.wav
+출처: https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Membranophones/Struck%20Membranophones/Bongos/BongoH_HitMuted1_v3_rr1_Mid.wav
+라이선스: CC0-1.0; 근거: VCSL-ORIGINAL-LICENSE.txt
+형식: 44100 Hz / 16-bit / 2 ch / 1.218 sec
+가공: 없음
+SHA-256: 8ec81b9724006b8181f7ef8d604a2e0fecd507c1baa22953f9ee25025662532b
+
+WorldPerc/Cowbell1_Hit_v4_rr1_Mid.wav
+제작자: Versilian Community Sample Library (Versilian Studios / Sam Gossner)
+악기: Cowbell
+원본 경로: Idiophones/Struck Idiophones/Cowbells/Cowbell1_Hit_v4_rr1_Mid.wav
+출처: https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Idiophones/Struck%20Idiophones/Cowbells/Cowbell1_Hit_v4_rr1_Mid.wav
+라이선스: CC0-1.0; 근거: VCSL-ORIGINAL-LICENSE.txt
+형식: 44100 Hz / 16-bit / 2 ch / 1.105 sec
+가공: 없음
+SHA-256: e32a7a646bddfbc63595de9f64e3e435999c932ebadf0fe98759e754096002a0
+
+WorldPerc/Cowbell1_Muted_v3_rr1_Mid.wav
+제작자: Versilian Community Sample Library (Versilian Studios / Sam Gossner)
+악기: Cowbell
+원본 경로: Idiophones/Struck Idiophones/Cowbells/Cowbell1_Muted_v3_rr1_Mid.wav
+출처: https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Idiophones/Struck%20Idiophones/Cowbells/Cowbell1_Muted_v3_rr1_Mid.wav
+라이선스: CC0-1.0; 근거: VCSL-ORIGINAL-LICENSE.txt
+형식: 44100 Hz / 16-bit / 2 ch / 1.109 sec
+가공: 없음
+SHA-256: aeac086aae2ebe56ec5bcf13dac8cfb4fa76666678bd4267149517c548cafe9a
+
+WorldPerc/Cowbell2_Normal_v3_rr1_Mid.wav
+제작자: Versilian Community Sample Library (Versilian Studios / Sam Gossner)
+악기: Cowbell
+원본 경로: Idiophones/Struck Idiophones/Cowbells/Cowbell2_Normal_v3_rr1_Mid.wav
+출처: https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Idiophones/Struck%20Idiophones/Cowbells/Cowbell2_Normal_v3_rr1_Mid.wav
+라이선스: CC0-1.0; 근거: VCSL-ORIGINAL-LICENSE.txt
+형식: 44100 Hz / 16-bit / 2 ch / 1.785 sec
+가공: 없음
+SHA-256: 2eb531d20d6272824f8d012b1221093c13b15de237e2e8f611eaa70830abb4ee
+
+WorldPerc/Guiro_Hit_rr1_Mid.wav
+제작자: Versilian Community Sample Library (Versilian Studios / Sam Gossner)
+악기: Guiro
+원본 경로: Idiophones/Struck Idiophones/Guiro/Guiro_Hit_rr1_Mid.wav
+출처: https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Idiophones/Struck%20Idiophones/Guiro/Guiro_Hit_rr1_Mid.wav
+라이선스: CC0-1.0; 근거: VCSL-ORIGINAL-LICENSE.txt
+형식: 44100 Hz / 16-bit / 2 ch / 1.283 sec
+가공: 없음
+SHA-256: e7d4bf1c28521e3410d710688a576f2fe5f6c5339e754417ae3c1a46a386cf42
+
+WorldPerc/Guiro_Fast_rr1_Mid.wav
+제작자: Versilian Community Sample Library (Versilian Studios / Sam Gossner)
+악기: Guiro
+원본 경로: Idiophones/Struck Idiophones/Guiro/Guiro_Fast_rr1_Mid.wav
+출처: https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Idiophones/Struck%20Idiophones/Guiro/Guiro_Fast_rr1_Mid.wav
+라이선스: CC0-1.0; 근거: VCSL-ORIGINAL-LICENSE.txt
+형식: 44100 Hz / 16-bit / 2 ch / 1.514 sec
+가공: 없음
+SHA-256: fb601ba7bf1decb62c6cbe38f4f74807e4067dcdcc967e028bd0ec75053c2c28
+
+WorldPerc/Guiro_Slow_rr2_Mid.wav
+제작자: Versilian Community Sample Library (Versilian Studios / Sam Gossner)
+악기: Guiro
+원본 경로: Idiophones/Struck Idiophones/Guiro/Guiro_Slow_rr2_Mid.wav
+출처: https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Idiophones/Struck%20Idiophones/Guiro/Guiro_Slow_rr2_Mid.wav
+라이선스: CC0-1.0; 근거: VCSL-ORIGINAL-LICENSE.txt
+형식: 44100 Hz / 16-bit / 2 ch / 2.439 sec
+가공: 없음
+SHA-256: 4097a3437503d6a98fa7f0c1070bcc6a0516b834eaa8a999a1f745428544680d
+
+WorldPerc/Claves1_Hit_v2_rr1_Mid.wav
+제작자: Versilian Community Sample Library (Versilian Studios / Sam Gossner)
+악기: Claves
+원본 경로: Idiophones/Struck Idiophones/Claves/Claves1_Hit_v2_rr1_Mid.wav
+출처: https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Idiophones/Struck%20Idiophones/Claves/Claves1_Hit_v2_rr1_Mid.wav
+라이선스: CC0-1.0; 근거: VCSL-ORIGINAL-LICENSE.txt
+형식: 44100 Hz / 16-bit / 2 ch / 1.087 sec
+가공: 없음
+SHA-256: bcabe27330761309eb4b4f6207e6e3b4be59815df86449ac05bfb9b81f19efc9
+
+WorldPerc/Claves1_Hit_v3_rr1_Mid.wav
+제작자: Versilian Community Sample Library (Versilian Studios / Sam Gossner)
+악기: Claves
+원본 경로: Idiophones/Struck Idiophones/Claves/Claves1_Hit_v3_rr1_Mid.wav
+출처: https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Idiophones/Struck%20Idiophones/Claves/Claves1_Hit_v3_rr1_Mid.wav
+라이선스: CC0-1.0; 근거: VCSL-ORIGINAL-LICENSE.txt
+형식: 44100 Hz / 16-bit / 2 ch / 1.296 sec
+가공: 없음
+SHA-256: 12285f65ed125f4140d1e8a86b2d6a08bf3283b7bf30c10d68290b8e8230a927
+
+WorldPerc/Claves2_Hit_v3_rr1_Mid.wav
+제작자: Versilian Community Sample Library (Versilian Studios / Sam Gossner)
+악기: Claves
+원본 경로: Idiophones/Struck Idiophones/Claves/Claves2_Hit_v3_rr1_Mid.wav
+출처: https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Idiophones/Struck%20Idiophones/Claves/Claves2_Hit_v3_rr1_Mid.wav
+라이선스: CC0-1.0; 근거: VCSL-ORIGINAL-LICENSE.txt
+형식: 44100 Hz / 16-bit / 2 ch / 1.280 sec
+가공: 없음
+SHA-256: 04954891896d00559d4b59ef468d9f1f51a5c42cb23de6f08af8e8eaaf764a8a
+
+WorldPerc/Agogo_High_v2_rr1_Mid.wav
+제작자: Versilian Community Sample Library (Versilian Studios / Sam Gossner)
+악기: Agogo
+원본 경로: Idiophones/Struck Idiophones/Agogo Bells/Agogo_High_v2_rr1_Mid.wav
+출처: https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Idiophones/Struck%20Idiophones/Agogo%20Bells/Agogo_High_v2_rr1_Mid.wav
+라이선스: CC0-1.0; 근거: VCSL-ORIGINAL-LICENSE.txt
+형식: 44100 Hz / 16-bit / 2 ch / 1.139 sec
+가공: 없음
+SHA-256: f74a3100634a4372f2e2f81adf2f6a7839861ec4dcf13291001a3268e37806de
+
+WorldPerc/Agogo_High_v3_rr1_Mid.wav
+제작자: Versilian Community Sample Library (Versilian Studios / Sam Gossner)
+악기: Agogo
+원본 경로: Idiophones/Struck Idiophones/Agogo Bells/Agogo_High_v3_rr1_Mid.wav
+출처: https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Idiophones/Struck%20Idiophones/Agogo%20Bells/Agogo_High_v3_rr1_Mid.wav
+라이선스: CC0-1.0; 근거: VCSL-ORIGINAL-LICENSE.txt
+형식: 44100 Hz / 16-bit / 2 ch / 1.118 sec
+가공: 없음
+SHA-256: c7f0d2b70c6cee34beea62d7566227da2687ca5c87d72d1245f444fbe2c76b43
+
+WorldPerc/Agogo_Low_v2_rr1_Mid.wav
+제작자: Versilian Community Sample Library (Versilian Studios / Sam Gossner)
+악기: Agogo
+원본 경로: Idiophones/Struck Idiophones/Agogo Bells/Agogo_Low_v2_rr1_Mid.wav
+출처: https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Idiophones/Struck%20Idiophones/Agogo%20Bells/Agogo_Low_v2_rr1_Mid.wav
+라이선스: CC0-1.0; 근거: VCSL-ORIGINAL-LICENSE.txt
+형식: 44100 Hz / 16-bit / 2 ch / 2.447 sec
+가공: 없음
+SHA-256: 36fb0e28c0ba39336082902d299a5b2d20b9f5f0cb448cb64e4b13837b896eea
+
+
+==============================================================
+추가 수집 3: 일렉 악기 원샷 (일렉기타 · 신스 베이스 · 신디 · FM 건반)
+확인일: 2026-11-24 (Asia/Seoul)
+라이선스: 전부 CC0 1.0 Universal
+- Audio Tools 팩 6종 (Thrum, AT303, DeviceNTI, AT700, ATFS1, AT20V): 배포 페이지 https://audiotools.com.ar/samplepack/ 의 License 절과 각 ZIP README의 CC0 문구. 원본 README는 <팩>-ORIGINAL-README.txt로 보존.
+  Thrum 기타는 실제 기타 녹음이 아니라 Audio Tools 플러그인으로 만든 소리입니다 (README: 모든 소리는 Audio Tools 플러그인으로 생성).
+- VCSL TX81Z (야마하 FM): https://github.com/sgossner/VCSL 커밋 c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e -> VCSL-ORIGINAL-LICENSE.txt
+- Karoryfer Cowsynth (중세 백파이프 복제품을 신스 오실레이터처럼 쓴 샘플): https://github.com/sfzinstruments/karoryfer.cowsynth 커밋 5a5b5afc2dabbe54cf9d75ab64711ce01862b42c -> Cowsynth-ORIGINAL-LICENSE.txt (CC0), Cowsynth-ORIGINAL-README.txt
+  Cowsynth 파일만 이름 충돌을 피하려고 Cowsynth_<원본 폴더>_ 접두사를 붙였고, 내용은 원본 그대로입니다.
+선택 기준: Audio Tools는 OneShots 폴더에서 드럼(Kick/Snare/HiHat)을 빼고, 같은 소리·같은 음은 가장 센 벨로시티 하나만. Fx_Wet·루프·MIDI는 넣지 않음.
+원본 WAV는 자르기, 정규화, 리샘플링 없이 그대로 복사했습니다. 각 파일의 상세 정보는 sample-manifest.json에도 있습니다.
+상태: 임포트 후보. 청음 전이며 FMOD 이벤트에는 아직 배치하지 않았습니다.
+
+다운로드한 ZIP (프로젝트에는 아래 원샷만 포함):
+https://audiotools.com.ar/downloads/AudioTools-SamplePack-AT20V.zip
+ZIP SHA-256: c231ded3c7ac5305d2efaa186096670f239dcba656e11128da3248a2d495b00e
+https://audiotools.com.ar/downloads/AudioTools-SamplePack-AT303.zip
+ZIP SHA-256: 9af06d5816bd7bde98a9de434e6792537c7d58cb943f90eadd94575c52e66aff
+https://audiotools.com.ar/downloads/AudioTools-SamplePack-AT700.zip
+ZIP SHA-256: d5350bd5072fa06e819088bdffb4db22d7e38597aa980bb3f24641c50b6089e2
+https://audiotools.com.ar/downloads/AudioTools-SamplePack-ATFS1.zip
+ZIP SHA-256: daeaae403f026c0faf4748a5c398c7bfaf7d4b30f0058192ee7490aa1c35e276
+https://audiotools.com.ar/downloads/AudioTools-SamplePack-DeviceNTI.zip
+ZIP SHA-256: 20b5f2aaf9251765c37793f651d8e7f37876e2bd8f31bc064a83a978d3ed589c
+https://audiotools.com.ar/downloads/AudioTools-SamplePack-Thrum.zip
+ZIP SHA-256: 088e73ac81abe58adf1799fd1c8c327f293638d8f1814ba6817e7d63d4e3e96f
+==============================================================
+
+SynthBass/AT20V_AcidBass_A1_v100.wav
+제작자: Audio Tools (Digital Hub)
+팩: AT20V
+원본 경로: AudioTools-SamplePack-AT20V/OneShots/AT20V_AcidBass_A1_v100.wav
+출처: https://audiotools.com.ar/downloads/AudioTools-SamplePack-AT20V.zip
+라이선스: CC0-1.0; 근거: AT20V-ORIGINAL-README.txt
+기준음: A1
+형식: 44100 Hz / 24-bit / 2 channels / 0.861633 sec
+가공: 없음
+SHA-256: b3cad4e45cf81c6b8e0faf99881ae37237a9782ccdeeadb6e5b97ce9a0035c60
+
+SynthBass/AT20V_AcidBass_A2_v100.wav
+제작자: Audio Tools (Digital Hub)
+팩: AT20V
+원본 경로: AudioTools-SamplePack-AT20V/OneShots/AT20V_AcidBass_A2_v100.wav
+출처: https://audiotools.com.ar/downloads/AudioTools-SamplePack-AT20V.zip
+라이선스: CC0-1.0; 근거: AT20V-ORIGINAL-README.txt
+기준음: A2
+형식: 44100 Hz / 24-bit / 2 channels / 2.0 sec
+가공: 없음
+SHA-256: e5f782c38fb220bbaa630cf2842b09027e8aaa69cb8b2c434edc249908cd2d69
+
+SynthBass/AT20V_AcidBass_C2_v100.wav
+제작자: Audio Tools (Digital Hub)
+팩: AT20V
+원본 경로: AudioTools-SamplePack-AT20V/OneShots/AT20V_AcidBass_C2_v100.wav
+출처: https://audiotools.com.ar/downloads/AudioTools-SamplePack-AT20V.zip
+라이선스: CC0-1.0; 근거: AT20V-ORIGINAL-README.txt
+기준음: C2
+형식: 44100 Hz / 24-bit / 2 channels / 0.881565 sec
+가공: 없음
+SHA-256: 2642f46ea2e8d64cf255a9ffa6b9b81f168ad6c4c377b53fcee70902113a38d9
+
+SynthBass/AT20V_AcidBass_E2_v100.wav
+제작자: Audio Tools (Digital Hub)
+팩: AT20V
+원본 경로: AudioTools-SamplePack-AT20V/OneShots/AT20V_AcidBass_E2_v100.wav
+출처: https://audiotools.com.ar/downloads/AudioTools-SamplePack-AT20V.zip
+라이선스: CC0-1.0; 근거: AT20V-ORIGINAL-README.txt
+기준음: E2
+형식: 44100 Hz / 24-bit / 2 channels / 0.884671 sec
+가공: 없음
+SHA-256: d0327e60f31551822220ca7175bef301588008a616f44147e2e0c8cc9abdeb67
+
+SynthBass/AT20V_FatSawBass_A1_v100.wav
+제작자: Audio Tools (Digital Hub)
+팩: AT20V
+원본 경로: AudioTools-SamplePack-AT20V/OneShots/AT20V_FatSawBass_A1_v100.wav
+출처: https://audiotools.com.ar/downloads/AudioTools-SamplePack-AT20V.zip
+라이선스: CC0-1.0; 근거: AT20V-ORIGINAL-README.txt
+기준음: A1
+형식: 44100 Hz / 24-bit / 2 channels / 1.135147 sec
+가공: 없음
+SHA-256: 873362a849ec74753dfa4a6dd0024a2fc4fa434a859a43563756e7a8af521135
+
+SynthBass/AT20V_FatSawBass_E1_v100.wav
+제작자: Audio Tools (Digital Hub)
+팩: AT20V
+원본 경로: AudioTools-SamplePack-AT20V/OneShots/AT20V_FatSawBass_E1_v100.wav
+출처: https://audiotools.com.ar/downloads/AudioTools-SamplePack-AT20V.zip
+라이선스: CC0-1.0; 근거: AT20V-ORIGINAL-README.txt
+기준음: E1
+형식: 44100 Hz / 24-bit / 2 channels / 2.5 sec
+가공: 없음
+SHA-256: 225434ee2d4d18d9213c4d4d13c62614bd80b939ee57ccb4d12b9ebbca3bd482
+
+SynthBass/AT20V_FatSawBass_E2_v100.wav
+제작자: Audio Tools (Digital Hub)
+팩: AT20V
+원본 경로: AudioTools-SamplePack-AT20V/OneShots/AT20V_FatSawBass_E2_v100.wav
+출처: https://audiotools.com.ar/downloads/AudioTools-SamplePack-AT20V.zip
+라이선스: CC0-1.0; 근거: AT20V-ORIGINAL-README.txt
+기준음: E2
+형식: 44100 Hz / 24-bit / 2 channels / 1.13839 sec
+가공: 없음
+SHA-256: 8befb79c4e40d1fa760b6bb073d52286a4fd784621b7de7f57b70453d7c8d0fc
+
+Synth/AT20V_GlassPad_A3_v90.wav
+제작자: Audio Tools (Digital Hub)
+팩: AT20V
+원본 경로: AudioTools-SamplePack-AT20V/OneShots/AT20V_GlassPad_A3_v90.wav
+출처: https://audiotools.com.ar/downloads/AudioTools-SamplePack-AT20V.zip
+라이선스: CC0-1.0; 근거: AT20V-ORIGINAL-README.txt
+기준음: A3
+형식: 44100 Hz / 24-bit / 2 channels / 6.5 sec
+가공: 없음
+SHA-256: 727444a7c749380ffdcd0bcc692b614ffbe8f1c17ba911a78f3ca19a344aa076
+
+Synth/AT20V_LaserZap_C4_v100.wav
+제작자: Audio Tools (Digital Hub)
+팩: AT20V
+원본 경로: AudioTools-SamplePack-AT20V/OneShots/AT20V_LaserZap_C4_v100.wav
+출처: https://audiotools.com.ar/downloads/AudioTools-SamplePack-AT20V.zip
+라이선스: CC0-1.0; 근거: AT20V-ORIGINAL-README.txt
+기준음: 미지정 (Chord, unpitched or FX; not assigned (see filename))
+형식: 44100 Hz / 24-bit / 2 channels / 0.459093 sec
+가공: 없음
+SHA-256: 8a53e994fa7e5d58cf6be47164ab78a927ba5c918b9b705338a17b1e8422b7cd
+
+Synth/AT20V_ResoPluck_A3_v100.wav
+제작자: Audio Tools (Digital Hub)
+팩: AT20V
+원본 경로: AudioTools-SamplePack-AT20V/OneShots/AT20V_ResoPluck_A3_v100.wav
+출처: https://audiotools.com.ar/downloads/AudioTools-SamplePack-AT20V.zip
+라이선스: CC0-1.0; 근거: AT20V-ORIGINAL-README.txt
+기준음: A3
+형식: 44100 Hz / 24-bit / 2 channels / 2.2 sec
+가공: 없음
+SHA-256: 456ccb148aa6c3e433a7b04ca065528af4ce59209d41c150c836f1c7ce261183
+
+Synth/AT20V_ResoPluck_A4_v100.wav
+제작자: Audio Tools (Digital Hub)
+팩: AT20V
+원본 경로: AudioTools-SamplePack-AT20V/OneShots/AT20V_ResoPluck_A4_v100.wav
+출처: https://audiotools.com.ar/downloads/AudioTools-SamplePack-AT20V.zip
+라이선스: CC0-1.0; 근거: AT20V-ORIGINAL-README.txt
+기준음: A4
+형식: 44100 Hz / 24-bit / 2 channels / 0.370159 sec
+가공: 없음
+SHA-256: 730c06514ebea6b4d34785fc7d0c02bfecefad2e9f31f756232398082854eebf
+
+Synth/AT20V_ResoPluck_C4_v100.wav
+제작자: Audio Tools (Digital Hub)
+팩: AT20V
+원본 경로: AudioTools-SamplePack-AT20V/OneShots/AT20V_ResoPluck_C4_v100.wav
+출처: https://audiotools.com.ar/downloads/AudioTools-SamplePack-AT20V.zip
+라이선스: CC0-1.0; 근거: AT20V-ORIGINAL-README.txt
+기준음: C4
+형식: 44100 Hz / 24-bit / 2 channels / 2.2 sec
+가공: 없음
+SHA-256: 67e1048c50e5dad8322dea9cd92ed229f39fca8ac27a3645293ee08196d74c47
+
+Synth/AT20V_ResoPluck_E4_v100.wav
+제작자: Audio Tools (Digital Hub)
+팩: AT20V
+원본 경로: AudioTools-SamplePack-AT20V/OneShots/AT20V_ResoPluck_E4_v100.wav
+출처: https://audiotools.com.ar/downloads/AudioTools-SamplePack-AT20V.zip
+라이선스: CC0-1.0; 근거: AT20V-ORIGINAL-README.txt
+기준음: E4
+형식: 44100 Hz / 24-bit / 2 channels / 2.2 sec
+가공: 없음
+SHA-256: 66bad9051aabcb46fdf7c9e1613828c1fca1e1ffafea3d7003daf9544a087668
+
+Synth/AT20V_RingBell_C5_v100.wav
+제작자: Audio Tools (Digital Hub)
+팩: AT20V
+원본 경로: AudioTools-SamplePack-AT20V/OneShots/AT20V_RingBell_C5_v100.wav
+출처: https://audiotools.com.ar/downloads/AudioTools-SamplePack-AT20V.zip
+라이선스: CC0-1.0; 근거: AT20V-ORIGINAL-README.txt
+기준음: C5
+형식: 44100 Hz / 24-bit / 2 channels / 3.377642 sec
+가공: 없음
+SHA-256: 197ad1704e8d641ec4fa4b1c3308e4c6d2497d201c6e1399378e59728be35558
+
+Synth/AT20V_RingBell_E5_v100.wav
+제작자: Audio Tools (Digital Hub)
+팩: AT20V
+원본 경로: AudioTools-SamplePack-AT20V/OneShots/AT20V_RingBell_E5_v100.wav
+출처: https://audiotools.com.ar/downloads/AudioTools-SamplePack-AT20V.zip
+라이선스: CC0-1.0; 근거: AT20V-ORIGINAL-README.txt
+기준음: E5
+형식: 44100 Hz / 24-bit / 2 channels / 4.0 sec
+가공: 없음
+SHA-256: e1c2fa0703d1c9d490be4a268baf66c129b26d3a9e56d6a086a60c27504c23c4
+
+Synth/AT20V_RingBell_G5_v100.wav
+제작자: Audio Tools (Digital Hub)
+팩: AT20V
+원본 경로: AudioTools-SamplePack-AT20V/OneShots/AT20V_RingBell_G5_v100.wav
+출처: https://audiotools.com.ar/downloads/AudioTools-SamplePack-AT20V.zip
+라이선스: CC0-1.0; 근거: AT20V-ORIGINAL-README.txt
+기준음: G5
+형식: 44100 Hz / 24-bit / 2 channels / 3.347982 sec
+가공: 없음
+SHA-256: b773c09e304c49ac96dac21d7c4035f9e8dae475f8af5483f604c2dee5e1b1e6
+
+Synth/AT20V_ScreamLead_A3_v105.wav
+제작자: Audio Tools (Digital Hub)
+팩: AT20V
+원본 경로: AudioTools-SamplePack-AT20V/OneShots/AT20V_ScreamLead_A3_v105.wav
+출처: https://audiotools.com.ar/downloads/AudioTools-SamplePack-AT20V.zip
+라이선스: CC0-1.0; 근거: AT20V-ORIGINAL-README.txt
+기준음: A3
+형식: 44100 Hz / 24-bit / 2 channels / 3.4 sec
+가공: 없음
+SHA-256: 553a3c7d77354b9d3cd8a13247cfbbfec78055c72b5ce4bf652ce8cdfd4ea079
+
+Synth/AT20V_ScreamLead_A4_v105.wav
+제작자: Audio Tools (Digital Hub)
+팩: AT20V
+원본 경로: AudioTools-SamplePack-AT20V/OneShots/AT20V_ScreamLead_A4_v105.wav
+출처: https://audiotools.com.ar/downloads/AudioTools-SamplePack-AT20V.zip
+라이선스: CC0-1.0; 근거: AT20V-ORIGINAL-README.txt
+기준음: A4
+형식: 44100 Hz / 24-bit / 2 channels / 1.561361 sec
+가공: 없음
+SHA-256: 52fc4388dde7e3f63c788bc85e6e66a016c8ebfca804c5f33bb544bdc1eb9f2a
+
+Synth/AT20V_ScreamLead_E4_v105.wav
+제작자: Audio Tools (Digital Hub)
+팩: AT20V
+원본 경로: AudioTools-SamplePack-AT20V/OneShots/AT20V_ScreamLead_E4_v105.wav
+출처: https://audiotools.com.ar/downloads/AudioTools-SamplePack-AT20V.zip
+라이선스: CC0-1.0; 근거: AT20V-ORIGINAL-README.txt
+기준음: E4
+형식: 44100 Hz / 24-bit / 2 channels / 3.4 sec
+가공: 없음
+SHA-256: e0fbd3ba32841fb08c71574eb3bec22935898f2ae21abc70938c936d0c3d559d
+
+SynthBass/AT303_DeepRoot_C2_v100.wav
+제작자: Audio Tools (Digital Hub)
+팩: AT303
+원본 경로: AudioTools-SamplePack-AT303/OneShots/AT303_DeepRoot_C2_v100.wav
+출처: https://audiotools.com.ar/downloads/AudioTools-SamplePack-AT303.zip
+라이선스: CC0-1.0; 근거: AT303-ORIGINAL-README.txt
+기준음: C2
+형식: 44100 Hz / 24-bit / 2 channels / 0.843651 sec
+가공: 없음
+SHA-256: 0958babae53bc37dc2a4a77a9613d529945aaa66d2a695b150b720d6389441a1
+
+SynthBass/AT303_DeepRoot_F1_v100.wav
+제작자: Audio Tools (Digital Hub)
+팩: AT303
+원본 경로: AudioTools-SamplePack-AT303/OneShots/AT303_DeepRoot_F1_v100.wav
+출처: https://audiotools.com.ar/downloads/AudioTools-SamplePack-AT303.zip
+라이선스: CC0-1.0; 근거: AT303-ORIGINAL-README.txt
+기준음: F1
+형식: 44100 Hz / 24-bit / 2 channels / 0.574717 sec
+가공: 없음
+SHA-256: ef0a4f2242beebf525eff6137c3715dceb86e91f4f4ab1c8ea60653b19a467a4
+
+SynthBass/AT303_HotBox_A2_v100.wav
+제작자: Audio Tools (Digital Hub)
+팩: AT303
+원본 경로: AudioTools-SamplePack-AT303/OneShots/AT303_HotBox_A2_v100.wav
+출처: https://audiotools.com.ar/downloads/AudioTools-SamplePack-AT303.zip
+라이선스: CC0-1.0; 근거: AT303-ORIGINAL-README.txt
+기준음: A2
+형식: 44100 Hz / 24-bit / 2 channels / 0.735805 sec
+가공: 없음
+SHA-256: 98e5474f0639854932540f852df4eebc5247948e1bd29db02a032dc115725447
+
+SynthBass/AT303_HotBox_D2_v100.wav
+제작자: Audio Tools (Digital Hub)
+팩: AT303
+원본 경로: AudioTools-SamplePack-AT303/OneShots/AT303_HotBox_D2_v100.wav
+출처: https://audiotools.com.ar/downloads/AudioTools-SamplePack-AT303.zip
+라이선스: CC0-1.0; 근거: AT303-ORIGINAL-README.txt
+기준음: D2
+형식: 44100 Hz / 24-bit / 2 channels / 0.650522 sec
+가공: 없음
+SHA-256: 95248bef3261e36a8b07b03d1ffa552b70ef0079098673125e22751ce43b5062
+
+SynthBass/AT303_Pocket_D2_v100.wav
+제작자: Audio Tools (Digital Hub)
+팩: AT303
+원본 경로: AudioTools-SamplePack-AT303/OneShots/AT303_Pocket_D2_v100.wav
+출처: https://audiotools.com.ar/downloads/AudioTools-SamplePack-AT303.zip
+라이선스: CC0-1.0; 근거: AT303-ORIGINAL-README.txt
+기준음: D2
+형식: 44100 Hz / 24-bit / 2 channels / 0.547324 sec
+가공: 없음
+SHA-256: 69a316d85765bdda8b4932e3fdb442f50d0332c824792a5a5d0dc973fefa128c
+
+SynthBass/AT303_Pocket_G1_v100.wav
+제작자: Audio Tools (Digital Hub)
+팩: AT303
+원본 경로: AudioTools-SamplePack-AT303/OneShots/AT303_Pocket_G1_v100.wav
+출처: https://audiotools.com.ar/downloads/AudioTools-SamplePack-AT303.zip
+라이선스: CC0-1.0; 근거: AT303-ORIGINAL-README.txt
+기준음: G1
+형식: 44100 Hz / 24-bit / 2 channels / 0.554989 sec
+가공: 없음
+SHA-256: 845e891d0887621aabb43faaa2c0980f43cd260d1f996bc3ebe2b20a3b60482e
+
+SynthBass/AT303_RubberRoot_A1_v100.wav
+제작자: Audio Tools (Digital Hub)
+팩: AT303
+원본 경로: AudioTools-SamplePack-AT303/OneShots/AT303_RubberRoot_A1_v100.wav
+출처: https://audiotools.com.ar/downloads/AudioTools-SamplePack-AT303.zip
+라이선스: CC0-1.0; 근거: AT303-ORIGINAL-README.txt
+기준음: A1
+형식: 44100 Hz / 24-bit / 2 channels / 0.551655 sec
+가공: 없음
+SHA-256: ab7133a5f95574bc232cd06bcbe69d05280fbf93a4a45b9272ad8bbdf3925003
+
+SynthBass/AT303_RubberRoot_E2_v100.wav
+제작자: Audio Tools (Digital Hub)
+팩: AT303
+원본 경로: AudioTools-SamplePack-AT303/OneShots/AT303_RubberRoot_E2_v100.wav
+출처: https://audiotools.com.ar/downloads/AudioTools-SamplePack-AT303.zip
+라이선스: CC0-1.0; 근거: AT303-ORIGINAL-README.txt
+기준음: E2
+형식: 44100 Hz / 24-bit / 2 channels / 0.647098 sec
+가공: 없음
+SHA-256: b000384dfe79f6836193ada60fcf9fbbab54c0872c06dadd75f5fda17af80f36
+
+SynthBass/AT303_Screamer_A2_v127.wav
+제작자: Audio Tools (Digital Hub)
+팩: AT303
+원본 경로: AudioTools-SamplePack-AT303/OneShots/AT303_Screamer_A2_v127.wav
+출처: https://audiotools.com.ar/downloads/AudioTools-SamplePack-AT303.zip
+라이선스: CC0-1.0; 근거: AT303-ORIGINAL-README.txt
+기준음: A2
+형식: 44100 Hz / 24-bit / 2 channels / 0.645261 sec
+가공: 없음
+SHA-256: 02f97f4872ba415bc21cc71bc4b8fcd1e8557219078c897f62cc0a2314e0d978
+
+SynthBass/AT303_Screamer_E3_v127.wav
+제작자: Audio Tools (Digital Hub)
+팩: AT303
+원본 경로: AudioTools-SamplePack-AT303/OneShots/AT303_Screamer_E3_v127.wav
+출처: https://audiotools.com.ar/downloads/AudioTools-SamplePack-AT303.zip
+라이선스: CC0-1.0; 근거: AT303-ORIGINAL-README.txt
+기준음: E3
+형식: 44100 Hz / 24-bit / 2 channels / 0.645782 sec
+가공: 없음
+SHA-256: 065395cc05068722fd7b1254c160ffc71e45be7fd7e2787e98c24b7bf67a1531
+
+SynthBass/AT303_Squelch_A1_v127.wav
+제작자: Audio Tools (Digital Hub)
+팩: AT303
+원본 경로: AudioTools-SamplePack-AT303/OneShots/AT303_Squelch_A1_v127.wav
+출처: https://audiotools.com.ar/downloads/AudioTools-SamplePack-AT303.zip
+라이선스: CC0-1.0; 근거: AT303-ORIGINAL-README.txt
+기준음: A1
+형식: 44100 Hz / 24-bit / 2 channels / 0.646712 sec
+가공: 없음
+SHA-256: c06b49425f3018e3cb12c3388a423a4bc6e2ce39593c61af0ec098862e55d9ad
+
+SynthBass/AT303_Squelch_A2_v127.wav
+제작자: Audio Tools (Digital Hub)
+팩: AT303
+원본 경로: AudioTools-SamplePack-AT303/OneShots/AT303_Squelch_A2_v127.wav
+출처: https://audiotools.com.ar/downloads/AudioTools-SamplePack-AT303.zip
+라이선스: CC0-1.0; 근거: AT303-ORIGINAL-README.txt
+기준음: A2
+형식: 44100 Hz / 24-bit / 2 channels / 0.648073 sec
+가공: 없음
+SHA-256: 7a40d5bc9b25ab1aaa19ff9284c21afc558aed8ff79be635feb448476990bcf0
+
+SynthBass/AT303_Squelch_C2_v127.wav
+제작자: Audio Tools (Digital Hub)
+팩: AT303
+원본 경로: AudioTools-SamplePack-AT303/OneShots/AT303_Squelch_C2_v127.wav
+출처: https://audiotools.com.ar/downloads/AudioTools-SamplePack-AT303.zip
+라이선스: CC0-1.0; 근거: AT303-ORIGINAL-README.txt
+기준음: C2
+형식: 44100 Hz / 24-bit / 2 channels / 0.646893 sec
+가공: 없음
+SHA-256: fa9ed25d12232c6ce9e9ad9bf8e5760f3951559755d52b7fa3923f6806fd5127
+
+SynthBass/AT303_Squelch_E2_v127.wav
+제작자: Audio Tools (Digital Hub)
+팩: AT303
+원본 경로: AudioTools-SamplePack-AT303/OneShots/AT303_Squelch_E2_v127.wav
+출처: https://audiotools.com.ar/downloads/AudioTools-SamplePack-AT303.zip
+라이선스: CC0-1.0; 근거: AT303-ORIGINAL-README.txt
+기준음: E2
+형식: 44100 Hz / 24-bit / 2 channels / 0.646961 sec
+가공: 없음
+SHA-256: 1124d920a21b613f278361253eece5c61da0175de9a799e843dc4c982d5c6c0a
+
+SynthBass/AT700_Bass700_A1_v100.wav
+제작자: Audio Tools (Digital Hub)
+팩: AT700
+원본 경로: AudioTools-SamplePack-AT700/OneShots/AT700_Bass700_A1_v100.wav
+출처: https://audiotools.com.ar/downloads/AudioTools-SamplePack-AT700.zip
+라이선스: CC0-1.0; 근거: AT700-ORIGINAL-README.txt
+기준음: A1
+형식: 44100 Hz / 24-bit / 2 channels / 1.8 sec
+가공: 없음
+SHA-256: 6f21f8bc7b0143bef5e32464835e3ca4449af659455bc6de3d84ba77cee5768a
+
+SynthBass/AT700_Bass700_E1_v100.wav
+제작자: Audio Tools (Digital Hub)
+팩: AT700
+원본 경로: AudioTools-SamplePack-AT700/OneShots/AT700_Bass700_E1_v100.wav
+출처: https://audiotools.com.ar/downloads/AudioTools-SamplePack-AT700.zip
+라이선스: CC0-1.0; 근거: AT700-ORIGINAL-README.txt
+기준음: E1
+형식: 44100 Hz / 24-bit / 2 channels / 1.048526 sec
+가공: 없음
+SHA-256: d67814dfd627edde5b0bc2b3ad87f13a10a34018bb40aa65b218426206269860
+
+SynthBass/AT700_Bass700_E2_v100.wav
+제작자: Audio Tools (Digital Hub)
+팩: AT700
+원본 경로: AudioTools-SamplePack-AT700/OneShots/AT700_Bass700_E2_v100.wav
+출처: https://audiotools.com.ar/downloads/AudioTools-SamplePack-AT700.zip
+라이선스: CC0-1.0; 근거: AT700-ORIGINAL-README.txt
+기준음: E2
+형식: 44100 Hz / 24-bit / 2 channels / 1.073016 sec
+가공: 없음
+SHA-256: d37dfed6ae73c948b034e83ab86bc8d2f3396145dbeae7ad760580283a6787a1
+
+Synth/AT700_BrassStab_Bb3_v100.wav
+제작자: Audio Tools (Digital Hub)
+팩: AT700
+원본 경로: AudioTools-SamplePack-AT700/OneShots/AT700_BrassStab_Bb3_v100.wav
+출처: https://audiotools.com.ar/downloads/AudioTools-SamplePack-AT700.zip
+라이선스: CC0-1.0; 근거: AT700-ORIGINAL-README.txt
+기준음: 미지정 (Chord, unpitched or FX; not assigned (see filename))
+형식: 44100 Hz / 24-bit / 2 channels / 2.50034 sec
+가공: 없음
+SHA-256: 52794bd4b0dcbdd8809b6d7aecc6a66d34f05024ba1bca08c5c638f960b1970b
+
+Synth/AT700_BrassStab_F4_v100.wav
+제작자: Audio Tools (Digital Hub)
+팩: AT700
+원본 경로: AudioTools-SamplePack-AT700/OneShots/AT700_BrassStab_F4_v100.wav
+출처: https://audiotools.com.ar/downloads/AudioTools-SamplePack-AT700.zip
+라이선스: CC0-1.0; 근거: AT700-ORIGINAL-README.txt
+기준음: 미지정 (Chord, unpitched or FX; not assigned (see filename))
+형식: 44100 Hz / 24-bit / 2 channels / 2.541043 sec
+가공: 없음
+SHA-256: 484ba50d62722f1a9cec01fd0a4766f7933af342cf30979e4316932ee07e0e63
+
+Synth/AT700_EnsembleStrings_A2_v90.wav
+제작자: Audio Tools (Digital Hub)
+팩: AT700
+원본 경로: AudioTools-SamplePack-AT700/OneShots/AT700_EnsembleStrings_A2_v90.wav
+출처: https://audiotools.com.ar/downloads/AudioTools-SamplePack-AT700.zip
+라이선스: CC0-1.0; 근거: AT700-ORIGINAL-README.txt
+기준음: A2
+형식: 44100 Hz / 24-bit / 2 channels / 5.0 sec
+가공: 없음
+SHA-256: b0a6edcc67755870d50b14ae1875125b813ccfac6b214d2b0802428219806ebe
+
+Synth/AT700_FatSawLead_A3_v100.wav
+제작자: Audio Tools (Digital Hub)
+팩: AT700
+원본 경로: AudioTools-SamplePack-AT700/OneShots/AT700_FatSawLead_A3_v100.wav
+출처: https://audiotools.com.ar/downloads/AudioTools-SamplePack-AT700.zip
+라이선스: CC0-1.0; 근거: AT700-ORIGINAL-README.txt
+기준음: A3
+형식: 44100 Hz / 24-bit / 2 channels / 2.7 sec
+가공: 없음
+SHA-256: 7cce07e15285e188e6495b4de84c1377b497d1d06d94bb659e894eb6560ac30c
+
+Synth/AT700_FatSawLead_A4_v100.wav
+제작자: Audio Tools (Digital Hub)
+팩: AT700
+원본 경로: AudioTools-SamplePack-AT700/OneShots/AT700_FatSawLead_A4_v100.wav
+출처: https://audiotools.com.ar/downloads/AudioTools-SamplePack-AT700.zip
+라이선스: CC0-1.0; 근거: AT700-ORIGINAL-README.txt
+기준음: A4
+형식: 44100 Hz / 24-bit / 2 channels / 2.042063 sec
+가공: 없음
+SHA-256: d73a1866febb296b55a2b835386b7ee9795c7eab4d082b8b3e533a067541a0d4
+
+Synth/AT700_FatSawLead_E4_v100.wav
+제작자: Audio Tools (Digital Hub)
+팩: AT700
+원본 경로: AudioTools-SamplePack-AT700/OneShots/AT700_FatSawLead_E4_v100.wav
+출처: https://audiotools.com.ar/downloads/AudioTools-SamplePack-AT700.zip
+라이선스: CC0-1.0; 근거: AT700-ORIGINAL-README.txt
+기준음: E4
+형식: 44100 Hz / 24-bit / 2 channels / 2.7 sec
+가공: 없음
+SHA-256: fb67c0783f1f0475f51763d3e21157429da6ca743cfb2b8a05e11769d4700a68
+
+Synth/AT700_Flute_A4_v96.wav
+제작자: Audio Tools (Digital Hub)
+팩: AT700
+원본 경로: AudioTools-SamplePack-AT700/OneShots/AT700_Flute_A4_v96.wav
+출처: https://audiotools.com.ar/downloads/AudioTools-SamplePack-AT700.zip
+라이선스: CC0-1.0; 근거: AT700-ORIGINAL-README.txt
+기준음: A4
+형식: 44100 Hz / 24-bit / 2 channels / 2.033855 sec
+가공: 없음
+SHA-256: 5e806bc518778d7f8a9c9d1df8722cd9026b8383d0e3a315268e22f7928379a7
+
+Synth/AT700_Flute_D4_v96.wav
+제작자: Audio Tools (Digital Hub)
+팩: AT700
+원본 경로: AudioTools-SamplePack-AT700/OneShots/AT700_Flute_D4_v96.wav
+출처: https://audiotools.com.ar/downloads/AudioTools-SamplePack-AT700.zip
+라이선스: CC0-1.0; 근거: AT700-ORIGINAL-README.txt
+기준음: D4
+형식: 44100 Hz / 24-bit / 2 channels / 2.015261 sec
+가공: 없음
+SHA-256: 2b18df11e996c503e727d26760d4fb715aa280848e273c9228fb3da887dad89f
+
+Synth/AT700_LaserZap_C4_v100.wav
+제작자: Audio Tools (Digital Hub)
+팩: AT700
+원본 경로: AudioTools-SamplePack-AT700/OneShots/AT700_LaserZap_C4_v100.wav
+출처: https://audiotools.com.ar/downloads/AudioTools-SamplePack-AT700.zip
+라이선스: CC0-1.0; 근거: AT700-ORIGINAL-README.txt
+기준음: 미지정 (Chord, unpitched or FX; not assigned (see filename))
+형식: 44100 Hz / 24-bit / 2 channels / 1.080159 sec
+가공: 없음
+SHA-256: 513dbdfb85024844c55014d437dd5c6d30b36c54be298da7f035044e77c6838d
+
+Synth/AT700_RingBell_C5_v100.wav
+제작자: Audio Tools (Digital Hub)
+팩: AT700
+원본 경로: AudioTools-SamplePack-AT700/OneShots/AT700_RingBell_C5_v100.wav
+출처: https://audiotools.com.ar/downloads/AudioTools-SamplePack-AT700.zip
+라이선스: CC0-1.0; 근거: AT700-ORIGINAL-README.txt
+기준음: C5
+형식: 44100 Hz / 24-bit / 2 channels / 4.0 sec
+가공: 없음
+SHA-256: 66199719311659d4b4813b65d5f79249dc4b9c245cb79b7564cd887fdeec08ad
+
+Synth/AT700_RingBell_G5_v100.wav
+제작자: Audio Tools (Digital Hub)
+팩: AT700
+원본 경로: AudioTools-SamplePack-AT700/OneShots/AT700_RingBell_G5_v100.wav
+출처: https://audiotools.com.ar/downloads/AudioTools-SamplePack-AT700.zip
+라이선스: CC0-1.0; 근거: AT700-ORIGINAL-README.txt
+기준음: G5
+형식: 44100 Hz / 24-bit / 2 channels / 4.0 sec
+가공: 없음
+SHA-256: 06c713f0cf6ddc271feb1df17ddd4d4d88fe3240ad3a9c93bf4fed022e608642
+
+SynthBass/AT700_SubPulse_C1_v100.wav
+제작자: Audio Tools (Digital Hub)
+팩: AT700
+원본 경로: AudioTools-SamplePack-AT700/OneShots/AT700_SubPulse_C1_v100.wav
+출처: https://audiotools.com.ar/downloads/AudioTools-SamplePack-AT700.zip
+라이선스: CC0-1.0; 근거: AT700-ORIGINAL-README.txt
+기준음: C1
+형식: 44100 Hz / 24-bit / 2 channels / 2.2 sec
+가공: 없음
+SHA-256: 5adce9afaf230f0b783bcda0f7b1018bf9eb169804ef3b0163cb1955b202258f
+
+SynthBass/AT700_SubPulse_F1_v100.wav
+제작자: Audio Tools (Digital Hub)
+팩: AT700
+원본 경로: AudioTools-SamplePack-AT700/OneShots/AT700_SubPulse_F1_v100.wav
+출처: https://audiotools.com.ar/downloads/AudioTools-SamplePack-AT700.zip
+라이선스: CC0-1.0; 근거: AT700-ORIGINAL-README.txt
+기준음: F1
+형식: 44100 Hz / 24-bit / 2 channels / 1.433583 sec
+가공: 없음
+SHA-256: 00c90b3e0931cfa62fa9752ec1d8a9cb7410bd2fb64e41eba5ee05ae8b0ee7bf
+
+Synth/AT700_SyncSweep_A3_v100.wav
+제작자: Audio Tools (Digital Hub)
+팩: AT700
+원본 경로: AudioTools-SamplePack-AT700/OneShots/AT700_SyncSweep_A3_v100.wav
+출처: https://audiotools.com.ar/downloads/AudioTools-SamplePack-AT700.zip
+라이선스: CC0-1.0; 근거: AT700-ORIGINAL-README.txt
+기준음: A3
+형식: 44100 Hz / 24-bit / 2 channels / 2.7 sec
+가공: 없음
+SHA-256: 95a589e381b66a4a7530af17ad0ff80e1826101be0d9b6c914d96ecf0f5229bd
+
+Synth/AT700_SyncSweep_E4_v100.wav
+제작자: Audio Tools (Digital Hub)
+팩: AT700
+원본 경로: AudioTools-SamplePack-AT700/OneShots/AT700_SyncSweep_E4_v100.wav
+출처: https://audiotools.com.ar/downloads/AudioTools-SamplePack-AT700.zip
+라이선스: CC0-1.0; 근거: AT700-ORIGINAL-README.txt
+기준음: E4
+형식: 44100 Hz / 24-bit / 2 channels / 2.58737 sec
+가공: 없음
+SHA-256: 021efec5671f6e2fcb61ed3deb7d576a12eec31b9d626e5049d6569dcc2f5eba
+
+Synth/AT700_Thunder_C2_v100.wav
+제작자: Audio Tools (Digital Hub)
+팩: AT700
+원본 경로: AudioTools-SamplePack-AT700/OneShots/AT700_Thunder_C2_v100.wav
+출처: https://audiotools.com.ar/downloads/AudioTools-SamplePack-AT700.zip
+라이선스: CC0-1.0; 근거: AT700-ORIGINAL-README.txt
+기준음: 미지정 (Chord, unpitched or FX; not assigned (see filename))
+형식: 44100 Hz / 24-bit / 2 channels / 6.5 sec
+가공: 없음
+SHA-256: 7ad1e330822dfb82e185aca01a00a29987f7b9a9594bb5137905fb5366a65078
+
+Synth/AT700_TineKeys_C3_v110.wav
+제작자: Audio Tools (Digital Hub)
+팩: AT700
+원본 경로: AudioTools-SamplePack-AT700/OneShots/AT700_TineKeys_C3_v110.wav
+출처: https://audiotools.com.ar/downloads/AudioTools-SamplePack-AT700.zip
+라이선스: CC0-1.0; 근거: AT700-ORIGINAL-README.txt
+기준음: C3
+형식: 44100 Hz / 24-bit / 2 channels / 2.8 sec
+가공: 없음
+SHA-256: 41d434ab406d1c0a9e6cee01fa0c26e02208da653b1e9df4d171183863a2b626
+
+Synth/AT700_TineKeys_E3_v110.wav
+제작자: Audio Tools (Digital Hub)
+팩: AT700
+원본 경로: AudioTools-SamplePack-AT700/OneShots/AT700_TineKeys_E3_v110.wav
+출처: https://audiotools.com.ar/downloads/AudioTools-SamplePack-AT700.zip
+라이선스: CC0-1.0; 근거: AT700-ORIGINAL-README.txt
+기준음: E3
+형식: 44100 Hz / 24-bit / 2 channels / 2.8 sec
+가공: 없음
+SHA-256: 86393db7de0aa6e5a20823df22c6e1a1ae93e3ab7277f4988559b571813db710
+
+Synth/AT700_TineKeys_G3_v110.wav
+제작자: Audio Tools (Digital Hub)
+팩: AT700
+원본 경로: AudioTools-SamplePack-AT700/OneShots/AT700_TineKeys_G3_v110.wav
+출처: https://audiotools.com.ar/downloads/AudioTools-SamplePack-AT700.zip
+라이선스: CC0-1.0; 근거: AT700-ORIGINAL-README.txt
+기준음: G3
+형식: 44100 Hz / 24-bit / 2 channels / 1.925692 sec
+가공: 없음
+SHA-256: 9a952d7e7cfd24178c2694730dcbe10a25e8ad6354b4f7da0ca259518a3a4aa4
+
+Synth/ATFS1_BreathFlute_A4_v96.wav
+제작자: Audio Tools (Digital Hub)
+팩: ATFS1
+원본 경로: AudioTools-SamplePack-ATFS1/OneShots/ATFS1_BreathFlute_A4_v96.wav
+출처: https://audiotools.com.ar/downloads/AudioTools-SamplePack-ATFS1.zip
+라이선스: CC0-1.0; 근거: ATFS1-ORIGINAL-README.txt
+기준음: A4
+형식: 44100 Hz / 24-bit / 2 channels / 2.7 sec
+가공: 없음
+SHA-256: 29b06e954bf4491f8917447f6872f91e5f4f7765f2280f6417a901c29dd84adc
+
+Synth/ATFS1_BreathFlute_D4_v96.wav
+제작자: Audio Tools (Digital Hub)
+팩: ATFS1
+원본 경로: AudioTools-SamplePack-ATFS1/OneShots/ATFS1_BreathFlute_D4_v96.wav
+출처: https://audiotools.com.ar/downloads/AudioTools-SamplePack-ATFS1.zip
+라이선스: CC0-1.0; 근거: ATFS1-ORIGINAL-README.txt
+기준음: D4
+형식: 44100 Hz / 24-bit / 2 channels / 2.7 sec
+가공: 없음
+SHA-256: 5b819e9e16e5ca2b63d780ee59b921525bbff6f22066e2fcf9ad59d267f02f3e
+
+SynthBass/ATFS1_FormantBass_A1_v100.wav
+제작자: Audio Tools (Digital Hub)
+팩: ATFS1
+원본 경로: AudioTools-SamplePack-ATFS1/OneShots/ATFS1_FormantBass_A1_v100.wav
+출처: https://audiotools.com.ar/downloads/AudioTools-SamplePack-ATFS1.zip
+라이선스: CC0-1.0; 근거: ATFS1-ORIGINAL-README.txt
+기준음: A1
+형식: 44100 Hz / 24-bit / 2 channels / 1.8 sec
+가공: 없음
+SHA-256: 3a2a1321136ae944357f1f45ec32481237800f8d0c0d4818f6e020fce96b8286
+
+SynthBass/ATFS1_FormantBass_E1_v100.wav
+제작자: Audio Tools (Digital Hub)
+팩: ATFS1
+원본 경로: AudioTools-SamplePack-ATFS1/OneShots/ATFS1_FormantBass_E1_v100.wav
+출처: https://audiotools.com.ar/downloads/AudioTools-SamplePack-ATFS1.zip
+라이선스: CC0-1.0; 근거: ATFS1-ORIGINAL-README.txt
+기준음: E1
+형식: 44100 Hz / 24-bit / 2 channels / 1.8 sec
+가공: 없음
+SHA-256: fd06b87daa04e9ba8739cec334e0c38870df996687118c157840af4ce576726c
+
+SynthBass/ATFS1_FormantBass_E2_v100.wav
+제작자: Audio Tools (Digital Hub)
+팩: ATFS1
+원본 경로: AudioTools-SamplePack-ATFS1/OneShots/ATFS1_FormantBass_E2_v100.wav
+출처: https://audiotools.com.ar/downloads/AudioTools-SamplePack-ATFS1.zip
+라이선스: CC0-1.0; 근거: ATFS1-ORIGINAL-README.txt
+기준음: E2
+형식: 44100 Hz / 24-bit / 2 channels / 1.8 sec
+가공: 없음
+SHA-256: b95a1688fdb254e0c87566cae4b1ba01d873224827dc178bb3e32b232a6495f1
+
+Synth/ATFS1_FormantBells_C5_v100.wav
+제작자: Audio Tools (Digital Hub)
+팩: ATFS1
+원본 경로: AudioTools-SamplePack-ATFS1/OneShots/ATFS1_FormantBells_C5_v100.wav
+출처: https://audiotools.com.ar/downloads/AudioTools-SamplePack-ATFS1.zip
+라이선스: CC0-1.0; 근거: ATFS1-ORIGINAL-README.txt
+기준음: C5
+형식: 44100 Hz / 24-bit / 2 channels / 4.0 sec
+가공: 없음
+SHA-256: 981933e3731f580d5522ceb01d0be0ef64a47542c057d9687bf0a07ec0a699c0
+
+Synth/ATFS1_FormantBells_G5_v100.wav
+제작자: Audio Tools (Digital Hub)
+팩: ATFS1
+원본 경로: AudioTools-SamplePack-ATFS1/OneShots/ATFS1_FormantBells_G5_v100.wav
+출처: https://audiotools.com.ar/downloads/AudioTools-SamplePack-ATFS1.zip
+라이선스: CC0-1.0; 근거: ATFS1-ORIGINAL-README.txt
+기준음: G5
+형식: 44100 Hz / 24-bit / 2 channels / 4.0 sec
+가공: 없음
+SHA-256: aa077d6ac028fd7e752cda885e96e505187ec73c5f69ef6c860f900dd0c98609
+
+Synth/ATFS1_GlassMarimba_C4_v100.wav
+제작자: Audio Tools (Digital Hub)
+팩: ATFS1
+원본 경로: AudioTools-SamplePack-ATFS1/OneShots/ATFS1_GlassMarimba_C4_v100.wav
+출처: https://audiotools.com.ar/downloads/AudioTools-SamplePack-ATFS1.zip
+라이선스: CC0-1.0; 근거: ATFS1-ORIGINAL-README.txt
+기준음: C4
+형식: 44100 Hz / 24-bit / 2 channels / 2.4 sec
+가공: 없음
+SHA-256: 1d3a5cf7d75f6fd45e7384879a5e309fa7e81c43eb3ab62e52ff202a37196857
+
+Synth/ATFS1_GlassMarimba_C5_v100.wav
+제작자: Audio Tools (Digital Hub)
+팩: ATFS1
+원본 경로: AudioTools-SamplePack-ATFS1/OneShots/ATFS1_GlassMarimba_C5_v100.wav
+출처: https://audiotools.com.ar/downloads/AudioTools-SamplePack-ATFS1.zip
+라이선스: CC0-1.0; 근거: ATFS1-ORIGINAL-README.txt
+기준음: C5
+형식: 44100 Hz / 24-bit / 2 channels / 2.200295 sec
+가공: 없음
+SHA-256: 9bdf6a36a33d5573e788e1b1abdc38bfe885419e91de645ded80228ecd8a42e7
+
+Synth/ATFS1_GlassMarimba_G4_v100.wav
+제작자: Audio Tools (Digital Hub)
+팩: ATFS1
+원본 경로: AudioTools-SamplePack-ATFS1/OneShots/ATFS1_GlassMarimba_G4_v100.wav
+출처: https://audiotools.com.ar/downloads/AudioTools-SamplePack-ATFS1.zip
+라이선스: CC0-1.0; 근거: ATFS1-ORIGINAL-README.txt
+기준음: G4
+형식: 44100 Hz / 24-bit / 2 channels / 2.4 sec
+가공: 없음
+SHA-256: 5beabe27749881efcd04b09c4b431955224e3865bb8c9d0fb47738f3651be431
+
+Synth/ATFS1_HighChoir_B4_v90.wav
+제작자: Audio Tools (Digital Hub)
+팩: ATFS1
+원본 경로: AudioTools-SamplePack-ATFS1/OneShots/ATFS1_HighChoir_B4_v90.wav
+출처: https://audiotools.com.ar/downloads/AudioTools-SamplePack-ATFS1.zip
+라이선스: CC0-1.0; 근거: ATFS1-ORIGINAL-README.txt
+기준음: B4
+형식: 44100 Hz / 24-bit / 2 channels / 4.5 sec
+가공: 없음
+SHA-256: 63aef7776e30920cb71c87e13bf168ca09936eb4543cdaa572de828a5caee0dd
+
+Synth/ATFS1_HighChoir_E4_v90.wav
+제작자: Audio Tools (Digital Hub)
+팩: ATFS1
+원본 경로: AudioTools-SamplePack-ATFS1/OneShots/ATFS1_HighChoir_E4_v90.wav
+출처: https://audiotools.com.ar/downloads/AudioTools-SamplePack-ATFS1.zip
+라이선스: CC0-1.0; 근거: ATFS1-ORIGINAL-README.txt
+기준음: E4
+형식: 44100 Hz / 24-bit / 2 channels / 4.5 sec
+가공: 없음
+SHA-256: 47725a152cf02ae61e5d3acf86c5dc5aab5131dde1b971c2f7249f75ccc08807
+
+Synth/ATFS1_LaLaLead_A3_v100.wav
+제작자: Audio Tools (Digital Hub)
+팩: ATFS1
+원본 경로: AudioTools-SamplePack-ATFS1/OneShots/ATFS1_LaLaLead_A3_v100.wav
+출처: https://audiotools.com.ar/downloads/AudioTools-SamplePack-ATFS1.zip
+라이선스: CC0-1.0; 근거: ATFS1-ORIGINAL-README.txt
+기준음: A3
+형식: 44100 Hz / 24-bit / 2 channels / 2.7 sec
+가공: 없음
+SHA-256: 63f48f12ba07e64820bbbadaabf01c281990df41083640253bda5f44ee60a156
+
+Synth/ATFS1_LaLaLead_E4_v100.wav
+제작자: Audio Tools (Digital Hub)
+팩: ATFS1
+원본 경로: AudioTools-SamplePack-ATFS1/OneShots/ATFS1_LaLaLead_E4_v100.wav
+출처: https://audiotools.com.ar/downloads/AudioTools-SamplePack-ATFS1.zip
+라이선스: CC0-1.0; 근거: ATFS1-ORIGINAL-README.txt
+기준음: E4
+형식: 44100 Hz / 24-bit / 2 channels / 2.7 sec
+가공: 없음
+SHA-256: 650caacfe94f22061cb7ef3551fa2eabf86f148805d65ca94370804ec960b75e
+
+SynthBass/ATFS1_OddSubBass_C1_v100.wav
+제작자: Audio Tools (Digital Hub)
+팩: ATFS1
+원본 경로: AudioTools-SamplePack-ATFS1/OneShots/ATFS1_OddSubBass_C1_v100.wav
+출처: https://audiotools.com.ar/downloads/AudioTools-SamplePack-ATFS1.zip
+라이선스: CC0-1.0; 근거: ATFS1-ORIGINAL-README.txt
+기준음: C1
+형식: 44100 Hz / 24-bit / 2 channels / 2.2 sec
+가공: 없음
+SHA-256: a82e503172cf30a1adc04e499fa6d33b117367230d914d3219e76f00400f3d09
+
+SynthBass/ATFS1_OddSubBass_G1_v100.wav
+제작자: Audio Tools (Digital Hub)
+팩: ATFS1
+원본 경로: AudioTools-SamplePack-ATFS1/OneShots/ATFS1_OddSubBass_G1_v100.wav
+출처: https://audiotools.com.ar/downloads/AudioTools-SamplePack-ATFS1.zip
+라이선스: CC0-1.0; 근거: ATFS1-ORIGINAL-README.txt
+기준음: G1
+형식: 44100 Hz / 24-bit / 2 channels / 2.097687 sec
+가공: 없음
+SHA-256: 17cb32fbfaade50ce50418307bd3130b98c7edc909089dbb73ece79ed6262923
+
+Synth/ATFS1_TinePiano_C3_v110.wav
+제작자: Audio Tools (Digital Hub)
+팩: ATFS1
+원본 경로: AudioTools-SamplePack-ATFS1/OneShots/ATFS1_TinePiano_C3_v110.wav
+출처: https://audiotools.com.ar/downloads/AudioTools-SamplePack-ATFS1.zip
+라이선스: CC0-1.0; 근거: ATFS1-ORIGINAL-README.txt
+기준음: C3
+형식: 44100 Hz / 24-bit / 2 channels / 2.8 sec
+가공: 없음
+SHA-256: c40bde435142002f7eea828f110f330b6d2324f49438afacd83d82232983873d
+
+Synth/ATFS1_TinePiano_C4_v110.wav
+제작자: Audio Tools (Digital Hub)
+팩: ATFS1
+원본 경로: AudioTools-SamplePack-ATFS1/OneShots/ATFS1_TinePiano_C4_v110.wav
+출처: https://audiotools.com.ar/downloads/AudioTools-SamplePack-ATFS1.zip
+라이선스: CC0-1.0; 근거: ATFS1-ORIGINAL-README.txt
+기준음: C4
+형식: 44100 Hz / 24-bit / 2 channels / 2.771973 sec
+가공: 없음
+SHA-256: d7aae33489e81c1a8673119002c27b56cf18e41215f0c96adb6a48b5a5ab4872
+
+Synth/ATFS1_TinePiano_E3_v110.wav
+제작자: Audio Tools (Digital Hub)
+팩: ATFS1
+원본 경로: AudioTools-SamplePack-ATFS1/OneShots/ATFS1_TinePiano_E3_v110.wav
+출처: https://audiotools.com.ar/downloads/AudioTools-SamplePack-ATFS1.zip
+라이선스: CC0-1.0; 근거: ATFS1-ORIGINAL-README.txt
+기준음: E3
+형식: 44100 Hz / 24-bit / 2 channels / 2.8 sec
+가공: 없음
+SHA-256: 2d954fe232006067f4f34dbe6808709dfb1f89575ccd527322436e8dc37b3320
+
+Synth/ATFS1_TinePiano_G3_v110.wav
+제작자: Audio Tools (Digital Hub)
+팩: ATFS1
+원본 경로: AudioTools-SamplePack-ATFS1/OneShots/ATFS1_TinePiano_G3_v110.wav
+출처: https://audiotools.com.ar/downloads/AudioTools-SamplePack-ATFS1.zip
+라이선스: CC0-1.0; 근거: ATFS1-ORIGINAL-README.txt
+기준음: G3
+형식: 44100 Hz / 24-bit / 2 channels / 2.799977 sec
+가공: 없음
+SHA-256: 4d52e437d9577e66e1d6c2a8eefa04c61bb2f1126120ddf4eb7fdd5b09130e3a
+
+Synth/ATFS1_VowelChoir_C3_v90.wav
+제작자: Audio Tools (Digital Hub)
+팩: ATFS1
+원본 경로: AudioTools-SamplePack-ATFS1/OneShots/ATFS1_VowelChoir_C3_v90.wav
+출처: https://audiotools.com.ar/downloads/AudioTools-SamplePack-ATFS1.zip
+라이선스: CC0-1.0; 근거: ATFS1-ORIGINAL-README.txt
+기준음: C3
+형식: 44100 Hz / 24-bit / 2 channels / 4.5 sec
+가공: 없음
+SHA-256: 8adee8c5e3d297c618e0b8d6b2afe47ac0756cc5239592f64d8573e58e292bc5
+
+Synth/ATFS1_VowelChoir_C4_v90.wav
+제작자: Audio Tools (Digital Hub)
+팩: ATFS1
+원본 경로: AudioTools-SamplePack-ATFS1/OneShots/ATFS1_VowelChoir_C4_v90.wav
+출처: https://audiotools.com.ar/downloads/AudioTools-SamplePack-ATFS1.zip
+라이선스: CC0-1.0; 근거: ATFS1-ORIGINAL-README.txt
+기준음: C4
+형식: 44100 Hz / 24-bit / 2 channels / 4.5 sec
+가공: 없음
+SHA-256: 01972c2903370acf463b2f0997a314b55978032c4263583cf53aeadeed902446
+
+Synth/ATFS1_VowelChoir_G3_v90.wav
+제작자: Audio Tools (Digital Hub)
+팩: ATFS1
+원본 경로: AudioTools-SamplePack-ATFS1/OneShots/ATFS1_VowelChoir_G3_v90.wav
+출처: https://audiotools.com.ar/downloads/AudioTools-SamplePack-ATFS1.zip
+라이선스: CC0-1.0; 근거: ATFS1-ORIGINAL-README.txt
+기준음: G3
+형식: 44100 Hz / 24-bit / 2 channels / 4.5 sec
+가공: 없음
+SHA-256: 9e2c4127cd8eef84f6707bf6ff46d24f4861454b499a2f15cc4940e97e020876
+
+Synth/ATFS1_WhisperPad_A2_v90.wav
+제작자: Audio Tools (Digital Hub)
+팩: ATFS1
+원본 경로: AudioTools-SamplePack-ATFS1/OneShots/ATFS1_WhisperPad_A2_v90.wav
+출처: https://audiotools.com.ar/downloads/AudioTools-SamplePack-ATFS1.zip
+라이선스: CC0-1.0; 근거: ATFS1-ORIGINAL-README.txt
+기준음: A2
+형식: 44100 Hz / 24-bit / 2 channels / 5.5 sec
+가공: 없음
+SHA-256: 88ba50fb3dd8c16d033eebe130014d9309cc7609189ddf36003dcc7fca6c224d
+
+SynthBass/DeviceNTI_CrownBass_C1_v100.wav
+제작자: Audio Tools (Digital Hub)
+팩: DeviceNTI
+원본 경로: AudioTools-SamplePack-DeviceNTI/OneShots/DeviceNTI_CrownBass_C1_v100.wav
+출처: https://audiotools.com.ar/downloads/AudioTools-SamplePack-DeviceNTI.zip
+라이선스: CC0-1.0; 근거: DeviceNTI-ORIGINAL-README.txt
+기준음: C1
+형식: 44100 Hz / 24-bit / 2 channels / 1.04424 sec
+가공: 없음
+SHA-256: a939d571aacd592c69860f7ade901125982ddd453b691f9d8c03c3ac5ad375f9
+
+SynthBass/DeviceNTI_CrownBass_C2_v100.wav
+제작자: Audio Tools (Digital Hub)
+팩: DeviceNTI
+원본 경로: AudioTools-SamplePack-DeviceNTI/OneShots/DeviceNTI_CrownBass_C2_v100.wav
+출처: https://audiotools.com.ar/downloads/AudioTools-SamplePack-DeviceNTI.zip
+라이선스: CC0-1.0; 근거: DeviceNTI-ORIGINAL-README.txt
+기준음: C2
+형식: 44100 Hz / 24-bit / 2 channels / 1.044694 sec
+가공: 없음
+SHA-256: 0d8211571be8ce2a2ac85a42087daca0b7f93042f6080737745d03e5befe07ea
+
+SynthBass/DeviceNTI_CrownBass_G1_v100.wav
+제작자: Audio Tools (Digital Hub)
+팩: DeviceNTI
+원본 경로: AudioTools-SamplePack-DeviceNTI/OneShots/DeviceNTI_CrownBass_G1_v100.wav
+출처: https://audiotools.com.ar/downloads/AudioTools-SamplePack-DeviceNTI.zip
+라이선스: CC0-1.0; 근거: DeviceNTI-ORIGINAL-README.txt
+기준음: G1
+형식: 44100 Hz / 24-bit / 2 channels / 1.006168 sec
+가공: 없음
+SHA-256: 936bc62cc1266e5ac34805b287ead1a81e3294583c868a00e711f3cd8ee479b3
+
+Synth/DeviceNTI_FunkTine_C3Eb3G3Bb3_v110.wav
+제작자: Audio Tools (Digital Hub)
+팩: DeviceNTI
+원본 경로: AudioTools-SamplePack-DeviceNTI/OneShots/DeviceNTI_FunkTine_C3Eb3G3Bb3_v110.wav
+출처: https://audiotools.com.ar/downloads/AudioTools-SamplePack-DeviceNTI.zip
+라이선스: CC0-1.0; 근거: DeviceNTI-ORIGINAL-README.txt
+기준음: 미지정 (Chord, unpitched or FX; not assigned (see filename))
+형식: 44100 Hz / 24-bit / 2 channels / 2.378753 sec
+가공: 없음
+SHA-256: 72c1d375cf41501c953489c8fa0546ad4e7c908d1fcb55d979e77e872188d8d2
+
+Synth/DeviceNTI_HammerStab_C3Eb3G3_v100.wav
+제작자: Audio Tools (Digital Hub)
+팩: DeviceNTI
+원본 경로: AudioTools-SamplePack-DeviceNTI/OneShots/DeviceNTI_HammerStab_C3Eb3G3_v100.wav
+출처: https://audiotools.com.ar/downloads/AudioTools-SamplePack-DeviceNTI.zip
+라이선스: CC0-1.0; 근거: DeviceNTI-ORIGINAL-README.txt
+기준음: 미지정 (Chord, unpitched or FX; not assigned (see filename))
+형식: 44100 Hz / 24-bit / 2 channels / 1.9 sec
+가공: 없음
+SHA-256: 8bb60c042c01d5c37e6b9539419faa85be0cb0ed6c25e97ad9a4d39638939891
+
+Synth/DeviceNTI_HammerStab_F3Ab3C4_v100.wav
+제작자: Audio Tools (Digital Hub)
+팩: DeviceNTI
+원본 경로: AudioTools-SamplePack-DeviceNTI/OneShots/DeviceNTI_HammerStab_F3Ab3C4_v100.wav
+출처: https://audiotools.com.ar/downloads/AudioTools-SamplePack-DeviceNTI.zip
+라이선스: CC0-1.0; 근거: DeviceNTI-ORIGINAL-README.txt
+기준음: 미지정 (Chord, unpitched or FX; not assigned (see filename))
+형식: 44100 Hz / 24-bit / 2 channels / 1.9 sec
+가공: 없음
+SHA-256: 8987378a36141a57b21e4e609923b0e6b72088d7d61b224493c769bf3fd2717c
+
+Synth/DeviceNTI_HeldBreath_C2_v90.wav
+제작자: Audio Tools (Digital Hub)
+팩: DeviceNTI
+원본 경로: AudioTools-SamplePack-DeviceNTI/OneShots/DeviceNTI_HeldBreath_C2_v90.wav
+출처: https://audiotools.com.ar/downloads/AudioTools-SamplePack-DeviceNTI.zip
+라이선스: CC0-1.0; 근거: DeviceNTI-ORIGINAL-README.txt
+기준음: C2
+형식: 44100 Hz / 24-bit / 2 channels / 6.0 sec
+가공: 없음
+SHA-256: a70d98ee4fe2d7a984ead3bc700cfd8550521e1929e4fdbed802fe295fcb8a30
+
+Synth/DeviceNTI_HollowGong_C2_v100.wav
+제작자: Audio Tools (Digital Hub)
+팩: DeviceNTI
+원본 경로: AudioTools-SamplePack-DeviceNTI/OneShots/DeviceNTI_HollowGong_C2_v100.wav
+출처: https://audiotools.com.ar/downloads/AudioTools-SamplePack-DeviceNTI.zip
+라이선스: CC0-1.0; 근거: DeviceNTI-ORIGINAL-README.txt
+기준음: C2
+형식: 44100 Hz / 24-bit / 2 channels / 2.599297 sec
+가공: 없음
+SHA-256: 8f0e35c9499690d35a6c4040aa7a9e7c5437ca2056f9147ae3501004d0986bb4
+
+Synth/DeviceNTI_HornSection_G3Bb3D4_v100.wav
+제작자: Audio Tools (Digital Hub)
+팩: DeviceNTI
+원본 경로: AudioTools-SamplePack-DeviceNTI/OneShots/DeviceNTI_HornSection_G3Bb3D4_v100.wav
+출처: https://audiotools.com.ar/downloads/AudioTools-SamplePack-DeviceNTI.zip
+라이선스: CC0-1.0; 근거: DeviceNTI-ORIGINAL-README.txt
+기준음: 미지정 (Chord, unpitched or FX; not assigned (see filename))
+형식: 44100 Hz / 24-bit / 2 channels / 2.2 sec
+가공: 없음
+SHA-256: 4365283cff23bb6c0b0991a07ad902a1a232d3c41d551c0e9c33032246c386e6
+
+Synth/DeviceNTI_RiteBell_C4_v100.wav
+제작자: Audio Tools (Digital Hub)
+팩: DeviceNTI
+원본 경로: AudioTools-SamplePack-DeviceNTI/OneShots/DeviceNTI_RiteBell_C4_v100.wav
+출처: https://audiotools.com.ar/downloads/AudioTools-SamplePack-DeviceNTI.zip
+라이선스: CC0-1.0; 근거: DeviceNTI-ORIGINAL-README.txt
+기준음: C4
+형식: 44100 Hz / 24-bit / 2 channels / 2.739252 sec
+가공: 없음
+SHA-256: 226f3035b12c6d530790462365ce15ada606b4f74fa83c543278237e97a65f38
+
+SynthBass/DeviceNTI_SineSub_C1_v100.wav
+제작자: Audio Tools (Digital Hub)
+팩: DeviceNTI
+원본 경로: AudioTools-SamplePack-DeviceNTI/OneShots/DeviceNTI_SineSub_C1_v100.wav
+출처: https://audiotools.com.ar/downloads/AudioTools-SamplePack-DeviceNTI.zip
+라이선스: CC0-1.0; 근거: DeviceNTI-ORIGINAL-README.txt
+기준음: C1
+형식: 44100 Hz / 24-bit / 2 channels / 1.113469 sec
+가공: 없음
+SHA-256: 90a3dc289ad611593ec1ba8dacb374eace2d3f840e06df21f8d8ac6438fcfe4d
+
+SynthBass/DeviceNTI_SineSub_C2_v100.wav
+제작자: Audio Tools (Digital Hub)
+팩: DeviceNTI
+원본 경로: AudioTools-SamplePack-DeviceNTI/OneShots/DeviceNTI_SineSub_C2_v100.wav
+출처: https://audiotools.com.ar/downloads/AudioTools-SamplePack-DeviceNTI.zip
+라이선스: CC0-1.0; 근거: DeviceNTI-ORIGINAL-README.txt
+기준음: C2
+형식: 44100 Hz / 24-bit / 2 channels / 1.133039 sec
+가공: 없음
+SHA-256: f2b2bed957c1cd710308f74d0c738d5164ee5ec1cf9f337a86864fdd8c20318d
+
+SynthBass/DeviceNTI_SineSub_F1_v100.wav
+제작자: Audio Tools (Digital Hub)
+팩: DeviceNTI
+원본 경로: AudioTools-SamplePack-DeviceNTI/OneShots/DeviceNTI_SineSub_F1_v100.wav
+출처: https://audiotools.com.ar/downloads/AudioTools-SamplePack-DeviceNTI.zip
+라이선스: CC0-1.0; 근거: DeviceNTI-ORIGINAL-README.txt
+기준음: F1
+형식: 44100 Hz / 24-bit / 2 channels / 1.127279 sec
+가공: 없음
+SHA-256: ed2d5841979276af00a2779b2d9475e572e433afe457854f7b108975064681e4
+
+Synth/DeviceNTI_SundayOrgan_C3G3C4_v100.wav
+제작자: Audio Tools (Digital Hub)
+팩: DeviceNTI
+원본 경로: AudioTools-SamplePack-DeviceNTI/OneShots/DeviceNTI_SundayOrgan_C3G3C4_v100.wav
+출처: https://audiotools.com.ar/downloads/AudioTools-SamplePack-DeviceNTI.zip
+라이선스: CC0-1.0; 근거: DeviceNTI-ORIGINAL-README.txt
+기준음: 미지정 (Chord, unpitched or FX; not assigned (see filename))
+형식: 44100 Hz / 24-bit / 2 channels / 2.7 sec
+가공: 없음
+SHA-256: b9d965f13f132ec3860792091d8d36521efafffd795f3a5e6e078c49801b2abb
+
+Synth/DeviceNTI_SundayOrgan_F2C3F3_v100.wav
+제작자: Audio Tools (Digital Hub)
+팩: DeviceNTI
+원본 경로: AudioTools-SamplePack-DeviceNTI/OneShots/DeviceNTI_SundayOrgan_F2C3F3_v100.wav
+출처: https://audiotools.com.ar/downloads/AudioTools-SamplePack-DeviceNTI.zip
+라이선스: CC0-1.0; 근거: DeviceNTI-ORIGINAL-README.txt
+기준음: 미지정 (Chord, unpitched or FX; not assigned (see filename))
+형식: 44100 Hz / 24-bit / 2 channels / 2.188821 sec
+가공: 없음
+SHA-256: 18f4345497471781174936ec5d5d6eae0184b00c620e24b84f122d6c1660727c
+
+Synth/DeviceNTI_VibeMallet_C4_v100.wav
+제작자: Audio Tools (Digital Hub)
+팩: DeviceNTI
+원본 경로: AudioTools-SamplePack-DeviceNTI/OneShots/DeviceNTI_VibeMallet_C4_v100.wav
+출처: https://audiotools.com.ar/downloads/AudioTools-SamplePack-DeviceNTI.zip
+라이선스: CC0-1.0; 근거: DeviceNTI-ORIGINAL-README.txt
+기준음: C4
+형식: 44100 Hz / 24-bit / 2 channels / 1.9961 sec
+가공: 없음
+SHA-256: 449830afdb6d420366d816d2db4d43ab89d8d1ed95968328bb3d3cb8fc0bbdfb
+
+Synth/DeviceNTI_VibeMallet_Eb4_v100.wav
+제작자: Audio Tools (Digital Hub)
+팩: DeviceNTI
+원본 경로: AudioTools-SamplePack-DeviceNTI/OneShots/DeviceNTI_VibeMallet_Eb4_v100.wav
+출처: https://audiotools.com.ar/downloads/AudioTools-SamplePack-DeviceNTI.zip
+라이선스: CC0-1.0; 근거: DeviceNTI-ORIGINAL-README.txt
+기준음: EB4
+형식: 44100 Hz / 24-bit / 2 channels / 3.0 sec
+가공: 없음
+SHA-256: 5ac78a6e3a7feac6379c1d7944f83e1bb11951db1841e8d326e75a70b2e42d0c
+
+Synth/DeviceNTI_VibeMallet_G4_v100.wav
+제작자: Audio Tools (Digital Hub)
+팩: DeviceNTI
+원본 경로: AudioTools-SamplePack-DeviceNTI/OneShots/DeviceNTI_VibeMallet_G4_v100.wav
+출처: https://audiotools.com.ar/downloads/AudioTools-SamplePack-DeviceNTI.zip
+라이선스: CC0-1.0; 근거: DeviceNTI-ORIGINAL-README.txt
+기준음: G4
+형식: 44100 Hz / 24-bit / 2 channels / 2.116372 sec
+가공: 없음
+SHA-256: 6af3d1157d444a66dee212b1c58414ee0a5a7451fd5597cb2ccf01990253ae15
+
+Guitar/Thrum_BaritoneNote_B1_v100.wav
+제작자: Audio Tools (Digital Hub)
+팩: Thrum
+원본 경로: AudioTools-SamplePack-Thrum/OneShots/Thrum_BaritoneNote_B1_v100.wav
+출처: https://audiotools.com.ar/downloads/AudioTools-SamplePack-Thrum.zip
+라이선스: CC0-1.0; 근거: Thrum-ORIGINAL-README.txt
+기준음: B1
+형식: 44100 Hz / 24-bit / 2 channels / 2.235828 sec
+가공: 없음
+SHA-256: c019bb33efb889ffce093065e806b7ec9560c87fdc2844e7d1f002e179986fa5
+
+Guitar/Thrum_BaritoneNote_E2_v100.wav
+제작자: Audio Tools (Digital Hub)
+팩: Thrum
+원본 경로: AudioTools-SamplePack-Thrum/OneShots/Thrum_BaritoneNote_E2_v100.wav
+출처: https://audiotools.com.ar/downloads/AudioTools-SamplePack-Thrum.zip
+라이선스: CC0-1.0; 근거: Thrum-ORIGINAL-README.txt
+기준음: E2
+형식: 44100 Hz / 24-bit / 2 channels / 1.646145 sec
+가공: 없음
+SHA-256: f2e9ecc74f416dc28cf333a4b0cf826a51c8d2ab0a17a299bd5ceacddc07581d
+
+Guitar/Thrum_CleanChordEm_E2B2E3G3B3E4_v100.wav
+제작자: Audio Tools (Digital Hub)
+팩: Thrum
+원본 경로: AudioTools-SamplePack-Thrum/OneShots/Thrum_CleanChordEm_E2B2E3G3B3E4_v100.wav
+출처: https://audiotools.com.ar/downloads/AudioTools-SamplePack-Thrum.zip
+라이선스: CC0-1.0; 근거: Thrum-ORIGINAL-README.txt
+기준음: 미지정 (Chord, unpitched or FX; not assigned (see filename))
+형식: 44100 Hz / 24-bit / 2 channels / 2.078027 sec
+가공: 없음
+SHA-256: ea1816d75e1377340125a1eff169737c9d423743513ead42838bb639559e7ef3
+
+Guitar/Thrum_CleanNote_A3_v100.wav
+제작자: Audio Tools (Digital Hub)
+팩: Thrum
+원본 경로: AudioTools-SamplePack-Thrum/OneShots/Thrum_CleanNote_A3_v100.wav
+출처: https://audiotools.com.ar/downloads/AudioTools-SamplePack-Thrum.zip
+라이선스: CC0-1.0; 근거: Thrum-ORIGINAL-README.txt
+기준음: A3
+형식: 44100 Hz / 24-bit / 2 channels / 1.586281 sec
+가공: 없음
+SHA-256: 18559161baf980b9b3aaaa7d5c834fa8432638cd772d8e1a2bbeea65284c1b86
+
+Guitar/Thrum_CleanNote_D4_v100.wav
+제작자: Audio Tools (Digital Hub)
+팩: Thrum
+원본 경로: AudioTools-SamplePack-Thrum/OneShots/Thrum_CleanNote_D4_v100.wav
+출처: https://audiotools.com.ar/downloads/AudioTools-SamplePack-Thrum.zip
+라이선스: CC0-1.0; 근거: Thrum-ORIGINAL-README.txt
+기준음: D4
+형식: 44100 Hz / 24-bit / 2 channels / 1.665397 sec
+가공: 없음
+SHA-256: a6eb107170baffe0a3a6dde861060b4403ae92df3552259d8196fea94d04332c
+
+Guitar/Thrum_CleanNote_E3_v100.wav
+제작자: Audio Tools (Digital Hub)
+팩: Thrum
+원본 경로: AudioTools-SamplePack-Thrum/OneShots/Thrum_CleanNote_E3_v100.wav
+출처: https://audiotools.com.ar/downloads/AudioTools-SamplePack-Thrum.zip
+라이선스: CC0-1.0; 근거: Thrum-ORIGINAL-README.txt
+기준음: E3
+형식: 44100 Hz / 24-bit / 2 channels / 2.500431 sec
+가공: 없음
+SHA-256: f839687af9cb45e7305f1402d2e58dfbd19833d5ce5d1daaf6e97fd089b0f25a
+
+Guitar/Thrum_CleanNote_G4_v100.wav
+제작자: Audio Tools (Digital Hub)
+팩: Thrum
+원본 경로: AudioTools-SamplePack-Thrum/OneShots/Thrum_CleanNote_G4_v100.wav
+출처: https://audiotools.com.ar/downloads/AudioTools-SamplePack-Thrum.zip
+라이선스: CC0-1.0; 근거: Thrum-ORIGINAL-README.txt
+기준음: G4
+형식: 44100 Hz / 24-bit / 2 channels / 1.726667 sec
+가공: 없음
+SHA-256: ea7b596c96fda9d3c2255a3a16e7e01159f05d1d0f4068456d9a5e31f6317319
+
+Guitar/Thrum_CrunchNote_A2_v100.wav
+제작자: Audio Tools (Digital Hub)
+팩: Thrum
+원본 경로: AudioTools-SamplePack-Thrum/OneShots/Thrum_CrunchNote_A2_v100.wav
+출처: https://audiotools.com.ar/downloads/AudioTools-SamplePack-Thrum.zip
+라이선스: CC0-1.0; 근거: Thrum-ORIGINAL-README.txt
+기준음: A2
+형식: 44100 Hz / 24-bit / 2 channels / 1.485102 sec
+가공: 없음
+SHA-256: abbeb0fb8d97d722d952bd435000df0e51d7d329afc9eb9322f1a7ed25b8c045
+
+Guitar/Thrum_CrunchNote_E2_v100.wav
+제작자: Audio Tools (Digital Hub)
+팩: Thrum
+원본 경로: AudioTools-SamplePack-Thrum/OneShots/Thrum_CrunchNote_E2_v100.wav
+출처: https://audiotools.com.ar/downloads/AudioTools-SamplePack-Thrum.zip
+라이선스: CC0-1.0; 근거: Thrum-ORIGINAL-README.txt
+기준음: E2
+형식: 44100 Hz / 24-bit / 2 channels / 1.514082 sec
+가공: 없음
+SHA-256: bfe868b1074eeaf6aaa69a888560169ce751f1e953cb4c8fbe0370ddc3ec930c
+
+Guitar/Thrum_CrunchNote_E3_v100.wav
+제작자: Audio Tools (Digital Hub)
+팩: Thrum
+원본 경로: AudioTools-SamplePack-Thrum/OneShots/Thrum_CrunchNote_E3_v100.wav
+출처: https://audiotools.com.ar/downloads/AudioTools-SamplePack-Thrum.zip
+라이선스: CC0-1.0; 근거: Thrum-ORIGINAL-README.txt
+기준음: E3
+형식: 44100 Hz / 24-bit / 2 channels / 1.506168 sec
+가공: 없음
+SHA-256: 9d4491f05466b93589d7366fe774c83817af1ae5960be682e50756a9f277540d
+
+Guitar/Thrum_DIChordEm_E2B2E3G3B3E4_v100.wav
+제작자: Audio Tools (Digital Hub)
+팩: Thrum
+원본 경로: AudioTools-SamplePack-Thrum/OneShots/Thrum_DIChordEm_E2B2E3G3B3E4_v100.wav
+출처: https://audiotools.com.ar/downloads/AudioTools-SamplePack-Thrum.zip
+라이선스: CC0-1.0; 근거: Thrum-ORIGINAL-README.txt
+기준음: 미지정 (Chord, unpitched or FX; not assigned (see filename))
+형식: 44100 Hz / 24-bit / 2 channels / 1.5322 sec
+가공: 없음
+SHA-256: 0b4ca0e350621ad59e117fa106121b5b373d6438491cd3ade7b9a041d89877f6
+
+Guitar/Thrum_DINote_A3_v100.wav
+제작자: Audio Tools (Digital Hub)
+팩: Thrum
+원본 경로: AudioTools-SamplePack-Thrum/OneShots/Thrum_DINote_A3_v100.wav
+출처: https://audiotools.com.ar/downloads/AudioTools-SamplePack-Thrum.zip
+라이선스: CC0-1.0; 근거: Thrum-ORIGINAL-README.txt
+기준음: A3
+형식: 44100 Hz / 24-bit / 2 channels / 1.918095 sec
+가공: 없음
+SHA-256: 1ccf0c1d5afd5378cd1e27d5819d9ad4a12acdb9fa62f610afdc1a511f8259e6
+
+Guitar/Thrum_DINote_E3_v100.wav
+제작자: Audio Tools (Digital Hub)
+팩: Thrum
+원본 경로: AudioTools-SamplePack-Thrum/OneShots/Thrum_DINote_E3_v100.wav
+출처: https://audiotools.com.ar/downloads/AudioTools-SamplePack-Thrum.zip
+라이선스: CC0-1.0; 근거: Thrum-ORIGINAL-README.txt
+기준음: E3
+형식: 44100 Hz / 24-bit / 2 channels / 2.2 sec
+가공: 없음
+SHA-256: 8630a51615b567a0f70240663a6cf6bdfb34c578cc480d6729b1a44deeaacb7a
+
+Guitar/Thrum_DINote_E4_v100.wav
+제작자: Audio Tools (Digital Hub)
+팩: Thrum
+원본 경로: AudioTools-SamplePack-Thrum/OneShots/Thrum_DINote_E4_v100.wav
+출처: https://audiotools.com.ar/downloads/AudioTools-SamplePack-Thrum.zip
+라이선스: CC0-1.0; 근거: Thrum-ORIGINAL-README.txt
+기준음: E4
+형식: 44100 Hz / 24-bit / 2 channels / 2.042426 sec
+가공: 없음
+SHA-256: e81718373fa3c2eac7022d323b9625ec2adb4a4abab0ba9dd6567d4a68172311
+
+Guitar/Thrum_FuzzPowerA5_A1E2A2_v100.wav
+제작자: Audio Tools (Digital Hub)
+팩: Thrum
+원본 경로: AudioTools-SamplePack-Thrum/OneShots/Thrum_FuzzPowerA5_A1E2A2_v100.wav
+출처: https://audiotools.com.ar/downloads/AudioTools-SamplePack-Thrum.zip
+라이선스: CC0-1.0; 근거: Thrum-ORIGINAL-README.txt
+기준음: 미지정 (Chord, unpitched or FX; not assigned (see filename))
+형식: 44100 Hz / 24-bit / 2 channels / 2.585578 sec
+가공: 없음
+SHA-256: 25154162ce0b8fa178c406a66f9ed319d0fad1b07cbbdca9636addbc95c4bee5
+
+Guitar/Thrum_HarmonicBell_B4_v100.wav
+제작자: Audio Tools (Digital Hub)
+팩: Thrum
+원본 경로: AudioTools-SamplePack-Thrum/OneShots/Thrum_HarmonicBell_B4_v100.wav
+출처: https://audiotools.com.ar/downloads/AudioTools-SamplePack-Thrum.zip
+라이선스: CC0-1.0; 근거: Thrum-ORIGINAL-README.txt
+기준음: B4
+형식: 44100 Hz / 24-bit / 2 channels / 3.6 sec
+가공: 없음
+SHA-256: 162019ea422a07fd05b8fe21c7b3b3f82e243504ba8515416940cd9b5ab2efbd
+
+Guitar/Thrum_HarmonicBell_E4_v100.wav
+제작자: Audio Tools (Digital Hub)
+팩: Thrum
+원본 경로: AudioTools-SamplePack-Thrum/OneShots/Thrum_HarmonicBell_E4_v100.wav
+출처: https://audiotools.com.ar/downloads/AudioTools-SamplePack-Thrum.zip
+라이선스: CC0-1.0; 근거: Thrum-ORIGINAL-README.txt
+기준음: E4
+형식: 44100 Hz / 24-bit / 2 channels / 3.6 sec
+가공: 없음
+SHA-256: 46d9fcba7e49826d6119fad1eaec33491490726bde0beba7fc1d54902c33e4fe
+
+Guitar/Thrum_PowerChordE5_E2B2E3_v100.wav
+제작자: Audio Tools (Digital Hub)
+팩: Thrum
+원본 경로: AudioTools-SamplePack-Thrum/OneShots/Thrum_PowerChordE5_E2B2E3_v100.wav
+출처: https://audiotools.com.ar/downloads/AudioTools-SamplePack-Thrum.zip
+라이선스: CC0-1.0; 근거: Thrum-ORIGINAL-README.txt
+기준음: 미지정 (Chord, unpitched or FX; not assigned (see filename))
+형식: 44100 Hz / 24-bit / 2 channels / 2.5 sec
+가공: 없음
+SHA-256: e89b42a130d3a00b4da721219229a6dd123081f88c2756b5e0e82f66af967937
+
+Guitar/Thrum_TwangNote_B3_v100.wav
+제작자: Audio Tools (Digital Hub)
+팩: Thrum
+원본 경로: AudioTools-SamplePack-Thrum/OneShots/Thrum_TwangNote_B3_v100.wav
+출처: https://audiotools.com.ar/downloads/AudioTools-SamplePack-Thrum.zip
+라이선스: CC0-1.0; 근거: Thrum-ORIGINAL-README.txt
+기준음: B3
+형식: 44100 Hz / 24-bit / 2 channels / 1.271497 sec
+가공: 없음
+SHA-256: ab5f5857d170fbf8717b3942e69007e9d41fa6d51b64ea3d6a2783888060ed97
+
+Guitar/Thrum_TwangNote_E3_v100.wav
+제작자: Audio Tools (Digital Hub)
+팩: Thrum
+원본 경로: AudioTools-SamplePack-Thrum/OneShots/Thrum_TwangNote_E3_v100.wav
+출처: https://audiotools.com.ar/downloads/AudioTools-SamplePack-Thrum.zip
+라이선스: CC0-1.0; 근거: Thrum-ORIGINAL-README.txt
+기준음: E3
+형식: 44100 Hz / 24-bit / 2 channels / 2.020862 sec
+가공: 없음
+SHA-256: 50d98486c6566b9c48fb6ea1c9d3b4d2cffc0f331454e4639e77f0b62942851f
+
+FMKeys/Clavisynth_C2_vl3.wav
+제작자: Versilian Studios
+팩: Versilian Community Sample Library
+원본 경로: Electrophones/TX81Z/Clavisynth/Clavisynth_C2_vl3.wav
+출처: https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Electrophones/TX81Z/Clavisynth/Clavisynth_C2_vl3.wav (커밋 c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e)
+라이선스: CC0-1.0; 근거: VCSL-ORIGINAL-LICENSE.txt
+기준음: C2
+형식: 44100 Hz / 24-bit / 1 channels / 6.642245 sec
+가공: 없음
+SHA-256: 4f171206fec4a1e5ba8da274886f20f268775820fe821db7fb85a94c4bc7e79c
+
+FMKeys/Clavisynth_C3_vl3.wav
+제작자: Versilian Studios
+팩: Versilian Community Sample Library
+원본 경로: Electrophones/TX81Z/Clavisynth/Clavisynth_C3_vl3.wav
+출처: https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Electrophones/TX81Z/Clavisynth/Clavisynth_C3_vl3.wav (커밋 c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e)
+라이선스: CC0-1.0; 근거: VCSL-ORIGINAL-LICENSE.txt
+기준음: C3
+형식: 44100 Hz / 24-bit / 1 channels / 3.588186 sec
+가공: 없음
+SHA-256: 57747fa824ce998140fb00f88c1f3badebb6d02f84fd80e505086c323ef47f91
+
+FMKeys/Clavisynth_C4_vl3.wav
+제작자: Versilian Studios
+팩: Versilian Community Sample Library
+원본 경로: Electrophones/TX81Z/Clavisynth/Clavisynth_C4_vl3.wav
+출처: https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Electrophones/TX81Z/Clavisynth/Clavisynth_C4_vl3.wav (커밋 c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e)
+라이선스: CC0-1.0; 근거: VCSL-ORIGINAL-LICENSE.txt
+기준음: C4
+형식: 44100 Hz / 24-bit / 1 channels / 1.958526 sec
+가공: 없음
+SHA-256: 6cf8baef69c491a92392d674403169391a1e6c35a91b83ed71cb9c32396f02cf
+
+FMKeys/Clavisynth_C5_vl3.wav
+제작자: Versilian Studios
+팩: Versilian Community Sample Library
+원본 경로: Electrophones/TX81Z/Clavisynth/Clavisynth_C5_vl3.wav
+출처: https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Electrophones/TX81Z/Clavisynth/Clavisynth_C5_vl3.wav (커밋 c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e)
+라이선스: CC0-1.0; 근거: VCSL-ORIGINAL-LICENSE.txt
+기준음: C5
+형식: 44100 Hz / 24-bit / 1 channels / 0.994376 sec
+가공: 없음
+SHA-256: df7f42f129c4e38866e3b540e950b4f707b46063067777cf08052d9beb1f850c
+
+FMKeys/FMPiano_C2_vl3.wav
+제작자: Versilian Studios
+팩: Versilian Community Sample Library
+원본 경로: Electrophones/TX81Z/FM Piano/FMPiano_C2_vl3.wav
+출처: https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Electrophones/TX81Z/FM%20Piano/FMPiano_C2_vl3.wav (커밋 c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e)
+라이선스: CC0-1.0; 근거: VCSL-ORIGINAL-LICENSE.txt
+기준음: C2
+형식: 44100 Hz / 24-bit / 1 channels / 12.064059 sec
+가공: 없음
+SHA-256: e33943cf2bc1507c05fc7666aaaccc9617425b4fd94c3171b7415ddbc4eb4f03
+
+FMKeys/FMPiano_C3_vl3.wav
+제작자: Versilian Studios
+팩: Versilian Community Sample Library
+원본 경로: Electrophones/TX81Z/FM Piano/FMPiano_C3_vl3.wav
+출처: https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Electrophones/TX81Z/FM%20Piano/FMPiano_C3_vl3.wav (커밋 c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e)
+라이선스: CC0-1.0; 근거: VCSL-ORIGINAL-LICENSE.txt
+기준음: C3
+형식: 44100 Hz / 24-bit / 1 channels / 10.127438 sec
+가공: 없음
+SHA-256: 4e7a7d75bf01af25bcd8b321853e61f159c14432360705b319154d7010ffb1fc
+
+FMKeys/FMPiano_C4_vl3.wav
+제작자: Versilian Studios
+팩: Versilian Community Sample Library
+원본 경로: Electrophones/TX81Z/FM Piano/FMPiano_C4_vl3.wav
+출처: https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Electrophones/TX81Z/FM%20Piano/FMPiano_C4_vl3.wav (커밋 c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e)
+라이선스: CC0-1.0; 근거: VCSL-ORIGINAL-LICENSE.txt
+기준음: C4
+형식: 44100 Hz / 24-bit / 1 channels / 7.416395 sec
+가공: 없음
+SHA-256: c6c48556e88f4e153eb957efc999b7be4a7e8078f4869368b6164a65b6486d4e
+
+FMKeys/FMPiano_C5_vl3.wav
+제작자: Versilian Studios
+팩: Versilian Community Sample Library
+원본 경로: Electrophones/TX81Z/FM Piano/FMPiano_C5_vl3.wav
+출처: https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Electrophones/TX81Z/FM%20Piano/FMPiano_C5_vl3.wav (커밋 c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e)
+라이선스: CC0-1.0; 근거: VCSL-ORIGINAL-LICENSE.txt
+기준음: C5
+형식: 44100 Hz / 24-bit / 1 channels / 5.301497 sec
+가공: 없음
+SHA-256: 2f87e9af276d12a21914f898e51c722f014b24f47c6c297e99a2b72da6a964d9
+
+Synth/Cowsynth_tuned_g3.wav
+제작자: Karoryfer Samples (Karoryfer Lecolds)
+팩: Karoryfer Cowsynth
+원본 경로: tuned/g3.wav
+출처: https://raw.githubusercontent.com/sfzinstruments/karoryfer.cowsynth/5a5b5afc2dabbe54cf9d75ab64711ce01862b42c/tuned/g3.wav (커밋 5a5b5afc2dabbe54cf9d75ab64711ce01862b42c)
+라이선스: CC0-1.0; 근거: Cowsynth-ORIGINAL-LICENSE.txt
+기준음: G3
+형식: 44100 Hz / 16-bit / 1 channels / 4.333333 sec
+가공: 없음 (파일명 접두사만 추가)
+SHA-256: ae2f47746ebd8a38a73fe1475f60ab973e6dfed54d5032b45a0775767cb3c576
+
+Synth/Cowsynth_tuned_a3.wav
+제작자: Karoryfer Samples (Karoryfer Lecolds)
+팩: Karoryfer Cowsynth
+원본 경로: tuned/a3.wav
+출처: https://raw.githubusercontent.com/sfzinstruments/karoryfer.cowsynth/5a5b5afc2dabbe54cf9d75ab64711ce01862b42c/tuned/a3.wav (커밋 5a5b5afc2dabbe54cf9d75ab64711ce01862b42c)
+라이선스: CC0-1.0; 근거: Cowsynth-ORIGINAL-LICENSE.txt
+기준음: A3
+형식: 44100 Hz / 16-bit / 1 channels / 13.333333 sec
+가공: 없음 (파일명 접두사만 추가)
+SHA-256: 9d321949e939d45f6b7b4331a8b9ba2de4531e44efa1a42a9ea4689ef2e850d5
+
+Synth/Cowsynth_tuned_c4.wav
+제작자: Karoryfer Samples (Karoryfer Lecolds)
+팩: Karoryfer Cowsynth
+원본 경로: tuned/c4.wav
+출처: https://raw.githubusercontent.com/sfzinstruments/karoryfer.cowsynth/5a5b5afc2dabbe54cf9d75ab64711ce01862b42c/tuned/c4.wav (커밋 5a5b5afc2dabbe54cf9d75ab64711ce01862b42c)
+라이선스: CC0-1.0; 근거: Cowsynth-ORIGINAL-LICENSE.txt
+기준음: C4
+형식: 44100 Hz / 16-bit / 1 channels / 6.666667 sec
+가공: 없음 (파일명 접두사만 추가)
+SHA-256: 94d424c1507ad7f1606e8edbcfdf4d30b119d4c430f14406c7a444f3826fc68d
+
+Synth/Cowsynth_tuned_d4.wav
+제작자: Karoryfer Samples (Karoryfer Lecolds)
+팩: Karoryfer Cowsynth
+원본 경로: tuned/d4.wav
+출처: https://raw.githubusercontent.com/sfzinstruments/karoryfer.cowsynth/5a5b5afc2dabbe54cf9d75ab64711ce01862b42c/tuned/d4.wav (커밋 5a5b5afc2dabbe54cf9d75ab64711ce01862b42c)
+라이선스: CC0-1.0; 근거: Cowsynth-ORIGINAL-LICENSE.txt
+기준음: D4
+형식: 44100 Hz / 16-bit / 1 channels / 7.333333 sec
+가공: 없음 (파일명 접두사만 추가)
+SHA-256: 2558b0b6c4be3e4e304ecaf6f3581ada4d88b0b88990b87a7941810c9360ef60
+
+Synth/Cowsynth_tuned_e4.wav
+제작자: Karoryfer Samples (Karoryfer Lecolds)
+팩: Karoryfer Cowsynth
+원본 경로: tuned/e4.wav
+출처: https://raw.githubusercontent.com/sfzinstruments/karoryfer.cowsynth/5a5b5afc2dabbe54cf9d75ab64711ce01862b42c/tuned/e4.wav (커밋 5a5b5afc2dabbe54cf9d75ab64711ce01862b42c)
+라이선스: CC0-1.0; 근거: Cowsynth-ORIGINAL-LICENSE.txt
+기준음: E4
+형식: 44100 Hz / 16-bit / 1 channels / 7.666667 sec
+가공: 없음 (파일명 접두사만 추가)
+SHA-256: b98e8c115c0caae5671024e29555fc906ef352374bd8acd8f6eaa47b414ee0a8
+
+Synth/Cowsynth_natural_cchirp_1.wav
+제작자: Karoryfer Samples (Karoryfer Lecolds)
+팩: Karoryfer Cowsynth
+원본 경로: natural/cchirp_1.wav
+출처: https://raw.githubusercontent.com/sfzinstruments/karoryfer.cowsynth/5a5b5afc2dabbe54cf9d75ab64711ce01862b42c/natural/cchirp_1.wav (커밋 5a5b5afc2dabbe54cf9d75ab64711ce01862b42c)
+라이선스: CC0-1.0; 근거: Cowsynth-ORIGINAL-LICENSE.txt
+기준음: 미지정 (Chord, unpitched or FX; not assigned (see filename))
+형식: 44100 Hz / 16-bit / 1 channels / 0.130567 sec
+가공: 없음 (파일명 접두사만 추가)
+SHA-256: bbba0372e95051f2978c52fd058487829379272071169f9fd5adecd9c9e0d723
+
+
+==============================================================
+추가 수집 4: 어쿠스틱 드럼 원샷 (재즈 킷 · 록 킷)
+확인일: 2026-11-24 (Asia/Seoul)
+라이선스: 전부 CC0 1.0 Universal (GitHub 라이선스 감지 CC0-1.0, 원본 LICENSE 보존)
+- Virtuosity Drums (Versilian Studios + Karoryfer Samples, 재즈 킷): https://github.com/sfzinstruments/virtuosity_drums 커밋 9f04cf9a734527edfbb0a4eee1f674e45bbf71bc -> VirtuosityDrums-ORIGINAL-LICENSE.txt
+  mid 마이크(한 파일로 완결된 소리)와 lofi 버전에서 선택.
+- Big Rusty Drums (Karoryfer Samples, 록 킷): https://github.com/sfzinstruments/karoryfer.big-rusty-drums 커밋 f07ce00df34a46b6b08375be56fe116cf15782bc -> BigRustyDrums-ORIGINAL-LICENSE.txt
+  멀티 마이크 녹음이라 섞지 않고 클로즈(kick/top/cl)와 오버헤드(oh)를 각각 보존. FMOD에서 두 트랙으로 겹쳐 쓰는 용도.
+수집 방법: 고정 커밋 raw URL에서 개별 파일만 받음. git blob SHA-1이 저장소 트리 값과 일치함을 확인.
+원본은 FLAC(일부 WAV) 그대로이며 변환·자르기·정규화 없음. 원본 파일명이 마이크끼리 겹쳐서 Virtuosity_ / BigRusty_<마이크폴더>_ 접두사만 붙임.
+선택 기준: 각 타법에서 가장 센 벨로시티, 라운드로빈 1번.
+상태: 임포트 후보. 청음 전이며 FMOD 이벤트에는 아직 배치하지 않았습니다.
+==============================================================
+
+AcousticDrums/JazzKit/Virtuosity_mid_kick_snoff_vl4_rr1.flac
+제작자: Versilian Studios and Karoryfer Samples
+팩: Virtuosity Drums
+악기: Kick
+원본 경로: Samples/mid/kick/mid_kick_snoff_vl4_rr1.flac
+출처: https://raw.githubusercontent.com/sfzinstruments/virtuosity_drums/9f04cf9a734527edfbb0a4eee1f674e45bbf71bc/Samples/mid/kick/mid_kick_snoff_vl4_rr1.flac
+라이선스: CC0-1.0; 근거: VirtuosityDrums-ORIGINAL-LICENSE.txt
+기준음: 미지정 / 드럼
+형식: 48000 Hz / 24-bit / 2 channels / 3.085688 sec
+가공: 없음 (파일명 접두사만 추가)
+SHA-256: 44cbf44b9d6757d37f37f47d98688180f6f46bafe5cc38fa617f12268d5f4de1
+
+AcousticDrums/JazzKit/Virtuosity_mid_kick_snon_vl4_rr1.flac
+제작자: Versilian Studios and Karoryfer Samples
+팩: Virtuosity Drums
+악기: Kick (snare wires on)
+원본 경로: Samples/mid/kick/mid_kick_snon_vl4_rr1.flac
+출처: https://raw.githubusercontent.com/sfzinstruments/virtuosity_drums/9f04cf9a734527edfbb0a4eee1f674e45bbf71bc/Samples/mid/kick/mid_kick_snon_vl4_rr1.flac
+라이선스: CC0-1.0; 근거: VirtuosityDrums-ORIGINAL-LICENSE.txt
+기준음: 미지정 / 드럼
+형식: 48000 Hz / 24-bit / 2 channels / 2.359479 sec
+가공: 없음 (파일명 접두사만 추가)
+SHA-256: 14b76405040ba7e6b9fca95c4f73cf99a27f36e3ec6f071050c26a46cdd3350c
+
+AcousticDrums/JazzKit/Virtuosity_mid_snare_center_vl36.flac
+제작자: Versilian Studios and Karoryfer Samples
+팩: Virtuosity Drums
+악기: Snare
+원본 경로: Samples/mid/snare/mid_snare_center_vl36.flac
+출처: https://raw.githubusercontent.com/sfzinstruments/virtuosity_drums/9f04cf9a734527edfbb0a4eee1f674e45bbf71bc/Samples/mid/snare/mid_snare_center_vl36.flac
+라이선스: CC0-1.0; 근거: VirtuosityDrums-ORIGINAL-LICENSE.txt
+기준음: 미지정 / 드럼
+형식: 48000 Hz / 24-bit / 2 channels / 1.902375 sec
+가공: 없음 (파일명 접두사만 추가)
+SHA-256: 61bfa8b38925b5a39053b30ad5640297e5ed49da3bd275a94691fee8a6f752f5
+
+AcousticDrums/JazzKit/Virtuosity_mid_snare_rimshot_vl12.flac
+제작자: Versilian Studios and Karoryfer Samples
+팩: Virtuosity Drums
+악기: Snare rimshot
+원본 경로: Samples/mid/snare/mid_snare_rimshot_vl12.flac
+출처: https://raw.githubusercontent.com/sfzinstruments/virtuosity_drums/9f04cf9a734527edfbb0a4eee1f674e45bbf71bc/Samples/mid/snare/mid_snare_rimshot_vl12.flac
+라이선스: CC0-1.0; 근거: VirtuosityDrums-ORIGINAL-LICENSE.txt
+기준음: 미지정 / 드럼
+형식: 48000 Hz / 24-bit / 2 channels / 1.970708 sec
+가공: 없음 (파일명 접두사만 추가)
+SHA-256: b672eb7023adf4c392f799059454a90f409e5b3cc319bc0b4020a2cf24e66fb4
+
+AcousticDrums/JazzKit/Virtuosity_mid_snare_crossstick_vl16.flac
+제작자: Versilian Studios and Karoryfer Samples
+팩: Virtuosity Drums
+악기: Snare cross-stick
+원본 경로: Samples/mid/snare/mid_snare_crossstick_vl16.flac
+출처: https://raw.githubusercontent.com/sfzinstruments/virtuosity_drums/9f04cf9a734527edfbb0a4eee1f674e45bbf71bc/Samples/mid/snare/mid_snare_crossstick_vl16.flac
+라이선스: CC0-1.0; 근거: VirtuosityDrums-ORIGINAL-LICENSE.txt
+기준음: 미지정 / 드럼
+형식: 48000 Hz / 24-bit / 2 channels / 2.536417 sec
+가공: 없음 (파일명 접두사만 추가)
+SHA-256: b0829554fb7fef382515d78c8aa4cfe68a71f2a3aefea8623568f176b296f2fe
+
+AcousticDrums/JazzKit/Virtuosity_mid_snare_roll_vl5.wav
+제작자: Versilian Studios and Karoryfer Samples
+팩: Virtuosity Drums
+악기: Snare roll
+원본 경로: Samples/mid/snare/mid_snare_roll_vl5.wav
+출처: https://raw.githubusercontent.com/sfzinstruments/virtuosity_drums/9f04cf9a734527edfbb0a4eee1f674e45bbf71bc/Samples/mid/snare/mid_snare_roll_vl5.wav
+라이선스: CC0-1.0; 근거: VirtuosityDrums-ORIGINAL-LICENSE.txt
+기준음: 미지정 / 드럼
+형식: 48000 Hz / 24-bit / 2 channels / 10.1915 sec
+가공: 없음 (파일명 접두사만 추가)
+SHA-256: 729ebbfcdb8a2c414034cc2fecfd28ae77a34a694bc0d7b8280da4af0e61b127
+
+AcousticDrums/JazzKit/Virtuosity_mid_htom_center_vl16.flac
+제작자: Versilian Studios and Karoryfer Samples
+팩: Virtuosity Drums
+악기: High tom
+원본 경로: Samples/mid/htom/mid_htom_center_vl16.flac
+출처: https://raw.githubusercontent.com/sfzinstruments/virtuosity_drums/9f04cf9a734527edfbb0a4eee1f674e45bbf71bc/Samples/mid/htom/mid_htom_center_vl16.flac
+라이선스: CC0-1.0; 근거: VirtuosityDrums-ORIGINAL-LICENSE.txt
+기준음: 미지정 / 드럼
+형식: 48000 Hz / 24-bit / 2 channels / 2.232604 sec
+가공: 없음 (파일명 접두사만 추가)
+SHA-256: 230a9e6c6b427c969834c6cb50e730b44487ae5a27f86bf87680359daa6caad9
+
+AcousticDrums/JazzKit/Virtuosity_mid_ltom_center_vl16.flac
+제작자: Versilian Studios and Karoryfer Samples
+팩: Virtuosity Drums
+악기: Low tom
+원본 경로: Samples/mid/ltom/mid_ltom_center_vl16.flac
+출처: https://raw.githubusercontent.com/sfzinstruments/virtuosity_drums/9f04cf9a734527edfbb0a4eee1f674e45bbf71bc/Samples/mid/ltom/mid_ltom_center_vl16.flac
+라이선스: CC0-1.0; 근거: VirtuosityDrums-ORIGINAL-LICENSE.txt
+기준음: 미지정 / 드럼
+형식: 48000 Hz / 24-bit / 2 channels / 4.188375 sec
+가공: 없음 (파일명 접두사만 추가)
+SHA-256: 924cf94d67c95ad6ee214a0b16febb89a53d21d49f5c14e3ec8622ff9da976f5
+
+AcousticDrums/JazzKit/Virtuosity_mid_hh_closed_vl4_rr1.flac
+제작자: Versilian Studios and Karoryfer Samples
+팩: Virtuosity Drums
+악기: Hi-hat closed
+원본 경로: Samples/mid/hh/mid_hh_closed_vl4_rr1.flac
+출처: https://raw.githubusercontent.com/sfzinstruments/virtuosity_drums/9f04cf9a734527edfbb0a4eee1f674e45bbf71bc/Samples/mid/hh/mid_hh_closed_vl4_rr1.flac
+라이선스: CC0-1.0; 근거: VirtuosityDrums-ORIGINAL-LICENSE.txt
+기준음: 미지정 / 드럼
+형식: 48000 Hz / 24-bit / 2 channels / 0.781042 sec
+가공: 없음 (파일명 접두사만 추가)
+SHA-256: f4b91973f55cbfc1e424e494cb4a2e15c779967cfa4b7d28c6440337984bd440
+
+AcousticDrums/JazzKit/Virtuosity_mid_hh_open_vl4_rr1.flac
+제작자: Versilian Studios and Karoryfer Samples
+팩: Virtuosity Drums
+악기: Hi-hat open
+원본 경로: Samples/mid/hh/mid_hh_open_vl4_rr1.flac
+출처: https://raw.githubusercontent.com/sfzinstruments/virtuosity_drums/9f04cf9a734527edfbb0a4eee1f674e45bbf71bc/Samples/mid/hh/mid_hh_open_vl4_rr1.flac
+라이선스: CC0-1.0; 근거: VirtuosityDrums-ORIGINAL-LICENSE.txt
+기준음: 미지정 / 드럼
+형식: 48000 Hz / 24-bit / 2 channels / 11.414375 sec
+가공: 없음 (파일명 접두사만 추가)
+SHA-256: 006556df13c01419b77fc0c734f9b5db79ad2a007610225ff56c9e12b1b5fd70
+
+AcousticDrums/JazzKit/Virtuosity_mid_hh_pedal_vl3_rr1.flac
+제작자: Versilian Studios and Karoryfer Samples
+팩: Virtuosity Drums
+악기: Hi-hat pedal
+원본 경로: Samples/mid/hh/mid_hh_pedal_vl3_rr1.flac
+출처: https://raw.githubusercontent.com/sfzinstruments/virtuosity_drums/9f04cf9a734527edfbb0a4eee1f674e45bbf71bc/Samples/mid/hh/mid_hh_pedal_vl3_rr1.flac
+라이선스: CC0-1.0; 근거: VirtuosityDrums-ORIGINAL-LICENSE.txt
+기준음: 미지정 / 드럼
+형식: 48000 Hz / 24-bit / 2 channels / 2.311562 sec
+가공: 없음 (파일명 접두사만 추가)
+SHA-256: 7a80fca0c30d1bdf896b2d6d7d1057e4b2b0d6362ca129bc10cfcc5c9b18bbe2
+
+AcousticDrums/JazzKit/Virtuosity_mid_ride_ride_vl3_rr1.flac
+제작자: Versilian Studios and Karoryfer Samples
+팩: Virtuosity Drums
+악기: Ride
+원본 경로: Samples/mid/ride/mid_ride_ride_vl3_rr1.flac
+출처: https://raw.githubusercontent.com/sfzinstruments/virtuosity_drums/9f04cf9a734527edfbb0a4eee1f674e45bbf71bc/Samples/mid/ride/mid_ride_ride_vl3_rr1.flac
+라이선스: CC0-1.0; 근거: VirtuosityDrums-ORIGINAL-LICENSE.txt
+기준음: 미지정 / 드럼
+형식: 48000 Hz / 24-bit / 2 channels / 7.774542 sec
+가공: 없음 (파일명 접두사만 추가)
+SHA-256: 3ba4ca0d97b7a4298d345af6855d4713db73ec4b748209e3857b77dc69fa641a
+
+AcousticDrums/JazzKit/Virtuosity_mid_ride_bell_vl3_rr1.flac
+제작자: Versilian Studios and Karoryfer Samples
+팩: Virtuosity Drums
+악기: Ride bell
+원본 경로: Samples/mid/ride/mid_ride_bell_vl3_rr1.flac
+출처: https://raw.githubusercontent.com/sfzinstruments/virtuosity_drums/9f04cf9a734527edfbb0a4eee1f674e45bbf71bc/Samples/mid/ride/mid_ride_bell_vl3_rr1.flac
+라이선스: CC0-1.0; 근거: VirtuosityDrums-ORIGINAL-LICENSE.txt
+기준음: 미지정 / 드럼
+형식: 48000 Hz / 24-bit / 2 channels / 7.124604 sec
+가공: 없음 (파일명 접두사만 추가)
+SHA-256: 6311a95441142bca55a2e97c0670e72ebf16a25e4b17706362ea4f00de33aac1
+
+AcousticDrums/JazzKit/Virtuosity_mid_crash_crash_vl3_rr1.flac
+제작자: Versilian Studios and Karoryfer Samples
+팩: Virtuosity Drums
+악기: Crash
+원본 경로: Samples/mid/crash/mid_crash_crash_vl3_rr1.flac
+출처: https://raw.githubusercontent.com/sfzinstruments/virtuosity_drums/9f04cf9a734527edfbb0a4eee1f674e45bbf71bc/Samples/mid/crash/mid_crash_crash_vl3_rr1.flac
+라이선스: CC0-1.0; 근거: VirtuosityDrums-ORIGINAL-LICENSE.txt
+기준음: 미지정 / 드럼
+형식: 48000 Hz / 24-bit / 2 channels / 14.107229 sec
+가공: 없음 (파일명 접두사만 추가)
+SHA-256: 0469cb31e5228e084d839e425f76efaea093bc18b23fa3fe405d26705182024d
+
+AcousticDrums/JazzKit/Virtuosity_lofi_kick_snoff_vl4_rr1.flac
+제작자: Versilian Studios and Karoryfer Samples
+팩: Virtuosity Drums
+악기: Lo-fi kick
+원본 경로: Samples/lofi/kick/lofi_kick_snoff_vl4_rr1.flac
+출처: https://raw.githubusercontent.com/sfzinstruments/virtuosity_drums/9f04cf9a734527edfbb0a4eee1f674e45bbf71bc/Samples/lofi/kick/lofi_kick_snoff_vl4_rr1.flac
+라이선스: CC0-1.0; 근거: VirtuosityDrums-ORIGINAL-LICENSE.txt
+기준음: 미지정 / 드럼
+형식: 48000 Hz / 24-bit / 1 channels / 3.085688 sec
+가공: 없음 (파일명 접두사만 추가)
+SHA-256: 7bfeb2c52182375a5530c138a9612289b909e163d3e05e85cf39fd369c2cb632
+
+AcousticDrums/JazzKit/Virtuosity_lofi_snare_center_vl36.flac
+제작자: Versilian Studios and Karoryfer Samples
+팩: Virtuosity Drums
+악기: Lo-fi snare
+원본 경로: Samples/lofi/snare/lofi_snare_center_vl36.flac
+출처: https://raw.githubusercontent.com/sfzinstruments/virtuosity_drums/9f04cf9a734527edfbb0a4eee1f674e45bbf71bc/Samples/lofi/snare/lofi_snare_center_vl36.flac
+라이선스: CC0-1.0; 근거: VirtuosityDrums-ORIGINAL-LICENSE.txt
+기준음: 미지정 / 드럼
+형식: 48000 Hz / 24-bit / 1 channels / 1.902375 sec
+가공: 없음 (파일명 접두사만 추가)
+SHA-256: 455ed16fe52f49366c9a82680cc0254f3801dfae5440521869cec133fa7d63c5
+
+AcousticDrums/JazzKit/Virtuosity_lofi_hh_closed_vl4_rr1.flac
+제작자: Versilian Studios and Karoryfer Samples
+팩: Virtuosity Drums
+악기: Lo-fi hi-hat closed
+원본 경로: Samples/lofi/hh/lofi_hh_closed_vl4_rr1.flac
+출처: https://raw.githubusercontent.com/sfzinstruments/virtuosity_drums/9f04cf9a734527edfbb0a4eee1f674e45bbf71bc/Samples/lofi/hh/lofi_hh_closed_vl4_rr1.flac
+라이선스: CC0-1.0; 근거: VirtuosityDrums-ORIGINAL-LICENSE.txt
+기준음: 미지정 / 드럼
+형식: 48000 Hz / 24-bit / 1 channels / 0.781042 sec
+가공: 없음 (파일명 접두사만 추가)
+SHA-256: 653357b6224e4630272a65ff3994cacfac08826f4cc5640127a0ba0fa22d9310
+
+AcousticDrums/RockKit/BigRusty_kick_k_vl14_rr1.flac
+제작자: Karoryfer Samples
+팩: Big Rusty Drums
+악기: Kick 24" (close mic)
+원본 경로: Samples/kick_24/kick/kick/k_vl14_rr1.flac
+출처: https://raw.githubusercontent.com/sfzinstruments/karoryfer.big-rusty-drums/f07ce00df34a46b6b08375be56fe116cf15782bc/Samples/kick_24/kick/kick/k_vl14_rr1.flac
+라이선스: CC0-1.0; 근거: BigRustyDrums-ORIGINAL-LICENSE.txt
+기준음: 미지정 / 드럼
+형식: 44100 Hz / 16-bit / 1 channels / 1.698571 sec
+가공: 없음 (파일명 접두사만 추가)
+SHA-256: 3b2a6a82ab1faa9ef97f87fbc4f9dcbace81ea18149f6d7c1438da8b64f20ec3
+
+AcousticDrums/RockKit/BigRusty_oh_k_vl14_rr1.flac
+제작자: Karoryfer Samples
+팩: Big Rusty Drums
+악기: Kick 24" (overhead mic)
+원본 경로: Samples/kick_24/kick/oh/k_vl14_rr1.flac
+출처: https://raw.githubusercontent.com/sfzinstruments/karoryfer.big-rusty-drums/f07ce00df34a46b6b08375be56fe116cf15782bc/Samples/kick_24/kick/oh/k_vl14_rr1.flac
+라이선스: CC0-1.0; 근거: BigRustyDrums-ORIGINAL-LICENSE.txt
+기준음: 미지정 / 드럼
+형식: 44100 Hz / 16-bit / 2 channels / 1.698571 sec
+가공: 없음 (파일명 접두사만 추가)
+SHA-256: b0bf6e73594b9fab70c744fc12d5195b1850ae0fb8d3b6458dba550dd23dafdd
+
+AcousticDrums/RockKit/BigRusty_top_sn_center_vl10_rr1.flac
+제작자: Karoryfer Samples
+팩: Big Rusty Drums
+악기: Snare (close mic)
+원본 경로: Samples/snare_14/center/top/sn_center_vl10_rr1.flac
+출처: https://raw.githubusercontent.com/sfzinstruments/karoryfer.big-rusty-drums/f07ce00df34a46b6b08375be56fe116cf15782bc/Samples/snare_14/center/top/sn_center_vl10_rr1.flac
+라이선스: CC0-1.0; 근거: BigRustyDrums-ORIGINAL-LICENSE.txt
+기준음: 미지정 / 드럼
+형식: 44100 Hz / 16-bit / 1 channels / 1.927506 sec
+가공: 없음 (파일명 접두사만 추가)
+SHA-256: 9b13c55f8804ec5d14a6a84c4f9fb47aaee2a83a546ae5b1914a8fdd858e05f5
+
+AcousticDrums/RockKit/BigRusty_oh_sn_center_vl10_rr1.flac
+제작자: Karoryfer Samples
+팩: Big Rusty Drums
+악기: Snare (overhead mic)
+원본 경로: Samples/snare_14/center/oh/sn_center_vl10_rr1.flac
+출처: https://raw.githubusercontent.com/sfzinstruments/karoryfer.big-rusty-drums/f07ce00df34a46b6b08375be56fe116cf15782bc/Samples/snare_14/center/oh/sn_center_vl10_rr1.flac
+라이선스: CC0-1.0; 근거: BigRustyDrums-ORIGINAL-LICENSE.txt
+기준음: 미지정 / 드럼
+형식: 44100 Hz / 16-bit / 2 channels / 1.927506 sec
+가공: 없음 (파일명 접두사만 추가)
+SHA-256: 1ab31b465245225e0ec16bacedecd34f1bed1a57b2360dd0666fbefafb361525
+
+AcousticDrums/RockKit/BigRusty_top_sn_rims_vl6_rr1.flac
+제작자: Karoryfer Samples
+팩: Big Rusty Drums
+악기: Snare rimshot (close mic)
+원본 경로: Samples/snare_14/rimshot/top/sn_rims_vl6_rr1.flac
+출처: https://raw.githubusercontent.com/sfzinstruments/karoryfer.big-rusty-drums/f07ce00df34a46b6b08375be56fe116cf15782bc/Samples/snare_14/rimshot/top/sn_rims_vl6_rr1.flac
+라이선스: CC0-1.0; 근거: BigRustyDrums-ORIGINAL-LICENSE.txt
+기준음: 미지정 / 드럼
+형식: 44100 Hz / 16-bit / 1 channels / 1.632925 sec
+가공: 없음 (파일명 접두사만 추가)
+SHA-256: 8e6bc770239c31e4c0545ae6147abf2cf396923283ff5ebeecaf02318cf3c1c8
+
+AcousticDrums/RockKit/BigRusty_oh_sn_rims_vl6_rr1.flac
+제작자: Karoryfer Samples
+팩: Big Rusty Drums
+악기: Snare rimshot (overhead mic)
+원본 경로: Samples/snare_14/rimshot/oh/sn_rims_vl6_rr1.flac
+출처: https://raw.githubusercontent.com/sfzinstruments/karoryfer.big-rusty-drums/f07ce00df34a46b6b08375be56fe116cf15782bc/Samples/snare_14/rimshot/oh/sn_rims_vl6_rr1.flac
+라이선스: CC0-1.0; 근거: BigRustyDrums-ORIGINAL-LICENSE.txt
+기준음: 미지정 / 드럼
+형식: 44100 Hz / 16-bit / 2 channels / 1.632925 sec
+가공: 없음 (파일명 접두사만 추가)
+SHA-256: c69206fa16183379091fd55751692a6ad405dd9cbed8034f54eb24a8c5997cd1
+
+AcousticDrums/RockKit/BigRusty_top_sn_ss_vl4_rr1.flac
+제작자: Karoryfer Samples
+팩: Big Rusty Drums
+악기: Snare side-stick (close mic)
+원본 경로: Samples/snare_14/sidestick/top/sn_ss_vl4_rr1.flac
+출처: https://raw.githubusercontent.com/sfzinstruments/karoryfer.big-rusty-drums/f07ce00df34a46b6b08375be56fe116cf15782bc/Samples/snare_14/sidestick/top/sn_ss_vl4_rr1.flac
+라이선스: CC0-1.0; 근거: BigRustyDrums-ORIGINAL-LICENSE.txt
+기준음: 미지정 / 드럼
+형식: 44100 Hz / 16-bit / 1 channels / 1.838458 sec
+가공: 없음 (파일명 접두사만 추가)
+SHA-256: b81e2102701952ed73eb8fcdb08d9e3ad5c055b822bd360e8b345f181436ad73
+
+AcousticDrums/RockKit/BigRusty_oh_sn_ss_vl4_rr1.flac
+제작자: Karoryfer Samples
+팩: Big Rusty Drums
+악기: Snare side-stick (overhead mic)
+원본 경로: Samples/snare_14/sidestick/oh/sn_ss_vl4_rr1.flac
+출처: https://raw.githubusercontent.com/sfzinstruments/karoryfer.big-rusty-drums/f07ce00df34a46b6b08375be56fe116cf15782bc/Samples/snare_14/sidestick/oh/sn_ss_vl4_rr1.flac
+라이선스: CC0-1.0; 근거: BigRustyDrums-ORIGINAL-LICENSE.txt
+기준음: 미지정 / 드럼
+형식: 44100 Hz / 16-bit / 2 channels / 1.838458 sec
+가공: 없음 (파일명 접두사만 추가)
+SHA-256: 63519f4759e8712583e6cdd93936eac8fdaf6ef9f2dbd0ddb63f3d4627b3e5ae
+
+AcousticDrums/RockKit/BigRusty_cl_t14_vl6_rr1.flac
+제작자: Karoryfer Samples
+팩: Big Rusty Drums
+악기: Tom 14" (close mic)
+원본 경로: Samples/tom_14/center/cl/t14_vl6_rr1.flac
+출처: https://raw.githubusercontent.com/sfzinstruments/karoryfer.big-rusty-drums/f07ce00df34a46b6b08375be56fe116cf15782bc/Samples/tom_14/center/cl/t14_vl6_rr1.flac
+라이선스: CC0-1.0; 근거: BigRustyDrums-ORIGINAL-LICENSE.txt
+기준음: 미지정 / 드럼
+형식: 44100 Hz / 16-bit / 1 channels / 2.496712 sec
+가공: 없음 (파일명 접두사만 추가)
+SHA-256: eaf3adf05ee8a9d6bfc307608a59f13cd4991413bc18176517d6e9a00697d853
+
+AcousticDrums/RockKit/BigRusty_oh_t14_vl6_rr1.flac
+제작자: Karoryfer Samples
+팩: Big Rusty Drums
+악기: Tom 14" (overhead mic)
+원본 경로: Samples/tom_14/center/oh/t14_vl6_rr1.flac
+출처: https://raw.githubusercontent.com/sfzinstruments/karoryfer.big-rusty-drums/f07ce00df34a46b6b08375be56fe116cf15782bc/Samples/tom_14/center/oh/t14_vl6_rr1.flac
+라이선스: CC0-1.0; 근거: BigRustyDrums-ORIGINAL-LICENSE.txt
+기준음: 미지정 / 드럼
+형식: 44100 Hz / 16-bit / 2 channels / 2.496712 sec
+가공: 없음 (파일명 접두사만 추가)
+SHA-256: ee95f890c47e6af89b18faeb1b381ca49a5418d0d3dd32dc3c49288663857993
+
+AcousticDrums/RockKit/BigRusty_cl_t18_vl8_rr1.flac
+제작자: Karoryfer Samples
+팩: Big Rusty Drums
+악기: Tom 18" (close mic)
+원본 경로: Samples/tom_18/center/cl/t18_vl8_rr1.flac
+출처: https://raw.githubusercontent.com/sfzinstruments/karoryfer.big-rusty-drums/f07ce00df34a46b6b08375be56fe116cf15782bc/Samples/tom_18/center/cl/t18_vl8_rr1.flac
+라이선스: CC0-1.0; 근거: BigRustyDrums-ORIGINAL-LICENSE.txt
+기준음: 미지정 / 드럼
+형식: 44100 Hz / 16-bit / 1 channels / 2.269909 sec
+가공: 없음 (파일명 접두사만 추가)
+SHA-256: 5ea672c055632d3aa3f7b9100477db64d95653960fd63985083b236b3e22ef18
+
+AcousticDrums/RockKit/BigRusty_oh_t18_vl8_rr1.flac
+제작자: Karoryfer Samples
+팩: Big Rusty Drums
+악기: Tom 18" (overhead mic)
+원본 경로: Samples/tom_18/center/oh/t18_vl8_rr1.flac
+출처: https://raw.githubusercontent.com/sfzinstruments/karoryfer.big-rusty-drums/f07ce00df34a46b6b08375be56fe116cf15782bc/Samples/tom_18/center/oh/t18_vl8_rr1.flac
+라이선스: CC0-1.0; 근거: BigRustyDrums-ORIGINAL-LICENSE.txt
+기준음: 미지정 / 드럼
+형식: 44100 Hz / 16-bit / 2 channels / 2.269909 sec
+가공: 없음 (파일명 접두사만 추가)
+SHA-256: 92b6d9bacfda8cea78f0c7d6f05174cb8edcc98fb5533b85e950d725b4385785
+
+AcousticDrums/RockKit/BigRusty_cl_t22_vl7_rr1.flac
+제작자: Karoryfer Samples
+팩: Big Rusty Drums
+악기: Floor tom 22" (close mic)
+원본 경로: Samples/tom_22/center/cl/t22_vl7_rr1.flac
+출처: https://raw.githubusercontent.com/sfzinstruments/karoryfer.big-rusty-drums/f07ce00df34a46b6b08375be56fe116cf15782bc/Samples/tom_22/center/cl/t22_vl7_rr1.flac
+라이선스: CC0-1.0; 근거: BigRustyDrums-ORIGINAL-LICENSE.txt
+기준음: 미지정 / 드럼
+형식: 44100 Hz / 16-bit / 1 channels / 2.980862 sec
+가공: 없음 (파일명 접두사만 추가)
+SHA-256: f6d79d3308ddcc994c17fe520dca9e2bba73838753bdb84c83bcc6e5d2613786
+
+AcousticDrums/RockKit/BigRusty_oh_t22_vl7_rr1.flac
+제작자: Karoryfer Samples
+팩: Big Rusty Drums
+악기: Floor tom 22" (overhead mic)
+원본 경로: Samples/tom_22/center/oh/t22_vl7_rr1.flac
+출처: https://raw.githubusercontent.com/sfzinstruments/karoryfer.big-rusty-drums/f07ce00df34a46b6b08375be56fe116cf15782bc/Samples/tom_22/center/oh/t22_vl7_rr1.flac
+라이선스: CC0-1.0; 근거: BigRustyDrums-ORIGINAL-LICENSE.txt
+기준음: 미지정 / 드럼
+형식: 44100 Hz / 16-bit / 2 channels / 2.980862 sec
+가공: 없음 (파일명 접두사만 추가)
+SHA-256: a68204ae67921ffd85c3c6ba50023e73c6c43d1cf173c56db4252905fbae2195
+
+AcousticDrums/RockKit/BigRusty_cl_ht_cl_vl6_rr1.flac
+제작자: Karoryfer Samples
+팩: Big Rusty Drums
+악기: Hi-hat closed (close mic)
+원본 경로: Samples/hihat_14/cl/cl/ht_cl_vl6_rr1.flac
+출처: https://raw.githubusercontent.com/sfzinstruments/karoryfer.big-rusty-drums/f07ce00df34a46b6b08375be56fe116cf15782bc/Samples/hihat_14/cl/cl/ht_cl_vl6_rr1.flac
+라이선스: CC0-1.0; 근거: BigRustyDrums-ORIGINAL-LICENSE.txt
+기준음: 미지정 / 드럼
+형식: 44100 Hz / 16-bit / 1 channels / 1.242358 sec
+가공: 없음 (파일명 접두사만 추가)
+SHA-256: c51da9e592588bf5402627d9939521a69d5a178cd4d9dbbcc4d53e8195c60c30
+
+AcousticDrums/RockKit/BigRusty_oh_ht_cl_vl6_rr1.flac
+제작자: Karoryfer Samples
+팩: Big Rusty Drums
+악기: Hi-hat closed (overhead mic)
+원본 경로: Samples/hihat_14/cl/oh/ht_cl_vl6_rr1.flac
+출처: https://raw.githubusercontent.com/sfzinstruments/karoryfer.big-rusty-drums/f07ce00df34a46b6b08375be56fe116cf15782bc/Samples/hihat_14/cl/oh/ht_cl_vl6_rr1.flac
+라이선스: CC0-1.0; 근거: BigRustyDrums-ORIGINAL-LICENSE.txt
+기준음: 미지정 / 드럼
+형식: 44100 Hz / 16-bit / 2 channels / 1.242358 sec
+가공: 없음 (파일명 접두사만 추가)
+SHA-256: fa0599a70e95cdcd4fff5e2f18636253eb673a0116ee3f7b347e85a272051f06
+
+AcousticDrums/RockKit/BigRusty_cl_ht_open_vl6_rr1.flac
+제작자: Karoryfer Samples
+팩: Big Rusty Drums
+악기: Hi-hat open (close mic)
+원본 경로: Samples/hihat_14/open/cl/ht_open_vl6_rr1.flac
+출처: https://raw.githubusercontent.com/sfzinstruments/karoryfer.big-rusty-drums/f07ce00df34a46b6b08375be56fe116cf15782bc/Samples/hihat_14/open/cl/ht_open_vl6_rr1.flac
+라이선스: CC0-1.0; 근거: BigRustyDrums-ORIGINAL-LICENSE.txt
+기준음: 미지정 / 드럼
+형식: 44100 Hz / 16-bit / 1 channels / 9.911769 sec
+가공: 없음 (파일명 접두사만 추가)
+SHA-256: 3d86d6cec08969ea5982387c624214743f2b0a6ff6630ea7fed0ffccd44d50b8
+
+AcousticDrums/RockKit/BigRusty_oh_ht_open_vl6_rr1.flac
+제작자: Karoryfer Samples
+팩: Big Rusty Drums
+악기: Hi-hat open (overhead mic)
+원본 경로: Samples/hihat_14/open/oh/ht_open_vl6_rr1.flac
+출처: https://raw.githubusercontent.com/sfzinstruments/karoryfer.big-rusty-drums/f07ce00df34a46b6b08375be56fe116cf15782bc/Samples/hihat_14/open/oh/ht_open_vl6_rr1.flac
+라이선스: CC0-1.0; 근거: BigRustyDrums-ORIGINAL-LICENSE.txt
+기준음: 미지정 / 드럼
+형식: 44100 Hz / 16-bit / 2 channels / 9.911769 sec
+가공: 없음 (파일명 접두사만 추가)
+SHA-256: 12b65aee03c38c0c5f831224892af6d7f7f1ada4996e8fc1063fb508dbe63f69
+
+AcousticDrums/RockKit/BigRusty_cl_cr_vl5_rr1.flac
+제작자: Karoryfer Samples
+팩: Big Rusty Drums
+악기: Crash 17" (close mic)
+원본 경로: Samples/crash_17/cr/cl/cr_vl5_rr1.flac
+출처: https://raw.githubusercontent.com/sfzinstruments/karoryfer.big-rusty-drums/f07ce00df34a46b6b08375be56fe116cf15782bc/Samples/crash_17/cr/cl/cr_vl5_rr1.flac
+라이선스: CC0-1.0; 근거: BigRustyDrums-ORIGINAL-LICENSE.txt
+기준음: 미지정 / 드럼
+형식: 44100 Hz / 16-bit / 1 channels / 17.19839 sec
+가공: 없음 (파일명 접두사만 추가)
+SHA-256: b9205bc10e508eec7c38f031b666bda00268ea7b68fcbc5b8a584de44ec3a1d3
+
+AcousticDrums/RockKit/BigRusty_oh_cr_vl5_rr1.flac
+제작자: Karoryfer Samples
+팩: Big Rusty Drums
+악기: Crash 17" (overhead mic)
+원본 경로: Samples/crash_17/cr/oh/cr_vl5_rr1.flac
+출처: https://raw.githubusercontent.com/sfzinstruments/karoryfer.big-rusty-drums/f07ce00df34a46b6b08375be56fe116cf15782bc/Samples/crash_17/cr/oh/cr_vl5_rr1.flac
+라이선스: CC0-1.0; 근거: BigRustyDrums-ORIGINAL-LICENSE.txt
+기준음: 미지정 / 드럼
+형식: 44100 Hz / 16-bit / 2 channels / 17.19839 sec
+가공: 없음 (파일명 접두사만 추가)
+SHA-256: 511907df68befff63a39df0693868ca8026f46bbd5d0c8e4d1b9cdfedea65504
+
+AcousticDrums/RockKit/BigRusty_cl_cn_vl5_rr1.flac
+제작자: Karoryfer Samples
+팩: Big Rusty Drums
+악기: China 18" (close mic)
+원본 경로: Samples/china_18/cn/cl/cn_vl5_rr1.flac
+출처: https://raw.githubusercontent.com/sfzinstruments/karoryfer.big-rusty-drums/f07ce00df34a46b6b08375be56fe116cf15782bc/Samples/china_18/cn/cl/cn_vl5_rr1.flac
+라이선스: CC0-1.0; 근거: BigRustyDrums-ORIGINAL-LICENSE.txt
+기준음: 미지정 / 드럼
+형식: 44100 Hz / 16-bit / 1 channels / 9.499796 sec
+가공: 없음 (파일명 접두사만 추가)
+SHA-256: 674c8305ea21a8ca1aafd6515148b1f6191b40609254f1a6d9b995b087b4f1f4
+
+AcousticDrums/RockKit/BigRusty_oh_cn_vl5_rr1.flac
+제작자: Karoryfer Samples
+팩: Big Rusty Drums
+악기: China 18" (overhead mic)
+원본 경로: Samples/china_18/cn/oh/cn_vl5_rr1.flac
+출처: https://raw.githubusercontent.com/sfzinstruments/karoryfer.big-rusty-drums/f07ce00df34a46b6b08375be56fe116cf15782bc/Samples/china_18/cn/oh/cn_vl5_rr1.flac
+라이선스: CC0-1.0; 근거: BigRustyDrums-ORIGINAL-LICENSE.txt
+기준음: 미지정 / 드럼
+형식: 44100 Hz / 16-bit / 2 channels / 9.499796 sec
+가공: 없음 (파일명 접두사만 추가)
+SHA-256: dba1804a48cec921a1f5e32811e56302cf3885c1b1648561bbec703422d5fa8c
+
+AcousticDrums/RockKit/BigRusty_cl_rd_vl10_rr1.flac
+제작자: Karoryfer Samples
+팩: Big Rusty Drums
+악기: Ride 22" (close mic)
+원본 경로: Samples/ride_22/rd/cl/rd_vl10_rr1.flac
+출처: https://raw.githubusercontent.com/sfzinstruments/karoryfer.big-rusty-drums/f07ce00df34a46b6b08375be56fe116cf15782bc/Samples/ride_22/rd/cl/rd_vl10_rr1.flac
+라이선스: CC0-1.0; 근거: BigRustyDrums-ORIGINAL-LICENSE.txt
+기준음: 미지정 / 드럼
+형식: 44100 Hz / 16-bit / 1 channels / 18.411406 sec
+가공: 없음 (파일명 접두사만 추가)
+SHA-256: 97be6f1be45f92919a9c932f6eed0800dc5c7e195df4b59e2e453a5cf2ed27bd
+
+AcousticDrums/RockKit/BigRusty_oh_rd_vl10_rr1.flac
+제작자: Karoryfer Samples
+팩: Big Rusty Drums
+악기: Ride 22" (overhead mic)
+원본 경로: Samples/ride_22/rd/oh/rd_vl10_rr1.flac
+출처: https://raw.githubusercontent.com/sfzinstruments/karoryfer.big-rusty-drums/f07ce00df34a46b6b08375be56fe116cf15782bc/Samples/ride_22/rd/oh/rd_vl10_rr1.flac
+라이선스: CC0-1.0; 근거: BigRustyDrums-ORIGINAL-LICENSE.txt
+기준음: 미지정 / 드럼
+형식: 44100 Hz / 16-bit / 2 channels / 18.411406 sec
+가공: 없음 (파일명 접두사만 추가)
+SHA-256: c28a73b15b39db04b0d229064a6eb9a97e1bcbc0d6869fd0e11845a17e9ba0c5
+
+AcousticDrums/RockKit/BigRusty_cl_rd_bl_vl4_rr1.flac
+제작자: Karoryfer Samples
+팩: Big Rusty Drums
+악기: Ride bell (close mic)
+원본 경로: Samples/ride_22/bl/cl/rd_bl_vl4_rr1.flac
+출처: https://raw.githubusercontent.com/sfzinstruments/karoryfer.big-rusty-drums/f07ce00df34a46b6b08375be56fe116cf15782bc/Samples/ride_22/bl/cl/rd_bl_vl4_rr1.flac
+라이선스: CC0-1.0; 근거: BigRustyDrums-ORIGINAL-LICENSE.txt
+기준음: 미지정 / 드럼
+형식: 44100 Hz / 16-bit / 1 channels / 11.583175 sec
+가공: 없음 (파일명 접두사만 추가)
+SHA-256: db0f09bb4272c3533ca5e3235b80f5577d787aa8cd6ef23f5142d0e2f7467ff6
+
+AcousticDrums/RockKit/BigRusty_oh_rd_bl_vl4_rr1.flac
+제작자: Karoryfer Samples
+팩: Big Rusty Drums
+악기: Ride bell (overhead mic)
+원본 경로: Samples/ride_22/bl/oh/rd_bl_vl4_rr1.flac
+출처: https://raw.githubusercontent.com/sfzinstruments/karoryfer.big-rusty-drums/f07ce00df34a46b6b08375be56fe116cf15782bc/Samples/ride_22/bl/oh/rd_bl_vl4_rr1.flac
+라이선스: CC0-1.0; 근거: BigRustyDrums-ORIGINAL-LICENSE.txt
+기준음: 미지정 / 드럼
+형식: 44100 Hz / 16-bit / 2 channels / 11.583175 sec
+가공: 없음 (파일명 접두사만 추가)
+SHA-256: 6d1af3d880490485e447618b8e5f2f3fbae9ab115eac1bdd51800f4cce3386d3

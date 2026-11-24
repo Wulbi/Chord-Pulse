@@ -42,12 +42,22 @@ public sealed class SectionSelector
     /// </summary>
     /// <param name="energy">Target energy 0..SectionCount-1 (from difficulty).</param>
     /// <param name="allowBreath">False while fever is building or playing.</param>
-    public Phrase Advance(int energy, bool allowBreath)
+    /// <param name="hold">Keep the current section (same tempo) for the next phrase, e.g. while fever plays.</param>
+    public Phrase Advance(int energy, bool allowBreath, bool hold = false)
     {
         Current = Next;
-        Next = Choose(energy, allowBreath);
+        Next = hold ? Hold() : Choose(energy, allowBreath);
         return Next;
     }
+
+    /// <summary>Replaces an already-chosen next phrase with the current section (no tempo change at the boundary).</summary>
+    public Phrase HoldNext()
+    {
+        Next = Hold();
+        return Next;
+    }
+
+    Phrase Hold() => Remember(new Phrase { Section = Current.Section });
 
     Phrase Choose(int energy, bool allowBreath)
     {

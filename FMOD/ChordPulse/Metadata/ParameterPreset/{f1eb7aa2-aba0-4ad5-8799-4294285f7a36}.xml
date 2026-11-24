@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<objects serializationModel="Studio.02.02.00">
+	<object class="ParameterPreset" id="{f1eb7aa2-aba0-4ad5-8799-4294285f7a36}">
+		<property name="name">
+			<value>Hurt</value>
+		</property>
+		<relationship name="folder">
+			<destination>{a418e0de-c7d0-05c9-280a-b529dc02e12e}</destination>
+		</relationship>
+		<relationship name="parameter">
+			<destination>{4a3d0cb4-f07c-4bcf-9ab4-1d047481ef36}</destination>
+		</relationship>
+	</object>
+	<object class="GameParameter" id="{4a3d0cb4-f07c-4bcf-9ab4-1d047481ef36}">
+		<property name="initialValue">
+			<value>0</value>
+		</property>
+		<property name="seekSpeed">
+			<value>20</value>
+		</property>
+		<property name="seekSpeedDescending">
+			<value>1.6000000238418579</value>
+		</property>
+		<property name="seekSpeedAsymmetric">
+			<value>true</value>
+		</property>
+	</object>
+</objects>

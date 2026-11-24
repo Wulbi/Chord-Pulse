@@ -36,6 +36,41 @@ public sealed class SoundManager : SingletonBehaviour<SoundManager>
     [SerializeField] int sectionSeed;
 
     SectionSelector _sections = new SectionSelector(0);
+    FeatureSelector _features = new FeatureSelector(0);
+    float _tension;
+    bool _danger;
+    float _appliedTension = -1f;
+    float _appliedDanger = -1f;
+    bool _tensionAvailable;
+    // Pattern variation per phrase (FMOD "Variation" 0..4, see FMOD/Tools/bed_variation.py), chosen one phrase ahead.
+    const int VariationCount = 5;
+    System.Random _variationRandom = new System.Random();
+    int _variationCurrent;
+    int _variationNext;
+    int _appliedVariation = -1;
+    bool _variationAvailable;
+    // Combo layers (FMOD "Combo" 0..3, changed on bar lines) and the hurt dip ("Hurt", snapped to 1, seeks back to 0).
+    int _combo;
+    int _appliedCombo = -1;
+    int _comboBar = -1;
+    bool _hurtPending;
+    bool _comboAvailable;
+    // Bed style per phrase (FMOD "BedStyle": 0 synthpop, 1 latin, 2 funk, 3 dreamy; see FMOD/Tools/bed_style.py),
+    // chosen one phrase ahead and held for a few phrases so the arrangement does not flip-flop.
+    public const int StyleSynthpop = 0, StyleLatin = 1, StyleFunk = 2, StyleDreamy = 3;
+    const int RotatingStyles = 3;   // synthpop, latin, funk; dreamy is only for breath phrases
+    const int LatinGrooveLoopId = 7;
+    System.Random _styleRandom = new System.Random();
+    int _styleCurrent;
+    int _styleNext;
+    int _appliedStyle = -1;
+    int _phrasesInStyle;
+    int _styleDwell;
+    int _styleBeforeBreath;
+    int _phraseCount;
+    bool _styleAvailable;
+    int _appliedFeature = -1;
+    bool _featuresAvailable;
     int _lastPhrase = -1;
     int _phraseStartStep;
 
@@ -85,6 +120,66 @@ public sealed class SoundManager : SingletonBehaviour<SoundManager>
     public bool IsBreath => Running && _sections.Current.Breath && !FeverActive;
     /// <summary>Already-decided phrase that starts at <see cref="NextPhraseStep"/>.</summary>
     public SectionSelector.Phrase UpcomingPhrase => _sections.Next;
+    /// <summary>
+    /// Guest trumpet/whistle loop of the phrase being heard (null = none, or cut off by fever).
+    /// It only sounds in <see cref="FeatureSelector.Loop.PlaysInBar"/> bars of the phrase; see <see cref="FeatureSounding"/>.
+    /// </summary>
+    public FeatureSelector.Loop CurrentFeature =>
+        Running && _featuresAvailable && !FeverActive && !FeverBuilding ? _features.Current : null;
+    /// <summary>Loop already chosen for the phrase starting at <see cref="NextPhraseStep"/> (null = none or fever).</summary>
+    public FeatureSelector.Loop UpcomingFeature =>
+        Running && _featuresAvailable && !FeverOverlaps(NextPhraseStep, NextPhraseStep + StepsPerPhrase) ? _features.Next : null;
+    /// <summary>True while the current feature loop is actually playing notes in this bar.</summary>
+    /// <summary>
+    /// Threat 0..1 from the game (nearest enemy, low health). FMOD fades in a string pad (0.25+), an off-beat
+    /// sub pulse (0.45+) and swaps the bass for an acid bass (0.65+). Forced to 0 during fever build-up and fever.
+    /// </summary>
+    public float Tension { get => _tension; set => _tension = Mathf.Clamp01(value); }
+    /// <summary>Last life: the accompaniment is low-passed so it sounds smothered (kill chords stay clear).</summary>
+    public bool Danger { get => _danger; set => _danger = value; }
+    /// <summary>
+    /// Arrangement pattern of the phrase being heard: 0 original, 1 driving 8th bass, 2 driving bass + snare fill,
+    /// 3 walking bass + arpeggio + ghost snares, 4 walking bass + chord stabs + ghost snares.
+    /// </summary>
+    /// <summary>
+    /// Kill-streak level 0..3 from the game: 1 adds 16th hats, 2 a glass pad, 3 a bell arpeggio.
+    /// Applied on the next bar line; 0 during fever build-up and fever (fever has its own full arrangement).
+    /// </summary>
+    public int Combo { get => _combo; set => _combo = Mathf.Clamp(value, 0, 3); }
+    /// <summary>Combo level FMOD is playing right now.</summary>
+    public int CurrentCombo => Running ? Math.Max(0, _appliedCombo) : 0;
+    /// <summary>The core was hit: the accompaniment loses its lows and dips for about 0.6 s.</summary>
+    public void Hurt() => _hurtPending = true;
+    /// <summary>Bed style FMOD is playing: <see cref="StyleSynthpop"/>, <see cref="StyleLatin"/>,
+    /// <see cref="StyleFunk"/> or <see cref="StyleDreamy"/> (breath phrases).</summary>
+    public int CurrentStyle => Running ? Math.Max(0, _appliedStyle) : StyleSynthpop;
+    /// <summary>Bed style already chosen for the phrase starting at <see cref="NextPhraseStep"/>.</summary>
+    public int UpcomingStyle => _styleNext;
+    public int CurrentVariation => Running ? _appliedVariation : 0;
+
+    // --- Values for visuals. FMOD gets parameters slightly ahead (lookahead); these follow what is being heard. ---
+
+    /// <summary>Bed style of the phrase being heard (changes on the heard phrase downbeat, not ahead of it).</summary>
+    public int HeardStyle => !Running || !_styleAvailable || FeverBuilding || FeverActive ? StyleSynthpop : _styleCurrent;
+    /// <summary>Pattern variation of the phrase being heard (0 in build-up and fever, like the music).</summary>
+    public int HeardVariation => !Running || !_variationAvailable || FeverBuilding || FeverActive ? 0 : _variationCurrent;
+    /// <summary>Pattern variation already chosen for the phrase starting at <see cref="NextPhraseStep"/>.</summary>
+    public int UpcomingVariation => _variationAvailable ? _variationNext : 0;
+    /// <summary>Tension as FMOD is actually playing it (after its seek-speed smoothing), 0 when unavailable.</summary>
+    public float HeardTension => ReadFinal("Tension", _tensionAvailable);
+    /// <summary>Danger (last-life low-pass) as FMOD is actually playing it.</summary>
+    public float HeardDanger => ReadFinal("Danger", _tensionAvailable);
+    /// <summary>Hurt dip as FMOD is playing it: 1 right after a hit, back to 0 over about 0.6 s.</summary>
+    public float HeardHurt => ReadFinal("Hurt", _comboAvailable);
+
+    float ReadFinal(string parameter, bool available)
+    {
+        if (!Running || !available)
+            return 0f;
+        return _music.getParameterByName(parameter, out _, out float final) == FMOD.RESULT.OK ? final : 0f;
+    }
+    public bool FeatureSounding =>
+        CurrentFeature != null && CurrentFeature.PlaysInBar(CurrentBar % SectionSelector.BarsPerPhrase);
     public int NextPhraseStep => _phraseStartStep + StepsPerPhrase;
     /// <summary>Bar being heard, counted from the first beat (-1 before the music starts).</summary>
     public int CurrentBar => Running ? CurrentBeat / BeatsPerBar : -1;
@@ -118,6 +213,28 @@ public sealed class SoundManager : SingletonBehaviour<SoundManager>
         _intensity = 0;
         _appliedIntensity = -1;
         _sections = new SectionSelector(sectionSeed);
+        _features = new FeatureSelector(sectionSeed);
+        _variationRandom = sectionSeed == 0 ? new System.Random() : new System.Random(unchecked(sectionSeed * 31 + 5));
+        _variationCurrent = _variationNext = 0;
+        _combo = 0;
+        _appliedCombo = _comboBar = -1;
+        _styleRandom = sectionSeed == 0 ? new System.Random() : new System.Random(unchecked(sectionSeed * 131 + 9));
+        _styleCurrent = _styleNext = StyleSynthpop;
+        _appliedStyle = -1;
+        _phrasesInStyle = _phraseCount = 0;
+        _styleDwell = 4;
+        _styleBeforeBreath = StyleSynthpop;
+        _styleAvailable = false;
+        _hurtPending = false;
+        _comboAvailable = false;
+        _appliedVariation = -1;
+        _variationAvailable = false;
+        _tension = 0f;
+        _danger = false;
+        _appliedTension = _appliedDanger = -1f;
+        _tensionAvailable = false;
+        _appliedFeature = -1;
+        _featuresAvailable = false;
         _lastPhrase = -1;
         _phraseStartStep = 0;
         _lastChordStep = -1;
@@ -180,6 +297,23 @@ public sealed class SoundManager : SingletonBehaviour<SoundManager>
                 yield break;
         if (!Check(_music.setParameterByName("NextSection", 0f, true)))
             yield break;
+        // Optional: banks built before the feature loops existed simply play without them.
+        _featuresAvailable = _music.setParameterByName("FeatureLoop", 0f, true) == FMOD.RESULT.OK;
+        _tensionAvailable = _music.setParameterByName("Tension", 0f, true) == FMOD.RESULT.OK &&
+                            _music.setParameterByName("Danger", 0f, true) == FMOD.RESULT.OK;
+        _appliedTension = _appliedDanger = 0f;
+        _variationAvailable = _music.setParameterByName("Variation", 0f, true) == FMOD.RESULT.OK;
+        _comboAvailable = _music.setParameterByName("Combo", 0f, true) == FMOD.RESULT.OK &&
+                          _music.setParameterByName("Hurt", 0f, true) == FMOD.RESULT.OK;
+        _appliedCombo = 0;
+        _styleAvailable = _music.setParameterByName("BedStyle", 0f, true) == FMOD.RESULT.OK;
+        _appliedStyle = 0;
+        _appliedVariation = 0;
+        if (!_tensionAvailable)
+            Debug.LogWarning("[SoundManager / FMOD] No Tension/Danger parameters in the bank; tension layers are off. Rebuild the FMOD banks.", this);
+        _appliedFeature = 0;
+        if (!_featuresAvailable)
+            Debug.LogWarning("[SoundManager / FMOD] No FeatureLoop parameter in the bank; feature loops are off. Rebuild the FMOD banks.", this);
         foreach (var parameter in KillParameters)
             if (!Check(_music.setParameterByName(parameter, 0f, true)))
                 yield break;
@@ -212,22 +346,52 @@ public sealed class SoundManager : SingletonBehaviour<SoundManager>
     {
         if (!Running || FeverActive || FeverPending)
             return;
+        // Fever never cuts into a phrase: it fills exactly one whole phrase, and its build-up is the last bar of the
+        // phrase before. That build-up bar must still be far enough ahead and free of the current guest loop
+        // (loops that play in bar 4 would clash with the snare roll), otherwise wait one more phrase.
         double earliest = AudioStepPosition + LookaheadSteps(RhythmLookahead);
-        int nextBar = (AudioStep / StepsPerBar + 1) * StepsPerBar;
-        while (nextBar < earliest)
-            nextBar += StepsPerBar;
-        // The next whole bar is the build-up (snare roll + riser, kick drops out); fever lands on the bar after.
-        _feverStart = nextBar + FeverBuildSteps;
+        int lastBar = SectionSelector.BarsPerPhrase - 1;
+        int feverStart = NextPhraseStep;
+        bool loopInBuildBar = _features.Current != null && _features.Current.PlaysInBar(lastBar);
+        if (feverStart - FeverBuildSteps < earliest || loopInBuildBar)
+            feverStart += StepsPerPhrase;
+        _feverStart = feverStart;
+
+        // The guest loop already picked for the next phrase would either be silenced by fever or still be playing
+        // in the build-up bar, so drop it. FeatureSelector will not pick another one until fever is over.
+        _features.CancelNext();
+
+        // The next section may already have been sent to FMOD; keep the tempo steady through build-up and fever.
+        if (FeverHoldsBoundary(NextPhraseStep))
+            Check(_music.setParameterByName("NextSection", _sections.HoldNext().Section));
     }
 
-    public void QueueKillChord(int colorIndex)
+    /// <summary>Length of one beat at the tempo FMOD is playing (108 BPM before the music starts).</summary>
+    public double BeatSeconds => Running && _conductor.Tempo > 0 ? 60.0 / _conductor.Tempo : 60.0 / 108.0;
+
+    /// <summary>
+    /// Adds a kill to a beat's chord and returns that beat's step, or -1 if nothing was queued.
+    /// Pass the step a pulse already used so every kill of one pulse joins the same chord; if that chord has
+    /// already sounded, the kill stays silent instead of starting a second chord on the next beat.
+    /// </summary>
+    public int QueueKillChord(int colorIndex, int chordStep = -1)
     {
         if (!Running || colorIndex < 0 || colorIndex >= KillParameters.Length)
-            return;
+            return -1;
 
-        int target = (AudioStep / StepsPerBeat + 1) * StepsPerBeat;
-        if (target <= AudioStepPosition + LookaheadSteps(ChordLookahead))
-            target += StepsPerBeat;
+        int target;
+        if (chordStep >= 0)
+        {
+            if (chordStep <= _lastChordStep)
+                return -1;
+            target = chordStep;
+        }
+        else
+        {
+            target = (AudioStep / StepsPerBeat + 1) * StepsPerBeat;
+            if (target <= AudioStepPosition + LookaheadSteps(ChordLookahead))
+                target += StepsPerBeat;
+        }
         int[] kills;
         if (!_pendingKillChords.TryGetValue(target, out kills))
         {
@@ -235,6 +399,7 @@ public sealed class SoundManager : SingletonBehaviour<SoundManager>
             _pendingKillChords.Add(target, kills);
         }
         kills[colorIndex] = Math.Min(kills[colorIndex] + 1, MaxChordVoicing);
+        return target;
     }
 
     void Update()
@@ -257,6 +422,11 @@ public sealed class SoundManager : SingletonBehaviour<SoundManager>
 
     // Each 4-bar phrase: the queued phrase becomes current and the one after it is chosen and sent to FMOD,
     // which jumps (or plays on) at the next phrase boundary. That leaves a whole phrase of lead time.
+    // A phrase boundary inside build-up or fever must not change section, so BPM stays fixed for the whole fever.
+    // A boundary exactly at the fever's end is free: the tempo can move as fever finishes.
+    bool FeverHoldsBoundary(int boundaryStep) =>
+        _feverStart >= 0 && boundaryStep >= _feverStart - FeverBuildSteps && boundaryStep < _feverStart + FeverSteps;
+
     void UpdatePhrase()
     {
         int phrase = _conductor.Bar / SectionSelector.BarsPerPhrase;
@@ -264,8 +434,34 @@ public sealed class SoundManager : SingletonBehaviour<SoundManager>
             return;
         _lastPhrase = phrase;
         _phraseStartStep = phrase * StepsPerPhrase;
-        var next = _sections.Advance(_intensity, allowBreath: _feverStart < 0 || AudioStep >= _feverStart + FeverSteps);
+        var next = _sections.Advance(_intensity,
+            allowBreath: _feverStart < 0 || AudioStep >= _feverStart + FeverSteps,
+            hold: FeverHoldsBoundary(_phraseStartStep + StepsPerPhrase));
         Check(_music.setParameterByName("NextSection", next.Section));
+        bool feverNext = FeverOverlaps(NextPhraseStep, NextPhraseStep + StepsPerPhrase);
+        _styleCurrent = _styleNext;
+        _styleNext = ChooseStyle(next.Breath, feverNext);
+        _variationCurrent = _variationNext;
+        _variationNext = ChooseVariation(next.Breath);
+        // The latin bed already is a percussion groove: the Latin Groove guest would only double it.
+        _features.Advance(next, _intensity, allowed: !feverNext,
+            excludeId: _styleNext == StyleLatin ? LatinGrooveLoopId : 0);
+    }
+
+    // Fever (with its build-up bar) is the highlight: no guest loop plays over any part of it.
+    bool FeverOverlaps(double fromStep, double toStep) =>
+        _feverStart >= 0 && fromStep < _feverStart + FeverSteps && toStep >= _feverStart - FeverBuildSteps;
+
+    void UpdateFeature(double step)
+    {
+        if (!_featuresAvailable)
+            return;
+        // Switch on just before a phrase that has a loop, but switch off only once the phrase has really ended,
+        // so the lookahead does not cut the last note of a loop.
+        var loop = step >= NextPhraseStep && _features.Next != null ? _features.Next : _features.Current;
+        int id = loop == null || FeverOverlaps(step, step) ? 0 : loop.Id;
+        if (id != _appliedFeature && Check(_music.setParameterByName("FeatureLoop", id, true)))
+            _appliedFeature = id;
     }
 
     void UpdateFever()
@@ -284,6 +480,129 @@ public sealed class SoundManager : SingletonBehaviour<SoundManager>
         int intensity = fever ? MaxIntensity : breath ? 0 : _intensity;
         if (intensity != _appliedIntensity && Check(_music.setParameterByName("Intensity", intensity)))
             _appliedIntensity = intensity;
+
+        UpdateFeature(step);
+        UpdateTension(fever || FeverOverlaps(step, step));
+        UpdateVariation(step);
+        UpdateCombo(step, fever || FeverOverlaps(step, step));
+        UpdateStyle(step);
+    }
+
+    // The original pattern a bit more often than each variant; never the same variant twice in a row.
+    // Breath phrases keep the original (sparse) pattern; busier variants get likelier as the round heats up.
+    int ChooseVariation(bool breath)
+    {
+        if (breath)
+            return 0;
+        var weights = new double[VariationCount];
+        double total = 0;
+        for (int v = 0; v < VariationCount; v++)
+        {
+            double w = v == 0 ? 1.6 : 1.0 + (v <= 2 ? 0.15 * _intensity : 0.0);
+            if (v != 0 && v == _variationCurrent)
+                w = 0;
+            weights[v] = w;
+            total += w;
+        }
+        double roll = _variationRandom.NextDouble() * total;
+        for (int v = 0; v < VariationCount; v++)
+        {
+            roll -= weights[v];
+            if (roll < 0)
+                return v;
+        }
+        return 0;
+    }
+
+    // Synthpop for the first four phrases, then each style is held 2-4 phrases before it may move to another of
+    // synthpop / latin / funk. Breath phrases are dreamy and the style resumes afterwards; fever phrases are
+    // synthpop (fever's arrangement is built on it).
+    int ChooseStyle(bool breath, bool fever)
+    {
+        _phraseCount++;
+        if (fever)
+            return SwitchTo(StyleSynthpop);
+        if (breath)
+        {
+            if (_styleCurrent != StyleDreamy)
+                _styleBeforeBreath = _styleCurrent;
+            return StyleDreamy;
+        }
+        int style = _styleCurrent == StyleDreamy ? _styleBeforeBreath : _styleCurrent;
+        _phrasesInStyle++;
+        if (_phraseCount >= 4 && _phrasesInStyle >= _styleDwell && _styleRandom.NextDouble() < 0.6)
+            style = (style + 1 + _styleRandom.Next(RotatingStyles - 1)) % RotatingStyles;
+        return SwitchTo(style);
+    }
+
+    int SwitchTo(int style)
+    {
+        int from = _styleCurrent == StyleDreamy ? _styleBeforeBreath : _styleCurrent;
+        if (style != from)
+        {
+            _phrasesInStyle = 0;
+            _styleDwell = _styleRandom.Next(2, 5);
+        }
+        return style;
+    }
+
+    void UpdateStyle(double step)
+    {
+        if (!_styleAvailable)
+            return;
+        int style = step >= NextPhraseStep ? _styleNext : _styleCurrent;
+        if (FeverOverlaps(step, step))
+            style = StyleSynthpop;
+        if (style != _appliedStyle && Check(_music.setParameterByName("BedStyle", style, true)))
+            _appliedStyle = style;
+    }
+
+    void UpdateCombo(double step, bool feverZone)
+    {
+        if (!_comboAvailable)
+            return;
+        if (_hurtPending)
+        {
+            // Snap to 1, then aim at 0: FMOD's descending seek speed draws the recovery.
+            _hurtPending = false;
+            if (Check(_music.setParameterByName("Hurt", 1f, true)))
+                Check(_music.setParameterByName("Hurt", 0f));
+        }
+        // Layers are gated per note, so only change the level on a bar line (just ahead of it).
+        int bar = (int)Math.Floor(step / StepsPerBar);
+        if (bar == _comboBar)
+            return;
+        _comboBar = bar;
+        int combo = feverZone ? 0 : _combo;
+        if (combo != _appliedCombo && Check(_music.setParameterByName("Combo", combo, true)))
+            _appliedCombo = combo;
+    }
+
+    // Like FeatureLoop: switched just before the phrase boundary. Build-up and fever keep the original pattern
+    // (they bring their own rolls and fills).
+    void UpdateVariation(double step)
+    {
+        if (!_variationAvailable)
+            return;
+        int v = step >= NextPhraseStep ? _variationNext : _variationCurrent;
+        if (FeverOverlaps(step, step))
+            v = 0;
+        if (v != _appliedVariation && Check(_music.setParameterByName("Variation", v, true)))
+            _appliedVariation = v;
+    }
+
+    // FMOD smooths both parameters with its own seek speed (fast up, slow down), so values are sent as they are.
+    void UpdateTension(bool feverZone)
+    {
+        if (!_tensionAvailable)
+            return;
+        float tension = feverZone ? 0f : _tension;
+        float danger = feverZone || !_danger ? 0f : 1f;
+        if (Mathf.Abs(tension - _appliedTension) >= 0.02f || (tension == 0f && _appliedTension != 0f))
+            if (Check(_music.setParameterByName("Tension", tension)))
+                _appliedTension = tension;
+        if (danger != _appliedDanger && Check(_music.setParameterByName("Danger", danger)))
+            _appliedDanger = danger;
     }
 
     void SetFeverParameter(FeverPhase phase, bool on)
