@@ -878,3 +878,22 @@ Onsets now applied on every note (sample onset / pitch ratio) against the old st
 Both takes 0 stalls after the first beat, late 0 / dropped 0 / cancelled 0. The idle events and buses cost no measurable CPU.
 Bank `ChordPulse.bank` 6,352,096 -> 6,416,320 bytes (strings 2,410 -> 3,680); no new audio files (all samples were in the
 bank already).
+
+## Task 10: `FmodOneShotBackend` arming hardening
+
+The backend now unpauses the instance first and then its channel group (the other order left a window in which a Studio
+update between the two calls could re-assert the instance's pause on the group); `setPaused(true)` before `start()` and
+`ChannelGroup.setDelay` are checked, and a note whose pause or delay failed is stopped, released and counted in
+`DroppedCount` instead of starting unpaused / un-delayed; a comment at the arming point notes that "group exists" does
+not mean the voice exists yet (the parent group's delay still gates a channel created later). No other behaviour change.
+
+Takes (Editor, `spike`, seed 33, 68 beats, `shortLeadOnDsp`, every take `stalls 0`, scheduled / started 64, late 0,
+dropped 0):
+
+| take | fps | early | late | missing (landings / other) | attack mean / max (ms) |
+|---|---:|---:|---:|---|---:|
+| spike_seed33_s10_fps60 | 60 | 0 | 0 | 0 / 0 | 0.81 / 2.33 |
+| spike_seed33_s10_fps15 | 15 | 0 | 7 (+5..+7) | 0 / 0 | 1.30 / 7.23 |
+
+Task 5b `_c_` takes for comparison: 60 fps 0 / 0 / 0.90 / 3.17; 15 fps 0 early, 8 late (+5..+7). Same as before: the 15 fps
+late clicks are the beat-clock limitation described under Task 5b; nothing early, nothing missing.

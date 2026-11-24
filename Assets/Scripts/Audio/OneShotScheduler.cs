@@ -411,8 +411,9 @@ public sealed class FmodOneShotBackend : IOneShotBackend
             if (FMODUnity.RuntimeManager.CoreSystem.getDSPBufferSize(out uint block, out _) == FMOD.RESULT.OK)
                 _blockSamples = block;
         }
-        instance.setPaused(true); // silent until Update has applied the start time to its channel group
-        if (instance.start() != FMOD.RESULT.OK)
+        // Silent until Update has applied the start time to its channel group. A note that cannot be paused would
+        // sound at dispatch: never start it.
+        if (instance.setPaused(true) != FMOD.RESULT.OK || instance.start() != FMOD.RESULT.OK)
         {
             instance.release();
             return -1;
@@ -484,16 +485,18 @@ public sealed class FmodOneShotBackend : IOneShotBackend
     }
 
     // Start, then full level until the stop time, then a linear fade to silence over the release (Stop 0 = no stop yet).
-    void ApplyTimes(FMOD.ChannelGroup group, Note n)
+    bool ApplyTimes(FMOD.ChannelGroup group, Note n)
     {
         ulong end = n.Stop > 0 ? n.Stop + n.ReleaseSamples : 0;
-        group.setDelay(n.Start, end, true);
+        if (group.setDelay(n.Start, end, true) != FMOD.RESULT.OK)
+            return false;
         group.removeFadePoints(0, ulong.MaxValue);
         if (n.Stop > 0)
         {
             group.addFadePoint(n.Stop, 1f);
             group.addFadePoint(end, 0f);
         }
+        return true;
     }
 
     /// <summary>
@@ -542,11 +545,23 @@ public sealed class FmodOneShotBackend : IOneShotBackend
             {
                 if (DiagnosticLog != null)
                     DiagnosticLog("apply," + key + "," + now + "," + n.Start + "," + n.Frames + "," + Probe(group));
-                ApplyTimes(group, n);
-                // The delay is in effect: unpause the group now (core call, immediate) rather than through the
-                // instance alone, whose unpause waits for Studio's next update and could land after the start.
-                group.setPaused(false);
+                // "The group exists" does not mean the voice does: Studio may create the channel later, and the parent
+                // group's delay (set here) still gates it.
+                if (!ApplyTimes(group, n))
+                {
+                    // Never let a note start un-delayed.
+                    DiagnosticLog?.Invoke("drop," + key + "," + now + "," + n.Start + "," + n.Frames + ",delayfail");
+                    DroppedCount++;
+                    n.Instance.stop(FMOD.Studio.STOP_MODE.IMMEDIATE);
+                    n.Instance.release();
+                    _notes.Remove(key);
+                    continue;
+                }
+                // The delay is in effect. Unpause the instance first, then the group (core call, immediate, so the
+                // start does not wait for a Studio update): the other order leaves a window in which a Studio update
+                // between the two calls re-asserts the instance's pause on the group.
                 n.Instance.setPaused(false);
+                group.setPaused(false);
                 n.Group = group;
                 n.Applied = true;
                 _notes[key] = n;
