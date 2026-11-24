@@ -89,7 +89,10 @@ public sealed class OneShotScheduler
             return false;
         }
         _notes.Add(note);
-        if (Dispatch(note, _backend.NowDsp) == DispatchResult.Failed)
+        // The clock may pass the start between the two NowDsp reads: Late (already counted by Dispatch) is dropped
+        // here like Failed, so Update does not count it again.
+        var result = Dispatch(note, _backend.NowDsp);
+        if (result == DispatchResult.Late || result == DispatchResult.Failed)
         {
             _notes.Remove(note);
             return false;

@@ -536,7 +536,7 @@ flowchart LR
 
 ### 8-10. FMOD 생성기 실행 순서
 
-여러 생성기가 같은 이벤트를 고치므로 아래 순서로 실행한다 (모두 재실행해도 같은 결과). FMOD Studio는 닫아 둘 것.
+여러 생성기가 같은 이벤트를 고치므로 아래 순서로 실행한다 (전체를 다시 돌려도 이벤트 구조·노트는 같지만, `instruments.js`가 `event:/Inst/*` 이벤트를 매번 새로 만들어 GUID가 바뀐다 — 아래 참고). FMOD Studio는 닫아 둘 것.
 
 ```
 fmodstudiocl.exe -script FMOD/Tools/feature_loops.js  FMOD/ChordPulse/ChordPulse.fspro
@@ -551,8 +551,8 @@ fmodstudiocl.exe -build FMOD/ChordPulse/ChordPulse.fspro                        
 ```
 
 - `instruments.js`·`kill_oneshots.js`·`InstrumentTable.g.cs`·`KillChordTable.g.cs`는 `python FMOD/Tools/instruments.py` 한 번으로 다시 생성된다.
-- `kill_voices.py/.js`, `kill_parity.js`, `kill_voices_remove.js`는 삭제됨 (처치 화음은 원샷, 10-4). `kill_oneshots.js`가 남은 `Kill *` 트랙·패리티 파라미터도 지운다.
-- 위 순서 전체를 그대로 다시 돌려도 같은 결과다 (2026-11-24 Task 6 fix에서 한 번 전체 실행해 확인: 노트 10,456개, 버스·리턴 구조 동일). `feature_loops.js`는 이벤트 안 `Kill Chords` 그룹이 없으면 `Feature` 덕킹 컴프레서를 만들지 않고, 그 뒤의 `kill_oneshots.js`가 `Feature`·`Harmony`를 리턴(`Feature Duck`·`Harmony Duck`)으로 다시 연결한다 → **`feature_loops`·`bed_*`를 따로 다시 돌렸다면 `kill_oneshots.js`도 다시 돌릴 것**.
+- 처치 화음은 원샷으로 바뀌어 (10-4) 옛 생성기는 쓰지 않는다: `kill_voices.py/.js`는 저장소에서 삭제됐고, `kill_bus_sidechain.js`는 `FMOD/Tools/retired/`로 옮겼으며 (실행하면 "superseded" 오류만 냄), `kill_parity.js`·`kill_voices_remove.js`는 커밋하지 않은 채 `FMOD/Tools/retired/`에 보관 중이다. `kill_oneshots.js`가 남은 `Kill *` 트랙·패리티 파라미터도 지운다.
+- 위 순서 전체를 다시 돌리면 노트·버스·리턴 구조는 같다 (2026-11-24 Task 6 fix에서 한 번 전체 실행해 확인: 노트 10,456개, 버스·리턴 구조 동일). 단 `instruments.js`는 악기 이벤트를 매번 지우고 다시 만들어 **이벤트 GUID가 실행할 때마다 바뀐다**. 그래서 새 뱅크를 Unity에 넣으면 FMOD 통합이 "Events Renamed" 대화상자 (Update Event References?)를 띄우는데, 코드는 경로(`event:/Inst/*`)로 이벤트를 찾으므로 **No**로 답한다. `feature_loops.js`는 이벤트 안 `Kill Chords` 그룹이 없으면 `Feature` 덕킹 컴프레서를 만들지 않고, 그 뒤의 `kill_oneshots.js`가 `Feature`·`Harmony`를 리턴(`Feature Duck`·`Harmony Duck`)으로 다시 연결한다 → **`feature_loops`·`bed_*`를 따로 다시 돌렸다면 `kill_oneshots.js`도 다시 돌릴 것**.
 - `bed_style`은 다른 생성기가 만든 음에도 스타일 조건을 거므로, `bed_variation` / `bed_combo`를 다시 돌렸다면 `bed_style`도 다시 돌린다.
 - 각 `.js`는 같은 이름의 `.py`를 실행하면 다시 생성된다 (`python FMOD/Tools/<name>.py`).
 
@@ -637,7 +637,7 @@ fmodstudiocl.exe -build FMOD/ChordPulse/ChordPulse.fspro                        
 
 ### 9-5. 검증
 
-- 오프라인 렌더: 스타일 4종 × 색 3 × `XKills` 1~3 → 처치 화음 RMS가 지금 기준(-21.7 dBFS, 3색 × 3음 매 박)과 ±1 dB, 음높이, 박 대비 어택 (샘플 어택만큼 앞당김, 프레이즈 첫 박은 제외 규칙 동일).
+- 오프라인 렌더: 스타일 4종 × 색 3 × `XKills` 1~3 → 처치 화음 RMS가 지금 기준(-21.7 dBFS, 3색 × 3음 매 박)과 ±1 dB, 음높이, 박 대비 어택 (샘플 어택만큼 앞당김; 타임라인 시절엔 프레이즈 첫 박 제외였으나 10-4 원샷부터는 첫 박도 앞당김).
 - 콤보·위기감 레이어가 켜졌을 때 리미터에 과하게 눌리지 않는지 (피크 -6 dB 근처 유지).
 - 플레이 모드 프로브: 스타일이 바뀐 프레이즈에서 처치음이 바뀌는지, 피버 중엔 원래 음색인지.
 
@@ -701,7 +701,7 @@ fmodstudiocl.exe -build FMOD/ChordPulse/ChordPulse.fspro                        
 - 실행 순서: (다른 생성기들) → `kill_parity.js` → `-build`(따로 실행, 10-6) → 뱅크를 `Assets/StreamingAssets`로 복사(8-10).
 
 ### 10-4. B. 처치 화음을 원샷 이벤트로 (계획 → **구현됨** 2026-11-24, 아래 원래 계획은 참고용)
-> 구현: `Docs/superpowers/plans/2026-11-24-fmod-scheduled-kill-chords.md`. 악기별 원샷 이벤트 `event:/Inst/<악기>`(`Note` 파라미터, `instruments.py`) → `bus:/Kill Chords`(사이드체인·컴프·리미터·-8 dB = 옛 이벤트 마스터 레벨). `SoundManager.QueueKillChord`가 목표 박(DSP 시계 기준, 0.4박 규칙)에 `KillChordVoicer`로 음을 골라 `OneShotScheduler`로 예약(`ChannelGroup.setDelay` + 120ms 페이드아웃). 같은 박 추가 처치는 늘어난 음만 예약, 피버·빌드업 박은 스타일·콤보·긴장도 0. `KillChordMix`는 버스 볼륨. 덕킹: 버스→이벤트 안 컴프 사이드체인은 런타임에 안 걸려서(Task 3), `Harmony`/`Feature` 그룹을 프리페이더 Send로 리턴 `Harmony Duck`/`Feature Duck`(버스 키 컴프)에 보내고 그룹 페이더는 -80 dB. 리턴 버스는 전역 파라미터로만 자동화되므로 `Harmony`가 받던 Music Bed 처리(MusicMix 볼륨, Danger 로우패스, Hurt EQ·게인)는 Send 앞 `Harmony` 그룹 안에 같은 커브로 복제했다. 측정: `Docs/Captures/README.md` "Task 6".
+> 구현: `Docs/superpowers/plans/2026-11-24-fmod-scheduled-kill-chords.md`. 악기별 원샷 이벤트 `event:/Inst/<악기>`(`Note` 파라미터, `instruments.py`) → `bus:/Kill Chords`(사이드체인·컴프·리미터·-8 dB = 옛 이벤트 마스터 레벨). `SoundManager.QueueKillChord`가 목표 박(DSP 시계 기준, 0.4박 규칙)에 `KillChordVoicer`로 음을 골라 `OneShotScheduler`로 예약(`ChannelGroup.setDelay` + 120ms 페이드아웃). 각 음은 샘플 어택(`InstrumentTable.OnsetSeconds`)만큼 일찍 시작해 어택이 박에 맞는다 — 프레이즈 첫 박(구간 점프 착지)도 포함 (옛 타임라인 노트의 "첫 박 제외" 규칙은 점프 앞에 노트를 둘 수 없어서였고, DSP 예약 원샷에는 필요 없다). 같은 박 추가 처치는 늘어난 음만 예약, 피버·빌드업 박은 스타일·콤보·긴장도 0. `KillChordMix`는 버스 볼륨. 덕킹: 버스→이벤트 안 컴프 사이드체인은 런타임에 안 걸려서(Task 3), `Harmony`/`Feature` 그룹을 프리페이더 Send로 리턴 `Harmony Duck`/`Feature Duck`(버스 키 컴프)에 보내고 그룹 페이더는 -80 dB. 리턴 버스는 전역 파라미터로만 자동화되므로 `Harmony`가 받던 Music Bed 처리(MusicMix 볼륨, Danger 로우패스, Hurt EQ·게인)는 Send 앞 `Harmony` 그룹 안에 같은 커브로 복제했다. 측정: `Docs/Captures/README.md` "Task 6".
 
 타임라인 노트 + 파라미터 방식은 "언제 켜고 언제 끄나"가 노트 영역 길이에 묶인다(10-2, 10-3의 1.45박 제한). 처치음 표현을 더 자유롭게 하고 싶어지면 이 방식으로 옮긴다.
 - **구조**: 처치 화음을 음악 이벤트에서 빼서 `event:/SFX/KillChord`(색·보이싱·스타일은 이벤트 파라미터) 원샷 이벤트로 만들고, 처치마다 인스턴스를 하나 만든다.

@@ -85,11 +85,17 @@ public class KillChordVoicerTests
     }
 
     [Test]
-    public void PhraseDownbeat_HasNoOnsetShift()
+    public void PhraseDownbeat_AppliesOnsetShift()
     {
-        var note = Voice(1, 0, 0, 1)[0];
-        Assert.AreEqual(0.0, KillChordVoicer.OnsetShiftSeconds(note, true));
-        Assert.AreEqual(InstrumentTable.OnsetSeconds(note.Instrument, note.Midi), KillChordVoicer.OnsetShiftSeconds(note, false));
+        // R19: one-shots are DSP scheduled, so a phrase downbeat (possible jump landing) gets the attack shift too.
+        // Chord index 0 is the phrase's first bar, i.e. the chord voiced on a phrase downbeat.
+        foreach (int style in new[] { 2, 3 }) // funk, dreamy
+        {
+            var note = Voice(style, 0, 0, 1)[0];
+            double onset = InstrumentTable.OnsetSeconds(note.Instrument, note.Midi);
+            Assert.Greater(onset, 0.0, "style {0} note has a measured onset", style);
+            Assert.AreEqual(onset, KillChordVoicer.OnsetShiftSeconds(note));
+        }
     }
 
     [Test]

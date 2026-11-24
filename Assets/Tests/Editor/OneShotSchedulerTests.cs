@@ -10,9 +10,19 @@ public class OneShotSchedulerTests
         public readonly List<(int handle, ulong dspStop)> Stops = new List<(int, ulong)>();
         public readonly List<int> Releases = new List<int>();
         public ulong Now;
+        /// <summary>Added to Now after every NowDsp read (simulates the mixer clock running between reads).</summary>
+        public ulong AdvancePerRead;
         int _next;
 
-        public ulong NowDsp => Now;
+        public ulong NowDsp
+        {
+            get
+            {
+                ulong now = Now;
+                Now += AdvancePerRead;
+                return now;
+            }
+        }
 
         public int Start(Instrument inst, int midi, float gainDb, ulong dspStart)
         {
@@ -197,6 +207,38 @@ public class OneShotSchedulerTests
         Assert.IsFalse(scheduler.Schedule(Inst, 72, 2, 0.5, 0f, 0.0));
         Assert.AreEqual(1, scheduler.LateCount);
         Assert.AreEqual(0, backend.Starts.Count);
+    }
+
+    [Test]
+    public void Schedule_LateOnSecondNowRead_ReturnsFalse_CountsLateOnce()
+    {
+        var (clock, backend, scheduler) = Make();
+        clock.Anchor(0, 0, 120);
+        backend.Now = 47999;        // first read: beat 2 (48000) is still ahead
+        backend.AdvancePerRead = 1; // second read: 48000, the start has passed
+        Assert.IsFalse(scheduler.Schedule(Inst, 72, 2, 0.5, 0f, 0.0));
+        Assert.AreEqual(1, scheduler.LateCount);
+        Assert.AreEqual(0, scheduler.ActiveCount, "late note not kept");
+        backend.AdvancePerRead = 0;
+        scheduler.Update();
+        Assert.AreEqual(1, scheduler.LateCount, "not counted again by Update");
+        Assert.AreEqual(0, backend.Starts.Count);
+    }
+
+    [Test]
+    public void PhraseLanding_OnsetShiftUsesPredictedAnchor()
+    {
+        // R19: a kill on a phrase downbeat (jump landing, beat 16) starts its sample early, before the boundary;
+        // the landing's DSP time comes from the predicted anchor (old tempo up to beat 16, pending tempo after it).
+        var (clock, backend, scheduler) = Make();
+        clock.Anchor(15, 15 * 24000, 120);
+        clock.SetTempoFrom(16, 132);
+        backend.Now = 16 * 24000 - 6000;
+        Assert.IsTrue(scheduler.Schedule(Inst, 72, 16, 0.5, 0f, 0.045));
+        Assert.AreEqual(1, backend.Starts.Count);
+        Assert.AreEqual(16UL * 24000 - 2160, backend.Starts[0].dspStart, "landing minus 45 ms");
+        ulong expectedStop = 16UL * 24000 + (ulong)System.Math.Round(0.5 * 60.0 / 132 * Rate);
+        Assert.Contains((backend.Starts[0].handle, expectedStop), backend.Stops);
     }
 
     [Test]

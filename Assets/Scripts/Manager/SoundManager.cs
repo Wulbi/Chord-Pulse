@@ -473,14 +473,13 @@ public sealed class SoundManager : SingletonBehaviour<SoundManager>
         KillChordVoicer.Voice(chord.Style, color, chordIndex, before, chord.Combo, chord.Tension, _voicedBefore);
         KillChordVoicer.Voice(chord.Style, color, chordIndex, after, chord.Combo, chord.Tension, _voicedAfter);
         int inPhrase = beat % (SectionSelector.BarsPerPhrase * BeatsPerBar);
-        bool phraseDownbeat = inPhrase == 0;
         double window = inPhrase <= PostBoundaryBeats ? PostBoundaryDispatchBeats : OneShotScheduler.DispatchWindowBeats;
         foreach (var note in _voicedAfter)
         {
             if (RemoveSame(_voicedBefore, note))
                 continue; // already scheduled by an earlier kill of this beat
             KillScheduler.Schedule(note.Instrument, note.Midi, beat, note.LengthBeats, note.GainDb,
-                KillChordVoicer.OnsetShiftSeconds(note, phraseDownbeat), window);
+                KillChordVoicer.OnsetShiftSeconds(note), window);
         }
     }
 

@@ -52,9 +52,13 @@ public static class KillChordVoicer
                 KillChordTable.PunchLengthBeats, KillChordTable.PunchDb - KillChordTable.NormalizeDb));
     }
 
-    /// <summary>Seconds to start the one-shot early so its attack lands on the beat; a phrase downbeat (possible section-jump landing) is never shifted.</summary>
-    public static double OnsetShiftSeconds(KillNote n, bool phraseDownbeat)
+    /// <summary>
+    /// Seconds to start the one-shot early so its attack lands on the beat. Applied on every beat, phrase downbeats
+    /// (possible section-jump landings) included: a DSP-scheduled start may sit before the jump (the old timeline notes
+    /// could not, hence their no-shift rule).
+    /// </summary>
+    public static double OnsetShiftSeconds(KillNote n)
     {
-        return phraseDownbeat ? 0.0 : InstrumentTable.OnsetSeconds(n.Instrument, n.Midi);
+        return InstrumentTable.OnsetSeconds(n.Instrument, n.Midi);
     }
 }

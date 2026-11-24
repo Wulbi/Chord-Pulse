@@ -242,7 +242,7 @@ own sample (`Marimba_hit_Outrigger_C4` / `_G4`); a third instance with Note 60 (
 
 ### Sidechain from bus:/Kill Chords into the Harmony compressor (for Task 6): not possible this way
 
-`FMOD/Tools/kill_bus_sidechain.js` adds a Sidechain effect to `bus:/Kill Chords` and adds it to the Harmony
+`FMOD/Tools/retired/kill_bus_sidechain.js` (retired: superseded by `kill_oneshots.js`, now only throws) adds a Sidechain effect to `bus:/Kill Chords` and adds it to the Harmony
 compressor's `relationships.sidechains`. Studio accepts and builds it, but at runtime (FMOD 2.02.35) the link is not
 made: the compressor DSP keeps only its two in-event `SEND_SIDECHAIN` inputs, the bus has no sidechain send, and
 three bursts of loud Marimba one-shots on the bus (bus level +1 to +2 dBFS, Harmony playing) gave 0.00 dB gain

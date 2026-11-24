@@ -2,7 +2,7 @@
 // the Harmony group of event:/Music/ChordPulseGame, the way the in-event "Kill Chords" group track already does.
 // Adds a Sidechain effect at the end of bus:/Kill Chords and adds it to the sidechain inputs of the Harmony compressor
 // (keeping its existing inputs). Idempotent. Run with FMOD Studio closed, then build as a separate command:
-//     fmodstudiocl.exe -script FMOD/Tools/kill_bus_sidechain.js FMOD/ChordPulse/ChordPulse.fspro
+//     fmodstudiocl.exe -script FMOD/Tools/retired/kill_bus_sidechain.js FMOD/ChordPulse/ChordPulse.fspro
 //
 // RESULT (Task 3, FMOD 2.02.35, Docs/Captures/README.md): the link can be authored and builds, but at runtime Studio
 // does not connect it: the Harmony compressor keeps only its two in-event sidechain inputs, the bus has no sidechain
