@@ -9,7 +9,7 @@ Run on the FMOD project (FMOD Studio closed), then build the banks as a SEPARATE
     fmodstudiocl.exe -build FMOD/ChordPulse/ChordPulse.fspro
 Idempotent: the script deletes the Inst events it made before and recreates them.
 
-Each event has an event-local parameter Note (0-127, integer) and, at timeline 0, one SingleSound per MIDI note
+Each event has an event-local parameter Note (0-127, continuous; Unity sets whole numbers) and, at timeline 0, one SingleSound per MIDI note
 (sample + pitch from samples.pick(), volume = NORMALIZE_DB - sample RMS), enabled only for Note in [m-0.4, m+0.4].
 Unity starts the instrument, sets Note, and schedules it on the beat. Output goes to bus:/Kill Chords.
 
@@ -104,13 +104,18 @@ if (!killBus) {
     log("created bus " + BUS);
 }
 
-// --- parameter Note: one project preset (each event keeps its own value), 0-127 in integer steps ---
+// --- parameter Note: one project preset (each event keeps its own value), 0-127 ---
+// Continuous, not discrete: on a discrete parameter FMOD widened each note's [m-0.4, m+0.4] condition to reach m+1, so
+// Note 60 also played the 59 sound (B+C, E+F clusters in every C / Am / F kill chord; measured 2026-11-25). Unity sets
+// whole numbers with ignoreseekspeed, so a continuous parameter selects exactly one sound.
 var noteParam = project.lookup("parameter:/Note");
 if (!noteParam) {
-    noteParam = project.workspace.addGameParameter({ name: "Note", type: project.parameterType.UserDiscrete, min: 0, max: 127 });
+    noteParam = project.workspace.addGameParameter({ name: "Note", type: project.parameterType.User, min: 0, max: 127 });
     noteParam = project.lookup("parameter:/Note") || noteParam;
     log("created parameter Note");
 }
+noteParam.parameter.parameterType = project.parameterType.User;
+noteParam.parameter.seekSpeed = 0;
 noteParam.parameter.minimum = 0;
 noteParam.parameter.maximum = 127;
 noteParam.parameter.initialValue = 0;
@@ -130,6 +135,9 @@ function audioFile(rel) {
     });
     if (!found) { found = project.importAudioFile(assetsRoot + rel); log("imported " + rel); }
     if (!found) throw "could not import " + rel;
+    // Studio streams assets longer than ~10 s by default; a streamed one-shot starts hundreds of ms late, so the
+    // scheduler drops it or it lands on the next chord (vibes and harp, measured 2026-11-25). Load them into memory.
+    if (found.isStreaming) { found.isStreaming = false; log("not streaming: " + rel); }
     files[rel] = found;
     return found;
 }
