@@ -3,6 +3,20 @@ using NUnit.Framework;
 public class BeatClockTests
 {
     [Test]
+    public void BeatAt_Double_MatchesUlong()
+    {
+        var clock = new BeatClock(48000);
+        clock.Anchor(0, 0, 120);
+        Assert.IsTrue(clock.BeatAt(24000.0, out double a));
+        Assert.IsTrue(clock.BeatAt(24000UL, out double b));
+        Assert.AreEqual(1.0, a, 1e-9);
+        Assert.AreEqual(1.0, b, 1e-9);
+        Assert.IsTrue(clock.BeatAt(24000.5, out double c));
+        Assert.Greater(c, 1.0);
+        Assert.Less(c, 1.0001);
+    }
+
+    [Test]
     public void DspAt_ReturnsFalse_BeforeFirstAnchor()
     {
         var clock = new BeatClock(48000);

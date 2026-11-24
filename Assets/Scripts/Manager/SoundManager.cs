@@ -130,6 +130,7 @@ public sealed class SoundManager : SingletonBehaviour<SoundManager>
     // Beat position as FMOD is mixing it (drives audio scheduling) and as the player hears it (drives visuals).
     double _audioBeat = -1;
     double _visualBeat = -1;
+    readonly DspClockSmoother _dspSmoother = new DspClockSmoother(48000);
     double _roundSeconds;
 
     bool Running => _musicPlaying && _conductor.HasStarted;
@@ -235,6 +236,7 @@ public sealed class SoundManager : SingletonBehaviour<SoundManager>
     {
         StopMusic();
         _audioBeat = _visualBeat = -1;
+        _dspSmoother.Reset(_conductor.Clock.SampleRate);
         _roundSeconds = 0;
         _feverStart = -1;
         Array.Clear(_appliedFever, 0, _appliedFever.Length);
@@ -532,7 +534,17 @@ public sealed class SoundManager : SingletonBehaviour<SoundManager>
         if (!_conductor.HasStarted)
             return;
         _audioBeat = _conductor.BeatPosition();
-        _visualBeat = Math.Max(0, _audioBeat - _conductor.SecondsToBeats(visualLatencyMs / 1000.0));
+        double latencyBeats = _conductor.SecondsToBeats(visualLatencyMs / 1000.0);
+        double visual;
+        // The screen reads the mixer clock (it keeps running while beat callbacks are late, e.g. after a timeline jump);
+        // before the first anchor it falls back to the callback-based position.
+        if (_conductor.Clock.HasAnchor && _conductor.Clock.BeatAt(
+                _dspSmoother.Sample(MusicConductor.MasterDsp(), System.Diagnostics.Stopwatch.GetTimestamp() / (double)System.Diagnostics.Stopwatch.Frequency),
+                out double clockBeat))
+            visual = clockBeat - latencyBeats;
+        else
+            visual = _audioBeat - latencyBeats;
+        _visualBeat = Math.Max(_visualBeat, Math.Max(0, visual));
         _roundSeconds += Time.deltaTime;
 
         // Beats past the next phrase boundary run at the upcoming section's BPM (ruling R11); safe every frame.

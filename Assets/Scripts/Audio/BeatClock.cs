@@ -88,12 +88,15 @@ public sealed class BeatClock
     /// Beat position heard at a DSP clock (inverse of <see cref="DspAt"/>, same pending tempo change); false before the
     /// first anchor. Use it for "now in beats" from the mixer clock, which keeps running while beat callbacks are late.
     /// </summary>
-    public bool BeatAt(ulong dspClock, out double beat)
+    public bool BeatAt(ulong dspClock, out double beat) => BeatAt((double)dspClock, out beat);
+
+    /// <summary>Same as the <c>ulong</c> overload for a fractional (e.g. frame-interpolated) DSP clock.</summary>
+    public bool BeatAt(double dspClock, out double beat)
     {
         beat = 0;
         if (!_anchored)
             return false;
-        double seconds = ((double)dspClock - _anchorDsp) / _sampleRate;
+        double seconds = (dspClock - _anchorDsp) / _sampleRate;
         if (_hasPending && _pendingBeat > _anchorBeat)
         {
             double toPending = (_pendingBeat - _anchorBeat) * 60.0 / _bpm;
