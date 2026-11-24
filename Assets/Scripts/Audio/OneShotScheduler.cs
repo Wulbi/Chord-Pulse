@@ -13,13 +13,31 @@ public interface IOneShotBackend
 }
 
 /// <summary>
-/// Schedules instrument one-shots on beats of a <see cref="BeatClock"/>. Minimal version (Task 3 spike):
-/// only <see cref="Schedule"/>; Task 5 adds Update / RescheduleFrom / StopAll.
+/// Schedules instrument one-shots on beats of a <see cref="BeatClock"/>. A note is kept here until its start is at most
+/// half a beat away, then handed to the backend with its start and stop DSP times (computed from the clock at that
+/// moment, so anchors and pending tempo changes that arrive meanwhile are used). Call <see cref="Update"/> every frame.
 /// </summary>
 public sealed class OneShotScheduler
 {
+    /// <summary>Notes are handed to the backend once their start is at most this many beats ahead.</summary>
+    public const double DispatchWindowBeats = 0.5;
+
+    sealed class Note
+    {
+        public Instrument Inst;
+        public int Midi;
+        public double Beat;
+        public double LengthBeats;
+        public float GainDb;
+        public double OnsetSeconds;
+        public int Handle = -1; // >= 0 once handed to the backend
+        public ulong Start;
+        public ulong Stop;
+    }
+
     readonly BeatClock _clock;
     readonly IOneShotBackend _backend;
+    readonly List<Note> _notes = new List<Note>();
 
     public OneShotScheduler(BeatClock clock, IOneShotBackend backend)
     {
@@ -39,30 +57,136 @@ public sealed class OneShotScheduler
     /// </summary>
     public long ScheduleOffsetSamples { get; set; } = DefaultScheduleOffsetSamples;
 
-    /// <summary>Notes that were not started because their start time had already passed.</summary>
+    /// <summary>Notes that were never started because their start time had already passed (never played late).</summary>
     public int LateCount { get; private set; }
+
+    /// <summary>Notes waiting for the dispatch window plus notes handed to the backend whose stop time has not passed.</summary>
+    public int ActiveCount => _notes.Count;
 
     /// <summary>
     /// Plays <paramref name="midi"/> on <paramref name="inst"/> so its attack lands on <paramref name="beat"/>
     /// (the sample starts <paramref name="onsetSeconds"/> earlier) and stops it <paramref name="lengthBeats"/> later.
-    /// False if the clock has no anchor yet, the start is already in the past, or the backend failed.
+    /// A note already inside the dispatch window goes to the backend at once.
+    /// False if the clock has no anchor yet, the start is already in the past (counted in <see cref="LateCount"/>),
+    /// or the backend failed on an immediate start.
     /// </summary>
     public bool Schedule(Instrument inst, int midi, double beat, double lengthBeats, float gainDb, double onsetSeconds)
     {
-        if (!_clock.DspAt(beat, out ulong onBeat) || !_clock.DspAt(beat + lengthBeats, out ulong offBeat))
+        var note = new Note
+        {
+            Inst = inst, Midi = midi, Beat = beat, LengthBeats = Math.Max(0, lengthBeats), GainDb = gainDb,
+            OnsetSeconds = onsetSeconds,
+        };
+        if (!Times(note, out long start, out _, out _))
             return false;
-        long start = (long)onBeat + ScheduleOffsetSamples - (long)Math.Round(onsetSeconds * _clock.SampleRate);
-        long stop = (long)offBeat + ScheduleOffsetSamples;
         if (start <= (long)_backend.NowDsp)
         {
             LateCount++;
             return false;
         }
-        int handle = _backend.Start(inst, midi, gainDb, (ulong)start);
-        if (handle < 0)
+        _notes.Add(note);
+        if (Dispatch(note, _backend.NowDsp) == DispatchResult.Failed)
+        {
+            _notes.Remove(note);
             return false;
-        _backend.Stop(handle, (ulong)stop);
-        _backend.Release(handle);
+        }
+        return true;
+    }
+
+    /// <summary>
+    /// Hands waiting notes whose start is at most <see cref="DispatchWindowBeats"/> away to the backend, drops waiting
+    /// notes whose start has already passed (<see cref="LateCount"/>), and releases handles whose stop time has passed.
+    /// </summary>
+    public void Update()
+    {
+        ulong now = _backend.NowDsp;
+        for (int i = _notes.Count - 1; i >= 0; i--)
+        {
+            var note = _notes[i];
+            if (note.Handle >= 0)
+            {
+                if (now >= note.Stop)
+                {
+                    _backend.Release(note.Handle);
+                    _notes.RemoveAt(i);
+                }
+                continue;
+            }
+            var result = Dispatch(note, now);
+            if (result == DispatchResult.Late || result == DispatchResult.Failed)
+                _notes.RemoveAt(i);
+        }
+    }
+
+    /// <summary>
+    /// Recomputes every note on or after <paramref name="beat"/> with the current clock (call after the clock learned
+    /// a tempo that differs from what was assumed, e.g. a section that did not change). Notes already handed to the
+    /// backend but not yet sounding are cancelled and handed over again with the new times; notes already sounding
+    /// are left alone.
+    /// </summary>
+    public void RescheduleFrom(double beat)
+    {
+        ulong now = _backend.NowDsp;
+        for (int i = _notes.Count - 1; i >= 0; i--)
+        {
+            var note = _notes[i];
+            if (note.Beat < beat || note.Handle < 0 || note.Start <= now)
+                continue;
+            Cancel(note, now);
+        }
+        Update();
+    }
+
+    /// <summary>Drops every waiting note and stops every note handed to the backend now.</summary>
+    public void StopAll()
+    {
+        ulong now = _backend.NowDsp;
+        foreach (var note in _notes)
+            if (note.Handle >= 0)
+                Cancel(note, now);
+        _notes.Clear();
+    }
+
+    enum DispatchResult { Waiting, Sent, Late, Failed }
+
+    DispatchResult Dispatch(Note note, ulong now)
+    {
+        if (!Times(note, out long start, out long stop, out long window))
+            return DispatchResult.Failed;
+        if (start <= (long)now)
+        {
+            LateCount++; // never hand the backend a start that is already past
+            return DispatchResult.Late;
+        }
+        if (start - (long)now > window)
+            return DispatchResult.Waiting;
+        int handle = _backend.Start(note.Inst, note.Midi, note.GainDb, (ulong)start);
+        if (handle < 0)
+            return DispatchResult.Failed;
+        note.Handle = handle;
+        note.Start = (ulong)start;
+        note.Stop = (ulong)Math.Max(stop, start);
+        _backend.Stop(handle, note.Stop);
+        return DispatchResult.Sent;
+    }
+
+    void Cancel(Note note, ulong now)
+    {
+        _backend.Stop(note.Handle, now);
+        _backend.Release(note.Handle);
+        note.Handle = -1;
+    }
+
+    /// <summary>Start / stop DSP times of a note and its dispatch window in samples, from the clock as it is now.</summary>
+    bool Times(Note note, out long start, out long stop, out long window)
+    {
+        start = stop = window = 0;
+        if (!_clock.DspAt(note.Beat, out ulong onBeat) || !_clock.DspAt(note.Beat + note.LengthBeats, out ulong offBeat))
+            return false;
+        start = (long)onBeat + ScheduleOffsetSamples - (long)Math.Round(note.OnsetSeconds * _clock.SampleRate);
+        stop = (long)offBeat + ScheduleOffsetSamples;
+        // Window measured backwards from the beat at the tempo that leads into it; near DSP 0 just send.
+        window = _clock.DspAt(note.Beat - DispatchWindowBeats, out ulong before) ? (long)onBeat - (long)before : long.MaxValue;
         return true;
     }
 }
@@ -73,19 +197,22 @@ public sealed class OneShotScheduler
 /// sample accurate) on the first <see cref="Update"/> after start(), once Studio has created the group.
 /// Call Update every frame. (Task 3 spike: EVENT_PROPERTY.SCHEDULE_DELAY was as precise but about 24 ms late on
 /// average, an offset that depends on the Studio update timing; see Docs/Captures/README.md.)
+/// <see cref="Stop"/> with a time at or before now, or at or before the note's start, cancels the note at once.
 /// </summary>
 public sealed class FmodOneShotBackend : IOneShotBackend
 {
-    struct Pending
+    struct Note
     {
         public FMOD.Studio.EventInstance Instance;
+        public FMOD.ChannelGroup Group;
+        public bool Applied; // setDelay done
         public ulong Start;
         public ulong Stop;
         public bool Released;
         public int Frames;
     }
 
-    readonly Dictionary<int, Pending> _pending = new Dictionary<int, Pending>();
+    readonly Dictionary<int, Note> _notes = new Dictionary<int, Note>();
     readonly List<int> _keys = new List<int>();
     readonly Dictionary<Instrument, FMOD.Studio.EventDescription> _descriptions = new Dictionary<Instrument, FMOD.Studio.EventDescription>();
     int _next;
@@ -96,6 +223,8 @@ public sealed class FmodOneShotBackend : IOneShotBackend
     /// </summary>
     public int DroppedCount { get; private set; }
     public int StartedCount { get; private set; }
+    /// <summary>Notes cancelled (Stop at or before their start) before they sounded.</summary>
+    public int CancelledCount { get; private set; }
 
     public ulong NowDsp => MusicConductor.MasterDsp();
 
@@ -118,62 +247,86 @@ public sealed class FmodOneShotBackend : IOneShotBackend
         }
         StartedCount++;
         int handle = _next++;
-        _pending[handle] = new Pending { Instance = instance, Start = dspStart };
+        _notes[handle] = new Note { Instance = instance, Start = dspStart };
         return handle;
     }
 
     public void Stop(int handle, ulong dspStop)
     {
-        if (_pending.TryGetValue(handle, out var p))
+        if (!_notes.TryGetValue(handle, out var n))
+            return;
+        ulong now = NowDsp;
+        if (dspStop <= now || dspStop <= n.Start)
         {
-            p.Stop = dspStop;
-            _pending[handle] = p;
+            if (n.Start > now)
+                CancelledCount++;
+            n.Instance.stop(FMOD.Studio.STOP_MODE.IMMEDIATE);
+            n.Instance.release();
+            _notes.Remove(handle);
+            return;
         }
+        n.Stop = dspStop;
+        if (n.Applied)
+            n.Group.setDelay(n.Start, n.Stop, true);
+        _notes[handle] = n;
     }
 
     public void Release(int handle)
     {
-        if (_pending.TryGetValue(handle, out var p))
+        if (!_notes.TryGetValue(handle, out var n))
+            return;
+        if (n.Applied)
         {
-            p.Released = true;
-            _pending[handle] = p;
+            // FMOD frees the instance once it has stopped; nothing left to change for this handle.
+            n.Instance.release();
+            _notes.Remove(handle);
+            return;
         }
+        n.Released = true;
+        _notes[handle] = n;
     }
 
     /// <summary>
-    /// Applies start / stop times once each instance's channel group exists; releases finished handles. A note whose
-    /// start is already past (or whose group never appears) is stopped immediately and dropped, not played late.
+    /// Applies start / stop times once each instance's channel group exists. A note whose start is already past
+    /// (or whose group never appears) is stopped immediately and dropped, not played late.
     /// </summary>
     public void Update()
     {
-        if (_pending.Count == 0)
+        if (_notes.Count == 0)
             return;
         ulong now = NowDsp;
         _keys.Clear();
-        _keys.AddRange(_pending.Keys);
+        _keys.AddRange(_notes.Keys);
         foreach (int key in _keys)
         {
-            var p = _pending[key];
-            bool hasGroup = p.Instance.getChannelGroup(out FMOD.ChannelGroup group) == FMOD.RESULT.OK && group.hasHandle();
-            if (!hasGroup && ++p.Frames <= 30)
+            var n = _notes[key];
+            if (n.Applied)
+                continue;
+            bool hasGroup = n.Instance.getChannelGroup(out FMOD.ChannelGroup group) == FMOD.RESULT.OK && group.hasHandle();
+            if (!hasGroup && ++n.Frames <= 30)
             {
-                _pending[key] = p;
+                _notes[key] = n;
                 continue;
             }
-            if (hasGroup && p.Start > now)
+            if (hasGroup && n.Start > now)
             {
-                group.setDelay(p.Start, p.Stop, true);
-                if (p.Released)
-                    p.Instance.release();
+                group.setDelay(n.Start, n.Stop, true);
+                if (n.Released)
+                {
+                    n.Instance.release();
+                    _notes.Remove(key);
+                    continue;
+                }
+                n.Group = group;
+                n.Applied = true;
+                _notes[key] = n;
+                continue;
             }
-            else
-            {
-                // Too late (start already past) or no channel group after 30 frames: drop it, never play it late.
-                DroppedCount++;
-                p.Instance.stop(FMOD.Studio.STOP_MODE.IMMEDIATE);
-                p.Instance.release();
-            }
-            _pending.Remove(key);
+            // Too late (start already past) or no channel group after 30 frames: drop it, never play it late.
+            DroppedCount++;
+            n.Instance.stop(FMOD.Studio.STOP_MODE.IMMEDIATE);
+            n.Instance.release();
+            _notes.Remove(key);
         }
     }
 }

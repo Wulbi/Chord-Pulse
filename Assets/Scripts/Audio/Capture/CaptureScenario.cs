@@ -157,12 +157,16 @@ public sealed class CaptureScenario : MonoBehaviour
             if (music.isValid() && music.setParameterByName("SpikeRef", 1f, true) == FMOD.RESULT.OK)
                 _spikeRefSet = true;
         }
+        // R11: the next phrase's BPM is known a phrase ahead (sections are 108 + 8 * index BPM, Docs/AdaptiveAudioPlan.md),
+        // so beats past the boundary are timed with it before the landing beat's anchor arrives.
+        _conductor.Clock.SetTempoFrom(sound.NextPhraseStep / SoundManager.StepsPerBeat, 108 + 8 * sound.UpcomingPhrase.Section);
+        _scheduler.Update();
         _backend.Update();
         // Short lead: odd beats, 0.3 beat ahead of the (visual) beat position.
         double position = sound.BeatPosition;
         while (_nextShort <= spikeBeats && position >= _nextShort - ShortLead)
         {
-            if (_conductor.Clock.HasAnchor && _conductor.Clock.AnchorBeat >= _nextShort - 1)
+            if (_conductor.Clock.HasAnchor)
                 ScheduleClick(_nextShort, ShortLead);
             else
                 _spikeLog.Add(_nextShort + "," + ShortLead.ToString(CultureInfo.InvariantCulture) + ",0,0,-1,0");
@@ -223,8 +227,8 @@ public sealed class CaptureScenario : MonoBehaviour
                 timeline.Append(pair.Key).Append(',').Append(pair.Value).Append('\n');
             File.WriteAllText(Path.ChangeExtension(path, ".timeline.csv"), timeline.ToString());
             spikeSummary = string.Format(CultureInfo.InvariantCulture,
-                "; SPIKE offset {0} samples, scheduled {1}, started {2}, late (scheduler, not started) {3}, dropped (backend, group too late) {4}",
-                scheduleOffsetSamples, _spikeLog.Count, _backend.StartedCount, _scheduler.LateCount, _backend.DroppedCount);
+                "; SPIKE offset {0} samples, scheduled {1}, started {2}, late (scheduler, not started) {3}, dropped (backend, group too late) {4}, cancelled {5}",
+                scheduleOffsetSamples, _spikeLog.Count, _backend.StartedCount, _scheduler.LateCount, _backend.DroppedCount, _backend.CancelledCount);
         }
 
         double dspAvg = _cpuSamples > 0 ? _dspSum / _cpuSamples : 0;

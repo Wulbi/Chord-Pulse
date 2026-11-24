@@ -29,6 +29,46 @@ public class BeatClockTests
     }
 
     [Test]
+    public void SetTempoFrom_UsesPendingTempoFromThatBeat()
+    {
+        var clock = new BeatClock(48000);
+        clock.Anchor(0, 0, 116);
+        clock.SetTempoFrom(16, 132);
+        Assert.IsTrue(clock.DspAt(16.3, out ulong dsp));
+        double expected = 16 * 60.0 / 116 * 48000 + 0.3 * 60.0 / 132 * 48000; // 397241.38 + 6545.45
+        Assert.AreEqual((ulong)System.Math.Round(expected), dsp);
+        Assert.IsTrue(clock.DspAt(15.5, out ulong before));
+        Assert.AreEqual((ulong)System.Math.Round(15.5 * 60.0 / 116 * 48000), before);
+    }
+
+    [Test]
+    public void SetTempoFrom_ClearedByAnchorAtOrAfterItsBeat()
+    {
+        var clock = new BeatClock(48000);
+        clock.Anchor(0, 0, 116);
+        clock.SetTempoFrom(16, 132);
+        clock.Anchor(16, 400000, 140); // reality differs (e.g. another section)
+        Assert.IsTrue(clock.DspAt(17, out ulong dsp));
+        Assert.AreEqual(400000UL + (ulong)System.Math.Round(60.0 / 140 * 48000), dsp);
+    }
+
+    [Test]
+    public void SetTempoFrom_IgnoredAtOrBeforeAnchor_ClearedByReset()
+    {
+        var clock = new BeatClock(48000);
+        clock.Anchor(16, 400000, 116);
+        clock.SetTempoFrom(16, 132);
+        Assert.IsTrue(clock.DspAt(17, out ulong dsp));
+        Assert.AreEqual(400000UL + (ulong)System.Math.Round(60.0 / 116 * 48000), dsp);
+
+        clock.SetTempoFrom(32, 132);
+        clock.Reset();
+        clock.Anchor(0, 0, 116);
+        Assert.IsTrue(clock.DspAt(33, out ulong after));
+        Assert.AreEqual((ulong)System.Math.Round(33 * 60.0 / 116 * 48000), after);
+    }
+
+    [Test]
     public void ResetSampleRate_KeepsInstance_DropsAnchor_UsesNewRate()
     {
         var clock = new BeatClock(48000);
