@@ -21,14 +21,16 @@
 
   python FMOD/Tools/analyze_capture.py frames <wav>
       Reads <wav minus .wav>.frames.csv (dt,beat,bpm per Unity frame: the visual beat SoundManager.BeatPosition).
-      Prints the number of backward steps and max |delta beat - dt*bpm/60| (with its beat position); exit 1 if the
-      beat ever goes back or a frame deviates by more than 0.05 beat.
+      Prints the number of backward steps, max |delta beat - dt*bpm/60| (with its beat position) and the longest hold:
+      consecutive frames whose delta beat is below 0.25 * dt*bpm/60, in ms of wall time, with its beat position. Exit 1
+      if the beat ever goes back, a frame deviates by more than 0.05 beat, or the longest hold exceeds 30 ms.
 
   python FMOD/Tools/analyze_capture.py landings <wav>
       For every 16th beat of the beat log: delay of the logged boundary frame against the frame predicted from the
       previous beat and its BPM (ms), RMS of the first and the next half beat after the predicted boundary, RMS of the
       same place one phrase (8 beats) earlier, and silent runs (>= 20 ms, 5 ms windows with peak below -70 dBFS)
-      within one beat after the predicted boundary.
+      within one beat after the predicted boundary. A run is a "gap" only if the same offset one phrase earlier
+      (boundary b-16, when present) has no silent run covering at least half of it; runs that are silent there as well are listed as "rest".
 
 Needs numpy and scipy. Note: numpy lives in the user site-packages here, so `python -I` (isolated mode) cannot import
 it; run with plain `python` (the WAVs are our own captures, nothing untrusted is loaded).
@@ -329,7 +331,7 @@ def cmd_landings(args):
         raise SystemExit("beat log not found: " + path)
     beats = {int(r["beat"]): (int(r["frame"]), float(r["bpm"])) for r in read_csv(path)}
     print("%s" % os.path.basename(args.wav))
-    print("beat   bpm  delay_ms  first_half_dB  next_half_dB  prev_phrase_dB  silence (offset+length ms after the expected boundary)")
+    print("beat   bpm  delay_ms  first_half_dB  next_half_dB  prev_phrase_dB  gaps (offset+length ms after the expected boundary); rest = also silent one phrase earlier")
     for b in sorted(beats):
         if b == 0 or b % 16 != 0 or b - 1 not in beats:
             continue
@@ -344,7 +346,21 @@ def cmd_landings(args):
             ef, ebpm = beats[b - 8]
             prev = fmt_db(rms_db(mono, ef, ef + 0.5 * rate * 60.0 / ebpm))
         runs = silent_runs(mono, expected, rate * 60.0 / bpm, rate)
-        sil = ", ".join("%.0f+%.0f" % r for r in runs) if runs else "-"
+        gaps, rests = [], []
+        prev_runs = None
+        if b - 16 in beats and b - 17 in beats:
+            prev_expected = beats[b - 17][0] + rate * 60.0 / beats[b - 17][1]
+            scale = beats[b - 16][1] / bpm  # previous phrase's beat length in ms / this one's: compare in beats
+            prev_runs = [(po * scale, pl * scale) for po, pl in
+                         silent_runs(mono, prev_expected, rate * 60.0 / beats[b - 16][1], rate)]
+        for off, length in runs:
+            # A rest: a silent run one phrase earlier covers at least half of this one.
+            quiet_before = prev_runs is not None and any(
+                min(off + length, po + pl) - max(off, po) >= 0.5 * length for po, pl in prev_runs)
+            (rests if quiet_before else gaps).append("%.0f+%.0f" % (off, length))
+        sil = ", ".join(gaps) if gaps else "-"
+        if rests:
+            sil += "  (rest: " + ", ".join(rests) + ")"
         print("%4d  %4.0f  %+8.0f  %13s  %12s  %14s  %s" % (
             b, bpm, (frame - expected) / rate * 1000.0, fmt_db(first), fmt_db(nxt), prev, sil))
     return 0
@@ -360,6 +376,7 @@ def cmd_frames(args):
     if first is None or len(rows) - first < 2:
         raise SystemExit("no frames with a running beat clock in " + path)
     backward, worst, worst_at, over, stalled = 0, 0.0, 0.0, 0, 0
+    hold_ms, hold_best, hold_at = 0.0, 0.0, 0.0
     for i in range(first + 1, len(rows)):
         dt, beat, bpm = rows[i]
         delta = beat - rows[i - 1][1]
@@ -372,9 +389,17 @@ def cmd_frames(args):
             worst, worst_at = dev, beat
         if dev > 0.05:
             over += 1
-    print("%s: %d frames, backward steps %d, frozen frames (delta 0) %d, max |delta beat - dt*bpm/60| %.4f beat at beat %.2f, frames over 0.05: %d" % (
-        os.path.basename(path), len(rows) - first, backward, stalled, worst, worst_at, over))
-    return 1 if backward or over else 0
+        if delta < 0.25 * dt * bpm / 60.0:
+            if hold_ms == 0.0:
+                hold_start = rows[i - 1][1]
+            hold_ms += dt * 1000.0
+            if hold_ms > hold_best:
+                hold_best, hold_at = hold_ms, hold_start
+        else:
+            hold_ms = 0.0
+    print("%s: %d frames, backward steps %d, frozen frames (delta 0) %d, max |delta beat - dt*bpm/60| %.4f beat at beat %.2f, frames over 0.05: %d, longest hold %.0f ms at beat %.2f (limit 30 ms)" % (
+        os.path.basename(path), len(rows) - first, backward, stalled, worst, worst_at, over, hold_best, hold_at))
+    return 1 if backward or over or hold_best > 30.0 else 0
 
 
 def main():

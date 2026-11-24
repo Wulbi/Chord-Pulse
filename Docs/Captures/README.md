@@ -336,40 +336,69 @@ python FMOD/Tools/analyze_capture.py landings <wav>    # every 16th beat: log de
 `landings` columns: `delay_ms` = beat-log frame of the boundary minus the frame predicted from the previous beat and its BPM
 (this is the timeline-callback clock, i.e. what the old visuals used); `first_half_dB` / `next_half_dB` = mono RMS of the half
 beat after the predicted boundary and the half beat after that; `prev_phrase_dB` = RMS of the same place one phrase (8 beats)
-earlier; `silence` = runs of >= 20 ms of 5 ms windows with peak below -70 dBFS within one beat after the predicted boundary
-(offset+length in ms). `silent` = exact digital silence.
+earlier; `gaps` = runs of >= 20 ms of 5 ms windows with peak below -70 dBFS within one beat after the predicted boundary
+(offset+length in ms). A run that is also silent at the same place (in beats) one phrase earlier (boundary b-16) is printed as
+`rest`, not as a gap; `silent` = exact digital silence. Caveat: at 96 a `rest` can be the previous jump landing's gap (80 has one too).
+
+`frames` also reports the longest hold: consecutive frames that advance the beat by less than a quarter of `dt * bpm / 60`, in
+ms of wall time (exit 1 above 30 ms). At about 220 fps a frozen frame deviates only about 0.01 beat, so the 0.05 per-frame
+limit alone cannot see a multi-frame freeze; the hold run can.
 
 ### Visual beat vs beat log (baseline, seed 7)
 
 Reference `baseline_seed7_jumpcheck` (before the DSP-clock visual beat) reproduces the spec table (48: +350 ms / -46.1 dB,
-64: +95, 80: +321 / silent, 96: +823). Boundaries where the beat log is late are 48, 80 and 96 (the timeline jumps); the screen
-beat is read from the DSP clock and shows no stall there.
+64: +95, 80: +321 / silent, 96: +823). Beat-log delays are large at 48, 80 and 96 (the timeline jumps, callbacks arrive late);
+the screen beat is read from the DSP clock instead.
 
-| take | boundary 48 delay | 64 | 80 | 96 | `frames`: backward / max deviation / frames > 0.05 |
-|---|---:|---:|---:|---:|---|
-| `baseline_seed7_jumpcheck` (old) | +350 ms | +95 | +321 | +823 | (no frame log) |
-| `baseline_seed7_a2` (DSP visual beat, `max()` only) | +348 | +86 | +286 | +458 | 0 / 0.1214 beat at 97.05 / 1 (held 14 frames at 96.92, then leapt) |
-| `baseline_seed7_a2fix2` (+ `DspClockSmoother.FollowBeat`) | +291 | +9 | +326 | +462 | 0 / 0.0400 beat at 96.98 / 0 |
-| `baseline_seed7_a2_hold` (`holdArrangement`) | +365 | +1 | +320 | +368 | 0 / 0.0231 beat / 0 |
+| take | beat-log delay 48 / 64 / 80 / 96 (ms) | `frames`: backward / max per-frame deviation (beat) / frames > 0.05 / longest hold |
+|---|---|---|
+| `baseline_seed7_jumpcheck` (old visuals) | +350 / +95 / +321 / +823 | no frame log |
+| `_a2` (DSP visual beat, `max()` only) | +348 / +86 / +286 / +458 | 0 / 0.1214 at 97.05 / 1 / 59 ms at 96.92 |
+| `_a2fix2` (`FollowBeat` v1: hold when behind, capped catch-up) | +291 / +9 / +326 / +462 | 0 / 0.0400 at 96.98 / 0 / 55 ms at 96.94 |
+| `_a2fix3b` (`FollowBeat` now: half-step advance when behind, capped catch-up) | +302 / +3 / +281 / +443 | 0 / 0.0400 at 97.02 / 0 / 8 ms |
+| `_a2_hold` (`holdArrangement`) | +365 / +1 / +320 / +368 | 0 / 0.0231 / 0 / 7 ms |
+| `_a2_hold2` | +292 / -4 / +326 / +316 | 0 / 0.0097 / 0 / 6 ms |
+| `_a2_hold3` | +310 / -4 / +257 / +309 | 0 / 0.0128 / 0 / 8 ms |
 
-`_a2` showed the one flaw: after the late beat-96 anchor the shown beat held for 14 frames and then jumped 0.128 beat in one frame.
-Fix: the shown beat advances by at most the frame's time step plus 0.04 beat (`DspClockSmoother.FollowBeat`), still never backwards.
-The beat log delay at 48 / 80 / 96 stays at several hundred ms by design (timeline callbacks arrive late); the screen no longer follows it.
-All three takes: `stalls >100 ms after the first beat 0`. (An earlier `_a2fix` take was lost to a domain reload at beat 85 and is incomplete.)
+`_a2` held the shown beat for 14 frames at 96.92 after the late beat-96 anchor and then leapt 0.128 beat. `FollowBeat` v1 capped
+the leap (0.04 beat per frame beyond the time step) but still held by construction (55 ms), which the per-frame metric cannot see.
+`FollowBeat` now keeps advancing at half the time step while the clock is behind (never backwards, never zero) and catches up
+by at most the time step plus 0.04 beat per frame; the 0.04 cap is why the max deviation reads 0.0400 where a catch-up happens.
+The beat-log delay at 48 / 80 / 96 stays at several hundred ms by design (timeline callbacks arrive late); the screen follows the
+DSP clock. All takes: `stalls >100 ms after the first beat 0`. (Two earlier recordings, `_a2fix` and `_a2fix3`, were cut short
+when the editor stalled or reloaded and are incomplete; they have no side files.)
 
-### Beat-64 delay
+### Beat-64 delay: cause unconfirmed
 
-Parameters written (beat_now, name, value), identical in `_a2` and `_a2fix2` apart from timing:
+Delay at boundary 64 per take (`landings`), with the writes of the arrangement parameters and NextSection near it
+(`.params.csv`, beat position at which FMOD accepted the write; "-" = no params log):
 
-| window | writes |
-|---|---|
-| 15 - 16.5 (no delay) | 15.55 Variation 3; 16.01 NextSection 1 |
-| 111 - 112.5 (no delay) | 111.50 Variation 1; 112.04 NextSection 1; 112.04 FeatureLoop 0 |
-| 63 - 64.5 (delay) | 63.54 Variation 4; 63.54 BedStyle 2; 64.04-64.16 NextSection 0 |
+| take | hold | delay at 64 | BedStyle / Variation before 64 | NextSection written at (phrase 48 / phrase 64) |
+|---|---|---:|---|---|
+| `baseline_seed7` | off | +90 ms | - | - |
+| `baseline_seed7_task6` | off | +92 ms | - | - |
+| `baseline_seed7_jumpcheck` | off | +95 ms | - | - |
+| `_a2` | off | +86 ms | Variation 4 and BedStyle 2 @63.54 | 48.64 / **64.16** |
+| `_a2fix2` | off | +9 ms | Variation 4 and BedStyle 2 @63.54 | 48.53 / 64.04 |
+| `_a2fix3b` | off | +3 ms | Variation 4 and BedStyle 2 @63.54 | 48.56 / 64.01 |
+| `_a2_hold` | on | +1 ms | none | 48.68 / 64.01 |
+| `_a2_hold2` | on | -4 ms | none | 48.56 / 64.01 |
+| `_a2_hold3` | on | -4 ms | none | 48.56 / 64.01 |
 
-Only 64 has a `BedStyle` write (style 0 to 2 at the phrase start, `ignoreSeek` true) and a Variation of 4. With `holdArrangement`
-(`_hold` take) the window holds only `NextSection` and the delay is +1 ms (below the 10 ms limit). Conclusion: the delay comes
-with the arrangement parameter switch ahead of the boundary (most likely `BedStyle`), which the plan removes anyway; no action.
-Caveat: the delay is not constant (+95, +86 and +9 ms in three takes without `holdArrangement`), so one hold take is supporting
-evidence, not proof. With `holdArrangement` the first half beat after 16 / 32 / 64 / 112 also shows a 65-70 ms silence at 445-490 ms
-and 48 / 80 / 96 are silent for the first 310-360 ms; these gaps are the known jump-landing gaps, not part of this diagnosis.
+Other boundaries without a delay (15 - 16.5, 111 - 112.5) have Variation 3 @15.55 / Variation 1 @111.50 and NextSection at
+16.01 / 112.04; only phrase 64 has a BedStyle write (0 to 2, `ignoreSeek` true).
+
+What the table does and does not show:
+
+- Held takes are all <= 10 ms, but so are the two latest un-held takes (+9, +3 ms), which still contain the BedStyle / Variation
+  writes. The arrangement switch is therefore not sufficient to produce the delay, and the hold takes do not discriminate.
+- The three old takes and `_a2` (+86 to +95 ms) were made with visuals that froze at the preceding jump landing. In `_a2`, the one
+  large-delay take with a params log, NextSection for phrase 64 was written at 64.16 (the visual beat lagged); in the three takes
+  with a small delay it was written at 64.01 - 64.04. 0.16 beat at 108 BPM is about 89 ms, close to the +86 ms. The writes are
+  driven by the shown beat (`UpdatePhrase`), and `FollowBeat` changed the freeze. A late NextSection write is a candidate cause
+  of the late boundary, but one take with a params log is not proof, and the old takes have no log.
+- Cause unconfirmed. Re-measured after the clock switch (plan Task 8).
+
+Silences in the hold takes at 16 / 32 / 64 / 112 (about 445 - 490 ms after the boundary, 65 - 70 ms long): they are present at
+every phrase boundary of the held arrangement (same place, in beats, one phrase earlier), so they are rests in the sparse arrangement and
+`landings` now lists them as `rest`, not as gaps. The jump landings 48 / 80 / 96 show a gap of 0 - 360 ms in every take.

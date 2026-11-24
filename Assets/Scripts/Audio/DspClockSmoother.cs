@@ -92,18 +92,23 @@ public sealed class DspClockSmoother
     }
 
     /// <summary>
-    /// Moves the on-screen beat towards the mixer clock's beat without ever going back and without a single-frame leap:
-    /// a late beat anchor can pull the clock behind the shown beat (the beat holds) and then push it ahead again by
-    /// tenths of a beat in one frame. The shown beat advances by at most the time-based step plus
-    /// <paramref name="maxCatchUpBeats"/> per frame and catches up over the next few frames.
+    /// Moves the on-screen beat towards the mixer clock's beat without going back, without freezing and without a
+    /// single-frame leap. A late beat anchor can pull the clock behind the shown beat and then push it ahead again by
+    /// tenths of a beat in one frame. Target behind: the shown beat keeps advancing at half the time-based step until
+    /// the target passes it. Target ahead: it catches up by at most the time-based step plus
+    /// <paramref name="maxCatchUpBeats"/> per frame. The 0.04 default keeps a frame's deviation from dt * bpm / 60
+    /// under the 0.05 beat criterion of <c>analyze_capture.py frames</c> (0.01 beat spare for the BPM rounding in the log).
     /// </summary>
     /// <param name="current">Beat shown last frame (negative: not started, takes the target as is).</param>
     /// <param name="target">Beat the clock gives now.</param>
     /// <param name="naturalStepBeats">Frame time in beats (dt * bpm / 60).</param>
     public static double FollowBeat(double current, double target, double naturalStepBeats, double maxCatchUpBeats = 0.04)
     {
-        if (current < 0 || target <= current)
+        double natural = Math.Max(0, naturalStepBeats);
+        if (current < 0)
             return Math.Max(current, target);
-        return Math.Min(target, current + Math.Max(0, naturalStepBeats) + maxCatchUpBeats);
+        if (target <= current)
+            return current + 0.5 * natural;
+        return Math.Min(target, current + natural + maxCatchUpBeats);
     }
 }

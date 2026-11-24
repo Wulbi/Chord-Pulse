@@ -153,8 +153,51 @@ public class DspClockSmootherTests
     [Test]
     public void FollowBeat_NeverGoesBack_AndStartsAtTarget()
     {
-        Assert.AreEqual(10.0, DspClockSmoother.FollowBeat(10.0, 9.9, 0.01), 1e-12);
         Assert.AreEqual(3.5, DspClockSmoother.FollowBeat(-1, 3.5, 0.01), 1e-12);
         Assert.AreEqual(10.005, DspClockSmoother.FollowBeat(10.0, 10.005, 0.01), 1e-12);
+        Assert.GreaterOrEqual(DspClockSmoother.FollowBeat(10.0, 9.9, 0.01), 10.0);
+    }
+
+    [Test]
+    public void FollowBeat_TargetBehind_KeepsAdvancingAtHalfStep()
+    {
+        const double step = 0.009;
+        double target = 96.92 - 0.12, shown = 96.92;
+        int frames = 0;
+        while (shown > target && frames < 200)
+        {
+            target += step; // the clock itself runs at the natural rate
+            bool behind = target <= shown;
+            double next = DspClockSmoother.FollowBeat(shown, target, step);
+            Assert.Greater(next - shown, 0);
+            if (behind)
+                Assert.GreaterOrEqual(next - shown, 0.5 * step - 1e-9);
+            shown = next;
+            frames++;
+        }
+        Assert.Less(frames, 200);
+        // Once the target has passed, the shown beat is on the target path again.
+        target += step;
+        Assert.AreEqual(target, DspClockSmoother.FollowBeat(shown, target, step), 1e-6);
+    }
+
+    [Test]
+    public void FollowBeat_BehindThenAhead_NoLeapOverCap()
+    {
+        const double step = 0.009;
+        double shown = 96.92, target = shown - 0.05;
+        for (int i = 0; i < 6; i++)
+        {
+            target += step;
+            shown = DspClockSmoother.FollowBeat(shown, target, step);
+        }
+        target = shown + 0.1;
+        for (int i = 0; i < 10 && shown < target; i++)
+        {
+            double next = DspClockSmoother.FollowBeat(shown, target, step);
+            Assert.LessOrEqual(next - shown, step + 0.04 + 1e-9);
+            shown = next;
+        }
+        Assert.AreEqual(target, shown, 1e-9);
     }
 }
