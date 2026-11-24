@@ -5,7 +5,7 @@ using FMODUnity;
 using UnityEngine;
 
 [DefaultExecutionOrder(-100), DisallowMultipleComponent]
-public sealed class SoundManager : SingletonBehaviour<SoundManager>
+public sealed class SoundManager : SingletonBehaviour<SoundManager>, IKillBedState
 {
     public const int BeatsPerBar = 4;
     public const int StepsPerBeat = 2;
@@ -13,7 +13,6 @@ public sealed class SoundManager : SingletonBehaviour<SoundManager>
 
     const string BankName = "ChordPulse";
     const string MusicPath = "event:/Music/ChordPulseGame";
-    const int MaxChordVoicing = 3;
     const int FeverSteps = 4 * StepsPerBar;
     const int FeverBuildSteps = StepsPerBar;
 
@@ -21,14 +20,6 @@ public sealed class SoundManager : SingletonBehaviour<SoundManager>
 
     enum FeverPhase { Fever, Build, Impact, Outro }
     static readonly string[] FeverParameters = { "Fever", "FeverBuild", "FeverImpact", "FeverOutro" };
-    // A kill targets the next beat if it is at least this far away, otherwise the beat after (Docs/AdaptiveAudioPlan.md
-    // section 10), so the chord's one-shots always get enough lead to be scheduled sample-accurately.
-    const double ChordLeadBeats = 0.4;
-    // FMOD Studio stalls about 0.5 s around a section-jump landing; one-shots whose instance is created during the stall
-    // get their channel group too late and are dropped (never played late, ruling R12). Notes on the first beats after
-    // a phrase boundary are therefore handed to FMOD up to this many beats early instead of half a beat (ruling R15).
-    const double PostBoundaryDispatchBeats = 1.0;
-    const int PostBoundaryBeats = 1;
     // Arrangement parameters (fever, intensity, style, variation, feature loop...) switch this far before the bar
     // they affect. At 0.15 s FMOD started the newly enabled notes late at every phrase boundary ("Loading delay
     // exceeded": ~30 per 40 beats); 0.25 s brought that to ~0-7 (10-5). Longer leads let more of the old bar's tail
@@ -37,23 +28,12 @@ public sealed class SoundManager : SingletonBehaviour<SoundManager>
 
     // Kill chords are one-shots of the instrument events (event:/Inst/*, FMOD/Tools/instruments.py) scheduled on the
     // music's beat clock; they play through bus:/Kill Chords, which ducks the Harmony and Feature groups
-    // (FMOD/Tools/kill_oneshots.py). Per beat: how many kills of each colour (voicing 1..3) and the bed state it plays in.
-    const int KillColorCount = 3;
+    // (FMOD/Tools/kill_oneshots.py). Which beat's chord a kill joins and which notes it adds: KillChordPlanner.
     const string KillBusPath = "bus:/Kill Chords";
-    sealed class KillBeat
-    {
-        public readonly int[] Voicing = new int[KillColorCount];
-        public int Style;
-        public int Combo;
-        public float Tension;
-    }
-    readonly Dictionary<int, KillBeat> _killBeats = new Dictionary<int, KillBeat>();
-    readonly List<int> _expiredKillBeats = new List<int>();
-    readonly List<KillNote> _voicedBefore = new List<KillNote>();
-    readonly List<KillNote> _voicedAfter = new List<KillNote>();
+    readonly KillChordPlanner _killPlanner = new KillChordPlanner();
+    readonly List<OneShotNote> _killNotes = new List<OneShotNote>();
     readonly FmodOneShotBackend _killBackend = new FmodOneShotBackend();
     OneShotScheduler _killScheduler;
-    readonly object _killOwner = new object();
     FMOD.Studio.Bus _killBus;
 
     [Tooltip("Shifts visuals later to match audible output latency (measure per device).")]
@@ -127,7 +107,6 @@ public sealed class SoundManager : SingletonBehaviour<SoundManager>
     bool _musicPlaying;
     readonly bool[] _appliedFever = new bool[FeverParameters.Length];
     int _feverStart = -1;
-    int _lastChordStep = -1;
     // Beat position as FMOD is mixing it (drives audio scheduling) and as the player hears it (drives visuals).
     double _audioBeat = -1;
     double _visualBeat = -1;
@@ -268,8 +247,7 @@ public sealed class SoundManager : SingletonBehaviour<SoundManager>
         _featuresAvailable = false;
         _lastPhrase = -1;
         _phraseStartStep = 0;
-        _lastChordStep = -1;
-        _killBeats.Clear();
+        _killPlanner.Clear();
         _startRoutine = StartCoroutine(LoadAndStartMusic());
     }
 
@@ -372,7 +350,7 @@ public sealed class SoundManager : SingletonBehaviour<SoundManager>
         _musicPlaying = false;
         KillScheduler.StopAll();
         _killBackend.StopAll(); // also the release tails the scheduler has already let go of
-        _killBeats.Clear();
+        _killPlanner.Clear();
         _conductor.Detach();
         if (_music.isValid())
         {
@@ -397,6 +375,13 @@ public sealed class SoundManager : SingletonBehaviour<SoundManager>
             feverStart += StepsPerPhrase;
         _feverStart = feverStart;
 
+        // Kill beats already queued from the build-up bar on were voiced for the old bed; re-voice them as fever's sound.
+        int buildBeat = (feverStart - FeverBuildSteps) / StepsPerBeat;
+        KillScheduler.CancelFrom(buildBeat, _killPlanner);
+        _killNotes.Clear();
+        _killPlanner.Restate(buildBeat, this, _killNotes);
+        ScheduleKillNotes();
+
         // The guest loop already picked for the next phrase would either be silenced by fever or still be playing
         // in the build-up bar, so drop it. FeatureSelector will not pick another one until fever is over.
         _features.CancelNext();
@@ -420,85 +405,31 @@ public sealed class SoundManager : SingletonBehaviour<SoundManager>
     /// </summary>
     public int QueueKillChord(int colorIndex, int chordStep = -1)
     {
-        if (!Running || colorIndex < 0 || colorIndex >= KillColorCount)
+        if (!Running || colorIndex < 0 || colorIndex >= KillChordPlanner.ColorCount)
             return -1;
         // "Now" from the mixer clock: BeatPosition is capped while a jump landing's beat callback is late.
         if (!_conductor.Clock.BeatAt(MusicConductor.MasterDsp(), out double now))
             return -1;
-        // A beat whose time has passed has sounded; its chord is closed.
-        _lastChordStep = Math.Max(_lastChordStep, (int)Math.Floor(now) * StepsPerBeat);
-
-        int target;
-        if (chordStep >= 0)
-        {
-            if (chordStep <= _lastChordStep)
-                return -1;
-            target = chordStep;
-        }
-        else
-        {
-            int beat = (int)Math.Floor(now) + 1;
-            if (beat <= now + ChordLeadBeats)
-                beat++;
-            target = beat * StepsPerBeat;
-        }
-        AddKill(target / StepsPerBeat, colorIndex);
+        _killNotes.Clear();
+        int target = _killPlanner.Queue(now, colorIndex, chordStep, this, _killNotes);
+        ScheduleKillNotes();
         return target;
     }
 
     OneShotScheduler KillScheduler => _killScheduler ??= new OneShotScheduler(_conductor.Clock, _killBackend);
 
-    void AddKill(int beat, int color)
+    void ScheduleKillNotes()
     {
-        if (!_killBeats.TryGetValue(beat, out var chord))
-        {
-            // The bed state the beat plays in, fixed by its first kill so later kills add notes of the same sound.
-            // Build-up and fever play the original kill chords (style 0, combo 0, tension 0), like the bed.
-            int step = beat * StepsPerBeat;
-            bool feverZone = FeverOverlaps(step, step);
-            chord = new KillBeat
-            {
-                Style = feverZone ? StyleSynthpop : StyleAt(step),
-                Combo = feverZone ? 0 : ComboAt(step),
-                Tension = feverZone ? 0f : HeardTension,
-            };
-            _killBeats.Add(beat, chord);
-        }
-        int before = chord.Voicing[color];
-        int after = Math.Min(before + 1, MaxChordVoicing);
-        if (after == before)
-            return;
-        chord.Voicing[color] = after;
-
-        int chordIndex = beat / BeatsPerBar % SectionSelector.BarsPerPhrase;
-        _voicedBefore.Clear();
-        _voicedAfter.Clear();
-        KillChordVoicer.Voice(chord.Style, color, chordIndex, before, chord.Combo, chord.Tension, _voicedBefore);
-        KillChordVoicer.Voice(chord.Style, color, chordIndex, after, chord.Combo, chord.Tension, _voicedAfter);
-        int inPhrase = beat % (SectionSelector.BarsPerPhrase * BeatsPerBar);
-        double window = inPhrase <= PostBoundaryBeats ? PostBoundaryDispatchBeats : OneShotScheduler.DispatchWindowBeats;
-        foreach (var note in _voicedAfter)
-        {
-            if (RemoveSame(_voicedBefore, note))
-                continue; // already scheduled by an earlier kill of this beat
-            KillScheduler.Schedule(new OneShotNote(note.Instrument, OutputBus.KillChords, note.Midi, beat, note.LengthBeats, 0.0,
-                note.GainDb, KillChordVoicer.OnsetShiftSeconds(note)), _killOwner, window);
-        }
+        foreach (var note in _killNotes)
+            KillScheduler.Schedule(note, _killPlanner, KillChordPlanner.DispatchWindow((int)note.Beat));
+        _killNotes.Clear();
     }
 
-    static bool RemoveSame(List<KillNote> notes, KillNote note)
-    {
-        for (int i = 0; i < notes.Count; i++)
-        {
-            var n = notes[i];
-            if (n.Instrument == note.Instrument && n.Midi == note.Midi && n.LengthBeats == note.LengthBeats && n.GainDb == note.GainDb)
-            {
-                notes.RemoveAt(i);
-                return true;
-            }
-        }
-        return false;
-    }
+    // IKillBedState: the bed state at a beat, from the step-based helpers.
+    bool IKillBedState.FeverZone(int beat) => FeverOverlaps(beat * StepsPerBeat, beat * StepsPerBeat);
+    int IKillBedState.StyleAt(int beat) => StyleAt(beat * StepsPerBeat);
+    int IKillBedState.ComboAt(int beat) => ComboAt(beat * StepsPerBeat);
+    float IKillBedState.Tension => HeardTension;
 
     // Bed style FMOD plays at a step (UpdateStyle's rule without the lookahead; fever is handled by the caller).
     int StyleAt(int step)
@@ -757,14 +688,8 @@ public sealed class SoundManager : SingletonBehaviour<SoundManager>
     {
         KillScheduler.Update();
         _killBackend.Update();
-        if (_killBeats.Count == 0 || !_conductor.Clock.BeatAt(MusicConductor.MasterDsp(), out double now))
-            return;
-        _expiredKillBeats.Clear();
-        foreach (int beat in _killBeats.Keys)
-            if (beat < now - 1)
-                _expiredKillBeats.Add(beat);
-        foreach (int beat in _expiredKillBeats)
-            _killBeats.Remove(beat);
+        if (_conductor.Clock.BeatAt(MusicConductor.MasterDsp(), out double now))
+            _killPlanner.Expire(now);
     }
 
     // Accompaniment (music event parameter) and kill chords (bus:/Kill Chords volume) are mixed separately; only push
