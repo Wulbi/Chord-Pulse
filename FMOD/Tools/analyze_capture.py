@@ -28,9 +28,11 @@
   python FMOD/Tools/analyze_capture.py landings <wav>
       For every 16th beat of the beat log: delay of the logged boundary frame against the frame predicted from the
       previous beat and its BPM (ms), RMS of the first and the next half beat after the predicted boundary, RMS of the
-      same place one phrase (8 beats) earlier, and silent runs (>= 20 ms, 5 ms windows with peak below -70 dBFS)
-      within one beat after the predicted boundary. A run is a "gap" only if the same offset one phrase earlier
-      (boundary b-16, when present) has no silent run covering at least half of it; runs that are silent there as well are listed as "rest".
+      same place one phrase (boundary b-8) earlier, and silent runs (>= 20 ms, 5 ms windows with peak below -70 dBFS)
+      within one beat after the predicted boundary. A run is printed as a "rest" (separately from the gaps) only if the
+      window at the same offset (same ms) after the previous bar's downbeat (beat b-4, its logged frame) is entirely
+      silent by the same rule; a run starting less than 20 ms after the boundary, or any run when beat b-4 is not in the
+      beat log, is always a gap.
 
 Needs numpy and scipy. Note: numpy lives in the user site-packages here, so `python -I` (isolated mode) cannot import
 it; run with plain `python` (the WAVs are our own captures, nothing untrusted is loaded).
@@ -331,7 +333,7 @@ def cmd_landings(args):
         raise SystemExit("beat log not found: " + path)
     beats = {int(r["beat"]): (int(r["frame"]), float(r["bpm"])) for r in read_csv(path)}
     print("%s" % os.path.basename(args.wav))
-    print("beat   bpm  delay_ms  first_half_dB  next_half_dB  prev_phrase_dB  gaps (offset+length ms after the expected boundary); rest = also silent one phrase earlier")
+    print("beat   bpm  delay_ms  first_half_dB  next_half_dB  prev_phrase_dB  gaps (offset+length ms after the expected boundary); rest = also silent at the same offset after beat b-4")
     for b in sorted(beats):
         if b == 0 or b % 16 != 0 or b - 1 not in beats:
             continue
@@ -347,17 +349,16 @@ def cmd_landings(args):
             prev = fmt_db(rms_db(mono, ef, ef + 0.5 * rate * 60.0 / ebpm))
         runs = silent_runs(mono, expected, rate * 60.0 / bpm, rate)
         gaps, rests = [], []
-        prev_runs = None
-        if b - 16 in beats and b - 17 in beats:
-            prev_expected = beats[b - 17][0] + rate * 60.0 / beats[b - 17][1]
-            scale = beats[b - 16][1] / bpm  # previous phrase's beat length in ms / this one's: compare in beats
-            prev_runs = [(po * scale, pl * scale) for po, pl in
-                         silent_runs(mono, prev_expected, rate * 60.0 / beats[b - 16][1], rate)]
+        thr = 10 ** (-70.0 / 20.0)
         for off, length in runs:
-            # A rest: a silent run one phrase earlier covers at least half of this one.
-            quiet_before = prev_runs is not None and any(
-                min(off + length, po + pl) - max(off, po) >= 0.5 * length for po, pl in prev_runs)
-            (rests if quiet_before else gaps).append("%.0f+%.0f" % (off, length))
+            # A rest: the window at the same offset (same ms) after the previous bar's downbeat (beat b-4, logged frame)
+            # is entirely silent too. Never for a run starting within 20 ms of the downbeat, nor without a b-4 stamp.
+            rest = False
+            if off >= 20.0 and b - 4 in beats:
+                a0 = beats[b - 4][0] + int(round(off * rate / 1000.0))
+                seg = mono[a0:a0 + int(round(length * rate / 1000.0))]
+                rest = len(seg) > 0 and float(np.max(np.abs(seg))) < thr
+            (rests if rest else gaps).append("%.0f+%.0f" % (off, length))
         sil = ", ".join(gaps) if gaps else "-"
         if rests:
             sil += "  (rest: " + ", ".join(rests) + ")"

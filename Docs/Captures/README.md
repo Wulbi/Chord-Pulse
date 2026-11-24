@@ -336,9 +336,11 @@ python FMOD/Tools/analyze_capture.py landings <wav>    # every 16th beat: log de
 `landings` columns: `delay_ms` = beat-log frame of the boundary minus the frame predicted from the previous beat and its BPM
 (this is the timeline-callback clock, i.e. what the old visuals used); `first_half_dB` / `next_half_dB` = mono RMS of the half
 beat after the predicted boundary and the half beat after that; `prev_phrase_dB` = RMS of the same place one phrase (8 beats)
-earlier; `gaps` = runs of >= 20 ms of 5 ms windows with peak below -70 dBFS within one beat after the predicted boundary
-(offset+length in ms). A run that is also silent at the same place (in beats) one phrase earlier (boundary b-16) is printed as
-`rest`, not as a gap; `silent` = exact digital silence. Caveat: at 96 a `rest` can be the previous jump landing's gap (80 has one too).
+earlier (beat b-8: the `prev_phrase_dB` column); `gaps` = runs of >= 20 ms of 5 ms windows with peak below -70 dBFS within one beat
+after the predicted boundary (offset+length in ms). A run is printed separately as a `rest` only if the window at the same offset
+(same ms) after the previous bar's downbeat (beat b-4, its logged frame) is entirely silent by the same rule; a run that starts less
+than 20 ms after the boundary, or any run when beat b-4 is not in the beat log, is always a gap. `silent` = exact digital silence.
+Caveat: at a tempo change (32, 96) b-4 has a different beat length, so a same-ms offset can miss a rest and report it as a gap.
 
 `frames` also reports the longest hold: consecutive frames that advance the beat by less than a quarter of `dt * bpm / 60`, in
 ms of wall time (exit 1 above 30 ms). At about 220 fps a frozen frame deviates only about 0.01 beat, so the 0.05 per-frame
@@ -399,6 +401,7 @@ What the table does and does not show:
   of the late boundary, but one take with a params log is not proof, and the old takes have no log.
 - Cause unconfirmed. Re-measured after the clock switch (plan Task 8).
 
-Silences in the hold takes at 16 / 32 / 64 / 112 (about 445 - 490 ms after the boundary, 65 - 70 ms long): they are present at
-every phrase boundary of the held arrangement (same place, in beats, one phrase earlier), so they are rests in the sparse arrangement and
-`landings` now lists them as `rest`, not as gaps. The jump landings 48 / 80 / 96 show a gap of 0 - 360 ms in every take.
+Silences in the hold takes at 16 / 32 / 64 / 112 (about 445 - 490 ms after the boundary, 65 - 70 ms long) are also silent at the same offset
+after the previous bar's downbeat (b-4), so `landings` prints them as `rest` at 16, 64 and 112 and as a gap at 32 (tempo change 108 to 116:
+the offset in ms does not line up with beat 28). They occur at every phrase boundary of the held arrangement, i.e. they are rests of the sparse
+arrangement. The landing silences at 48 / 80 / 96 (0 - 360 ms, first half beat silent) are gaps in every take.
