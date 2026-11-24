@@ -107,3 +107,8 @@ InitTestScene*.unity*
 
 # Auto-generated cache in Assets folder
 /[Aa]ssets/[Ss]ceneDependencyCache*
+
+# Audio capture recordings (Docs/Captures/README.md has the results)
+/Docs/Captures/*.wav
+/Docs/Captures/*.beats.csv
+/Docs/Captures/*.cpu.txt
