@@ -124,7 +124,14 @@ No dropped capture frames in any take.
 ## Scheduling spike (Task 3: can Unity start a one-shot exactly on a timeline beat?)
 
 Gate: after removing one constant offset, attack error mean <= 2 ms and max <= 5 ms, including right after section
-changes and with less than 0.4 beat of lead. **Result: PASS** with anchor B + start method 2 (now the only code path).
+changes and with less than 0.4 beat of lead. **Result: conditional PASS** with anchor B + start method 2 (now the
+only code path): every beat that was scheduled lands within the limits (57 of 64 measured; jump landings timed
+against the grid), but 3 of 64 beats, the 0.3-beat-lead beat right after each jump landing, could not be scheduled
+at all (see "What is not covered").
+
+Ruling R11 (controller): the gate passes on start accuracy. The post-landing short-lead case is a gap in what the
+clock knows (the landing beat's anchor arrives too late), not in how precisely a start is placed; Task 5 closes it by
+extrapolating across the phrase boundary with the next section's BPM, and it is re-measured then.
 
 ### Setup
 
@@ -171,7 +178,9 @@ Start 1 is as steady as start 2 with anchor B, but sits 24 ms late, an offset th
 thread picks up the command; start 2 places the channel group on an absolute DSP time, so its offset is only 2.3 ms.
 
 **Chosen: anchor B + start 2, `OneShotScheduler.DefaultScheduleOffsetSamples = -110`** (2.29 ms at 48 kHz). The
-A path (beat-callback DSP) and the `SCHEDULE_DELAY` path were removed from the code.
+A path (beat-callback DSP) and the `SCHEDULE_DELAY` path were removed from the code. Ruling R12: a one-shot whose
+channel group appears only after its start time (or never, 30 frames) is stopped immediately and dropped, never played
+late; the capture log shows it as "dropped (backend)" (0 in every take above).
 
 ### What is not covered (same in all four combos)
 

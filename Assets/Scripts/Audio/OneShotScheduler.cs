@@ -90,8 +90,11 @@ public sealed class FmodOneShotBackend : IOneShotBackend
     readonly Dictionary<Instrument, FMOD.Studio.EventDescription> _descriptions = new Dictionary<Instrument, FMOD.Studio.EventDescription>();
     int _next;
 
-    /// <summary>Starts whose channel group was found only after the start time had passed, or never.</summary>
-    public int LateCount { get; private set; }
+    /// <summary>
+    /// Notes stopped without sounding: their channel group appeared only after the start time had passed, or never
+    /// (30 frames). They are never played late.
+    /// </summary>
+    public int DroppedCount { get; private set; }
     public int StartedCount { get; private set; }
 
     public ulong NowDsp => MusicConductor.MasterDsp();
@@ -137,7 +140,10 @@ public sealed class FmodOneShotBackend : IOneShotBackend
         }
     }
 
-    /// <summary>Applies start / stop times once each instance's channel group exists; releases finished handles.</summary>
+    /// <summary>
+    /// Applies start / stop times once each instance's channel group exists; releases finished handles. A note whose
+    /// start is already past (or whose group never appears) is stopped immediately and dropped, not played late.
+    /// </summary>
     public void Update()
     {
         if (_pending.Count == 0)
@@ -148,23 +154,25 @@ public sealed class FmodOneShotBackend : IOneShotBackend
         foreach (int key in _keys)
         {
             var p = _pending[key];
-            if (p.Instance.getChannelGroup(out FMOD.ChannelGroup group) == FMOD.RESULT.OK && group.hasHandle())
-            {
-                if (p.Start <= now)
-                    LateCount++;
-                group.setDelay(p.Start, p.Stop, true);
-            }
-            else if (++p.Frames <= 30)
+            bool hasGroup = p.Instance.getChannelGroup(out FMOD.ChannelGroup group) == FMOD.RESULT.OK && group.hasHandle();
+            if (!hasGroup && ++p.Frames <= 30)
             {
                 _pending[key] = p;
                 continue;
             }
+            if (hasGroup && p.Start > now)
+            {
+                group.setDelay(p.Start, p.Stop, true);
+                if (p.Released)
+                    p.Instance.release();
+            }
             else
             {
-                LateCount++; // never got a channel group (the event failed to play)
-            }
-            if (p.Released)
+                // Too late (start already past) or no channel group after 30 frames: drop it, never play it late.
+                DroppedCount++;
+                p.Instance.stop(FMOD.Studio.STOP_MODE.IMMEDIATE);
                 p.Instance.release();
+            }
             _pending.Remove(key);
         }
     }

@@ -223,8 +223,8 @@ public sealed class CaptureScenario : MonoBehaviour
                 timeline.Append(pair.Key).Append(',').Append(pair.Value).Append('\n');
             File.WriteAllText(Path.ChangeExtension(path, ".timeline.csv"), timeline.ToString());
             spikeSummary = string.Format(CultureInfo.InvariantCulture,
-                "; SPIKE offset {0} samples, scheduled {1}, started {2}, late (scheduler) {3}, late (backend) {4}",
-                scheduleOffsetSamples, _spikeLog.Count, _backend.StartedCount, _scheduler.LateCount, _backend.LateCount);
+                "; SPIKE offset {0} samples, scheduled {1}, started {2}, late (scheduler, not started) {3}, dropped (backend, group too late) {4}",
+                scheduleOffsetSamples, _spikeLog.Count, _backend.StartedCount, _scheduler.LateCount, _backend.DroppedCount);
         }
 
         double dspAvg = _cpuSamples > 0 ? _dspSum / _cpuSamples : 0;

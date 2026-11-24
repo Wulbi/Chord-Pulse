@@ -8,7 +8,7 @@ using System;
 /// </summary>
 public sealed class BeatClock
 {
-    readonly int _sampleRate;
+    int _sampleRate;
     bool _anchored;
     int _anchorBeat;
     ulong _anchorDsp;
@@ -16,9 +16,7 @@ public sealed class BeatClock
 
     public BeatClock(int sampleRate)
     {
-        if (sampleRate <= 0)
-            throw new ArgumentOutOfRangeException(nameof(sampleRate));
-        _sampleRate = sampleRate;
+        Reset(sampleRate);
     }
 
     public int SampleRate => _sampleRate;
@@ -48,6 +46,15 @@ public sealed class BeatClock
             return false;
         dspClock = (ulong)Math.Round(samples, MidpointRounding.AwayFromZero);
         return true;
+    }
+
+    /// <summary>Drops the anchor and switches to another mixer rate; the same instance stays valid for its holders.</summary>
+    public void Reset(int sampleRate)
+    {
+        if (sampleRate <= 0)
+            throw new ArgumentOutOfRangeException(nameof(sampleRate));
+        _sampleRate = sampleRate;
+        Reset();
     }
 
     public void Reset()

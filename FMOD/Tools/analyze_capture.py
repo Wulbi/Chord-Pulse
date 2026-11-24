@@ -15,7 +15,9 @@
       timeline click (1 kHz, ref band 900-1100) of the same beat, using the take's sidecar logs
       (.beats.csv, .spike.csv, .timeline.csv). Prints error stats before and after removing a constant offset
       (the mean signed error of the take, or --offset-ms), for all beats and for the 4 beats after each section
-      change (timeline discontinuity or tempo change). Missing clicks count as failures.
+      change (timeline discontinuity or tempo change). The verdict covers the measured (paired) beats only; beats
+      that were not scheduled or have no click are counted and listed separately, never folded into the stats:
+      "GATE: PASS on N measured beats; M not scheduled, K no click" (or FAIL). A PASS with M > 0 is conditional.
 
 Needs numpy and scipy. Note: numpy lives in the user site-packages here, so `python -I` (isolated mode) cannot import
 it; run with plain `python` (the WAVs are our own captures, nothing untrusted is loaded).
@@ -267,8 +269,12 @@ def cmd_spike(args):
         for b, lead, e in rows:
             print("    beat %3d lead %.1f err %7.2f ms%s" % (b, lead, e, "  *" if b in post else ""))
     ok = overall[0] <= 2 and overall[1] <= 5 and (np.isnan(jump[1]) or jump[1] <= 5)
-    print("accuracy (after correction, mean <= 2 ms, max <= 5 ms, all and after changes): %s; missing %d"
-          % ("PASS" if ok else "FAIL", len(missing)))
+    unscheduled = sum(1 for _, why in missing if why == "not scheduled")
+    no_click = len(missing) - unscheduled
+    print("GATE (after correction, mean <= 2 ms, max <= 5 ms, all and after changes): %s on %d measured beats; "
+          "%d not scheduled, %d no click (+%d jump landings timed against the grid only)%s"
+          % ("PASS" if ok else "FAIL", len(rows), unscheduled, no_click, len(gridded),
+             "; conditional: not every beat was measured" if ok and missing else ""))
     return 0
 
 

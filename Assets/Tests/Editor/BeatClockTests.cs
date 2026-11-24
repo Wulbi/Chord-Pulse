@@ -27,4 +27,19 @@ public class BeatClockTests
         Assert.IsTrue(clock.DspAt(5, out ulong dsp));
         Assert.AreEqual(106667UL + 21818UL, dsp);
     }
+
+    [Test]
+    public void ResetSampleRate_KeepsInstance_DropsAnchor_UsesNewRate()
+    {
+        var clock = new BeatClock(48000);
+        var held = clock; // e.g. a scheduler holding the conductor's clock
+        clock.Anchor(0, 0, 120);
+        clock.Reset(44100);
+        Assert.AreSame(held, clock);
+        Assert.AreEqual(44100, held.SampleRate);
+        Assert.IsFalse(held.DspAt(1, out _));
+        held.Anchor(8, 441000, 120);
+        Assert.IsTrue(held.DspAt(10, out ulong dsp));
+        Assert.AreEqual(441000UL + 44100UL, dsp);
+    }
 }

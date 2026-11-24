@@ -62,7 +62,8 @@ public sealed class MusicConductor
     public string Section { get; private set; } = string.Empty;
 
     /// <summary>Beat -> DSP clock of the master channel group, anchored on every beat.</summary>
-    public BeatClock Clock { get; private set; } = new BeatClock(48000);
+    /// <remarks>One instance for the conductor's lifetime (Attach only resets it), so holders never go stale.</remarks>
+    public BeatClock Clock { get; } = new BeatClock(48000);
     /// <summary>Timeline position (ms) FMOD reported for the current beat; a jump shows as a discontinuity.</summary>
     public int BeatTimelineMs => _anchorPositionMs;
 
@@ -91,9 +92,7 @@ public sealed class MusicConductor
         _instance = instance;
         FMODUnity.RuntimeManager.CoreSystem.getMasterChannelGroup(out s_master);
         FMODUnity.RuntimeManager.CoreSystem.getSoftwareFormat(out int sampleRate, out _, out _);
-        if (Clock.SampleRate != sampleRate)
-            Clock = new BeatClock(sampleRate);
-        Clock.Reset();
+        Clock.Reset(sampleRate);
         _pollSum = 0;
         _pollCount = 0;
 
