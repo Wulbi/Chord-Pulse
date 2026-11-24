@@ -38,4 +38,47 @@ public class InstrumentCoverageTests
                             }
         Assert.AreEqual(0, failures.Length, failures.ToString());
     }
+
+    [Test]
+    public void EveryPatternNoteExists()
+    {
+        Assert.Greater(PatternTable.Notes.Length, 0, "the pattern table is empty");
+        var notes = new List<(Instrument, OutputBus, int)>();
+        foreach (var n in PatternTable.Notes)
+            notes.Add((n.Instrument, n.Bus, n.Midi));
+        AssertCovered(notes);
+    }
+
+    /// <summary>The visuals read BedNotes; it must list the same (beat, MIDI) as the pattern clips the scheduler plays.</summary>
+    [TestCase("BassDrive")]
+    [TestCase("BassWalk")]
+    [TestCase("PluckArpeggio")]
+    [TestCase("PluckStabs")]
+    [TestCase("ComboBells")]
+    public void BedNotesGenerated_MatchesPatternData(string clipName)
+    {
+        int index = System.Array.IndexOf(PatternTable.ClipNames, clipName);
+        Assert.GreaterOrEqual(index, 0, $"no pattern clip {clipName}");
+        var clip = PatternTable.Clips[index];
+        var fromPattern = new SortedSet<(float, int)>();
+        for (int i = clip.First; i < clip.First + clip.Count; i++)
+            fromPattern.Add((PatternTable.Notes[i].Beat, PatternTable.Notes[i].Midi));
+        var fromBedNotes = new SortedSet<(float, int)>();
+        foreach (var n in BedNotesArray(clipName))
+            fromBedNotes.Add((n.Beat, n.Midi));
+        CollectionAssert.AreEqual(fromBedNotes, fromPattern);
+    }
+
+    static BedNotes.Note[] BedNotesArray(string name)
+    {
+        switch (name)
+        {
+            case "BassDrive": return BedNotes.BassDrive;
+            case "BassWalk": return BedNotes.BassWalk;
+            case "PluckArpeggio": return BedNotes.PluckArpeggio;
+            case "PluckStabs": return BedNotes.PluckStabs;
+            case "ComboBells": return BedNotes.ComboBells;
+        }
+        throw new System.ArgumentException(name);
+    }
 }

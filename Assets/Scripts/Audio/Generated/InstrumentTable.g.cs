@@ -2,11 +2,16 @@
 // Instrument one-shot events (event:/Inst/<bus>/<name>) and the attack onset of each note's sample.
 public enum Instrument
 {
+    Acid,
     Bass,
+    BassEnv,
     Bells,
     Brass,
+    Choir,
     Clav,
+    ClavHigh,
     Glass,
+    GlassPad,
     Glock,
     Guitar,
     Harp,
@@ -14,7 +19,11 @@ public enum Instrument
     OrigBlue,
     OrigRed,
     OrigYellow,
+    Pluck,
+    Rubber,
+    SineSub,
     SpikeClick,
+    Strings,
     Sub,
     Vibes,
 }
@@ -26,6 +35,16 @@ public enum OutputBus
     MusicBed,
     Harmony,
     Feature,
+    Bass,
+    TensionStrings,
+    TensionSub,
+    TensionAcid,
+    ComboPad,
+    LatinMarimba,
+    FunkKeys,
+    FunkGuitar,
+    DreamyChoir,
+    DreamyBells,
 }
 
 public static class InstrumentTable
@@ -36,9 +55,19 @@ public static class InstrumentTable
         switch (bus)
         {
             case OutputBus.KillChords: return "bus:/Kill Chords";
-            case OutputBus.MusicBed: return "bus:/Music Bed";
+            case OutputBus.MusicBed: return "bus:/Music Bed/Layers";
             case OutputBus.Harmony: return "bus:/Music Bed/Harmony";
             case OutputBus.Feature: return "bus:/Feature";
+            case OutputBus.Bass: return "bus:/Music Bed/Layers/Bass";
+            case OutputBus.TensionStrings: return "bus:/Music Bed/Layers/Tension Strings";
+            case OutputBus.TensionSub: return "bus:/Music Bed/Layers/Tension Sub";
+            case OutputBus.TensionAcid: return "bus:/Music Bed/Layers/Tension Acid";
+            case OutputBus.ComboPad: return "bus:/Music Bed/Harmony/Combo Pad";
+            case OutputBus.LatinMarimba: return "bus:/Music Bed/Harmony/Latin Marimba";
+            case OutputBus.FunkKeys: return "bus:/Music Bed/Harmony/Funk Keys";
+            case OutputBus.FunkGuitar: return "bus:/Music Bed/Harmony/Funk Guitar";
+            case OutputBus.DreamyChoir: return "bus:/Music Bed/Harmony/Dreamy Choir";
+            case OutputBus.DreamyBells: return "bus:/Music Bed/Harmony/Dreamy Bells";
         }
         return null;
     }
@@ -46,19 +75,34 @@ public static class InstrumentTable
     /// <summary>FMOD event path of the instrument on that bus; null if the combination does not exist.</summary>
     public static string EventPath(Instrument instrument, OutputBus bus)
     {
+        if (instrument == Instrument.Acid && bus == OutputBus.TensionAcid) return "event:/Inst/TensionAcid/Acid";
         if (instrument == Instrument.Bass && bus == OutputBus.KillChords) return "event:/Inst/KillChords/Bass";
+        if (instrument == Instrument.Bass && bus == OutputBus.Bass) return "event:/Inst/Bass/Bass";
+        if (instrument == Instrument.BassEnv && bus == OutputBus.Bass) return "event:/Inst/Bass/BassEnv";
         if (instrument == Instrument.Bells && bus == OutputBus.KillChords) return "event:/Inst/KillChords/Bells";
+        if (instrument == Instrument.Bells && bus == OutputBus.Harmony) return "event:/Inst/Harmony/Bells";
+        if (instrument == Instrument.Bells && bus == OutputBus.DreamyBells) return "event:/Inst/DreamyBells/Bells";
         if (instrument == Instrument.Brass && bus == OutputBus.KillChords) return "event:/Inst/KillChords/Brass";
+        if (instrument == Instrument.Choir && bus == OutputBus.DreamyChoir) return "event:/Inst/DreamyChoir/Choir";
         if (instrument == Instrument.Clav && bus == OutputBus.KillChords) return "event:/Inst/KillChords/Clav";
+        if (instrument == Instrument.ClavHigh && bus == OutputBus.FunkKeys) return "event:/Inst/FunkKeys/ClavHigh";
         if (instrument == Instrument.Glass && bus == OutputBus.KillChords) return "event:/Inst/KillChords/Glass";
+        if (instrument == Instrument.GlassPad && bus == OutputBus.ComboPad) return "event:/Inst/ComboPad/GlassPad";
         if (instrument == Instrument.Glock && bus == OutputBus.KillChords) return "event:/Inst/KillChords/Glock";
         if (instrument == Instrument.Guitar && bus == OutputBus.KillChords) return "event:/Inst/KillChords/Guitar";
+        if (instrument == Instrument.Guitar && bus == OutputBus.FunkGuitar) return "event:/Inst/FunkGuitar/Guitar";
         if (instrument == Instrument.Harp && bus == OutputBus.KillChords) return "event:/Inst/KillChords/Harp";
         if (instrument == Instrument.Marimba && bus == OutputBus.KillChords) return "event:/Inst/KillChords/Marimba";
+        if (instrument == Instrument.Marimba && bus == OutputBus.LatinMarimba) return "event:/Inst/LatinMarimba/Marimba";
         if (instrument == Instrument.OrigBlue && bus == OutputBus.KillChords) return "event:/Inst/KillChords/OrigBlue";
         if (instrument == Instrument.OrigRed && bus == OutputBus.KillChords) return "event:/Inst/KillChords/OrigRed";
         if (instrument == Instrument.OrigYellow && bus == OutputBus.KillChords) return "event:/Inst/KillChords/OrigYellow";
+        if (instrument == Instrument.Pluck && bus == OutputBus.Harmony) return "event:/Inst/Harmony/Pluck";
+        if (instrument == Instrument.Rubber && bus == OutputBus.Bass) return "event:/Inst/Bass/Rubber";
+        if (instrument == Instrument.SineSub && bus == OutputBus.MusicBed) return "event:/Inst/MusicBed/SineSub";
+        if (instrument == Instrument.SineSub && bus == OutputBus.TensionSub) return "event:/Inst/TensionSub/SineSub";
         if (instrument == Instrument.SpikeClick && bus == OutputBus.KillChords) return "event:/Inst/KillChords/SpikeClick";
+        if (instrument == Instrument.Strings && bus == OutputBus.TensionStrings) return "event:/Inst/TensionStrings/Strings";
         if (instrument == Instrument.Sub && bus == OutputBus.KillChords) return "event:/Inst/KillChords/Sub";
         if (instrument == Instrument.Vibes && bus == OutputBus.KillChords) return "event:/Inst/KillChords/Vibes";
         return null;
@@ -67,6 +111,21 @@ public static class InstrumentTable
     /// <summary>True if the instrument event on that bus has a sound for the MIDI note.</summary>
     public static bool Has(Instrument instrument, OutputBus bus, int midi)
     {
+        if (instrument == Instrument.Acid && bus == OutputBus.TensionAcid)
+        {
+            switch (midi)
+            {
+                case 29: return true;
+                case 31: return true;
+                case 33: return true;
+                case 36: return true;
+                case 41: return true;
+                case 43: return true;
+                case 45: return true;
+                case 48: return true;
+            }
+            return false;
+        }
         if (instrument == Instrument.Bass && bus == OutputBus.KillChords)
         {
             switch (midi)
@@ -75,6 +134,35 @@ public static class InstrumentTable
                 case 43: return true;
                 case 45: return true;
                 case 48: return true;
+            }
+            return false;
+        }
+        if (instrument == Instrument.Bass && bus == OutputBus.Bass)
+        {
+            switch (midi)
+            {
+                case 29: return true;
+                case 31: return true;
+                case 33: return true;
+                case 35: return true;
+                case 36: return true;
+                case 38: return true;
+                case 40: return true;
+                case 41: return true;
+                case 43: return true;
+                case 45: return true;
+                case 48: return true;
+            }
+            return false;
+        }
+        if (instrument == Instrument.BassEnv && bus == OutputBus.Bass)
+        {
+            switch (midi)
+            {
+                case 29: return true;
+                case 31: return true;
+                case 33: return true;
+                case 36: return true;
             }
             return false;
         }
@@ -100,6 +188,32 @@ public static class InstrumentTable
             }
             return false;
         }
+        if (instrument == Instrument.Bells && bus == OutputBus.Harmony)
+        {
+            switch (midi)
+            {
+                case 74: return true;
+                case 76: return true;
+                case 77: return true;
+                case 79: return true;
+                case 81: return true;
+                case 83: return true;
+                case 84: return true;
+            }
+            return false;
+        }
+        if (instrument == Instrument.Bells && bus == OutputBus.DreamyBells)
+        {
+            switch (midi)
+            {
+                case 74: return true;
+                case 76: return true;
+                case 77: return true;
+                case 79: return true;
+                case 81: return true;
+            }
+            return false;
+        }
         if (instrument == Instrument.Brass && bus == OutputBus.KillChords)
         {
             switch (midi)
@@ -119,6 +233,21 @@ public static class InstrumentTable
                 case 74: return true;
                 case 76: return true;
                 case 79: return true;
+            }
+            return false;
+        }
+        if (instrument == Instrument.Choir && bus == OutputBus.DreamyChoir)
+        {
+            switch (midi)
+            {
+                case 55: return true;
+                case 57: return true;
+                case 59: return true;
+                case 60: return true;
+                case 62: return true;
+                case 64: return true;
+                case 65: return true;
+                case 67: return true;
             }
             return false;
         }
@@ -144,6 +273,19 @@ public static class InstrumentTable
             }
             return false;
         }
+        if (instrument == Instrument.ClavHigh && bus == OutputBus.FunkKeys)
+        {
+            switch (midi)
+            {
+                case 72: return true;
+                case 74: return true;
+                case 76: return true;
+                case 77: return true;
+                case 79: return true;
+                case 81: return true;
+            }
+            return false;
+        }
         if (instrument == Instrument.Glass && bus == OutputBus.KillChords)
         {
             switch (midi)
@@ -163,6 +305,20 @@ public static class InstrumentTable
                 case 74: return true;
                 case 76: return true;
                 case 79: return true;
+            }
+            return false;
+        }
+        if (instrument == Instrument.GlassPad && bus == OutputBus.ComboPad)
+        {
+            switch (midi)
+            {
+                case 67: return true;
+                case 69: return true;
+                case 71: return true;
+                case 72: return true;
+                case 74: return true;
+                case 76: return true;
+                case 77: return true;
             }
             return false;
         }
@@ -210,6 +366,18 @@ public static class InstrumentTable
             }
             return false;
         }
+        if (instrument == Instrument.Guitar && bus == OutputBus.FunkGuitar)
+        {
+            switch (midi)
+            {
+                case 62: return true;
+                case 64: return true;
+                case 65: return true;
+                case 67: return true;
+                case 69: return true;
+            }
+            return false;
+        }
         if (instrument == Instrument.Harp && bus == OutputBus.KillChords)
         {
             switch (midi)
@@ -251,6 +419,22 @@ public static class InstrumentTable
                 case 74: return true;
                 case 76: return true;
                 case 79: return true;
+            }
+            return false;
+        }
+        if (instrument == Instrument.Marimba && bus == OutputBus.LatinMarimba)
+        {
+            switch (midi)
+            {
+                case 67: return true;
+                case 69: return true;
+                case 71: return true;
+                case 72: return true;
+                case 74: return true;
+                case 76: return true;
+                case 77: return true;
+                case 79: return true;
+                case 81: return true;
             }
             return false;
         }
@@ -320,11 +504,82 @@ public static class InstrumentTable
             }
             return false;
         }
+        if (instrument == Instrument.Pluck && bus == OutputBus.Harmony)
+        {
+            switch (midi)
+            {
+                case 53: return true;
+                case 55: return true;
+                case 57: return true;
+                case 59: return true;
+                case 60: return true;
+                case 62: return true;
+                case 64: return true;
+                case 65: return true;
+                case 67: return true;
+                case 69: return true;
+                case 72: return true;
+            }
+            return false;
+        }
+        if (instrument == Instrument.Rubber && bus == OutputBus.Bass)
+        {
+            switch (midi)
+            {
+                case 29: return true;
+                case 31: return true;
+                case 33: return true;
+                case 36: return true;
+                case 38: return true;
+                case 40: return true;
+                case 41: return true;
+                case 43: return true;
+                case 45: return true;
+                case 48: return true;
+            }
+            return false;
+        }
+        if (instrument == Instrument.SineSub && bus == OutputBus.MusicBed)
+        {
+            switch (midi)
+            {
+                case 29: return true;
+                case 31: return true;
+                case 33: return true;
+                case 36: return true;
+            }
+            return false;
+        }
+        if (instrument == Instrument.SineSub && bus == OutputBus.TensionSub)
+        {
+            switch (midi)
+            {
+                case 29: return true;
+                case 31: return true;
+                case 33: return true;
+                case 36: return true;
+            }
+            return false;
+        }
         if (instrument == Instrument.SpikeClick && bus == OutputBus.KillChords)
         {
             switch (midi)
             {
                 case 72: return true;
+            }
+            return false;
+        }
+        if (instrument == Instrument.Strings && bus == OutputBus.TensionStrings)
+        {
+            switch (midi)
+            {
+                case 50: return true;
+                case 52: return true;
+                case 53: return true;
+                case 55: return true;
+                case 57: return true;
+                case 59: return true;
+                case 60: return true;
             }
             return false;
         }
@@ -367,19 +622,34 @@ public static class InstrumentTable
     /// <summary>Seconds the event's ADSR release fades a note out after its stop time; 0 if the combination does not exist.</summary>
     public static double ReleaseSeconds(Instrument instrument, OutputBus bus)
     {
+        if (instrument == Instrument.Acid && bus == OutputBus.TensionAcid) return 0.05;
         if (instrument == Instrument.Bass && bus == OutputBus.KillChords) return 0.12;
+        if (instrument == Instrument.Bass && bus == OutputBus.Bass) return 0.0;
+        if (instrument == Instrument.BassEnv && bus == OutputBus.Bass) return 0.06;
         if (instrument == Instrument.Bells && bus == OutputBus.KillChords) return 0.12;
+        if (instrument == Instrument.Bells && bus == OutputBus.Harmony) return 0.25;
+        if (instrument == Instrument.Bells && bus == OutputBus.DreamyBells) return 0.0;
         if (instrument == Instrument.Brass && bus == OutputBus.KillChords) return 0.12;
+        if (instrument == Instrument.Choir && bus == OutputBus.DreamyChoir) return 0.6;
         if (instrument == Instrument.Clav && bus == OutputBus.KillChords) return 0.12;
+        if (instrument == Instrument.ClavHigh && bus == OutputBus.FunkKeys) return 0.0;
         if (instrument == Instrument.Glass && bus == OutputBus.KillChords) return 0.12;
+        if (instrument == Instrument.GlassPad && bus == OutputBus.ComboPad) return 0.5;
         if (instrument == Instrument.Glock && bus == OutputBus.KillChords) return 0.12;
         if (instrument == Instrument.Guitar && bus == OutputBus.KillChords) return 0.12;
+        if (instrument == Instrument.Guitar && bus == OutputBus.FunkGuitar) return 0.0;
         if (instrument == Instrument.Harp && bus == OutputBus.KillChords) return 0.12;
         if (instrument == Instrument.Marimba && bus == OutputBus.KillChords) return 0.12;
+        if (instrument == Instrument.Marimba && bus == OutputBus.LatinMarimba) return 0.0;
         if (instrument == Instrument.OrigBlue && bus == OutputBus.KillChords) return 0.12;
         if (instrument == Instrument.OrigRed && bus == OutputBus.KillChords) return 0.12;
         if (instrument == Instrument.OrigYellow && bus == OutputBus.KillChords) return 0.12;
+        if (instrument == Instrument.Pluck && bus == OutputBus.Harmony) return 0.0;
+        if (instrument == Instrument.Rubber && bus == OutputBus.Bass) return 0.06;
+        if (instrument == Instrument.SineSub && bus == OutputBus.MusicBed) return 0.6;
+        if (instrument == Instrument.SineSub && bus == OutputBus.TensionSub) return 0.06;
         if (instrument == Instrument.SpikeClick && bus == OutputBus.KillChords) return 0.12;
+        if (instrument == Instrument.Strings && bus == OutputBus.TensionStrings) return 0.4;
         if (instrument == Instrument.Sub && bus == OutputBus.KillChords) return 0.12;
         if (instrument == Instrument.Vibes && bus == OutputBus.KillChords) return 0.12;
         return 0.0;
@@ -390,13 +660,42 @@ public static class InstrumentTable
     {
         switch (instrument)
         {
+            case Instrument.Acid:
+                switch (midi)
+                {
+                    case 29: return 0.00126;
+                    case 31: return 0.001122;
+                    case 33: return 0.001;
+                    case 36: return 0.001;
+                    case 41: return 0.000944;
+                    case 43: return 0.001122;
+                    case 45: return 0.001;
+                    case 48: return 0.000841;
+                }
+                break;
             case Instrument.Bass:
                 switch (midi)
                 {
+                    case 29: return 0.001498;
+                    case 31: return 0.001335;
+                    case 33: return 0.001189;
+                    case 35: return 0.001059;
+                    case 36: return 0.001;
+                    case 38: return 0.000891;
+                    case 40: return 0.000794;
                     case 41: return 0.000749;
                     case 43: return 0.000667;
                     case 45: return 0.000595;
                     case 48: return 0.0005;
+                }
+                break;
+            case Instrument.BassEnv:
+                switch (midi)
+                {
+                    case 29: return 0.001498;
+                    case 31: return 0.001335;
+                    case 33: return 0.001189;
+                    case 36: return 0.001;
                 }
                 break;
             case Instrument.Bells:
@@ -439,6 +738,19 @@ public static class InstrumentTable
                     case 79: return 0.004009;
                 }
                 break;
+            case Instrument.Choir:
+                switch (midi)
+                {
+                    case 55: return 0.062;
+                    case 57: return 0.055236;
+                    case 59: return 0.075222;
+                    case 60: return 0.071;
+                    case 62: return 0.063254;
+                    case 64: return 0.056353;
+                    case 65: return 0.05319;
+                    case 67: return 0.047387;
+                }
+                break;
             case Instrument.Clav:
                 switch (midi)
                 {
@@ -459,6 +771,17 @@ public static class InstrumentTable
                     case 91: return 0.001335;
                 }
                 break;
+            case Instrument.ClavHigh:
+                switch (midi)
+                {
+                    case 72: return 0.003;
+                    case 74: return 0.002673;
+                    case 76: return 0.002381;
+                    case 77: return 0.002247;
+                    case 79: return 0.002002;
+                    case 81: return 0.001784;
+                }
+                break;
             case Instrument.Glass:
                 switch (midi)
                 {
@@ -477,6 +800,18 @@ public static class InstrumentTable
                     case 74: return 0.0;
                     case 76: return 0.0;
                     case 79: return 0.0;
+                }
+                break;
+            case Instrument.GlassPad:
+                switch (midi)
+                {
+                    case 67: return 0.065103;
+                    case 69: return 0.058;
+                    case 71: return 0.051672;
+                    case 72: return 0.048772;
+                    case 74: return 0.043451;
+                    case 76: return 0.03871;
+                    case 77: return 0.036538;
                 }
                 break;
             case Instrument.Glock:
@@ -516,7 +851,9 @@ public static class InstrumentTable
                     case 60: return 0.028062;
                     case 62: return 0.025;
                     case 64: return 0.022272;
+                    case 65: return 0.021022;
                     case 67: return 0.018729;
+                    case 69: return 0.016685;
                 }
                 break;
             case Instrument.Harp:
@@ -556,7 +893,9 @@ public static class InstrumentTable
                     case 72: return 0.005;
                     case 74: return 0.004454;
                     case 76: return 0.005946;
+                    case 77: return 0.005612;
                     case 79: return 0.005;
+                    case 81: return 0.004454;
                 }
                 break;
             case Instrument.OrigBlue:
@@ -619,10 +958,62 @@ public static class InstrumentTable
                     case 79: return 0.0;
                 }
                 break;
+            case Instrument.Pluck:
+                switch (midi)
+                {
+                    case 53: return 0.001498;
+                    case 55: return 0.001335;
+                    case 57: return 0.001189;
+                    case 59: return 0.001059;
+                    case 60: return 0.001;
+                    case 62: return 0.000891;
+                    case 64: return 0.000794;
+                    case 65: return 0.000749;
+                    case 67: return 0.000667;
+                    case 69: return 0.000595;
+                    case 72: return 0.0005;
+                }
+                break;
+            case Instrument.Rubber:
+                switch (midi)
+                {
+                    case 29: return 0.001122;
+                    case 31: return 0.001;
+                    case 33: return 0.001;
+                    case 36: return 0.001122;
+                    case 38: return 0.001;
+                    case 40: return 0.001;
+                    case 41: return 0.000944;
+                    case 43: return 0.000841;
+                    case 45: return 0.000749;
+                    case 48: return 0.00063;
+                }
+                break;
+            case Instrument.SineSub:
+                switch (midi)
+                {
+                    case 29: return 0.0;
+                    case 31: return 0.0;
+                    case 33: return 0.0;
+                    case 36: return 0.0;
+                }
+                break;
             case Instrument.SpikeClick:
                 switch (midi)
                 {
                     case 72: return 0.0;
+                }
+                break;
+            case Instrument.Strings:
+                switch (midi)
+                {
+                    case 50: return 0.053939;
+                    case 52: return 0.048054;
+                    case 53: return 0.045357;
+                    case 55: return 0.040409;
+                    case 57: return 0.036;
+                    case 59: return 0.032072;
+                    case 60: return 0.030272;
                 }
                 break;
             case Instrument.Sub:

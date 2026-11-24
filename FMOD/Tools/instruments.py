@@ -36,6 +36,7 @@ import samples  # noqa: E402
 import spike_click  # noqa: E402
 import kill_oneshots  # noqa: E402
 import mixer  # noqa: E402
+import patterns  # noqa: E402
 CS_PATH = os.path.join(HERE, "..", "..", "Assets", "Scripts", "Audio", "Generated", "InstrumentTable.g.cs")
 JS_PATH = os.path.join(HERE, "instruments.js")
 
@@ -64,7 +65,7 @@ class Library:
 
 
 # Layer modules, each with register(lib).
-LAYERS = [kill_oneshots, spike_click]
+LAYERS = [kill_oneshots, spike_click, patterns]
 
 
 def bus_folder(bus):
@@ -77,6 +78,7 @@ def bus_folder(bus):
 
 
 def build():
+    assert patterns.NORMALIZE_DB == NORMALIZE_DB == kill_oneshots.NORMALIZE_DB
     lib = Library()
     for layer in LAYERS:
         layer.register(lib)
@@ -393,6 +395,7 @@ def main():
     write(CS_PATH, cs_text(insts))
     kill_oneshots.write_table()
     kill_oneshots.write_js()
+    patterns.write_table(bus_folder)
     print(len(insts), "instruments,", sum(len(i["notes"]) for i in insts), "notes -> instruments.js, InstrumentTable.g.cs")
 
 

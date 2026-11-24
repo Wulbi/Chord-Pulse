@@ -36,6 +36,29 @@ BELLS = [("Synth/ATFS1_FormantBells_C5_v100.wav", 72, -9.2, 0.001), ("Synth/ATFS
 BASS = [("AT101V_101Bass_C2_v100.wav", 36, -15.6, 0.001)]
 SUB = [("SynthBass/DeviceNTI_SineSub_C2_v100.wav", 36, -9.8, 0.0)]
 
+# --- background bed layers (pattern_bed.py). RMS values are the ones the old bed_*.py generators used (the timeline
+# notes' volumes were computed from them, so keeping them keeps the level); where a generator set the note volume
+# directly (bass, pluck, combo pad) the RMS is measured. Onsets measured with measure_sample.py (Task 9), except where
+# a generator table already had one (strings, sine sub, acid).
+PLUCK = [("AT101V_PolyPluck_C4_v100.wav", 60, -15.6, 0.001)]                    # bed_variation (volume direct)
+GLASS_PAD = [("Synth/AT20V_GlassPad_A3_v90.wav", 57, -11.2, 0.116)]            # bed_combo (volume direct)
+STRINGS = [("Synth/AT700_EnsembleStrings_A2_v90.wav", 45, -9.2, 0.072)]        # bed_tension
+SINE_SUB = [("SynthBass/DeviceNTI_SineSub_F1_v100.wav", 29, -9.2, 0.0),         # bed_tension / bed_style
+            ("SynthBass/DeviceNTI_SineSub_C2_v100.wav", 36, -9.8, 0.0)]
+ACID = [("SynthBass/AT303_Squelch_A1_v127.wav", 33, -16.8, 0.001),              # bed_tension
+        ("SynthBass/AT303_Squelch_C2_v127.wav", 36, -15.9, 0.001),
+        ("SynthBass/AT303_Squelch_E2_v127.wav", 40, -15.7, 0.001),
+        ("SynthBass/AT303_Squelch_A2_v127.wav", 45, -15.1, 0.001)]
+RUBBER = [("SynthBass/AT303_Pocket_G1_v100.wav", 31, -24.8, 0.001),             # bed_style (funk bass)
+          ("SynthBass/AT303_RubberRoot_A1_v100.wav", 33, -24.0, 0.001),
+          ("SynthBass/AT303_Pocket_D2_v100.wav", 38, -13.8, 0.001),
+          ("SynthBass/AT303_RubberRoot_E2_v100.wav", 40, -15.8, 0.001)]
+# bed_style's funk keys use only the C3 file, mapped to C5 (it sounds strongest from C5 up).
+CLAV_HIGH = [("FMKeys/Clavisynth_C3_vl3.wav", 72, -23.2, 0.003)]
+CHOIR = [("Synth/ATFS1_VowelChoir_C3_v90.wav", 48, -14.0, 0.065),               # bed_style
+         ("Synth/ATFS1_VowelChoir_G3_v90.wav", 55, -11.3, 0.062),
+         ("Synth/ATFS1_VowelChoir_C4_v90.wav", 60, -11.8, 0.071)]
+
 
 def pick(table, midi, max_pitch=15):
     s = min(table, key=lambda x: (abs(midi - x[1]), -x[1]))

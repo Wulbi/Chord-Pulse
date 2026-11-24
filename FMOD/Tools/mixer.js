@@ -198,6 +198,286 @@ var BUSES = [
     ]
    }
   ]
+ ],
+ [
+  "Music Bed/Layers",
+  "Music Bed",
+  -8.0,
+  [
+   {
+    "entity": "LimiterEffect",
+    "props": {
+     "ceiling": -1,
+     "release": 30
+    }
+   }
+  ]
+ ],
+ [
+  "Music Bed/Layers/Bass",
+  "Music Bed/Layers",
+  0.0,
+  [
+   {
+    "entity": "GainEffect",
+    "props": {
+     "gain": 0
+    },
+    "auto": [
+     {
+      "property": "gain",
+      "parameter": "Tension",
+      "points": [
+       [
+        0.0,
+        0.0
+       ],
+       [
+        0.65,
+        0.0
+       ],
+       [
+        0.75,
+        -3.0
+       ],
+       [
+        0.85,
+        -15.0
+       ],
+       [
+        1.0,
+        -80.0
+       ]
+      ]
+     }
+    ]
+   }
+  ]
+ ],
+ [
+  "Music Bed/Layers/Tension Strings",
+  "Music Bed/Layers",
+  0.0,
+  [
+   {
+    "entity": "HighpassEffect",
+    "props": {
+     "cutoff": 140,
+     "resonance": 1
+    }
+   },
+   {
+    "entity": "GainEffect",
+    "props": {
+     "gain": 0
+    },
+    "auto": [
+     {
+      "property": "gain",
+      "parameter": "Tension",
+      "points": [
+       [
+        0.0,
+        -80.0
+       ],
+       [
+        0.25,
+        -80.0
+       ],
+       [
+        0.3,
+        -20.0
+       ],
+       [
+        0.45,
+        -6.0
+       ],
+       [
+        0.75,
+        -2.0
+       ],
+       [
+        1.0,
+        0.0
+       ]
+      ]
+     }
+    ]
+   }
+  ]
+ ],
+ [
+  "Music Bed/Layers/Tension Sub",
+  "Music Bed/Layers",
+  0.0,
+  [
+   {
+    "entity": "GainEffect",
+    "props": {
+     "gain": 0
+    },
+    "auto": [
+     {
+      "property": "gain",
+      "parameter": "Tension",
+      "points": [
+       [
+        0.0,
+        -80.0
+       ],
+       [
+        0.45,
+        -80.0
+       ],
+       [
+        0.5,
+        -15.0
+       ],
+       [
+        0.6,
+        -4.0
+       ],
+       [
+        1.0,
+        0.0
+       ]
+      ]
+     }
+    ]
+   }
+  ]
+ ],
+ [
+  "Music Bed/Layers/Tension Acid",
+  "Music Bed/Layers",
+  0.0,
+  [
+   {
+    "entity": "LowpassEffect",
+    "props": {
+     "cutoff": 3500,
+     "resonance": 1
+    }
+   },
+   {
+    "entity": "GainEffect",
+    "props": {
+     "gain": 0
+    },
+    "auto": [
+     {
+      "property": "gain",
+      "parameter": "Tension",
+      "points": [
+       [
+        0.0,
+        -80.0
+       ],
+       [
+        0.65,
+        -80.0
+       ],
+       [
+        0.7,
+        -12.0
+       ],
+       [
+        0.8,
+        -3.0
+       ],
+       [
+        1.0,
+        0.0
+       ]
+      ]
+     }
+    ]
+   }
+  ]
+ ],
+ [
+  "Music Bed/Harmony/Combo Pad",
+  "Music Bed/Harmony",
+  0.0,
+  [
+   {
+    "entity": "HighpassEffect",
+    "props": {
+     "cutoff": 300,
+     "resonance": 1
+    }
+   }
+  ]
+ ],
+ [
+  "Music Bed/Harmony/Latin Marimba",
+  "Music Bed/Harmony",
+  0.0,
+  [
+   {
+    "entity": "HighpassEffect",
+    "props": {
+     "cutoff": 200,
+     "resonance": 1
+    }
+   }
+  ]
+ ],
+ [
+  "Music Bed/Harmony/Funk Keys",
+  "Music Bed/Harmony",
+  0.0,
+  [
+   {
+    "entity": "HighpassEffect",
+    "props": {
+     "cutoff": 250,
+     "resonance": 1
+    }
+   }
+  ]
+ ],
+ [
+  "Music Bed/Harmony/Funk Guitar",
+  "Music Bed/Harmony",
+  0.0,
+  [
+   {
+    "entity": "HighpassEffect",
+    "props": {
+     "cutoff": 180,
+     "resonance": 1
+    }
+   }
+  ]
+ ],
+ [
+  "Music Bed/Harmony/Dreamy Choir",
+  "Music Bed/Harmony",
+  0.0,
+  [
+   {
+    "entity": "HighpassEffect",
+    "props": {
+     "cutoff": 150,
+     "resonance": 1
+    }
+   }
+  ]
+ ],
+ [
+  "Music Bed/Harmony/Dreamy Bells",
+  "Music Bed/Harmony",
+  0.0,
+  [
+   {
+    "entity": "HighpassEffect",
+    "props": {
+     "cutoff": 300,
+     "resonance": 1
+    }
+   }
+  ]
  ]
 ];
 var RETURNS = {"Harmony Duck": "Music Bed/Harmony", "Feature Duck": "Feature"};
