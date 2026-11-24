@@ -34,7 +34,8 @@ public sealed class CaptureScenario : MonoBehaviour
     FieldInfo _anchorSeconds;
     int _lastBeat = -1;
     int _cpuSamples;
-    double _dspSum, _totalSum;
+    double _dspSum, _totalSum, _studioSum;
+    float _studioMax;
     float _dspMax, _totalMax;
     bool _finished;
     int _stalls;
@@ -87,9 +88,11 @@ public sealed class CaptureScenario : MonoBehaviour
         }
         _longestFrame = Mathf.Max(_longestFrame, dt);
 
-        var core = RuntimeManager.CoreSystem;
-        if (AudioCapture.FramesCaptured > 0 && core.getCPUUsage(out FMOD.CPU_USAGE cpu) == FMOD.RESULT.OK)
+        if (AudioCapture.FramesCaptured > 0 &&
+            RuntimeManager.StudioSystem.getCPUUsage(out FMOD.Studio.CPU_USAGE studio, out FMOD.CPU_USAGE cpu) == FMOD.RESULT.OK)
         {
+            _studioSum += studio.update;
+            _studioMax = Mathf.Max(_studioMax, studio.update);
             float total = cpu.dsp + cpu.stream + cpu.update;
             _cpuSamples++;
             _dspSum += cpu.dsp;
@@ -151,10 +154,11 @@ public sealed class CaptureScenario : MonoBehaviour
 
         double dspAvg = _cpuSamples > 0 ? _dspSum / _cpuSamples : 0;
         double totalAvg = _cpuSamples > 0 ? _totalSum / _cpuSamples : 0;
+        double studioAvg = _cpuSamples > 0 ? _studioSum / _cpuSamples : 0;
         string summary = string.Format(CultureInfo.InvariantCulture,
-            "[CaptureScenario] DONE {0}: dsp avg {1:F2}% max {2:F2}%, total (dsp+stream+update) avg {3:F2}% max {4:F2}%, samples {5}, dropped frames {6}, stalls >100 ms after the first beat {7} (take is only a valid reference if 0), longest frame {8:F0} ms",
+            "[CaptureScenario] DONE {0}: STUDIO update avg {9:F2}% max {10:F2}%; CORE dsp avg {1:F2}% max {2:F2}%, core total (dsp+stream+update) avg {3:F2}% max {4:F2}%, samples {5}, dropped frames {6}, stalls >100 ms after the first beat {7} (take is only a valid reference if 0), longest frame {8:F0} ms",
             Path.GetFileName(path), dspAvg, _dspMax, totalAvg, _totalMax, _cpuSamples, AudioCapture.FramesDropped,
-            _stalls, _longestFrame * 1000f);
+            _stalls, _longestFrame * 1000f, studioAvg, _studioMax);
         Debug.Log(summary);
         File.WriteAllText(Path.ChangeExtension(path, ".cpu.txt"), summary + "\n");
 #if UNITY_EDITOR
