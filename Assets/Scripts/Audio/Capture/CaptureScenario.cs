@@ -56,6 +56,23 @@ public sealed class CaptureScenario : MonoBehaviour
              "event, handle, DSP clock, ...). Off = the backends compute nothing for it.")]
     [SerializeField] bool logOneShots;
 
+    public enum Layers { asSoundManager, legacy, oneShots }
+    public enum Solo { none, musicBed, harmony, bedWithoutHarmony }
+
+    [Header("Task 11: bed pitched layers")]
+    [Tooltip("SoundManager.legacyLayers for the take: legacy = the timeline tracks (LegacyLayers 1), oneShots = the " +
+             "PatternScheduler (LegacyLayers 0), asSoundManager = leave the inspector value.")]
+    [SerializeField] Layers layers = Layers.asSoundManager;
+    [Tooltip("Mute global buses to hear one family. musicBed: bus:/Kill Chords and bus:/Feature muted (the whole bed, " +
+             "timeline drums included). harmony: also the event's non-Harmony Music Bed tracks (drums, timeline bass/tension...) " +
+             "and bus:/Music Bed/Layers (one-shot bass/tension/dreamy sub) muted. bedWithoutHarmony: Kill Chords, Feature and " +
+             "bus:/Music Bed/Harmony muted (drums + bass/tension/dreamy sub). The kill-keyed duck is off in every solo (muted key).")]
+    [SerializeField] Solo soloLayers = Solo.none;
+    [Tooltip("Steps SoundManager.Tension 0 -> 0.3 -> 0.5 -> 0.7 -> 0.9 over the take (fifths of the beats); overrides heavy's 0.8.")]
+    [SerializeField] bool tensionSteps;
+    [Tooltip("styles: keep the bed audible (musicMix) instead of forcing MusicMix 0.")]
+    [SerializeField] bool stylesWithBed;
+
     [Header("duck (kill-chord ducking of the Harmony group)")]
     [Tooltip("Off = the same take without kills, the reference the ducked take is compared with.")]
     [SerializeField] bool duckKills = true;
@@ -94,11 +111,16 @@ public sealed class CaptureScenario : MonoBehaviour
     readonly List<string> _spikeLog = new List<string>();
     int _stalls;
     float _longestFrame;
-    // kill-chord one-shots (SoundManager's scheduler / backend, read through reflection)
+    // one-shots (SoundManager's shared scheduler / backend, read through reflection: _shots, _shotBackend, _patterns)
     FmodOneShotBackend _killBackend;
-    FieldInfo _killSchedulerField;
-    int _killDropped, _killLate;
+    FieldInfo _killSchedulerField, _patternsField;
     readonly List<string> _killLossLog = new List<string>();
+    readonly List<string> _lossLog = new List<string>();
+    int _killLate, _patternLate, _patternScheduled;
+    OneShotScheduler _subscribedShots;
+    double _firstAnchorBeat = double.NaN;
+    readonly List<string> _patternLog = new List<string>();
+    static readonly float[] TensionStepValues = { 0f, 0.3f, 0.5f, 0.7f, 0.9f };
     readonly List<string> _oneShotLog = new List<string>();
     FieldInfo _pollCountField;
     // styles: 4 phrases (64 beats) per bed style 0..3
@@ -142,8 +164,12 @@ public sealed class CaptureScenario : MonoBehaviour
         _variationNextField = typeof(SoundManager).GetField("_variationNext", BindingFlags.Instance | BindingFlags.NonPublic);
         _featuresField = typeof(SoundManager).GetField("_features", BindingFlags.Instance | BindingFlags.NonPublic);
         _cancelNext = _featuresField.FieldType.GetMethod("CancelNext", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
-        _killBackend = (FmodOneShotBackend)typeof(SoundManager).GetField("_killBackend", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(sound);
-        _killSchedulerField = typeof(SoundManager).GetField("_killScheduler", BindingFlags.Instance | BindingFlags.NonPublic);
+        _killBackend = (FmodOneShotBackend)typeof(SoundManager).GetField("_shotBackend", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(sound);
+        _killSchedulerField = typeof(SoundManager).GetField("_shots", BindingFlags.Instance | BindingFlags.NonPublic);
+        _patternsField = typeof(SoundManager).GetField("_patterns", BindingFlags.Instance | BindingFlags.NonPublic);
+        if (layers != Layers.asSoundManager)
+            typeof(SoundManager).GetField("legacyLayers", BindingFlags.Instance | BindingFlags.NonPublic).SetValue(sound, layers == Layers.legacy);
+        _killBackend.NoteDropped += OnNoteDropped;
         _styleCurrent = typeof(SoundManager).GetField("_styleCurrent", BindingFlags.Instance | BindingFlags.NonPublic);
         _styleNext = typeof(SoundManager).GetField("_styleNext", BindingFlags.Instance | BindingFlags.NonPublic);
         if (scenario == Scenario.spike)
@@ -155,7 +181,7 @@ public sealed class CaptureScenario : MonoBehaviour
         {
             if (_backend != null)
                 _backend.DiagnosticLog = line => _oneShotLog.Add(Time.frameCount + ",spike," + line);
-            _killBackend.DiagnosticLog = line => _oneShotLog.Add(Time.frameCount + ",kill," + line);
+            _killBackend.DiagnosticLog = line => _oneShotLog.Add(Time.frameCount + ",shot," + line);
         }
 
         yield return null; // let FMOD finish initialising
@@ -173,8 +199,10 @@ public sealed class CaptureScenario : MonoBehaviour
             sound.Tension = 0.8f;
         }
         sound.MusicMix = musicMix;
-        if (scenario == Scenario.styles || killsOnly)
+        if ((scenario == Scenario.styles && !stylesWithBed) || killsOnly)
             sound.MusicMix = 0f; // kill chords alone: the bed would differ between styles
+        SubscribeShots(sound);
+        ApplySolo(sound);
         sound.Danger = forceDanger; // applied after StartMusic, which resets it
         if (scenario == Scenario.duck)
         {
@@ -241,7 +269,12 @@ public sealed class CaptureScenario : MonoBehaviour
             UpdateSpike(sound);
         if (scenario == Scenario.styles)
             ForceStyle(sound);
-        TrackKillLosses(sound);
+        SubscribeShots(sound);
+        if (double.IsNaN(_firstAnchorBeat) && _conductor.Clock.HasAnchor &&
+            _conductor.Clock.BeatAt(MusicConductor.MasterDsp(), out double anchorNow))
+            _firstAnchorBeat = anchorNow;
+        if (tensionSteps && beats > 0)
+            sound.Tension = TensionStepValues[Math.Min(TensionStepValues.Length - 1, Math.Max(0, sound.CurrentBeat) * TensionStepValues.Length / beats)];
         LogDuckMeter();
 
         int beat = sound.CurrentBeat;
@@ -507,20 +540,80 @@ public sealed class CaptureScenario : MonoBehaviour
         return withChildren == 1;
     }
 
-    // One-shots lost by the kill-chord path: late in the scheduler (start passed before dispatch) or dropped by the
-    // backend (channel group appeared after the start, e.g. during FMOD's stall at a jump landing). Logged against the
-    // beat heard when the loss was noticed, which is the beat the note was due on (or the one after).
-    void TrackKillLosses(SoundManager sound)
+    // The shared scheduler exists once StartMusic ran (SoundManager creates it lazily); subscribe once.
+    void SubscribeShots(SoundManager sound)
     {
-        var scheduler = (OneShotScheduler)_killSchedulerField.GetValue(sound);
-        int late = scheduler != null ? scheduler.LateCount : 0;
-        int dropped = _killBackend.DroppedCount;
-        if (late == _killLate && dropped == _killDropped)
+        var shots = (OneShotScheduler)_killSchedulerField.GetValue(sound);
+        if (shots != null && shots != _subscribedShots)
+        {
+            shots.NoteLate += OnNoteLate;
+            _subscribedShots = shots;
+        }
+        if (_patternsField.GetValue(sound) is PatternScheduler patterns && patterns != _subscribedPatterns)
+        {
+            patterns.NoteScheduled += OnPatternNote;
+            _subscribedPatterns = patterns;
+        }
+    }
+
+    PatternScheduler _subscribedPatterns;
+
+    static void UnmuteSoloBuses()
+    {
+        foreach (var path in new[] { "bus:/Kill Chords", "bus:/Feature", "bus:/Music Bed/Layers", "bus:/Music Bed/Harmony" })
+        {
+            try { RuntimeManager.GetBus(path).setMute(false); }
+            catch (Exception) { }
+        }
+    }
+
+    // Pattern notes as scheduled (logOneShots): beat, instrument, bus, MIDI, onset and the DSP start the scheduler
+    // computes for it right now (clock as of this frame; RescheduleFrom may move it later at a tempo change).
+    void OnPatternNote(PatternNote n, double beat)
+    {
+        _patternScheduled++;
+        if (!logOneShots)
             return;
+        _conductor.Clock.DspAt(beat, out ulong onBeat);
+        double onset = InstrumentTable.OnsetSeconds(n.Instrument, n.Midi);
+        long start = (long)onBeat + scheduleOffsetSamples - (long)Math.Round(onset * _conductor.Clock.SampleRate);
+        _patternLog.Add(string.Format(CultureInfo.InvariantCulture, "{0},{1:F4},{2},{3},{4},{5:F6},{6},{7}",
+            Time.frameCount, beat, n.Instrument, n.Bus, n.Midi, onset, onBeat, start));
+    }
+
+    void ApplySolo(SoundManager sound)
+    {
+        if (soloLayers == Solo.none)
+            return;
+        RuntimeManager.GetBus("bus:/Kill Chords").setMute(true);
+        RuntimeManager.GetBus("bus:/Feature").setMute(true);
+        if (soloLayers == Solo.harmony)
+        {
+            RuntimeManager.GetBus("bus:/Music Bed/Layers").setMute(true);
+            StartCoroutine(MuteMusicBed(sound));
+        }
+        else if (soloLayers == Solo.bedWithoutHarmony)
+            RuntimeManager.GetBus("bus:/Music Bed/Harmony").setMute(true);
+    }
+
+    void OnNoteLate(object owner, double beat)
+    {
+        bool kill = !(owner is PatternScheduler);
+        if (kill) _killLate++; else _patternLate++;
         bool okNow = _conductor.Clock.BeatAt(MusicConductor.MasterDsp(), out double now);
-        _killLossLog.Add(string.Format(CultureInfo.InvariantCulture, "{0:F2},{1},{2}", okNow ? now : -1, late - _killLate, dropped - _killDropped));
-        _killLate = late;
-        _killDropped = dropped;
+        _lossLog.Add(string.Format(CultureInfo.InvariantCulture, "{0:F3},{1:F3},{2},late", okNow ? now : -1, beat, kill ? "kill" : "pattern"));
+        if (kill)
+            _killLossLog.Add(string.Format(CultureInfo.InvariantCulture, "{0:F2},1,0", okNow ? now : -1));
+    }
+
+    void OnNoteDropped(OutputBus bus, ulong start)
+    {
+        bool kill = bus == OutputBus.KillChords;
+        bool okNow = _conductor.Clock.BeatAt(MusicConductor.MasterDsp(), out double now);
+        double beat = _conductor.Clock.BeatAt(start, out double b) ? b : -1;
+        _lossLog.Add(string.Format(CultureInfo.InvariantCulture, "{0:F3},{1:F3},{2},drop,{3}", okNow ? now : -1, beat, kill ? "kill" : "pattern", bus));
+        if (kill)
+            _killLossLog.Add(string.Format(CultureInfo.InvariantCulture, "{0:F2},0,1", okNow ? now : -1));
     }
 
     void QueueKills(SoundManager sound, int beat)
@@ -594,9 +687,14 @@ public sealed class CaptureScenario : MonoBehaviour
         }
 
         var scheduler = (OneShotScheduler)_killSchedulerField.GetValue(sound);
+        int killStarted = _killBackend.StartedOn(OutputBus.KillChords), killDropped = _killBackend.DroppedOn(OutputBus.KillChords);
         string killSummary = string.Format(CultureInfo.InvariantCulture,
-            "; KILLS one-shots started {0}, late (scheduler) {1}, dropped (backend) {2}, cancelled {3}",
-            _killBackend.StartedCount, scheduler != null ? scheduler.LateCount : 0, _killBackend.DroppedCount, _killBackend.CancelledCount);
+            "; KILLS one-shots started {0}, late (scheduler) {1}, dropped (backend) {2}",
+            killStarted, _killLate, killDropped) +
+            string.Format(CultureInfo.InvariantCulture,
+            "; PATTERNS layers {0}, scheduled {1}, started {2}, late (scheduler) {3}, dropped (backend) {4}; FIRSTANCHOR now beat {5:F5}",
+            layers == Layers.asSoundManager ? "inspector" : layers.ToString(), _patternScheduled,
+            _killBackend.StartedCount - killStarted, _patternLate, _killBackend.DroppedCount - killDropped, _firstAnchorBeat);
         // Total across every one-shot user of this take: the kill chords plus, in spike takes, the SpikeClick scheduler.
         string oneShotSummary = string.Format(CultureInfo.InvariantCulture,
             "; ONESHOTS started {0}, late {1}, dropped {2}, cancelled {3}",
@@ -608,6 +706,11 @@ public sealed class CaptureScenario : MonoBehaviour
         foreach (var line in _killLossLog)
             losses.Append(line).Append('\n');
         File.WriteAllText(Path.ChangeExtension(path, ".kills.csv"), losses.ToString());
+        // Every lost one-shot with its own beat and owner (kill = KillChordPlanner, pattern = PatternScheduler).
+        File.WriteAllText(Path.ChangeExtension(path, ".losses.csv"), "beat_now,note_beat,owner,kind,bus\n" + string.Join("\n", _lossLog) + "\n");
+        if (logOneShots)
+            File.WriteAllText(Path.ChangeExtension(path, ".patterns.csv"),
+                "frame,beat,instrument,bus,midi,onset_s,beat_dsp,start_dsp\n" + string.Join("\n", _patternLog) + "\n");
         if (logOneShots)
         {
             _killBackend.DiagnosticLog = null;
@@ -641,6 +744,12 @@ public sealed class CaptureScenario : MonoBehaviour
 
     void OnDestroy()
     {
+        if (soloLayers != Solo.none)
+            UnmuteSoloBuses();
+        if (_killBackend != null)
+            _killBackend.NoteDropped -= OnNoteDropped;
+        if (_subscribedShots != null)
+            _subscribedShots.NoteLate -= OnNoteLate;
         if (_frameCapApplied)
         {
             Application.targetFrameRate = _savedFrameRate;
