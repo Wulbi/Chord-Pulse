@@ -2,13 +2,14 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** 처치 화음 다음으로 음악 타임라인의 나머지 음정·스타일 레이어(배경, 스타일 드럼, 특색 루프, 피버)를 Unity가 박에 맞춰 예약하는 원샷으로 옮기고, 음악 이벤트를 "시계 + 코어 드럼"만 남긴 1,000노트 이하로 줄인다.
+**Goal:** 처치 화음 다음으로 음악 타임라인의 나머지 음정·스타일 레이어(배경, 스타일 드럼, 특색 루프, 피버)를 Unity가 박에 맞춰 예약하는 원샷으로 옮기고, 음악 이벤트의 들리는 노트를 0으로 줄인다(시계 전환과 이벤트 삭제는 `2026-11-25-unity-music-clock.md` Part C).
 
 **Architecture:** 1차(0c378a3)가 만든 `BeatClock` → `OneShotScheduler` → `FmodOneShotBackend` 경로를 그대로 쓴다. 무엇을 울릴지는 Python 생성기가 만든 `PatternTable.g.cs`(4마디 프레이즈 단위 노트 + 적용 조건)를 새 `PatternScheduler`가 1박 룩어헤드로 읽어 정하고, 편성 상태(스타일·변형·콤보·인텐시티·피버 단계·특색 루프)는 `SoundManager`가 `IArrangement`로 넘긴다. 레벨·필터·덕킹은 FMOD 전역 믹서 버스와 전역 파라미터로 옮겨 타임라인 노트와 원샷에 똑같이 걸린다.
 
 **Tech Stack:** Unity 6 + FMOD for Unity 2.02 (Studio API), FMOD Studio 2.02.35 (`fmodstudiocl.exe` 스크립트), Python 3 + numpy/scipy (생성기·분석), Unity Test Framework 1.6 (EditMode, `Assets/Tests/Editor/`, asmdef 없음).
 
 **Spec:** `Docs/superpowers/specs/2026-11-24-fmod-scheduled-layers-design.md` — 이 계획은 스펙 6장 3~8단계와, 0~2단계 최종 리뷰가 남긴 선행 정리(Part A)를 다룬다. 0~2단계 계획: `Docs/superpowers/plans/2026-11-24-fmod-scheduled-kill-chords.md`. 측정 방법: `Docs/Captures/README.md`.
+시계와 코어 드럼은 `Docs/superpowers/specs/2026-11-25-unity-music-clock-design.md`가 이 계획의 결정을 대체한다 — Task 10·12·15와 '타임라인 점프 정지' 절 참고.
 
 ## Global Constraints
 
@@ -16,7 +17,7 @@
 - 레벨: 이전 전후 캡처 RMS 차이 레이어별 ±1 dB (`analyze_capture.py rms --compare`). 덕킹·`Tension`·`Danger`·`Hurt`가 원샷 레이어에도 걸려야 한다.
 - Studio CPU(`StudioSystem.getCPUUsage` update) 평균: baseline 시나리오 ≤ 11%.
 - Core DSP CPU(`System.getCPUUsage` dsp) 출발점(1차 Task 6, Editor): baseline 평균 3.17% (1차 전 1.54%), heavy 평균 7.12% (1차 전 3.39%). **예산(제안, 확인 필요): 8단계 끝에 baseline ≤ 6%, heavy ≤ 12%.** 어느 단계든 이를 넘으면 그 단계에서 멈추고 측정 표와 함께 보고한다.
-- 음악 이벤트 노트 ≤ 1,000 (8단계 끝), FMOD 프로젝트 저장 수 초 이내.
+- 음악 이벤트의 들리는 노트 0 (Task 15 끝에는 `Spike ref` 128노트만 남는다; 이벤트 삭제는 `2026-11-25-unity-music-clock.md` Part C), FMOD 프로젝트 저장 수 초 이내.
 - 원샷은 절대 늦게 울리지 않는다 (R12): 시작 시각이 지난 노트는 버린다 (`LateCount` / `DroppedCount`).
 - 생성기는 멱등: 같은 입력으로 두 번 돌리면 생성물과 `FMOD/ChordPulse/Metadata/`가 바이트 단위로 같다 (Task 1 이후 `event:/Inst/*` 포함).
 - FMOD CLI: `"C:\Program Files\FMOD SoundSystem\FMOD Studio 2.02.35\fmodstudiocl.exe"`, FMOD Studio는 닫은 상태. 스크립트 뒤 `-build`는 **별도 명령**으로 실행하고 뱅크 시각 확인, `Build/Desktop/*.bank`를 `Assets/StreamingAssets`로 복사.
@@ -35,13 +36,9 @@
 4. **숨 고르기 프레이즈·인텐시티 0** — 드리미 스타일과 인텐시티 0에서 성긴 편성만 나와야 한다(플럭 없음, 인텐시티 조건 레이어 없음). → Task 10 `Breath_IntensityZero_DropsIntensityClips`.
 5. **0.4박 미만 선행의 처치 화음과 배경 노트가 한 악기 상한을 공유** — 같은 (악기, 버스) 이벤트를 배경과 처치가 함께 쓰면 스틸링이 처치 화음을 빼먹는다. 키를 (악기, 버스)로 나눠 막는다. → Task 1 `instruments.py` 단언(같은 이름·다른 버스는 다른 이벤트) + Task 4 `EveryVoicedNoteExists`.
 
-## 타임라인 점프 정지(0.5 s) — 이 계획에 넣지 않는다
+## 타임라인 점프 정지(0.5 s) — 이 계획에서 고치지 않는다
 
-FMOD Studio는 구간 점프마다 약 0.5 s(450~570 ms) 음악 출력을 멈추고, 그 사이 만들어진 원샷 인스턴스는 채널 그룹이 늦게 생겨 버려진다(R12). **별도 계획으로 다룬다.** 이유:
-- 원인이 아직 모른다. 1차에서 Studio 업데이트 과부하가 타임라인 노트 수에서 왔듯(AdaptiveAudioPlan 10-5), 점프 정지도 점프 목적지의 노트 수·샘플 로딩과 관련 있을 가능성이 크다. 이 계획의 4~7단계가 타임라인 노트를 약 10,456 → 1,000 미만으로 줄이므로, 지금 고치면 움직이는 대상을 쫓게 된다.
-- 지금 피해는 제한적이다: 처치 화음은 늦게 울지 않고 가끔 빠질 뿐이며, R15(경계 직후 1박 앞서 넘김)가 대부분을 막는다.
-
-이 계획이 하는 것: Task 5가 캡처마다 점프 정지 길이를 재는 `gaps` 지표를 추가하고, Task 11(배경 이전 끝, 노트 대부분 제거)과 Task 15(정리 끝)에서 다시 잰다. **Task 11 뒤에도 정지가 100 ms 이상이면 Task 12 전에 정지 계획을 쓰자고 보고**한다. 그 계획의 출발 가설: 목적지 샘플 미로딩(`EventDescription.loadSampleData`·비스트리밍), 점프 방식(트랜지션 마커 vs 목적지 마커 퀀타이즈), 점프 순간 Studio 업데이트 시간(`getCPUUsage` 프레임별).
+원인은 타임라인 점프로 확인됐고(위 스펙 1장) 해법은 시계 전환이다. 이 계획의 캡처는 `landings`로 착지 지연을 기록만 한다.
 
 ---
 
@@ -268,8 +265,9 @@ FMOD Studio는 구간 점프마다 약 0.5 s(450~570 ms) 음악 출력을 멈추
   - `public struct ArrangementState { public int Style; public int Variation; public int Combo; public float Intensity; public FeverPhaseMask Fever; public int FeatureLoop; public bool Legacy; }`
   - `public interface IArrangement { ArrangementState At(int step); }` — 그 step에 **울려야 할** 상태(룩어헤드 없이). `SoundManager`가 지금의 `UpdateStyle`/`UpdateVariation`/`ComboAt`/인텐시티/피버/특색 규칙을 step 함수로 노출해 구현.
   - `public static class PatternMatch { public static bool Matches(in PatternClip c, in ArrangementState s); }` (`Arrangement.cs`; `PatternClip`은 생성 코드라 거기 두지 않는다). 스타일은 `StyleMask` 비트, 변형은 [Min, Max], 콤보 ≥ `ComboMin`, 인텐시티 ≥ `IntensityMin`, 피버 단계는 `Fever` 마스크에 포함, `FeatureLoop`은 0이거나 같음.
-  - `public sealed class PatternScheduler { PatternScheduler(OneShotScheduler shots, IArrangement arrangement, double lookaheadBeats = 1.0); void Update(double nowBeat); void Invalidate(double fromBeat); void Reset(); int ScheduledCount { get; } event Action<PatternNote, double /*절대 박*/> NoteScheduled; }`
+  - `public sealed class PatternScheduler { PatternScheduler(OneShotScheduler shots, IArrangement arrangement, double lookaheadBeats = 1.0, ulong layerMask = ulong.MaxValue, double dispatchWindowBeats = 0); void Update(double nowBeat); void Invalidate(double fromBeat); void Reset(); int ScheduledCount { get; } event Action<PatternNote, double /*절대 박*/> NoteScheduled; }`
   - `Update`: `(scheduledUntil, nowBeat + lookahead]` 범위의 각 16분음 step에서 `At(step)`으로 맞는 클립을 골라 그 박의 노트를 `Schedule(…, owner: this, DispatchWindow(beat))`. `Legacy`면 아무것도 예약하지 않는다. 노트당 할당 없음(클립·노트 인덱스 순회).
+  - `layerMask`의 비트 = `PatternClip.Layer`. 꺼진 레이어의 클립은 건너뛴다. `dispatchWindowBeats > 0`이면 `KillChordPlanner.DispatchWindow(beat)` 대신 그 값을 넘김 창으로 쓴다.
   - `Invalidate(fromBeat)`: `shots.CancelFrom(fromBeat, this)` 후 `scheduledUntil = min(scheduledUntil, fromBeat)`. 이미 울리는 노트는 그대로.
   - `Reset()`: 상태만 비운다(인스턴스 정리는 `OneShotScheduler.StopAll`).
 
@@ -282,6 +280,8 @@ FMOD Studio는 구간 점프마다 약 0.5 s(450~570 ms) 음악 출력을 멈추
   - `ComboDrop_ReschedulesNextBar` → 콤보 3에서 박 3.5까지 예약, 콤보 0으로 바꾸고 `Invalidate(4)` + `Update(3.5)` → 박 4 이후 벨 노트 없음.
   - `StyleChange_AtPhraseBoundary` → step 32부터 스타일 1 → 박 16 노트는 라틴, 박 15.5는 신스팝.
   - `LandingBeats_UseWideDispatchWindow` → 박 16 노트가 1박 앞(now 15)에서 백엔드로 넘어감.
+  - `LayerMask_SkipsOtherLayers` → 마스크에 없는 레이어의 노트 0.
+  - `DispatchWindow_Override_HandsOverEarly` → `dispatchWindowBeats` 4.0 → 박 4 노트가 now 0에서 백엔드로 넘어감.
   - `Legacy_SchedulesNothing`, `Reset_ClearsScheduledUntil`.
 - [ ] **Step 2:** `run_tests` FAIL. **Step 3:** 구현. **Step 4:** `run_tests` PASS.
 - [ ] **Step 5:** Commit `audio: pattern scheduler and arrangement state`.
@@ -301,7 +301,7 @@ FMOD Studio는 구간 점프마다 약 0.5 s(450~570 ms) 음악 출력을 멈추
 - [ ] **Step 1:** `legacy_gate.py` → JS → `-build` 별도 → 뱅크 복사. 확인: `legacyLayers` = true일 때 baseline 캡처가 Task 8 캡처와 ±0.3 dB(옛 경로 그대로).
 - [ ] **Step 2:** `SoundManager` 연결, 컴파일 오류 0, `run_tests` PASS.
 - [ ] **Step 3:** 캡처(새 경로): baseline·heavy seed 7, heavy seed 33(점프), `styles`. 기준: 창별 RMS Task 8 대비 ±1 dB, 레이어별은 `--solo` 테이크(`CaptureScenario.soloLayers`: 나머지 버스 음소거)로 Music Bed·Harmony 각각 ±1 dB; 어택 오차는 플럭 박에서 `onsets`로 평균 ≤ 2 / 최대 ≤ 5 ms; late·dropped 0(점프 착지 제외는 별도 줄로 집계); Studio·Core CPU가 예산 안.
-- [ ] **Step 4: 점프 정지 체크포인트.** `gaps`로 착지 정지 길이 측정. 100 ms 이상이면 Task 12 전에 사용자에게 "정지 계획을 따로 쓸 것"을 측정값과 함께 보고(이 계획은 계속 진행 가능).
+- [ ] **Step 4: 점프 정지 기록.** `landings`로 착지 지연·공백을 README에 기록(판단·보고 없음).
 - [ ] **Step 5:** 수동 Play: 스타일 전환·숨 고르기·콤보 끊김·피버 진입/종료·게임 오버 → 재시작에서 끊김·잔류음 없음.
 - [ ] **Step 6:** README 표 + Commit `audio: bed pitched layers as scheduled one-shots (legacy tracks gated)`.
 
@@ -309,25 +309,26 @@ FMOD Studio는 구간 점프마다 약 0.5 s(450~570 ms) 음악 출력을 멈추
 
 # Part D — 스펙 5단계: 스타일 드럼
 
-### Task 12: 스타일 드럼 + 코어 드럼 게이트
+### Task 12: 스타일 드럼 + 코어 드럼
 
 **Files:**
-- Create: `FMOD/Tools/pattern_drums.py` (펑크 드럼(스네어·고스트·클랩·16분 햇·오픈 햇), 라틴 퍼커션(콩가·카우벨·봉고·클라베스), 라틴·펑크 셰이커(8분 + 콤보 ≥1의 16분), 드리미 퍼커션(클라베스·셰이커), `Snare variations`(고스트·필), `Combo hats`, `Clap layer`, `Eighth-note hats`의 오픈 햇 — 값은 `bed_style.py`·`bed_variation.py`·`bed_combo.py`에서)
+- Create: `FMOD/Tools/pattern_drums.py` (코어 드럼(`Core kick`·`Core snare`·`Core hat`)과 펑크 드럼(스네어·고스트·클랩·16분 햇·오픈 햇), 라틴 퍼커션(콩가·카우벨·봉고·클라베스), 라틴·펑크 셰이커(8분 + 콤보 ≥1의 16분), 드리미 퍼커션(클라베스·셰이커), `Snare variations`(고스트·필), `Combo hats`, `Clap layer`, `Eighth-note hats`의 오픈 햇 — 값은 `bed_style.py`·`bed_variation.py`·`bed_combo.py`에서)
 - Modify: `FMOD/Tools/samples.py` (`PERC` 표: 타악기는 `root` = 타악기 번호, `pitch` 0)
-- Modify: `FMOD/Tools/patterns.py` (`PATTERN_LAYERS`, `LEGACY_TRACKS`에 위 트랙)
-- Create: `FMOD/Tools/core_drums.py` → `core_drums.js` (코어 트랙 조건 교체, 아래)
-- Modify: `Assets/Scripts/Manager/SoundManager.cs` (`CoreKick`·`CoreBackbeat` 설정)
+- Modify: `FMOD/Tools/patterns.py` (`PATTERN_LAYERS`, `LEGACY_TRACKS`에 위 트랙과 코어 타임라인 트랙 세 개 — 다른 트랙처럼 `LegacyLayers`로 게이트; `STYLE_USES_CORE_BACKBEAT` 표에서 `PatternTable.StyleUsesCoreBackbeat`를 `bool[]`로 생성)
+- Modify: `Assets/Scripts/Manager/SoundManager.cs` (`PatternScheduler` 둘: 일반 `_patterns`와 코어 `_corePatterns`; `Invalidate`·`Reset`·`Update`는 둘 다에 호출)
 - Modify: `Assets/Tests/Editor/InstrumentCoverageTests.cs`
 
 **Interfaces:**
 - 드럼 노트: `LengthBeats = 0`(샘플 끝까지, Task 2), `Bus = MusicBed`. 드럼 키트는 `Instrument` 하나에 `Note` = 타악기 번호(스펙 4-2).
-- **결정 (확인 필요): 코어 드럼.** 인벤토리상 `Snare - beats 2 and 4`·`Eighth-note hats`(닫힌 햇)는 지금 `BedStyle` 0 조건이 걸려 다른 스타일에서 꺼지고, `Kick`은 `FeverBuild` 0~0.5 조건이 있다. 스펙 4-1대로 타임라인에 남기되, "무엇을 연주할지" 축이 이벤트에 남지 않도록 조건을 **이산 이벤트 파라미터 두 개**로 바꾼다: `CoreKick`(0/1), `CoreBackbeat`(0/1, 스네어 + 닫힌 햇). 값은 Unity가 정한다: `CoreKick = !FeverBuilding`, `CoreBackbeat = PatternTable.StyleUsesCoreBackbeat[style]`(신스팝만 1, 피버 구간 1; `patterns.py`가 `STYLE_USES_CORE_BACKBEAT` 표에서 `bool[]`로 생성). 새 스타일은 이 표에 한 칸 추가 — 이벤트는 바뀌지 않는다. 코어 노트 수 ≈ 킥 64 + 스네어 64 + 닫힌 햇 128.
+- **코어 드럼도 패턴 클립이다.** `pattern_drums.py`에 코어 레이어를 추가한다: `Core kick`(박 0·2마다, 옛 `Kick - beats 1 and 3` 값), `Core snare`(옛 `Snare - beats 2 and 4`), `Core hat`(옛 `Eighth-note hats`의 닫힌 햇). 조건 — `Core kick`: `Fever` 마스크 = `None | Impact | Fever | Outro`(빌드업 마디에서만 꺼짐). `Core snare`·`Core hat`: `StyleMask` = `STYLE_USES_CORE_BACKBEAT`가 참인 스타일 비트(신스팝만; 피버 구간은 `ArrangementState.Style`이 이미 신스팝). 이벤트 파라미터 `CoreKick`·`CoreBackbeat`는 만들지 않는다. 새 스타일은 `STYLE_USES_CORE_BACKBEAT`에 한 칸 추가 — 이벤트는 바뀌지 않는다. 코어 노트 수 ≈ 킥 64 + 스네어 64 + 닫힌 햇 128.
+- 생성물 추가: `PatternTable.CoreLayerMask`(`ulong`, 코어 세 레이어의 비트), `PatternTable.CoreLookaheadBeats = 4.0`.
+- `SoundManager`의 `PatternScheduler` 둘: `_patterns`(`layerMask = ~PatternTable.CoreLayerMask`, 룩어헤드 1.0)와 `_corePatterns`(`layerMask = CoreLayerMask`, 룩어헤드 `CoreLookaheadBeats` 4.0, `dispatchWindowBeats` 4.0). 코어 드럼은 한 프레이즈 앞서 정해지는 것(스타일·피버)에만 달려 있으므로 한 마디 앞까지 미리 넘겨 일반적인 프레임 정지에도 끊기지 않게 한다. `Invalidate`·`Reset`·`Update`는 둘 다에 호출.
 - `Clap layer`(BedStyle 0 · Intensity ≥2.5)와 오픈 햇(Intensity 1.5~3)은 스타일·인텐시티 축이므로 원샷으로 옮긴다.
 
-- [ ] **Step 1: 실패하는 테스트** `EveryPatternNoteExists`가 드럼 포함으로 FAIL, `PatternSchedulerTests.Funk_Combo1_Adds16thShaker`, `DrumNotes_PlayToSampleEnd`(드럼 노트의 `LengthBeats` = 0).
-- [ ] **Step 2:** 데이터·생성 → `instruments.js` → `core_drums.js` → `legacy_gate.js` → `-build` 별도 → 뱅크 복사. `run_tests` PASS.
-- [ ] **Step 3:** 캡처 baseline·heavy·`styles`·seed 33: Music Bed 솔로 창별 RMS Task 11 대비 ±1 dB, 하이햇 박에서 어택 오차 기준, late·dropped 0, CPU 예산 안 — **Core dsp가 가장 크게 늘 단계**이므로 heavy에서 예산을 넘으면 멈추고 보고(대안 후보: 16분 햇을 박당 한 인스턴스로 묶은 짧은 루프 샘플).
-- [ ] **Step 4:** README 표 + Commit `audio: style drums as scheduled one-shots; core drums gated by CoreKick/CoreBackbeat`.
+- [ ] **Step 1: 실패하는 테스트** `EveryPatternNoteExists`가 드럼 포함으로 FAIL, `PatternSchedulerTests.Funk_Combo1_Adds16thShaker`, `DrumNotes_PlayToSampleEnd`(드럼 노트의 `LengthBeats` = 0), `CoreKick_SilentInBuildBar`(Fever = Build인 마디에 킥 노트 0), `CoreBackbeat_OnlyInSynthpop`(스타일 1에서 Core snare·hat 노트 0), `Core_LookaheadIsOneBar`(now 0에서 박 4의 킥이 예약됨).
+- [ ] **Step 2:** 데이터·생성 → `instruments.js` → `legacy_gate.js` → `-build` 별도 → 뱅크 복사. `run_tests` PASS.
+- [ ] **Step 3:** 캡처 baseline·heavy·`styles`·seed 33: Music Bed 솔로 창별 RMS Task 11 대비 ±1 dB(`legacyLayers` 켠/끈 테이크의 Music Bed 솔로 RMS ±1 dB에 코어 드럼 포함), 하이햇 박과 킥 박(짝수 박)에서 어택 오차 기준 통과, late·dropped 0, CPU 예산 안 — **Core dsp가 가장 크게 늘 단계**이므로 heavy에서 예산을 넘으면 멈추고 보고(대안 후보: 16분 햇을 박당 한 인스턴스로 묶은 짧은 루프 샘플).
+- [ ] **Step 4:** README 표 + Commit `audio: style drums as scheduled one-shots; core drums as pattern clips`.
 
 ---
 
@@ -373,7 +374,7 @@ FMOD Studio는 구간 점프마다 약 0.5 s(450~570 ms) 음악 출력을 멈추
 - [ ] **Step 1:** `extract_fever.py` 실행 → 단언 통과 → `pattern_fever.py` 생성, 노트 수가 인벤토리(160/256/64/384/256/96/256/256)를 반복 횟수로 나눈 값과 맞는지 출력으로 확인.
 - [ ] **Step 2: 실패하는 테스트** `PatternSchedulerTests.FeverQueued_ReplacesBuildBar`(빌드업 박의 스타일 노트가 `Invalidate` 후 롤·라이저로), `Impact_OnlyFirstBeat`.
 - [ ] **Step 3:** 생성 → FMOD 순서 → `-build` 별도 → 복사. `run_tests` PASS.
-- [ ] **Step 4:** 캡처: `CaptureScenario`에 `fever` 시나리오(박 24에 `QueueFever`, 처치 매 박) → 빌드업·임팩트·피버·아웃트로 구간 RMS가 `legacyLayers` 테이크 대비 ±1 dB, 킥이 빌드업 마디에서 꺼짐(`CoreKick`), 피버 중 처치 화음 = 스타일 0.
+- [ ] **Step 4:** 캡처: `CaptureScenario`에 `fever` 시나리오(박 24에 `QueueFever`, 처치 매 박) → 빌드업·임팩트·피버·아웃트로 구간 RMS가 `legacyLayers` 테이크 대비 ±1 dB, `Core kick`이 빌드업 마디에서 꺼짐, 피버 중 처치 화음 = 스타일 0.
 - [ ] **Step 5:** README 표 + Commit `audio: fever layers as scheduled one-shots (data extracted from the hand-made tracks)`.
 
 ---
@@ -382,24 +383,26 @@ FMOD Studio는 구간 점프마다 약 0.5 s(450~570 ms) 음악 출력을 멈추
 
 ### Task 15: 옛 트랙·파라미터 삭제, 최종 측정, 확장성 확인
 
+이 Task는 `LEGACY_TRACKS` 삭제·옛 파라미터 삭제·생성기 정리(Step 1의 `cleanup_music`, Files의 Delete 목록, `SoundManager`의 옛 파라미터 쓰기 제거)까지만 한다. 음악 이벤트 자체·`NextSection`·`Spike ref`·`MusicConductor`는 남긴다 — `2026-11-25-unity-music-clock.md` Part C가 지운다. Step 1의 노트 수 기준은 `≤ 200`(Spike ref 128 + 0), Step 3 최종 캡처와 Step 4 확장성 확인은 그대로.
+
 **Files:**
 - Create: `FMOD/Tools/cleanup_music.py` → `cleanup_music.js` (`LEGACY_TRACKS` 전부 삭제; 이벤트 파라미터 `BedStyle`, `Variation`, `Combo`, `Intensity`, `FeatureLoop`, `Fever`, `FeverBuild`, `FeverImpact`, `FeverOutro`, `MusicMix`, 로컬 `Tension`/`Danger`/`Hurt` 잔여 프록시 삭제; 전역 `LegacyLayers` 삭제; 이벤트 안 Harmony·Feature 그룹과 `return:/Harmony Duck`·`return:/Feature Duck` 삭제(비었을 때만, 아니면 멈추고 남은 트랙 출력))
 - Delete: `FMOD/Tools/bed_variation.py/.js`, `bed_combo.py/.js`, `bed_tension.py/.js`, `bed_style.py/.js`, `feature_loops.js`, `legacy_gate.py/.js` (데이터는 `pattern_*.py`로 이전 완료). `spike_click` / `Spike ref` 트랙은 **남긴다**(측정 도구, 128노트).
 - Modify: `Assets/Scripts/Manager/SoundManager.cs` (옛 파라미터 쓰기·`*Available` 플래그·`legacyLayers` 제거, `TailBuses` 갱신)
-- Modify: `Docs/AdaptiveAudioPlan.md` (8-10 실행 순서 전면 갱신: `instruments` → `mixer` → `core_drums` → `cleanup_music`(1회) → `-build`; 8장·9장·10장에 "원샷으로 대체됨"), `Docs/Captures/README.md`
+- Modify: `Docs/AdaptiveAudioPlan.md` (8-10 실행 순서 전면 갱신: `instruments` → `mixer` → `cleanup_music`(1회) → `-build`; 8장·9장·10장에 "원샷으로 대체됨"), `Docs/Captures/README.md`
 
 **Interfaces:**
 - `PatternScheduler`·`KillChordPlanner`·`OneShotScheduler`가 최종 구조. `ArrangementState.Legacy` 필드 제거.
 
-- [ ] **Step 1:** `cleanup_music.py` → JS → `-build` 별도 → 복사. 확인: 음악 이벤트 `SingleSound` 수 ≤ 1,000(목표 ≈ 코어 256 + Spike ref 128), 이벤트 XML 크기, FMOD Studio에서 프로젝트 저장 시간(수 초).
+- [ ] **Step 1:** `cleanup_music.py` → JS → `-build` 별도 → 복사. 확인: 음악 이벤트 `SingleSound` 수 ≤ 200(Spike ref 128 + 0), 이벤트 XML 크기, FMOD Studio에서 프로젝트 저장 시간(수 초).
 - [ ] **Step 2:** `SoundManager` 정리, 컴파일 오류 0, `run_tests` 전부 PASS (`SectionBpm_MatchesFmodTempoMarkers` 포함).
-- [ ] **Step 3:** 최종 캡처: baseline·heavy seed 7, heavy seed 33, `styles`, `features`, `fever`, `duck` + 스탠드얼론 baseline·heavy. 기준: Global Constraints 전부(어택 오차, RMS ±1 dB vs Task 5 출발점 — 단 1차에서 의도적으로 바뀐 처치 화음 길이 효과는 제외, Studio ≤ 11%, Core 예산). `gaps`로 점프 정지 재측정 → 별도 정지 계획 필요 여부를 README에 결론으로.
-- [ ] **Step 4: 확장성 확인(스펙 5-2).** 작업 트리에서 `pattern_bed.py`·`pattern_drums.py`에 시험 스타일 4(아무 기존 샘플로 화성 1클립 + 드럼 1클립)와 `StyleUsesCoreBackbeat` 한 칸을 추가 → 생성기·`instruments.js`·`-build` 실행 → `git status FMOD/ChordPulse/Metadata`에 **새 `event:/Inst/*` 파일만** 생기고 기존 이벤트 XML(`{3d468f15…}.xml` 포함) 변경 0임을 확인 → 결과를 README에 기록하고 **시험 스타일은 되돌린다**(`git checkout`·새 파일 삭제는 이 시험이 만든 것만).
-- [ ] **Step 5:** 문서 갱신 후 Commit `fmod: music event reduced to clock and core drums; legacy layers removed`.
+- [ ] **Step 3:** 최종 캡처: baseline·heavy seed 7, heavy seed 33, `styles`, `features`, `fever`, `duck` + 스탠드얼론 baseline·heavy. 기준: Global Constraints 전부(어택 오차, RMS ±1 dB vs Task 5 출발점 — 단 1차에서 의도적으로 바뀐 처치 화음 길이 효과는 제외, Studio ≤ 11%, Core 예산). `landings`로 착지 지연·공백을 README에 기록(판단·보고 없음).
+- [ ] **Step 4: 확장성 확인(스펙 5-2).** 작업 트리에서 `pattern_bed.py`·`pattern_drums.py`에 시험 스타일 4(아무 기존 샘플로 화성 1클립 + 드럼 1클립)와 `STYLE_USES_CORE_BACKBEAT` 한 칸을 추가 → 생성기·`instruments.js`·`-build` 실행 → `git status FMOD/ChordPulse/Metadata`에 **새 `event:/Inst/*` 파일만** 생기고 기존 이벤트 XML(`{3d468f15…}.xml` 포함) 변경 0임을 확인 → 결과를 README에 기록하고 **시험 스타일은 되돌린다**(`git checkout`·새 파일 삭제는 이 시험이 만든 것만).
+- [ ] **Step 5:** 문서 갱신 후 Commit `fmod: legacy timeline layers and parameters removed; music event keeps only the spike reference`.
 
 ---
 
 ## 이 계획 밖 (후속)
 
-- 타임라인 점프 정지(0.5 s) — 위 "타임라인 점프 정지" 절. Task 11·15 측정 결과로 별도 계획.
+- 타임라인 점프 정지(0.5 s) → `2026-11-25-unity-music-clock.md` Part C
 - 연출이 `PatternScheduler.NoteScheduled`를 직접 구독(스펙 4-4 "소리와 연출이 같은 원천") — 지금은 같은 Python 원천에서 생성된 `BedNotes.g.cs`·`FeatureLoopNotes.g.cs`로 맞춘다. `Assets/Scripts/Visual/*`를 고치는 연출 작업과 함께 한다.
