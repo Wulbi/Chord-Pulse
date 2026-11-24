@@ -2,8 +2,21 @@
 // Instrument one-shot events (event:/Inst/<name>) and the attack onset of each note's sample.
 public enum Instrument
 {
+    Bass,
+    Bells,
+    Brass,
+    Clav,
+    Glass,
+    Glock,
+    Guitar,
+    Harp,
     Marimba,
+    OrigBlue,
+    OrigRed,
+    OrigYellow,
     SpikeClick,
+    Sub,
+    Vibes,
 }
 
 public static class InstrumentTable
@@ -12,8 +25,21 @@ public static class InstrumentTable
     {
         switch (instrument)
         {
+            case Instrument.Bass: return "event:/Inst/Bass";
+            case Instrument.Bells: return "event:/Inst/Bells";
+            case Instrument.Brass: return "event:/Inst/Brass";
+            case Instrument.Clav: return "event:/Inst/Clav";
+            case Instrument.Glass: return "event:/Inst/Glass";
+            case Instrument.Glock: return "event:/Inst/Glock";
+            case Instrument.Guitar: return "event:/Inst/Guitar";
+            case Instrument.Harp: return "event:/Inst/Harp";
             case Instrument.Marimba: return "event:/Inst/Marimba";
+            case Instrument.OrigBlue: return "event:/Inst/OrigBlue";
+            case Instrument.OrigRed: return "event:/Inst/OrigRed";
+            case Instrument.OrigYellow: return "event:/Inst/OrigYellow";
             case Instrument.SpikeClick: return "event:/Inst/SpikeClick";
+            case Instrument.Sub: return "event:/Inst/Sub";
+            case Instrument.Vibes: return "event:/Inst/Vibes";
             default: return null;
         }
     }
@@ -23,17 +49,268 @@ public static class InstrumentTable
     {
         switch (instrument)
         {
+            case Instrument.Bass:
+                switch (midi)
+                {
+                    case 41: return 0.000749;
+                    case 43: return 0.000667;
+                    case 45: return 0.000595;
+                    case 48: return 0.0005;
+                }
+                break;
+            case Instrument.Bells:
+                switch (midi)
+                {
+                    case 65: return 0.001498;
+                    case 67: return 0.001335;
+                    case 69: return 0.001189;
+                    case 71: return 0.001059;
+                    case 72: return 0.001;
+                    case 74: return 0.000891;
+                    case 76: return 0.0;
+                    case 77: return 0.0;
+                    case 79: return 0.0;
+                    case 81: return 0.0;
+                    case 83: return 0.0;
+                    case 84: return 0.0;
+                    case 86: return 0.0;
+                    case 88: return 0.0;
+                    case 91: return 0.0;
+                }
+                break;
+            case Instrument.Brass:
+                switch (midi)
+                {
+                    case 53: return 0.010679;
+                    case 55: return 0.009514;
+                    case 57: return 0.008476;
+                    case 59: return 0.007551;
+                    case 60: return 0.007127;
+                    case 62: return 0.010703;
+                    case 64: return 0.009535;
+                    case 65: return 0.009;
+                    case 67: return 0.008018;
+                    case 69: return 0.007143;
+                    case 71: return 0.006364;
+                    case 72: return 0.006007;
+                    case 74: return 0.005351;
+                    case 76: return 0.004768;
+                    case 79: return 0.004009;
+                }
+                break;
+            case Instrument.Clav:
+                switch (midi)
+                {
+                    case 65: return 0.005244;
+                    case 67: return 0.004005;
+                    case 69: return 0.003568;
+                    case 71: return 0.003178;
+                    case 72: return 0.003;
+                    case 74: return 0.002673;
+                    case 76: return 0.002381;
+                    case 77: return 0.002247;
+                    case 79: return 0.00267;
+                    case 81: return 0.002378;
+                    case 83: return 0.002119;
+                    case 84: return 0.002;
+                    case 86: return 0.001782;
+                    case 88: return 0.001587;
+                    case 91: return 0.001335;
+                }
+                break;
+            case Instrument.Glass:
+                switch (midi)
+                {
+                    case 53: return 0.001498;
+                    case 55: return 0.001335;
+                    case 57: return 0.001189;
+                    case 59: return 0.001059;
+                    case 60: return 0.001;
+                    case 62: return 0.000891;
+                    case 64: return 0.0;
+                    case 65: return 0.0;
+                    case 67: return 0.0;
+                    case 69: return 0.0;
+                    case 71: return 0.0;
+                    case 72: return 0.0;
+                    case 74: return 0.0;
+                    case 76: return 0.0;
+                    case 79: return 0.0;
+                }
+                break;
+            case Instrument.Glock:
+                switch (midi)
+                {
+                    case 77: return 0.007857;
+                    case 79: return 0.007;
+                    case 81: return 0.006236;
+                    case 83: return 0.007416;
+                    case 84: return 0.007;
+                    case 86: return 0.006236;
+                    case 88: return 0.008324;
+                    case 89: return 0.007857;
+                    case 91: return 0.007;
+                    case 93: return 0.006236;
+                    case 95: return 0.007416;
+                    case 96: return 0.007;
+                    case 98: return 0.006236;
+                    case 100: return 0.005556;
+                    case 103: return 0.004672;
+                }
+                break;
+            case Instrument.Guitar:
+                switch (midi)
+                {
+                    case 41: return 0.047194;
+                    case 43: return 0.042045;
+                    case 45: return 0.037458;
+                    case 47: return 0.033371;
+                    case 48: return 0.031498;
+                    case 50: return 0.028062;
+                    case 52: return 0.025;
+                    case 53: return 0.023597;
+                    case 55: return 0.025;
+                    case 57: return 0.025;
+                    case 59: return 0.022272;
+                    case 60: return 0.028062;
+                    case 62: return 0.025;
+                    case 64: return 0.022272;
+                    case 67: return 0.018729;
+                }
+                break;
+            case Instrument.Harp:
+                switch (midi)
+                {
+                    case 53: return 0.043727;
+                    case 55: return 0.038956;
+                    case 57: return 0.034706;
+                    case 59: return 0.030919;
+                    case 60: return 0.029184;
+                    case 62: return 0.026;
+                    case 64: return 0.015892;
+                    case 65: return 0.015;
+                    case 67: return 0.023572;
+                    case 69: return 0.021;
+                    case 71: return 0.027546;
+                    case 72: return 0.026;
+                    case 74: return 0.028062;
+                    case 76: return 0.025;
+                    case 79: return 0.021022;
+                }
+                break;
             case Instrument.Marimba:
                 switch (midi)
                 {
+                    case 53: return 0.012;
+                    case 55: return 0.010691;
+                    case 57: return 0.009524;
+                    case 59: return 0.008485;
+                    case 60: return 0.008009;
+                    case 62: return 0.007135;
+                    case 64: return 0.006357;
+                    case 65: return 0.006;
+                    case 67: return 0.005345;
+                    case 69: return 0.005946;
+                    case 71: return 0.005297;
                     case 72: return 0.005;
+                    case 74: return 0.004454;
+                    case 76: return 0.005946;
                     case 79: return 0.005;
+                }
+                break;
+            case Instrument.OrigBlue:
+                switch (midi)
+                {
+                    case 53: return 0.0;
+                    case 55: return 0.0;
+                    case 57: return 0.0;
+                    case 59: return 0.0;
+                    case 60: return 0.0;
+                    case 62: return 0.0;
+                    case 64: return 0.0;
+                    case 65: return 0.0;
+                    case 67: return 0.0;
+                    case 69: return 0.0;
+                    case 71: return 0.0;
+                    case 72: return 0.0;
+                    case 74: return 0.0;
+                    case 76: return 0.0;
+                    case 79: return 0.0;
+                }
+                break;
+            case Instrument.OrigRed:
+                switch (midi)
+                {
+                    case 53: return 0.0;
+                    case 55: return 0.0;
+                    case 57: return 0.0;
+                    case 59: return 0.0;
+                    case 60: return 0.0;
+                    case 62: return 0.0;
+                    case 64: return 0.0;
+                    case 65: return 0.0;
+                    case 67: return 0.0;
+                    case 69: return 0.0;
+                    case 71: return 0.0;
+                    case 72: return 0.0;
+                    case 74: return 0.0;
+                    case 76: return 0.0;
+                    case 79: return 0.0;
+                }
+                break;
+            case Instrument.OrigYellow:
+                switch (midi)
+                {
+                    case 53: return 0.0;
+                    case 55: return 0.0;
+                    case 57: return 0.0;
+                    case 59: return 0.0;
+                    case 60: return 0.0;
+                    case 62: return 0.0;
+                    case 64: return 0.0;
+                    case 65: return 0.0;
+                    case 67: return 0.0;
+                    case 69: return 0.0;
+                    case 71: return 0.0;
+                    case 72: return 0.0;
+                    case 74: return 0.0;
+                    case 76: return 0.0;
+                    case 79: return 0.0;
                 }
                 break;
             case Instrument.SpikeClick:
                 switch (midi)
                 {
                     case 72: return 0.0;
+                }
+                break;
+            case Instrument.Sub:
+                switch (midi)
+                {
+                    case 41: return 0.0;
+                    case 43: return 0.0;
+                    case 45: return 0.0;
+                    case 48: return 0.0;
+                }
+                break;
+            case Instrument.Vibes:
+                switch (midi)
+                {
+                    case 53: return 0.010488;
+                    case 55: return 0.009344;
+                    case 57: return 0.008324;
+                    case 59: return 0.007416;
+                    case 60: return 0.007;
+                    case 62: return 0.007857;
+                    case 64: return 0.007;
+                    case 65: return 0.006607;
+                    case 67: return 0.005886;
+                    case 69: return 0.009344;
+                    case 71: return 0.008324;
+                    case 72: return 0.007857;
+                    case 74: return 0.007;
+                    case 76: return 0.006236;
+                    case 79: return 0.007857;
                 }
                 break;
         }

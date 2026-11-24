@@ -13,7 +13,7 @@ Each event has an event-local parameter Note (0-127, integer) and, at timeline 0
 Unity starts the instrument, sets Note, and schedules it on the beat. Output goes to bus:/Kill Chords.
 
 Layer modules (kill_oneshots.py, ...) expose register(lib) and are listed in LAYERS:
-    lib.add("Marimba", samples.MARIMBA, max_instances=16)   # declare an instrument once
+    lib.add("Marimba", samples.MARIMBA, max_instances=16)   # declare an instrument once (max_pitch=15 semitones default)
     lib.need("Marimba", 72)                                 # request a note
 """
 import json
@@ -25,6 +25,7 @@ sys.path.insert(0, HERE)  # so `python -I` (isolated mode) still finds samples.p
 
 import samples  # noqa: E402
 import spike_click  # noqa: E402
+import kill_oneshots  # noqa: E402
 CS_PATH = os.path.join(HERE, "..", "..", "Assets", "Scripts", "Audio", "Generated", "InstrumentTable.g.cs")
 JS_PATH = os.path.join(HERE, "instruments.js")
 
@@ -37,10 +38,10 @@ class Library:
         self.tables = {}   # name -> (sample table, max instances)
         self.notes = {}    # name -> set of midi
 
-    def add(self, name, table, max_instances):
+    def add(self, name, table, max_instances, max_pitch=15):
         if name in self.tables:
-            assert self.tables[name] == (table, max_instances), f"instrument {name} redefined differently"
-        self.tables[name] = (table, max_instances)
+            assert self.tables[name] == (table, max_instances, max_pitch), f"instrument {name} redefined differently"
+        self.tables[name] = (table, max_instances, max_pitch)
         self.notes.setdefault(name, set())
 
     def need(self, name, midi):
@@ -48,18 +49,8 @@ class Library:
         self.notes[name].add(int(midi))
 
 
-class _SmokeTest:
-    """Temporary until the layer modules exist: Marimba 72 and 79."""
-
-    @staticmethod
-    def register(lib):
-        lib.add("Marimba", samples.MARIMBA, 16)
-        lib.need("Marimba", 72)
-        lib.need("Marimba", 79)
-
-
-# Layer modules, each with register(lib). Later tasks add kill_oneshots here.
-LAYERS = [_SmokeTest, spike_click]
+# Layer modules, each with register(lib).
+LAYERS = [kill_oneshots, spike_click]
 
 
 def build():
@@ -68,10 +59,10 @@ def build():
         layer.register(lib)
     insts = []
     for name in sorted(lib.tables):
-        table, max_inst = lib.tables[name]
+        table, max_inst, max_pitch = lib.tables[name]
         notes = []
         for midi in sorted(lib.notes[name]):
-            s, pitch = samples.pick(table, midi)
+            s, pitch = samples.pick(table, midi, max_pitch)
             volume = round(max(VOLUME_MIN, min(NORMALIZE_DB - s[2], VOLUME_MAX)), 2)
             onset = s[3] / (2 ** (pitch / 12.0))
             notes.append(dict(midi=midi, file=s[0], pitch=pitch, volume=volume, onset=round(onset, 6)))
@@ -211,6 +202,7 @@ def main():
     insts = build()
     write(JS_PATH, JS_TEMPLATE.replace("__INSTRUMENTS__", json.dumps(insts, indent=1)))
     write(CS_PATH, cs_text(insts))
+    kill_oneshots.write_table()
     print(len(insts), "instruments,", sum(len(i["notes"]) for i in insts), "notes -> instruments.js, InstrumentTable.g.cs")
 
 

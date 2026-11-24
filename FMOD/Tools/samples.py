@@ -37,8 +37,8 @@ BASS = [("AT101V_101Bass_C2_v100.wav", 36, -15.6, 0.001)]
 SUB = [("SynthBass/DeviceNTI_SineSub_C2_v100.wav", 36, -9.8, 0.0)]
 
 
-def pick(table, midi):
+def pick(table, midi, max_pitch=15):
     s = min(table, key=lambda x: (abs(midi - x[1]), -x[1]))
     pitch = midi - s[1]
-    assert -15 <= pitch <= 15, (s[0], midi, pitch)
+    assert -max_pitch <= pitch <= max_pitch, (s[0], midi, pitch)
     return s, pitch
