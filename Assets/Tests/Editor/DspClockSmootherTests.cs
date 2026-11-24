@@ -64,6 +64,64 @@ public class DspClockSmootherTests
     }
 
     [Test]
+    public void Sample_RecoversAfterMixerStall()
+    {
+        var s = new DspClockSmoother(Rate);
+        double t = 0;
+        for (; t < 1.0; t += Dt)
+            s.Sample(Raw(t), t);
+        double stallStart = t;
+        ulong frozen = Raw(t);
+        for (double end = t + 0.2; t < end; t += Dt)
+            s.Sample(frozen, t);
+        double stallEnd = t;
+        double prev = double.NegativeInfinity;
+        int zeroRun = 0;
+        for (double end = t + 2.0; t < end; t += Dt)
+        {
+            // the mixer resumes where it stopped: its clock now trails real time by the stall length
+            double v = s.Sample(Raw(stallStart + (t - stallEnd)), t);
+            Assert.GreaterOrEqual(v, prev, $"monotonic t={t}");
+            if (t - stallEnd >= 0.5)
+            {
+                double d = v - prev;
+                Assert.LessOrEqual(d, 2 * Dt * Rate, $"t={t}");
+                zeroRun = d == 0 ? zeroRun + 1 : 0;
+                Assert.LessOrEqual(zeroRun, 2, $"staircase t={t}");
+                Assert.LessOrEqual(System.Math.Abs(v - Rate * (stallStart + (t - stallEnd))), Block, $"t={t}");
+            }
+            prev = v;
+        }
+    }
+
+    [Test]
+    public void Sample_SlowAudioClock_DoesNotPinAtCap()
+    {
+        const double dt = 1.0 / 60;
+        const double total = 600;
+        var s = new DspClockSmoother(Rate);
+        double prev = double.NegativeInfinity;
+        int zeroRun = 0;
+        for (double t = 0; t < total; t += dt)
+        {
+            double audio = t * (1 - 1e-4);
+            ulong raw = Raw(audio);
+            double v = s.Sample(raw, t);
+            Assert.GreaterOrEqual(v, prev, $"monotonic t={t}");
+            if (t > total - 10)
+            {
+                Assert.AreNotEqual(raw + 2048.0, v, $"pinned at cap t={t}");
+                double d = v - prev;
+                Assert.LessOrEqual(d, 2 * dt * Rate, $"t={t}");
+                zeroRun = d == 0 ? zeroRun + 1 : 0;
+                Assert.LessOrEqual(zeroRun, 2, $"staircase t={t}");
+                Assert.LessOrEqual(System.Math.Abs(v - Rate * audio), Block, $"t={t}");
+            }
+            prev = v;
+        }
+    }
+
+    [Test]
     public void Sample_RawWentBackwards_Restarts()
     {
         var s = new DspClockSmoother(Rate);
