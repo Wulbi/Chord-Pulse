@@ -108,4 +108,23 @@ public class KillChordVoicerTests
                 for (int ch = 0; ch < 4; ch++)
                     Assert.AreEqual(5, Voice(s, c, ch, 3).Count);
     }
+
+    [Test]
+    public void EveryVoicedNote_HasPositiveLength()
+    {
+        // The scheduler plays a note with LengthBeats <= 0 to the end of its sample, so kill chords must never produce one.
+        var list = new List<KillNote>();
+        for (int style = 0; style < KillChordTable.Styles; style++)
+            for (int color = 0; color < KillChordTable.Colors; color++)
+                for (int chord = 0; chord < 4; chord++)
+                    for (int voicing = 0; voicing <= 3; voicing++)
+                        foreach (int combo in new[] { 0, 1, 2, 3 })
+                            foreach (float tension in new[] { 0f, 0.7f })
+                            {
+                                list.Clear();
+                                KillChordVoicer.Voice(style, color, chord, voicing, combo, tension, list);
+                                foreach (var n in list)
+                                    Assert.Greater(n.LengthBeats, 0.0, "style {0} color {1} chord {2} voicing {3} combo {4}", style, color, chord, voicing, combo);
+                            }
+    }
 }

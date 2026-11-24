@@ -377,16 +377,54 @@ public class OneShotSchedulerTests
     }
 
     [Test]
-    public void ReleaseSamples_IsPerInstrumentBusPair()
+    public void Release_IsLookedUpPerNote_NotCachedFromFirst()
     {
-        // The FMOD backend stores this per note at Start; a value computed once from the first note would be wrong here.
-        var real = (Instrument)0;
-        var missing = (Instrument)9999; // combination without an event: no release
-        Assert.AreEqual((ulong)System.Math.Round(InstrumentTable.ReleaseSeconds(real, OutputBus.KillChords) * Rate),
-            OneShotTimes.ReleaseSamples(real, OutputBus.KillChords, Rate));
-        Assert.Greater(OneShotTimes.ReleaseSamples(real, OutputBus.KillChords, Rate), 0UL);
-        Assert.AreEqual(0UL, OneShotTimes.ReleaseSamples(missing, OutputBus.KillChords, Rate));
-        Assert.AreEqual(5760UL, OneShotTimes.ReleaseSamples(0.12, 48000));
-        Assert.AreEqual(2646UL, OneShotTimes.ReleaseSamples(0.06, 44100));
+        var a = (Instrument)1;
+        var b = (Instrument)2;
+        var release = new OneShotRelease((inst, bus) => inst == a ? 0.1 : 0.3);
+        Assert.AreEqual(4800UL, release.SamplesFor(a, OutputBus.KillChords, 48000));
+        Assert.AreEqual(14400UL, release.SamplesFor(b, OutputBus.KillChords, 48000));
+        Assert.AreEqual(4800UL, release.SamplesFor(a, OutputBus.KillChords, 48000));
+        Assert.AreEqual(0UL, new OneShotRelease((_, __) => 0.0).SamplesFor(a, OutputBus.KillChords, 48000));
+        Assert.AreEqual(4800UL, release.SamplesFor(a, OutputBus.KillChords, 0), "unknown rate falls back to 48 kHz");
+    }
+
+    [Test]
+    public void ZeroLength_Late_IsDroppedAndCounted()
+    {
+        var (clock, backend, scheduler) = Make();
+        clock.Anchor(0, 0, 120);
+        backend.Now = 48000;
+        Assert.IsFalse(scheduler.Schedule(N(72, 2, 0, 0f, 0), Owner));
+        Assert.AreEqual(1, scheduler.LateCount);
+        Assert.AreEqual(0, backend.Starts.Count);
+        backend.Now = 0;
+        scheduler.Schedule(N(72, 2, 0, 0f, 0), Owner);
+        backend.Now = 50000; // hitch: missed the window
+        scheduler.Update();
+        Assert.AreEqual(2, scheduler.LateCount);
+        Assert.AreEqual(0, backend.Starts.Count);
+        Assert.AreEqual(0, scheduler.ActiveCount);
+    }
+
+    [Test]
+    public void CancelFrom_AtExactBeat_Cancels()
+    {
+        var (clock, backend, scheduler) = Make();
+        clock.Anchor(0, 0, 120);
+        backend.Now = 0;
+        scheduler.Schedule(N(60, 6, 1, 0f, 0), Owner);
+        Assert.AreEqual(1, scheduler.CancelFrom(6, Owner));
+        Assert.AreEqual(0, scheduler.ActiveCount);
+    }
+
+    [Test]
+    public void HoldSeconds_ShorterThanLength_DoesNotShorten()
+    {
+        var (clock, backend, scheduler) = Make();
+        clock.Anchor(0, 0, 120);
+        backend.Now = 40000;
+        scheduler.Schedule(N(72, 2, 2, 0f, 0, hold: 0.1), Owner); // 2 beats = 1 s
+        Assert.AreEqual(48000UL + 48000UL, backend.Stops[0].dspStop);
     }
 }

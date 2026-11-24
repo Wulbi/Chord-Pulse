@@ -22,7 +22,10 @@ public readonly struct OneShotNote
     public readonly int Midi;
     public readonly double Beat;
     public readonly double LengthBeats;
-    /// <summary>Minimum sounding time in seconds from the start (0 = none): the stop is the later of the beat length and this.</summary>
+    /// <summary>
+    /// Minimum sounding time in seconds from the start (0 = none): the stop is the later of the beat length and this.
+    /// Ignored for zero-length notes (they play to the end of the sample).
+    /// </summary>
     public readonly double HoldSeconds;
     public readonly float GainDb;
     public readonly double OnsetSeconds;
@@ -35,15 +38,25 @@ public readonly struct OneShotNote
     }
 }
 
-/// <summary>Pure time helpers shared by the scheduler and the FMOD backend.</summary>
-public static class OneShotTimes
+/// <summary>
+/// Release fade (samples) of a note, looked up from its own (instrument, bus) every time: different combinations can
+/// have different releases, so nothing is cached from the first note. Pure, so it is testable without FMOD.
+/// </summary>
+public sealed class OneShotRelease
 {
-    /// <summary>Release fade of one (instrument, bus) combination in samples; 0 for a combination that does not exist.</summary>
-    public static ulong ReleaseSamples(Instrument inst, OutputBus bus, int sampleRate) =>
-        ReleaseSamples(InstrumentTable.ReleaseSeconds(inst, bus), sampleRate);
+    const int FallbackSampleRate = 48000;
+    readonly Func<Instrument, OutputBus, double> _releaseSeconds;
 
-    public static ulong ReleaseSamples(double releaseSeconds, int sampleRate) =>
-        releaseSeconds <= 0 ? 0UL : (ulong)Math.Round(releaseSeconds * (sampleRate > 0 ? sampleRate : 48000));
+    public OneShotRelease(Func<Instrument, OutputBus, double> releaseSeconds)
+    {
+        _releaseSeconds = releaseSeconds ?? throw new ArgumentNullException(nameof(releaseSeconds));
+    }
+
+    public ulong SamplesFor(Instrument inst, OutputBus bus, int sampleRate)
+    {
+        double seconds = _releaseSeconds(inst, bus);
+        return seconds <= 0 ? 0UL : (ulong)Math.Round(seconds * (sampleRate > 0 ? sampleRate : FallbackSampleRate));
+    }
 }
 
 /// <summary>
@@ -98,7 +111,10 @@ public sealed class OneShotScheduler
     /// <summary>Notes that were never started because their start time had already passed (never played late).</summary>
     public int LateCount { get; private set; }
 
-    /// <summary>Notes waiting for the dispatch window plus notes handed to the backend whose stop time has not passed.</summary>
+    /// <summary>
+    /// Notes waiting for the dispatch window plus notes handed to the backend that are still sounding or pending
+    /// (stop time not passed; for zero-length notes, not yet reported finished by the backend).
+    /// </summary>
     public int ActiveCount => _notes.Count;
 
     /// <summary>
@@ -145,7 +161,8 @@ public sealed class OneShotScheduler
 
     /// <summary>
     /// Hands waiting notes whose start is at most <see cref="DispatchWindowBeats"/> away to the backend, drops waiting
-    /// notes whose start has already passed (<see cref="LateCount"/>), and releases handles whose stop time has passed.
+    /// notes whose start has already passed (<see cref="LateCount"/>), and releases handles whose stop time has passed
+    /// (zero-length notes: whose backend reports them finished).
     /// </summary>
     public void Update()
     {
@@ -297,6 +314,7 @@ public sealed class FmodOneShotBackend : IOneShotBackend
 
     readonly Dictionary<int, Note> _notes = new Dictionary<int, Note>();
     readonly List<int> _keys = new List<int>();
+    readonly OneShotRelease _release = new OneShotRelease(InstrumentTable.ReleaseSeconds);
     readonly Dictionary<(Instrument, OutputBus), FMOD.Studio.EventDescription> _descriptions = new Dictionary<(Instrument, OutputBus), FMOD.Studio.EventDescription>();
     int _next;
     int _sampleRate;
@@ -329,7 +347,7 @@ public sealed class FmodOneShotBackend : IOneShotBackend
         if (_sampleRate == 0)
         {
             FMODUnity.RuntimeManager.CoreSystem.getSoftwareFormat(out int rate, out _, out _);
-            _sampleRate = rate > 0 ? rate : 48000;
+            _sampleRate = rate; // OneShotRelease falls back when this is 0
         }
         if (instance.start() != FMOD.RESULT.OK)
         {
@@ -338,16 +356,22 @@ public sealed class FmodOneShotBackend : IOneShotBackend
         }
         StartedCount++;
         int handle = _next++;
-        _notes[handle] = new Note { Instance = instance, Start = dspStart, ReleaseSamples = OneShotTimes.ReleaseSamples(inst, bus, _sampleRate) };
+        _notes[handle] = new Note { Instance = instance, Start = dspStart, ReleaseSamples = _release.SamplesFor(inst, bus, _sampleRate) };
         return handle;
     }
 
-    /// <summary>Unknown handle, or an applied note whose event reports STOPPED (its sample played out).</summary>
+    /// <summary>
+    /// True for an unknown handle, an event reporting STOPPED (its sample played out), and any failed query (invalid
+    /// instance, Studio shut down or reloaded): such a note is gone and must not be kept forever. An event that was
+    /// start()ed is STARTING / PLAYING until it ends, also while its channel group waits for the delayed start.
+    /// </summary>
     public bool IsFinished(int handle)
     {
         if (!_notes.TryGetValue(handle, out var n))
             return true;
-        return n.Instance.getPlaybackState(out var state) == FMOD.RESULT.OK && state == FMOD.Studio.PLAYBACK_STATE.STOPPED;
+        if (!n.Instance.isValid())
+            return true;
+        return n.Instance.getPlaybackState(out var state) != FMOD.RESULT.OK || state == FMOD.Studio.PLAYBACK_STATE.STOPPED;
     }
 
     public void Stop(int handle, ulong dspStop)
