@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<objects serializationModel="Studio.02.02.00">
+	<object class="MixerGroup" id="{7396f2ba-3346-4b11-9412-a9d4247ec15b}">
+		<property name="name">
+			<value>Combo Pad</value>
+		</property>
+		<relationship name="effectChain">
+			<destination>{0c11dbb6-48d8-4e0d-a09d-1f0f56869e8c}</destination>
+		</relationship>
+		<relationship name="panner">
+			<destination>{a9f4a5f3-07ac-449a-98ee-33b3251e0725}</destination>
+		</relationship>
+		<relationship name="output">
+			<destination>{b2dc6a26-a0bc-4be8-acc2-af3f002a4088}</destination>
+		</relationship>
+	</object>
+	<object class="MixerBusEffectChain" id="{0c11dbb6-48d8-4e0d-a09d-1f0f56869e8c}">
+		<relationship name="effects">
+			<destination>{b2696c87-dfc3-406f-a939-31c9d26a7f8d}</destination>
+			<destination>{a2a7fa06-ff3e-426f-92bb-d553b275a6be}</destination>
+		</relationship>
+	</object>
+	<object class="MixerBusPanner" id="{a9f4a5f3-07ac-449a-98ee-33b3251e0725}" />
+	<object class="HighpassEffect" id="{b2696c87-dfc3-406f-a939-31c9d26a7f8d}">
+		<property name="cutoff">
+			<value>300</value>
+		</property>
+	</object>
+	<object class="MixerBusFader" id="{a2a7fa06-ff3e-426f-92bb-d553b275a6be}" />
+</objects>

@@ -2508,7 +2508,8 @@ INSTRUMENTS.forEach(function (inst) {
     if (!ev) {
         // the first-generation event event:/Inst/<Name>: move it into the bus folder (same GUID, so no "Events Renamed")
         var old = project.lookup("event:/" + FOLDER + "/" + inst.name);
-        if (old) {
+        // only an event: a bus folder can have the same name as an instrument (event:/Inst/Bass is the Bass bus folder)
+        if (old && old.entity === "Event") {
             old.folder = sub;
             ev = old;
             counts.moved++;

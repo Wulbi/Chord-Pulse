@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<objects serializationModel="Studio.02.02.00">
+	<object class="MixerGroup" id="{efec63eb-fe93-49ee-ad69-884cd05fa395}">
+		<property name="name">
+			<value>Funk Keys</value>
+		</property>
+		<relationship name="effectChain">
+			<destination>{5365cc07-a2f4-4100-925b-bff3362c9b62}</destination>
+		</relationship>
+		<relationship name="panner">
+			<destination>{75a04732-c90f-450f-bdb3-a1f535d6f09b}</destination>
+		</relationship>
+		<relationship name="output">
+			<destination>{b2dc6a26-a0bc-4be8-acc2-af3f002a4088}</destination>
+		</relationship>
+	</object>
+	<object class="MixerBusEffectChain" id="{5365cc07-a2f4-4100-925b-bff3362c9b62}">
+		<relationship name="effects">
+			<destination>{70b428bd-42de-4921-9b57-ab851c5ebb9b}</destination>
+			<destination>{0ddaaf38-7320-4522-8a9e-26b16211b59e}</destination>
+		</relationship>
+	</object>
+	<object class="MixerBusPanner" id="{75a04732-c90f-450f-bdb3-a1f535d6f09b}" />
+	<object class="HighpassEffect" id="{70b428bd-42de-4921-9b57-ab851c5ebb9b}">
+		<property name="cutoff">
+			<value>250</value>
+		</property>
+	</object>
+	<object class="MixerBusFader" id="{0ddaaf38-7320-4522-8a9e-26b16211b59e}" />
+</objects>

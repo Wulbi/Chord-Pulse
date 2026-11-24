@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<objects serializationModel="Studio.02.02.00">
+	<object class="MixerGroup" id="{9df254b3-1ad8-4dfd-9980-f4f1d348fdd1}">
+		<property name="name">
+			<value>Dreamy Bells</value>
+		</property>
+		<relationship name="effectChain">
+			<destination>{b83ba6c1-0daf-4b10-ae0e-ede6d2dbdec4}</destination>
+		</relationship>
+		<relationship name="panner">
+			<destination>{1e097f2a-31f5-4ef7-94d0-f54c4b009efc}</destination>
+		</relationship>
+		<relationship name="output">
+			<destination>{b2dc6a26-a0bc-4be8-acc2-af3f002a4088}</destination>
+		</relationship>
+	</object>
+	<object class="MixerBusEffectChain" id="{b83ba6c1-0daf-4b10-ae0e-ede6d2dbdec4}">
+		<relationship name="effects">
+			<destination>{eb62b99e-c04b-4ffb-b02a-98cf908425f4}</destination>
+			<destination>{896f4219-0d41-47d8-8391-86b0e9f03b39}</destination>
+		</relationship>
+	</object>
+	<object class="MixerBusPanner" id="{1e097f2a-31f5-4ef7-94d0-f54c4b009efc}" />
+	<object class="HighpassEffect" id="{eb62b99e-c04b-4ffb-b02a-98cf908425f4}">
+		<property name="cutoff">
+			<value>300</value>
+		</property>
+	</object>
+	<object class="MixerBusFader" id="{896f4219-0d41-47d8-8391-86b0e9f03b39}" />
+</objects>

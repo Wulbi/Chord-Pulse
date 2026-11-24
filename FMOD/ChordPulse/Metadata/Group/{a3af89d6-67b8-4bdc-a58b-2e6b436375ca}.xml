@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<objects serializationModel="Studio.02.02.00">
+	<object class="MixerGroup" id="{a3af89d6-67b8-4bdc-a58b-2e6b436375ca}">
+		<property name="name">
+			<value>Latin Marimba</value>
+		</property>
+		<relationship name="effectChain">
+			<destination>{af748c3c-acd8-4e2e-97c2-026a17c591a1}</destination>
+		</relationship>
+		<relationship name="panner">
+			<destination>{315a4e26-be2f-4676-aa6f-74c0e4d9ec09}</destination>
+		</relationship>
+		<relationship name="output">
+			<destination>{b2dc6a26-a0bc-4be8-acc2-af3f002a4088}</destination>
+		</relationship>
+	</object>
+	<object class="MixerBusEffectChain" id="{af748c3c-acd8-4e2e-97c2-026a17c591a1}">
+		<relationship name="effects">
+			<destination>{e1af5590-a9f7-47b6-9e38-f7ef4f6b1d97}</destination>
+			<destination>{107106a3-972e-4ef7-abf9-458a5dbf8725}</destination>
+		</relationship>
+	</object>
+	<object class="MixerBusPanner" id="{315a4e26-be2f-4676-aa6f-74c0e4d9ec09}" />
+	<object class="HighpassEffect" id="{e1af5590-a9f7-47b6-9e38-f7ef4f6b1d97}">
+		<property name="cutoff">
+			<value>200</value>
+		</property>
+	</object>
+	<object class="MixerBusFader" id="{107106a3-972e-4ef7-abf9-458a5dbf8725}" />
+</objects>

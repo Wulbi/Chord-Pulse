@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<objects serializationModel="Studio.02.02.00">
+	<object class="EventFolder" id="{d43d0402-ffb0-494a-b2a6-9c31d39289c2}">
+		<property name="name">
+			<value>LatinMarimba</value>
+		</property>
+		<relationship name="folder">
+			<destination>{616f4359-2f60-4e6b-be21-19f9dcde38bf}</destination>
+		</relationship>
+	</object>
+</objects>

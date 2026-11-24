@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<objects serializationModel="Studio.02.02.00">
+	<object class="EventFolder" id="{0a07da48-9a3d-443a-93f2-97c021b903d1}">
+		<property name="name">
+			<value>TensionAcid</value>
+		</property>
+		<relationship name="folder">
+			<destination>{616f4359-2f60-4e6b-be21-19f9dcde38bf}</destination>
+		</relationship>
+	</object>
+</objects>
