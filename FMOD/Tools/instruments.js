@@ -19,6 +19,19 @@ var INSTRUMENTS = [
     "onset": 0.005
    }
   ]
+ },
+ {
+  "name": "SpikeClick",
+  "max": 8,
+  "notes": [
+   {
+    "midi": 72,
+    "file": "Spike/click_3k.wav",
+    "pitch": 0,
+    "volume": -10.2,
+    "onset": 0.0
+   }
+  ]
  }
 ];
 var FOLDER = "Inst";

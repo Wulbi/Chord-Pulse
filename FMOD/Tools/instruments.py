@@ -24,6 +24,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)  # so `python -I` (isolated mode) still finds samples.py and the layer modules
 
 import samples  # noqa: E402
+import spike_click  # noqa: E402
 CS_PATH = os.path.join(HERE, "..", "..", "Assets", "Scripts", "Audio", "Generated", "InstrumentTable.g.cs")
 JS_PATH = os.path.join(HERE, "instruments.js")
 
@@ -57,8 +58,8 @@ class _SmokeTest:
         lib.need("Marimba", 79)
 
 
-# Layer modules, each with register(lib). Later tasks add SpikeClick / kill_oneshots here.
-LAYERS = [_SmokeTest]
+# Layer modules, each with register(lib). Later tasks add kill_oneshots here.
+LAYERS = [_SmokeTest, spike_click]
 
 
 def build():

@@ -8,6 +8,9 @@ using System.Runtime.InteropServices;
 /// FMOD reports every beat (and named marker) of the playing event; this class counts them into an
 /// absolute beat index, so tempo changes, loops and section jumps authored in FMOD never desync gameplay.
 /// Callbacks arrive on the FMOD thread and are queued; <see cref="Update"/> must run on the main thread.
+/// Every counted beat also anchors <see cref="Clock"/> (beat -> FMOD DSP clock) so one-shots can be scheduled on it.
+/// The anchor pairs getTimelinePosition with the master DSP clock on the main thread (Task 3 spike, Docs/Captures/README.md:
+/// reading the DSP clock inside the beat callback is only mixer-block accurate, about 21 ms).
 /// </summary>
 public sealed class MusicConductor
 {
@@ -27,14 +30,21 @@ public sealed class MusicConductor
         public int BeatsPerBar;
         public int BeatInBar;
         public string Name;
+        public int PositionMs;
     }
 
     static readonly FMOD.Studio.EVENT_CALLBACK s_callback = OnEventCallback;
     static readonly double s_tickSeconds = 1.0 / Stopwatch.Frequency;
+    static FMOD.ChannelGroup s_master;
 
     readonly ConcurrentQueue<Signal> _signals = new ConcurrentQueue<Signal>();
     GCHandle _handle;
     bool _attached;
+    FMOD.Studio.EventInstance _instance;
+    // Running mean of the per-frame estimates of the current beat's DSP clock.
+    double _pollSum;
+    int _pollCount;
+    int _anchorPositionMs;
 
     // Anchor: the most recent beat, the time it was heard and the tempo leading out of it.
     int _anchorBeat = -1;
@@ -51,6 +61,20 @@ public sealed class MusicConductor
     /// <summary>Latest named marker passed in the FMOD timeline (section id).</summary>
     public string Section { get; private set; } = string.Empty;
 
+    /// <summary>Beat -> DSP clock of the master channel group, anchored on every beat.</summary>
+    public BeatClock Clock { get; private set; } = new BeatClock(48000);
+    /// <summary>Timeline position (ms) FMOD reported for the current beat; a jump shows as a discontinuity.</summary>
+    public int BeatTimelineMs => _anchorPositionMs;
+
+    /// <summary>Current DSP clock of the master channel group (the clock <see cref="Clock"/> and ChannelGroup.setDelay use).</summary>
+    public static ulong MasterDsp()
+    {
+        if (!s_master.hasHandle())
+            return 0;
+        s_master.getDSPClock(out ulong dsp, out _);
+        return dsp;
+    }
+
     public event Action<int> BeatChanged;
     public event Action<string> SectionChanged;
 
@@ -64,6 +88,14 @@ public sealed class MusicConductor
         Bar = -1;
         Section = string.Empty;
         BeatsPerBar = 4;
+        _instance = instance;
+        FMODUnity.RuntimeManager.CoreSystem.getMasterChannelGroup(out s_master);
+        FMODUnity.RuntimeManager.CoreSystem.getSoftwareFormat(out int sampleRate, out _, out _);
+        if (Clock.SampleRate != sampleRate)
+            Clock = new BeatClock(sampleRate);
+        Clock.Reset();
+        _pollSum = 0;
+        _pollCount = 0;
 
         // Freed by the DESTROYED callback so a late FMOD callback never touches a dead handle.
         _handle = GCHandle.Alloc(this);
@@ -79,6 +111,7 @@ public sealed class MusicConductor
     {
         _attached = false;
         _anchorBeat = -1;
+        Clock.Reset();
     }
 
     /// <summary>Continuous beat position as heard (0 = first beat). -1 before the first beat.</summary>
@@ -101,6 +134,7 @@ public sealed class MusicConductor
     {
         if (!_attached)
             return;
+        bool polled = false;
         while (_signals.TryDequeue(out var signal))
         {
             if (signal.Type == SignalType.Marker)
@@ -136,8 +170,33 @@ public sealed class MusicConductor
             _tempo = signal.Tempo;
             BeatsPerBar = beatsPerBar;
             Bar = _anchorBeat / beatsPerBar;
+            _anchorPositionMs = signal.PositionMs;
+            _pollSum = 0;
+            _pollCount = 0;
+            // Anchor before BeatChanged, so handlers can schedule on this beat right away.
+            PollAnchor();
+            polled = true;
             BeatChanged?.Invoke(_anchorBeat);
         }
+        if (HasStarted && !polled)
+            PollAnchor();
+    }
+
+    // dsp(beat) = dspNow - (timelineNow - beatPosition). Both values are read back to back on the main thread; each
+    // frame adds one estimate and the anchor is their running mean for the current beat. Measured: about 1 ms jitter.
+    void PollAnchor()
+    {
+        if (!_instance.isValid() || _instance.getTimelinePosition(out int timelineMs) != FMOD.RESULT.OK)
+            return;
+        ulong now = MasterDsp();
+        double sinceBeat = (timelineMs - _anchorPositionMs) / 1000.0;
+        double beatSeconds = 60.0 / _tempo;
+        // Before the timeline reached this beat, or after a jump that has not been reported yet: no estimate.
+        if (sinceBeat < -beatSeconds || sinceBeat > 2 * beatSeconds)
+            return;
+        _pollSum += now - sinceBeat * Clock.SampleRate;
+        _pollCount++;
+        Clock.Anchor(_anchorBeat, (ulong)Math.Round(_pollSum / _pollCount), _tempo);
     }
 
     static double Now() => Stopwatch.GetTimestamp() * s_tickSeconds;
@@ -171,7 +230,8 @@ public sealed class MusicConductor
                 Timestamp = now,
                 Tempo = beat.tempo,
                 BeatsPerBar = beat.timesignatureupper,
-                BeatInBar = beat.beat
+                BeatInBar = beat.beat,
+                PositionMs = beat.position
             });
         }
         else if (type == FMOD.Studio.EVENT_CALLBACK_TYPE.TIMELINE_MARKER)

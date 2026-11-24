@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<objects serializationModel="Studio.02.02.00">
+	<object class="ParameterPreset" id="{b863f5cb-99bb-484c-91b9-cc61e1f235af}">
+		<property name="name">
+			<value>SpikeRef</value>
+		</property>
+		<relationship name="folder">
+			<destination>{a418e0de-c7d0-05c9-280a-b529dc02e12e}</destination>
+		</relationship>
+		<relationship name="parameter">
+			<destination>{3b58a172-953b-4aee-9b45-a8127796328a}</destination>
+		</relationship>
+	</object>
+	<object class="GameParameter" id="{3b58a172-953b-4aee-9b45-a8127796328a}">
+		<property name="initialValue">
+			<value>0</value>
+		</property>
+	</object>
+</objects>

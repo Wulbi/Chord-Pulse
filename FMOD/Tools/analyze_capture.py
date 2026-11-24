@@ -10,6 +10,13 @@
       Finds attack times in two frequency bands and pairs them: ref (e.g. a metronome click) vs test (e.g. a kill
       chord click). Prints the mean / max absolute and mean signed difference in ms.
 
+  python FMOD/Tools/analyze_capture.py spike <wav> [--offset-ms X]
+      Task 3 scheduling spike. Pairs every scheduled SpikeClick (3 kHz, test band 2800-3200) with the Spike ref
+      timeline click (1 kHz, ref band 900-1100) of the same beat, using the take's sidecar logs
+      (.beats.csv, .spike.csv, .timeline.csv). Prints error stats before and after removing a constant offset
+      (the mean signed error of the take, or --offset-ms), for all beats and for the 4 beats after each section
+      change (timeline discontinuity or tempo change). Missing clicks count as failures.
+
 Needs numpy and scipy. Note: numpy lives in the user site-packages here, so `python -I` (isolated mode) cannot import
 it; run with plain `python` (the WAVs are our own captures, nothing untrusted is loaded).
 """
@@ -150,6 +157,121 @@ def cmd_onsets(args):
     return 0
 
 
+def read_csv(path):
+    with open(path, newline="") as f:
+        return list(csv.DictReader(f))
+
+
+def stats(values):
+    a = np.abs(np.array(values))
+    return (float(a.mean()), float(a.max())) if len(a) else (float("nan"), float("nan"))
+
+
+def cmd_spike(args):
+    audio, rate = read_wav(args.wav)
+    base = os.path.splitext(args.wav)[0]
+    beats = {int(r["beat"]): (int(r["frame"]), float(r["bpm"])) for r in read_csv(base + ".beats.csv")}
+    timeline = {int(r["beat"]): int(r["timeline_ms"]) for r in read_csv(base + ".timeline.csv")}
+    spikes = read_csv(base + ".spike.csv")
+    mono = audio.mean(axis=1)
+    ref = band_onsets(mono, rate, (900.0, 1100.0))
+    test = band_onsets(mono, rate, (2800.0, 3200.0))
+
+    # Section changes: the timeline position does not continue from the previous beat, or the tempo changes.
+    changes = []
+    for b in sorted(timeline):
+        if b - 1 in timeline and b - 1 in beats and b in beats:
+            expected = timeline[b - 1] + 60000.0 / beats[b - 1][1]
+            if abs(timeline[b] - expected) > 5 or beats[b][1] != beats[b - 1][1]:
+                changes.append((b, timeline[b - 1], timeline[b], beats[b - 1][1], beats[b][1]))
+    post = set()
+    for b, *_ in changes:
+        post.update(range(b, b + 4))
+
+    # The beat log is the conductor's callback stamps; a beat callback can arrive late (e.g. at a jump landing, where
+    # two beats arrive together). Only used to find the right click pair, so replace stamps that do not fit the
+    # previous beat's length by the previous beat + one beat.
+    approx_frame = {}
+    for b in sorted(beats):
+        frame, bpm = beats[b]
+        if b - 1 in approx_frame:
+            expected = approx_frame[b - 1] + 60.0 / beats[b - 1][1] * rate
+            if abs(frame - expected) > 0.25 * 60.0 / beats[b - 1][1] * rate:
+                frame = expected
+        approx_frame[b] = frame
+
+    # Reference click of every beat (ref onset nearest to the beat's approximate frame).
+    ref_of = {}
+    for b in sorted(approx_frame):
+        approx = approx_frame[b] / rate
+        near_ref = ref[np.abs(ref - approx) <= 0.06] if len(ref) else ref
+        if len(near_ref):
+            ref_of[b] = near_ref[np.argmin(np.abs(near_ref - approx))]
+
+    rows, missing, gridded = [], [], []
+    for r in spikes:
+        b = int(r["beat"])
+        if r["scheduled"] != "1" or b not in beats:
+            missing.append((b, "not scheduled"))
+            continue
+        rt = ref_of.get(b)
+        if rt is None:
+            # The music is silent at a jump landing (no ref click). Predict the beat from the previous beat's ref
+            # click and tempo; these beats are listed apart, not mixed into the stats.
+            if b - 1 in ref_of:
+                grid = ref_of[b - 1] + 60.0 / beats[b - 1][1]
+                near_test = test[np.abs(test - grid) <= args.max_pair_ms / 1000.0] if len(test) else test
+                if len(near_test):
+                    tt = near_test[np.argmin(np.abs(near_test - grid))]
+                    gridded.append((b, float(r["lead"]), (tt - grid) * 1000.0))
+                    continue
+            missing.append((b, "no ref click"))
+            continue
+        near_test = test[np.abs(test - rt) <= args.max_pair_ms / 1000.0] if len(test) else test
+        if len(near_test) == 0:
+            missing.append((b, "no test click"))
+            continue
+        tt = near_test[np.argmin(np.abs(near_test - rt))]
+        rows.append((b, float(r["lead"]), (tt - rt) * 1000.0))
+
+    print("%s: scheduled %d, paired %d, missing %d" % (os.path.basename(args.wav), len(spikes), len(rows), len(missing)))
+    for b, why in missing:
+        print("  missing beat %d: %s" % (b, why))
+    if changes:
+        print("section changes: " + ", ".join("beat %d (%d->%d ms, %g->%g BPM)" % c for c in changes))
+    if not rows:
+        return 1
+    for b, lead, e in gridded:
+        print("  beat %d: no ref click (music silent at the jump landing); test click vs grid from beat %d: %+.2f ms"
+              " (not in the stats)" % (b, b - 1, e))
+    d = np.array([x[2] for x in rows])
+    offset = args.offset_ms if args.offset_ms is not None else float(d.mean())
+    print("offset used for correction: %.2f ms (%s) = %.0f samples at %d Hz" %
+          (offset, "given" if args.offset_ms is not None else "mean signed error of this take", offset * rate / 1000.0, rate))
+
+    def line(name, sel):
+        raw = [x[2] for x in rows if sel(x)]
+        cor = [v - offset for v in raw]
+        m, mx = stats(raw)
+        cm, cmx = stats(cor)
+        sd = float(np.std(raw)) if raw else float("nan")
+        print("  %-22s n=%3d  before: mean|e| %6.2f max|e| %6.2f signed %6.2f sd %5.2f   after: mean|e| %5.2f max|e| %5.2f ms" %
+              (name, len(raw), m, mx, float(np.mean(raw)) if raw else float("nan"), sd, cm, cmx))
+        return cm, cmx
+
+    overall = line("all", lambda x: True)
+    line("lead 1 beat", lambda x: x[1] >= 0.99)
+    line("lead 0.3 beat", lambda x: x[1] < 0.99)
+    jump = line("4 beats after change", lambda x: x[0] in post)
+    if args.verbose:
+        for b, lead, e in rows:
+            print("    beat %3d lead %.1f err %7.2f ms%s" % (b, lead, e, "  *" if b in post else ""))
+    ok = overall[0] <= 2 and overall[1] <= 5 and (np.isnan(jump[1]) or jump[1] <= 5)
+    print("accuracy (after correction, mean <= 2 ms, max <= 5 ms, all and after changes): %s; missing %d"
+          % ("PASS" if ok else "FAIL", len(missing)))
+    return 0
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     sub = parser.add_subparsers(dest="command", required=True)
@@ -165,6 +287,12 @@ def main():
     p.add_argument("--test-band", required=True, help="Hz range, e.g. 2800-3200")
     p.add_argument("--max-pair-ms", type=float, default=50.0)
     p.set_defaults(func=cmd_onsets)
+    p = sub.add_parser("spike")
+    p.add_argument("wav")
+    p.add_argument("--offset-ms", type=float, default=None, help="constant correction; default: this take's mean signed error")
+    p.add_argument("--max-pair-ms", type=float, default=40.0)
+    p.add_argument("--verbose", action="store_true")
+    p.set_defaults(func=cmd_spike)
     args = parser.parse_args()
     sys.exit(args.func(args))
 

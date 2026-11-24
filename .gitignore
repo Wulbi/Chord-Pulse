@@ -112,3 +112,5 @@ InitTestScene*.unity*
 /Docs/Captures/*.wav
 /Docs/Captures/*.beats.csv
 /Docs/Captures/*.cpu.txt
+/Docs/Captures/*.spike.csv
+/Docs/Captures/*.timeline.csv

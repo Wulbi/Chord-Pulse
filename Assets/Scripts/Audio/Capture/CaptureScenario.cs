@@ -24,6 +24,12 @@ public sealed class CaptureScenario : MonoBehaviour
     [SerializeField] string suffix = "";
     [SerializeField] bool exitPlayModeWhenDone = true;
 
+    [Header("spike (scheduling accuracy)")]
+    [Tooltip("OneShotScheduler.ScheduleOffsetSamples for this take (default: the measured constant).")]
+    [SerializeField] long scheduleOffsetSamples = OneShotScheduler.DefaultScheduleOffsetSamples;
+    [Tooltip("Beats with a SpikeClick scheduled (1 .. this). Even beats are scheduled 1 beat ahead, odd beats 0.3 beat ahead.")]
+    [SerializeField] int spikeBeats = 64;
+
     const int Colors = 3;
 
     string _wavPath;
@@ -38,6 +44,14 @@ public sealed class CaptureScenario : MonoBehaviour
     float _studioMax;
     float _dspMax, _totalMax;
     bool _finished;
+    // spike
+    const double LongLead = 1.0, ShortLead = 0.3;
+    FmodOneShotBackend _backend;
+    OneShotScheduler _scheduler;
+    bool _spikeRefSet;
+    int _nextShort = 1;
+    readonly Dictionary<int, int> _timelineMs = new Dictionary<int, int>();
+    readonly List<string> _spikeLog = new List<string>();
     int _stalls;
     float _longestFrame;
 
@@ -54,6 +68,11 @@ public sealed class CaptureScenario : MonoBehaviour
         _conductor = (MusicConductor)typeof(SoundManager).GetField("_conductor", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(sound);
         _anchorSeconds = typeof(MusicConductor).GetField("_anchorSeconds", BindingFlags.Instance | BindingFlags.NonPublic);
         _conductor.BeatChanged += OnBeat;
+        if (scenario == Scenario.spike)
+        {
+            _backend = new FmodOneShotBackend();
+            _scheduler = new OneShotScheduler(_conductor.Clock, _backend) { ScheduleOffsetSamples = scheduleOffsetSamples };
+        }
 
         yield return null; // let FMOD finish initialising
         if (!AudioCapture.Begin(_wavPath))
@@ -101,6 +120,9 @@ public sealed class CaptureScenario : MonoBehaviour
             _totalMax = Mathf.Max(_totalMax, total);
         }
 
+        if (scenario == Scenario.spike)
+            UpdateSpike(sound);
+
         int beat = sound.CurrentBeat;
         while (beat > _lastBeat && _lastBeat < beats)
         {
@@ -114,7 +136,49 @@ public sealed class CaptureScenario : MonoBehaviour
         }
     }
 
-    void OnBeat(int beat) => _beats.Add((beat, (double)_anchorSeconds.GetValue(_conductor), _conductor.Tempo));
+    void OnBeat(int beat)
+    {
+        _beats.Add((beat, (double)_anchorSeconds.GetValue(_conductor), _conductor.Tempo));
+        if (scenario != Scenario.spike)
+            return;
+        _timelineMs[beat] = _conductor.BeatTimelineMs;
+        // Long lead: schedule the next beat right as this beat's anchor arrives (even beats only).
+        int target = beat + 1;
+        if (target % 2 == 0 && target <= spikeBeats)
+            ScheduleClick(target, LongLead);
+    }
+
+    void UpdateSpike(SoundManager sound)
+    {
+        if (!_spikeRefSet)
+        {
+            var music = (FMOD.Studio.EventInstance)typeof(SoundManager)
+                .GetField("_music", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(sound);
+            if (music.isValid() && music.setParameterByName("SpikeRef", 1f, true) == FMOD.RESULT.OK)
+                _spikeRefSet = true;
+        }
+        _backend.Update();
+        // Short lead: odd beats, 0.3 beat ahead of the (visual) beat position.
+        double position = sound.BeatPosition;
+        while (_nextShort <= spikeBeats && position >= _nextShort - ShortLead)
+        {
+            if (_conductor.Clock.HasAnchor && _conductor.Clock.AnchorBeat >= _nextShort - 1)
+                ScheduleClick(_nextShort, ShortLead);
+            else
+                _spikeLog.Add(_nextShort + "," + ShortLead.ToString(CultureInfo.InvariantCulture) + ",0,0,-1,0");
+            _nextShort += 2;
+        }
+    }
+
+    void ScheduleClick(int beat, double lead)
+    {
+        var clock = _conductor.Clock;
+        clock.DspAt(beat, out ulong target);
+        ulong now = _backend.NowDsp;
+        bool ok = _scheduler.Schedule(Instrument.SpikeClick, 72, beat, 0.25, 0f, 0.0);
+        _spikeLog.Add(string.Format(CultureInfo.InvariantCulture, "{0},{1},{2},{3},{4},{5}",
+            beat, lead, ok ? 1 : 0, target, clock.AnchorBeat, (long)target - (long)now));
+    }
 
     void QueueKills(SoundManager sound, int beat)
     {
@@ -131,11 +195,7 @@ public sealed class CaptureScenario : MonoBehaviour
                         sound.QueueKillChord(color);
                 break;
             case Scenario.spike:
-                // Quiet music with a sudden burst: nothing for 3 of 4 bars, then every colour at full voicing for a bar.
-                if (beat / SoundManager.BeatsPerBar % 4 == 3)
-                    for (int color = 0; color < Colors; color++)
-                        for (int kill = 0; kill < 3; kill++)
-                            sound.QueueKillChord(color);
+                // No kills: SpikeClick one-shots are scheduled on the beat clock instead (UpdateSpike / OnBeat).
                 break;
         }
     }
@@ -151,6 +211,21 @@ public sealed class CaptureScenario : MonoBehaviour
             log.Append(beat).Append(',').Append(Math.Round(AudioCapture.FrameAt(seconds)).ToString("F0", CultureInfo.InvariantCulture))
                 .Append(',').Append(tempo.ToString("F2", CultureInfo.InvariantCulture)).Append('\n');
         File.WriteAllText(Path.ChangeExtension(path, ".beats.csv"), log.ToString());
+        string spikeSummary = "";
+        if (scenario == Scenario.spike)
+        {
+            var spike = new StringBuilder("beat,lead,scheduled,target_dsp,anchor_beat,lead_samples\n");
+            foreach (var line in _spikeLog)
+                spike.Append(line).Append('\n');
+            File.WriteAllText(Path.ChangeExtension(path, ".spike.csv"), spike.ToString());
+            var timeline = new StringBuilder("beat,timeline_ms\n");
+            foreach (var pair in _timelineMs)
+                timeline.Append(pair.Key).Append(',').Append(pair.Value).Append('\n');
+            File.WriteAllText(Path.ChangeExtension(path, ".timeline.csv"), timeline.ToString());
+            spikeSummary = string.Format(CultureInfo.InvariantCulture,
+                "; SPIKE offset {0} samples, scheduled {1}, started {2}, late (scheduler) {3}, late (backend) {4}",
+                scheduleOffsetSamples, _spikeLog.Count, _backend.StartedCount, _scheduler.LateCount, _backend.LateCount);
+        }
 
         double dspAvg = _cpuSamples > 0 ? _dspSum / _cpuSamples : 0;
         double totalAvg = _cpuSamples > 0 ? _totalSum / _cpuSamples : 0;
@@ -158,7 +233,7 @@ public sealed class CaptureScenario : MonoBehaviour
         string summary = string.Format(CultureInfo.InvariantCulture,
             "[CaptureScenario] DONE {0}: STUDIO update avg {9:F2}% max {10:F2}%; CORE dsp avg {1:F2}% max {2:F2}%, core total (dsp+stream+update) avg {3:F2}% max {4:F2}%, samples {5}, dropped frames {6}, stalls >100 ms after the first beat {7} (take is only a valid reference if 0), longest frame {8:F0} ms",
             Path.GetFileName(path), dspAvg, _dspMax, totalAvg, _totalMax, _cpuSamples, AudioCapture.FramesDropped,
-            _stalls, _longestFrame * 1000f, studioAvg, _studioMax);
+            _stalls, _longestFrame * 1000f, studioAvg, _studioMax) + spikeSummary;
         Debug.Log(summary);
         File.WriteAllText(Path.ChangeExtension(path, ".cpu.txt"), summary + "\n");
 #if UNITY_EDITOR

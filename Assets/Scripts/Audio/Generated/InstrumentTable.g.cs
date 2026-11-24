@@ -3,6 +3,7 @@
 public enum Instrument
 {
     Marimba,
+    SpikeClick,
 }
 
 public static class InstrumentTable
@@ -12,6 +13,7 @@ public static class InstrumentTable
         switch (instrument)
         {
             case Instrument.Marimba: return "event:/Inst/Marimba";
+            case Instrument.SpikeClick: return "event:/Inst/SpikeClick";
             default: return null;
         }
     }
@@ -26,6 +28,12 @@ public static class InstrumentTable
                 {
                     case 72: return 0.005;
                     case 79: return 0.005;
+                }
+                break;
+            case Instrument.SpikeClick:
+                switch (midi)
+                {
+                    case 72: return 0.0;
                 }
                 break;
         }
