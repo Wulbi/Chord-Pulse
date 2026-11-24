@@ -257,6 +257,7 @@ def cmd_spike(args):
     if changes:
         print("section changes: " + ", ".join("beat %d (%d->%d ms, %g->%g BPM)" % c for c in changes))
     if not rows:
+        timing_classes(spikes, beats, ref_of, test, changes, timeline, rate, args.verbose)
         return 1
     for b, lead, e in gridded:
         print("  beat %d: no ref click (music silent at the jump landing); test click vs grid from beat %d: %+.2f ms"
@@ -290,7 +291,56 @@ def cmd_spike(args):
           "%d not scheduled, %d no click (+%d jump landings timed against the grid only)%s"
           % ("PASS" if ok else "FAIL", len(rows), unscheduled, no_click, len(gridded),
              "; conditional: not every beat was measured" if ok and missing else ""))
-    return 0
+    early, late = timing_classes(spikes, beats, ref_of, test, changes, timeline, rate, args.verbose)
+    return 1 if early or late else 0
+
+
+def timing_classes(spikes, beats, ref_of, test, changes, timeline, rate, verbose):
+    """Classifies every click of the test band against the beat it belongs to, also clicks far from their beat (which
+    the +-40 ms pairing above never sees): early = more than 5 ms before the beat, late = more than 5 ms after, missing =
+    no click. The beat time is its reference click, or (no reference: jump landing, music silent) the previous beat's
+    time plus one beat. A click belongs to the first beat b with t < beat_b + 0.3 beat, so a click sounding up to
+    0.7 beat early is still counted against its own beat. Returns (early, late)."""
+    landings = [b for b, t0, t1, *_ in changes if b - 1 in beats and abs(t1 - (t0 + 60000.0 / beats[b - 1][1])) > 5]
+    expected = {}
+    for b in sorted(beats):
+        if b in ref_of:
+            expected[b] = ref_of[b]
+        elif b - 1 in expected:
+            expected[b] = expected[b - 1] + 60.0 / beats[b - 1][1]
+    wanted = sorted(int(r["beat"]) for r in spikes if int(r["beat"]) in expected)
+    assigned = {b: [] for b in wanted}
+    for t in sorted(test):
+        for b in wanted:
+            if t < expected[b] + 0.3 * 60.0 / beats[b][1]:
+                assigned[b].append((t - expected[b]) * 1000.0)
+                break
+    early, late, missing, extra = [], [], [], []
+    for b in wanted:
+        errs = assigned[b]
+        if not errs:
+            missing.append(b)
+            continue
+        e = min(errs, key=abs)
+        extra.extend((b, x) for x in errs if x is not e)
+        if e < -5.0:
+            early.append((b, e))
+        elif e > 5.0:
+            late.append((b, e))
+    after_landing = [b for b in missing if any(0 <= b - L <= 1 for L in landings)]
+    other = [b for b in missing if b not in after_landing]
+    print("TIMING (every test click vs its beat, +-5 ms): early %d, late %d, missing %d (%d within one beat after a jump "
+          "landing at %s: %s; other: %s), extra clicks %d" % (
+              len(early), len(late), len(missing), len(after_landing), "/".join(str(b) for b in landings) or "-",
+              " ".join(str(b) for b in after_landing) or "-", " ".join(str(b) for b in other) or "-", len(extra)))
+    if early:
+        print("  early: " + ", ".join("%d (%.0f ms)" % (b, e) for b, e in early))
+    if late:
+        print("  late: " + ", ".join("%d (%+.0f ms)" % (b, e) for b, e in late))
+    if extra and verbose:
+        print("  extra: " + ", ".join("%d (%+.0f ms)" % (b, e) for b, e in extra))
+    print("TIMING %s (early 0 and late 0 required)" % ("PASS" if not early and not late else "FAIL"))
+    return len(early), len(late)
 
 
 def rms_db(mono, a, b):
