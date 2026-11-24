@@ -212,9 +212,28 @@ public sealed class SoundManager : SingletonBehaviour<SoundManager>, IKillBedSta
     bool IsFeverStep(int step) =>
         _feverStart >= 0 && step >= _feverStart && step < _feverStart + FeverSteps;
 
+    // Return buses that keep ringing (reverb tails) after the music event is stopped; muted by StopMusic, unmuted before the next start.
+    static readonly string[] TailBuses = { "bus:/Feature Duck" };
+
+    // A bus the loaded banks do not have, or FMOD shutting down, is not an error: the lookup throws and is ignored.
+    static void MuteTailBuses(bool mute)
+    {
+        foreach (var path in TailBuses)
+        {
+            try
+            {
+                RuntimeManager.GetBus(path).setMute(mute);
+            }
+            catch (Exception)
+            {
+            }
+        }
+    }
+
     public void StartMusic()
     {
         StopMusic();
+        MuteTailBuses(false);
         _audioBeat = _visualBeat = -1;
         _dspSmoother.Reset(_conductor.Clock.SampleRate);
         _roundSeconds = 0;
@@ -358,6 +377,7 @@ public sealed class SoundManager : SingletonBehaviour<SoundManager>, IKillBedSta
             _music.release();
             _music.clearHandle();
         }
+        MuteTailBuses(true);
     }
 
     public void QueueFever()

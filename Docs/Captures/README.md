@@ -562,3 +562,40 @@ the main-thread polls within half a beat) is about +1 to +2 ms for most beats bu
 at 15 fps, where only 3-4 polls go into each anchor (14-17 at 60 fps, 6-8 at 30 fps); a click scheduled from such an
 anchor is late by that much. This needs a change in `MusicConductor` (out of scope here), so the 15 fps line of the
 attack criterion (max <= 5 ms, late 0) is not met, and the 30 fps line only marginally (2 clicks at +5.0 / +5.1 ms raw).
+
+## Task 6: return-bus tail after `StopMusic()`
+
+`SoundManager.StopMusic()` now mutes `TailBuses` (`bus:/Feature Duck`; a bus the banks lack is ignored) and `StartMusic()`
+unmutes them after its internal `StopMusic()`, before the music starts. `CaptureScenario` got `stopTailSeconds` (after the
+last beat: `StopMusic()`, keep recording that long; the capture frame of the call is written to `.cpu.txt` as
+`STOP frame N`) and `restartAfterStop` (after the tail: `StartMusic()` again, 8 more beats with the same kills, beat log in
+`<take>.beats2.csv`; `.cpu.txt` gets `RESTART frame M`). Measure with
+`python FMOD/Tools/analyze_capture.py tail <wav>`: RMS of [stop, +100 ms] and [+100 ms, end of the tail], exit 1 above
+-80 dBFS; with a `.beats2.csv` it also compares the first 4 beats of start and restart (limit 1 dB; run-to-run spread of
+same-code 4-beat windows is about 0.5 dB, so the plan's 0.3 dB is relaxed).
+
+Stop point: the feature loops of seed 7 (11 "Power Chord Hits" at beats 32-47, 2 "Trumpet Rise" at 96-111) sound only in
+the last bar of their phrase, so `beats` 46 / 110 / 111 stop inside a loop (beats 40 and 104, tried first, stop before it).
+All takes 2 s tail, 0 stalls.
+
+| take (before the fix) | [stop, +100 ms] | [+100 ms, end] |
+|---|---:|---:|
+| baseline beats 40 (`_s6_before`) | -38.5 | silent |
+| baseline beats 104 (`_s6_before_b104`) | -63.7 | silent |
+| baseline beats 46 (`_s6_before_b46`) | -38.8 | -90.5 |
+| heavy beats 46 (`_s6_before_b46`) | -35.9 | -93.4 |
+| heavy beats 110 (`_s6_before_b110`) | -36.2 | -83.3 |
+| heavy beats 111 (`_s6_before_b111`) | -39.0 | -83.1 |
+
+**The problem does not reproduce at the -80 dBFS line.** Before the fix there is a decaying tail (heavy beats 111, 100 ms
+steps after the stop: -63.4, -68.5, -75.2 dBFS, -86.3 at +300 ms), but it is quiet enough that the mean over the rest of
+the tail stays below -80 dBFS in every take, so the "before" take does not fail the criterion. After the fix
+(`heavy_seed7_s6_after_b111_r2`, same stop point, restart on): [stop, +100 ms] -38.9 dBFS (the music itself, stopped
+mid-block), [+100 ms, end of tail] silent (below -150 dBFS), every 50 ms window after the first 100 ms silent. So the fix
+removes a real but short, faint tail (peak about -63 dBFS right after the cut); the numeric -80 dBFS criterion cannot tell
+before from after.
+
+Restart check (`heavy_seed7_s6_after_b111_r2`): first 4 beats at start -30.09 dBFS, first 4 beats after restart
+-30.12 dBFS, difference -0.03 dB (limit 1 dB), so the unmute works and the return is audible again. (A first take,
+`_s6_after_b111`, restarted without the kills and Combo/Tension of the heavy scenario and read -6.6 dB; the scenario was
+fixed, not the SoundManager, and that take only shows the bug of the capture code.)

@@ -31,6 +31,13 @@ public sealed class CaptureScenario : MonoBehaviour
     [Tooltip("> 0: Application.targetFrameRate = this and vSync off (low-frame-rate takes). 0 = leave the project's setting.")]
     [SerializeField] int targetFps;
 
+    [Tooltip("> 0: after the last beat call StopMusic() and keep recording this many seconds (return-bus tail check); " +
+             "the capture frame of the StopMusic() call is written to .cpu.txt as 'STOP frame N'. 0 = end at the last beat.")]
+    [SerializeField] float stopTailSeconds;
+    [Tooltip("With stopTailSeconds > 0: after the tail call StartMusic() again and record 8 more beats (restart check). " +
+             "Their beat log goes to <take>.beats2.csv (beats restart from 0).")]
+    [SerializeField] bool restartAfterStop;
+
     [Header("spike (scheduling accuracy)")]
     [Tooltip("OneShotScheduler.ScheduleOffsetSamples for this take (default: the measured constant).")]
     [SerializeField] long scheduleOffsetSamples = OneShotScheduler.DefaultScheduleOffsetSamples;
@@ -64,6 +71,13 @@ public sealed class CaptureScenario : MonoBehaviour
     float _studioMax;
     float _dspMax, _totalMax;
     bool _finished;
+    // stopTailSeconds / restartAfterStop
+    bool _stopping, _restarted;
+    long _stopFrame = -1, _restartFrame = -1;
+    int _restartQueued = -1;
+    float _stopAt, _restartBeatsStartTime;
+    readonly List<(int beat, double seconds, double tempo)> _beats2 = new List<(int, double, double)>();
+    const int RestartBeats = 8;
     // spike
     const double LongLead = 1.0, ShortLead = 0.3;
     FmodOneShotBackend _backend;
@@ -173,6 +187,11 @@ public sealed class CaptureScenario : MonoBehaviour
         if (_finished || !AudioCapture.IsCapturing)
             return;
         var sound = SoundManager.Instance;
+        if (_stopping)
+        {
+            UpdateStopTail(sound);
+            return;
+        }
 
         // A long frame delays kills and the beat log; such a take is not a valid reference.
         float dt = Time.unscaledDeltaTime;
@@ -222,11 +241,64 @@ public sealed class CaptureScenario : MonoBehaviour
             _lastBeat++;
             if (_lastBeat >= beats)
             {
-                Finish(sound);
+                if (stopTailSeconds > 0f)
+                    BeginStopTail(sound);
+                else
+                    Finish(sound);
                 return;
             }
             QueueKills(sound, _lastBeat);
         }
+    }
+
+    void BeginStopTail(SoundManager sound)
+    {
+        _stopping = true;
+        _stopFrame = AudioCapture.FramesCaptured;
+        sound.StopMusic();
+        _stopAt = Time.realtimeSinceStartup;
+        Debug.Log("[CaptureScenario] StopMusic at capture frame " + _stopFrame);
+    }
+
+    void UpdateStopTail(SoundManager sound)
+    {
+        if (!_restarted)
+        {
+            if (Time.realtimeSinceStartup - _stopAt < stopTailSeconds)
+                return;
+            if (!restartAfterStop)
+            {
+                Finish(sound);
+                return;
+            }
+            // Beats restart from 0 and go to the second log.
+            _restarted = true;
+            _conductor.BeatChanged -= OnBeat;
+            _conductor.BeatChanged += OnBeat2;
+            _restartFrame = AudioCapture.FramesCaptured;
+            sound.StartMusic();
+            if (scenario == Scenario.heavy)
+            {
+                sound.Combo = 3;
+                sound.Tension = 0.8f;
+            }
+            return;
+        }
+        // Same kills per beat as the first run, so the first 4 beats of both are comparable.
+        int beat = sound.CurrentBeat;
+        while (beat > _restartQueued && _restartQueued < RestartBeats)
+        {
+            _restartQueued++;
+            if (_restartQueued < RestartBeats)
+                QueueKills(sound, _restartQueued);
+        }
+        if (_restartQueued >= RestartBeats)
+            Finish(sound);
+    }
+
+    void OnBeat2(int beat)
+    {
+        _beats2.Add((beat, (double)_anchorSeconds.GetValue(_conductor), _conductor.Tempo));
     }
 
     void HoldArrangement(SoundManager sound)
@@ -475,6 +547,7 @@ public sealed class CaptureScenario : MonoBehaviour
         string path = AudioCapture.End();
         sound.StopMusic();
         _conductor.BeatChanged -= OnBeat;
+        _conductor.BeatChanged -= OnBeat2;
         sound.MusicParameterSet -= OnMusicParameter;
         File.WriteAllText(Path.ChangeExtension(path, ".frames.csv"), "dt,beat,bpm\n" + string.Join("\n", _frameLog) + "\n");
         File.WriteAllText(Path.ChangeExtension(path, ".params.csv"), "beat_now,name,value\n" + string.Join("\n", _paramLog) + "\n");
@@ -483,6 +556,14 @@ public sealed class CaptureScenario : MonoBehaviour
             log.Append(beat).Append(',').Append(Math.Round(AudioCapture.FrameAt(seconds)).ToString("F0", CultureInfo.InvariantCulture))
                 .Append(',').Append(tempo.ToString("F2", CultureInfo.InvariantCulture)).Append('\n');
         File.WriteAllText(Path.ChangeExtension(path, ".beats.csv"), log.ToString());
+        if (_beats2.Count > 0)
+        {
+            var log2 = new StringBuilder("beat,frame,bpm\n");
+            foreach (var (beat, seconds, tempo) in _beats2)
+                log2.Append(beat).Append(',').Append(Math.Round(AudioCapture.FrameAt(seconds)).ToString("F0", CultureInfo.InvariantCulture))
+                    .Append(',').Append(tempo.ToString("F2", CultureInfo.InvariantCulture)).Append('\n');
+            File.WriteAllText(Path.ChangeExtension(path, ".beats2.csv"), log2.ToString());
+        }
         string spikeSummary = "";
         if (scenario == Scenario.spike)
         {
@@ -535,6 +616,8 @@ public sealed class CaptureScenario : MonoBehaviour
             "[CaptureScenario] DONE {0}: STUDIO update avg {9:F2}% max {10:F2}%; CORE dsp avg {1:F2}% max {2:F2}%, core total (dsp+stream+update) avg {3:F2}% max {4:F2}%, samples {5}, dropped frames {6}, stalls >100 ms after the first beat {7} (take is only a valid reference if 0), longest frame {8:F0} ms",
             Path.GetFileName(path), dspAvg, _dspMax, totalAvg, _totalMax, _cpuSamples, AudioCapture.FramesDropped,
             _stalls, _longestFrame * 1000f, studioAvg, _studioMax) + spikeSummary + killSummary + oneShotSummary;
+        if (_stopFrame >= 0)
+            summary += "; STOP frame " + _stopFrame + (_restartFrame >= 0 ? "; RESTART frame " + _restartFrame : "");
         Debug.Log(summary);
         File.WriteAllText(Path.ChangeExtension(path, ".cpu.txt"), summary + "\n");
 #if UNITY_EDITOR

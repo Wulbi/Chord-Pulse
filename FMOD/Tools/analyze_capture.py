@@ -455,6 +455,42 @@ def cmd_frames(args):
     return 1 if backward or over or hold_best > 30.0 else 0
 
 
+def cmd_tail(args):
+    """Return-bus tail after StopMusic: RMS of [stop, stop+100 ms] and [stop+100 ms, end]; exit 1 if the latter is > -80 dBFS."""
+    import re
+    cpu = os.path.splitext(args.wav)[0] + ".cpu.txt"
+    if not os.path.isfile(cpu):
+        raise SystemExit("cpu.txt not found: " + cpu)
+    match = re.search(r"STOP frame (\d+)", open(cpu).read())
+    if not match:
+        raise SystemExit("no 'STOP frame N' in " + cpu + " (record with stopTailSeconds > 0)")
+    stop = int(match.group(1))
+    restart = re.search(r"RESTART frame (\d+)", open(cpu).read())
+    audio, rate = read_wav(args.wav)
+    mono = audio.mean(axis=1)
+    split = stop + int(0.1 * rate)
+    head = rms_db(mono, stop, split)
+    end = int(restart.group(1)) if restart else len(mono)  # the tail ends where a restart begins
+    tail = rms_db(mono, split, end)
+    print("%s: stop frame %d (%.2f s), tail end %.2f s" % (args.wav, stop, stop / rate, end / rate))
+    print("RMS [stop, stop+100 ms]      %s dBFS" % fmt_db(head))
+    print("RMS [stop+100 ms, end]       %s dBFS (limit -80)" % fmt_db(tail))
+    status = 0 if tail <= -80.0 else 1
+    print("TAIL %s" % ("PASS" if status == 0 else "FAIL"))
+    beats2 = os.path.splitext(args.wav)[0] + ".beats2.csv"
+    if os.path.isfile(beats2):
+        def first4(path):
+            rows = list(csv.DictReader(open(path, newline="")))
+            return int(rows[0]["frame"]), int(rows[4]["frame"])
+        a = first4(os.path.splitext(args.wav)[0] + ".beats.csv")
+        b = first4(beats2)
+        first, again = rms_db(mono, *a), rms_db(mono, *b)
+        print("first 4 beats at start  %.2f dBFS; first 4 beats after restart %.2f dBFS; diff %.2f dB (limit 1 dB)" % (first, again, again - first))
+        if abs(again - first) > 1.0:
+            status = 1
+    return status
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     sub = parser.add_subparsers(dest="command", required=True)
@@ -482,6 +518,9 @@ def main():
     p = sub.add_parser("landings")
     p.add_argument("wav")
     p.set_defaults(func=cmd_landings)
+    p = sub.add_parser("tail")
+    p.add_argument("wav")
+    p.set_defaults(func=cmd_tail)
     args = parser.parse_args()
     sys.exit(args.func(args))
 
