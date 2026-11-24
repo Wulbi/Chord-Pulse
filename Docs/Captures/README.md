@@ -255,7 +255,8 @@ New scenarios in `CaptureScenario`: `styles` (MusicMix 0, bed style forced to `b
 on every beat; 256 beats), `duck` (only the Harmony group audible: other Music Bed tracks muted, Feature Duck return
 muted, bus:/Kill Chords at -60 dB so its pre-fader key still ducks; kills every 4th beat, `duckKills` off = reference
 take). Every take also writes `.kills.csv` (one-shots lost: late in the scheduler / dropped by the backend, by beat)
-and a `KILLS` line in `.cpu.txt`. `killsOnly` = MusicMix 0 for any scenario.
+and a `KILLS` line in `.cpu.txt`; `duck` also writes `.duck.csv` (Harmony Duck compressor input / output RMS per
+mixer block). `killsOnly` = MusicMix 0 for any scenario.
 
 All takes: Unity Editor, 0 stalls, 0 late, 0 dropped.
 
@@ -298,10 +299,22 @@ Styles (kill chords only, steady state over 59 beats each, after trimming dreamy
 | 2 funk | -0.50 | -0.19 |
 | 3 dreamy | +0.93 (was +1.14 at -28 dB) | -0.29 |
 
-Ducking (`duck_seed7_task6` vs `_nokills`, Harmony only, 31 chord beats averaged): the bus:/Kill Chords key does duck
-the `Harmony Duck` return (thr -32, 4:1, 5/180 ms). Depth: -2 dB at 20 ms, -6 to -9 dB through the chord, deepest
--14.2 dB at 460 ms, mean -7.9 dB while the chord sounds; back within 3 dB about 225 ms after the chord's end (~495 ms)
-and within 0.5 dB 626 ms after it. That is deeper and longer than the 2-4 dB / 180 ms target.
+Ducking (`duck` vs `duck ... nokills`, Harmony only, 31 chord beats). Measured as the gain that maps the no-kill take
+onto the duck take (least-squares per 20 ms bin, each segment aligned by cross-correlation). A plain energy ratio is
+biased while the chord sounds: the duck take also holds the kill chord itself (bus at -60 dB), which is not negligible
+next to a Harmony ducked by 10+ dB (the residual then sits at -10..-16 dB; alignment changes nothing, so beat-log jitter
+is not the cause). The Harmony Duck compressor's own metering agrees once the key is gone (its input meter includes the
+sidechain key, so out - in overstates the reduction while the chord sounds).
+
+| Harmony Duck compressor | mean while the chord sounds | max | back within 1 dB | back within 0.5 dB |
+|---|---:|---:|---:|---:|
+| -32 dB, 4:1, 5 / 180 ms (old in-event values) | -10.4 dB | -14.6 dB | 686 ms after the fade end | never (1.1 s window) |
+| **-20 dB, 2:1, 5 / 60 ms** (now) | **-3.5 dB** | **-4.7 dB** | at the fade end (+5 ms) | +225 ms (audio), ~+125 ms (meter) |
+
+(Chord stop ~375 ms after the beat, fade end ~495 ms; these sections run at 124-132 BPM.) Two no-kill takes against
+each other differ by up to 0.8 dB per bin, so the 0.5 dB crossing is at the noise floor. The -14 dB maximum of the old
+values was real (the reduction peaks around the chord's stop and is held by the 180 ms release), not an artefact; the
+old ratio-based mean (-7.9 dB) understated it.
 
 Section-jump landings (heavy seed 33, kills every beat, jumps at 16/32/48/64): 0 late, 0 dropped, chords present on
 L..L+3 for every landing, with the 1-beat post-boundary dispatch window (R15) and without it (0.5 beat): no difference

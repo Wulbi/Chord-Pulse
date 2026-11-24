@@ -19,15 +19,15 @@
 	</object>
 	<object class="MixerBusEffectChain" id="{900f98ba-485a-40ea-aab3-ff9c4852c85c}">
 		<relationship name="effects">
-			<destination>{34cf709a-1587-4447-aa6a-e996b5d10e2a}</destination>
-			<destination>{d7e50e45-8fb9-4b96-95b4-9a4d1b846d8e}</destination>
-			<destination>{3dbae367-b372-498d-ab02-1ca6165cc8a9}</destination>
+			<destination>{76ed94ab-f731-436b-b188-e94a8050f957}</destination>
+			<destination>{a677ea98-fd69-4eac-ac4d-dc73518b0379}</destination>
+			<destination>{6bfc369c-4324-4d6f-98c1-4a74b4ed9fc4}</destination>
 			<destination>{eb9f1c38-d713-4ebd-b33c-de1531f4f96f}</destination>
 		</relationship>
 	</object>
 	<object class="MixerBusPanner" id="{2d8fa645-f5d4-45bd-90df-7911337057ec}" />
-	<object class="Sidechain" id="{34cf709a-1587-4447-aa6a-e996b5d10e2a}" />
-	<object class="CompressorEffect" id="{d7e50e45-8fb9-4b96-95b4-9a4d1b846d8e}">
+	<object class="Sidechain" id="{76ed94ab-f731-436b-b188-e94a8050f957}" />
+	<object class="CompressorEffect" id="{a677ea98-fd69-4eac-ac4d-dc73518b0379}">
 		<property name="threshold">
 			<value>-20</value>
 		</property>
@@ -44,7 +44,7 @@
 			<value>2</value>
 		</property>
 	</object>
-	<object class="LimiterEffect" id="{3dbae367-b372-498d-ab02-1ca6165cc8a9}">
+	<object class="LimiterEffect" id="{6bfc369c-4324-4d6f-98c1-4a74b4ed9fc4}">
 		<property name="ceiling">
 			<value>-3</value>
 		</property>

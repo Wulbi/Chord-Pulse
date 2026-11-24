@@ -21,7 +21,7 @@
 Event Master  [Limiter ceiling -1 dB]
 ├─ Music Bed            ← MusicMix 파라미터(0~1)가 볼륨 자동화
 │   ├─ Kick / Snare / Hats / Fever shaker / Bass / Fever bass fifths
-│   └─ Harmony          [Compressor: 사이드체인 덕킹, thr -32 / 4:1 / 5ms / 180ms]
+│   └─ Harmony          [Compressor: 사이드체인 덕킹, thr -32 / 4:1 / 5ms / 180ms — 2026-11-24 Task 6부터 return:/Harmony Duck, thr -20 / 2:1 / 5ms / 60ms]
 │       └─ Offbeat pluck / Fever lead (이후 패드도 여기)
 └─ Kill Chords          ← KillChordMix 파라미터(0~1)가 볼륨 자동화
     [Sidechain → Harmony 덕킹 키] [Compressor thr -20 / 3:1] [Limiter -3 dB]
@@ -552,7 +552,7 @@ fmodstudiocl.exe -build FMOD/ChordPulse/ChordPulse.fspro                        
 
 - `instruments.js`·`kill_oneshots.js`·`InstrumentTable.g.cs`·`KillChordTable.g.cs`는 `python FMOD/Tools/instruments.py` 한 번으로 다시 생성된다.
 - `kill_voices.py/.js`, `kill_parity.js`, `kill_voices_remove.js`는 삭제됨 (처치 화음은 원샷, 10-4). `kill_oneshots.js`가 남은 `Kill *` 트랙·패리티 파라미터도 지운다.
-- **주의**: `feature_loops.js`를 다시 돌리면 `Feature` 그룹이 이벤트 안 컴프레서 구조로 되돌아가고, 이벤트 안 `Kill Chords` 그룹이 없어서 실패한다 → 그 뒤에는 `kill_oneshots.js`를 다시 돌리고, `feature_loops.py`는 다음 계획(믹서 이전)에서 고친다.
+- 위 순서 전체를 그대로 다시 돌려도 같은 결과다 (2026-11-24 Task 6 fix에서 한 번 전체 실행해 확인: 노트 10,456개, 버스·리턴 구조 동일). `feature_loops.js`는 이벤트 안 `Kill Chords` 그룹이 없으면 `Feature` 덕킹 컴프레서를 만들지 않고, 그 뒤의 `kill_oneshots.js`가 `Feature`·`Harmony`를 리턴(`Feature Duck`·`Harmony Duck`)으로 다시 연결한다 → **`feature_loops`·`bed_*`를 따로 다시 돌렸다면 `kill_oneshots.js`도 다시 돌릴 것**.
 - `bed_style`은 다른 생성기가 만든 음에도 스타일 조건을 거므로, `bed_variation` / `bed_combo`를 다시 돌렸다면 `bed_style`도 다시 돌린다.
 - 각 `.js`는 같은 이름의 `.py`를 실행하면 다시 생성된다 (`python FMOD/Tools/<name>.py`).
 

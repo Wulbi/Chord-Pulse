@@ -115,3 +115,4 @@ InitTestScene*.unity*
 /Docs/Captures/*.spike.csv
 /Docs/Captures/*.timeline.csv
 /Docs/Captures/*.kills.csv
+/Docs/Captures/*.duck.csv

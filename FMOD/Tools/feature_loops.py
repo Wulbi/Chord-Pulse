@@ -307,7 +307,10 @@ ev.groupTracks.forEach(function (t) {
 });
 var harmonyComp = null, killSidechain = null;
 harmony.effectChain.effects.forEach(function (e) { if (e.entity === "CompressorEffect") harmonyComp = e; });
-killChords.effectChain.effects.forEach(function (e) { if (e.entity === "Sidechain") killSidechain = e; });
+// The in-event Kill Chords group only exists before kill_oneshots.js (kill chords are one-shots on bus:/Kill Chords
+// now). Without it the Feature group gets no in-event ducking; kill_oneshots.js, run after this script, moves the
+// Feature effects to return:/Feature Duck, keyed by the bus (Docs/AdaptiveAudioPlan.md 8-10).
+if (killChords) killChords.effectChain.effects.forEach(function (e) { if (e.entity === "Sidechain") killSidechain = e; });
 old.forEach(function (t) {
     t.mixerGroup.effectChain.effects.forEach(function (e) {
         if (e.entity === "Sidechain") harmonyComp.relationships.sidechains.remove(e);
@@ -341,9 +344,14 @@ function addTrack(name, output) {
 
 // --- Feature bus: ducked by kill chords, ducks the harmony, a bit of room ---
 var bus = addTrack("Feature", ev.mixer.masterBus);
-var duck = bus.mixerGroup.effectChain.addEffect("CompressorEffect");
-duck.threshold = -24; duck.ratio = 3; duck.attackTime = 3; duck.releaseTime = 140;
-duck.relationships.sidechains.add(killSidechain);
+if (killSidechain) {
+    // a compressor without its key would compress the loops on their own level
+    var duck = bus.mixerGroup.effectChain.addEffect("CompressorEffect");
+    duck.threshold = -24; duck.ratio = 3; duck.attackTime = 3; duck.releaseTime = 140;
+    duck.relationships.sidechains.add(killSidechain);
+} else {
+    log("no in-event Kill Chords group: Feature ducking is set up by kill_oneshots.js");
+}
 var room = bus.mixerGroup.effectChain.addEffect("SFXReverbEffect");
 room.decayTime = 900; room.earlyDelay = 10; room.lateDelay = 20; room.highCut = 6000; room.wetLevel = -14; room.dryLevel = 0;
 var key = bus.mixerGroup.effectChain.addEffect("Sidechain");

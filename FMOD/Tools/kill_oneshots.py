@@ -158,7 +158,10 @@ MIX = {
     "eventMasterDb": -8.0,   # music event master volume; the old in-event kill chords and groups went through it
     "killCompressor": {"threshold": -20, "ratio": 3, "attackTime": 3, "releaseTime": 120, "gain": 2},
     "killLimiter": {"ceiling": -3, "release": 40},
-    "harmonyDuck": {"threshold": -32, "ratio": 4, "attackTime": 5, "releaseTime": 180},
+    # Was -32 / 4:1 / 5 / 180 in the event. The one-shot chords ring their full length (0.78 beat + 120 ms fade, not
+    # ~0.36 beat), so that ducked Harmony by 11-15 dB for ~1 s; retuned on the duck capture to ~3.5 dB, back within
+    # 1 dB when the chord's fade ends (Docs/Captures/README.md, Task 6 fix round 1).
+    "harmonyDuck": {"threshold": -20, "ratio": 2, "attackTime": 5, "releaseTime": 60},
     "featureDuck": {"threshold": -24, "ratio": 3, "attackTime": 3, "releaseTime": 140},
     "featureReverb": {"decayTime": 900, "earlyDelay": 10, "lateDelay": 20, "highCut": 6000, "wetLevel": -14, "dryLevel": 0},
     "featureLimiter": {"ceiling": -4, "release": 30},

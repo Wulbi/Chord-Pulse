@@ -71,6 +71,11 @@ public sealed class CaptureScenario : MonoBehaviour
     // styles: 4 phrases (64 beats) per bed style 0..3
     const int StyleBlockBeats = 64;
     FieldInfo _styleCurrent, _styleNext;
+    // duck: input / output RMS of the Harmony Duck compressor per mixer block (gain reduction = out - in)
+    FMOD.DSP _duckComp;
+    int _duckLastSamples = -1;
+    float _duckLastIn = -1f;
+    readonly List<string> _duckLog = new List<string>();
 
     IEnumerator Start()
     {
@@ -120,6 +125,7 @@ public sealed class CaptureScenario : MonoBehaviour
             StartCoroutine(QuietKillBus());
             RuntimeManager.GetBus("bus:/Feature Duck").setMute(true);
             StartCoroutine(MuteMusicBed(sound));
+            StartCoroutine(MeterDuckCompressor());
         }
         Debug.Log("[CaptureScenario] " + scenario + " seed " + seed + ", " + beats + " beats -> " + _wavPath);
     }
@@ -158,6 +164,7 @@ public sealed class CaptureScenario : MonoBehaviour
         if (scenario == Scenario.styles)
             ForceStyle(sound);
         TrackKillLosses(sound);
+        LogDuckMeter();
 
         int beat = sound.CurrentBeat;
         while (beat > _lastBeat && _lastBeat < beats)
@@ -255,6 +262,57 @@ public sealed class CaptureScenario : MonoBehaviour
             yield return null;
         }
         Debug.LogError("[CaptureScenario] duck: Music Bed channel group not found");
+    }
+
+    // Metering on the return's compressor: with an external key, out - in is exactly the gain reduction.
+    IEnumerator MeterDuckCompressor()
+    {
+        var bus = RuntimeManager.GetBus("bus:/Harmony Duck");
+        bus.lockChannelGroup();
+        for (int frame = 0; frame < 20000; frame++)
+        {
+            if (bus.getChannelGroup(out FMOD.ChannelGroup group) == FMOD.RESULT.OK && group.hasHandle())
+            {
+                group.getNumDSPs(out int count);
+                for (int i = 0; i < count; i++)
+                {
+                    group.getDSP(i, out FMOD.DSP dsp);
+                    if (dsp.getType(out FMOD.DSP_TYPE type) == FMOD.RESULT.OK && type == FMOD.DSP_TYPE.COMPRESSOR)
+                    {
+                        dsp.setMeteringEnabled(true, true);
+                        _duckComp = dsp;
+                        Debug.Log("[CaptureScenario] duck: metering the Harmony Duck compressor");
+                        yield break;
+                    }
+                }
+            }
+            yield return null;
+        }
+        Debug.LogError("[CaptureScenario] duck: Harmony Duck compressor not found");
+    }
+
+    void LogDuckMeter()
+    {
+        if (!_duckComp.hasHandle() ||
+            _duckComp.getMeteringInfo(out FMOD.DSP_METERING_INFO input, out FMOD.DSP_METERING_INFO output) != FMOD.RESULT.OK)
+            return;
+        float rmsIn = Rms(input), rmsOut = Rms(output);
+        if (rmsIn == _duckLastIn && input.numsamples == _duckLastSamples)
+            return; // same mixer block as last frame
+        _duckLastIn = rmsIn;
+        _duckLastSamples = input.numsamples;
+        if (!_conductor.Clock.BeatAt(MusicConductor.MasterDsp(), out double now))
+            return;
+        _duckLog.Add(string.Format(CultureInfo.InvariantCulture, "{0:F4},{1:E4},{2:E4}", now, rmsIn, rmsOut));
+    }
+
+    static float Rms(FMOD.DSP_METERING_INFO info)
+    {
+        double sum = 0;
+        int n = Math.Max(1, (int)info.numchannels);
+        for (int c = 0; c < n && c < info.rmslevel.Length; c++)
+            sum += info.rmslevel[c] * info.rmslevel[c];
+        return (float)Math.Sqrt(sum / n);
     }
 
     // SoundManager sets the bus volume once when the music starts (and again only if KillChordMix changes).
@@ -380,6 +438,13 @@ public sealed class CaptureScenario : MonoBehaviour
         foreach (var line in _killLossLog)
             losses.Append(line).Append('\n');
         File.WriteAllText(Path.ChangeExtension(path, ".kills.csv"), losses.ToString());
+        if (scenario == Scenario.duck)
+        {
+            var duck = new StringBuilder("beat,rms_in,rms_out\n");
+            foreach (var line in _duckLog)
+                duck.Append(line).Append('\n');
+            File.WriteAllText(Path.ChangeExtension(path, ".duck.csv"), duck.ToString());
+        }
 
         double dspAvg = _cpuSamples > 0 ? _dspSum / _cpuSamples : 0;
         double totalAvg = _cpuSamples > 0 ? _totalSum / _cpuSamples : 0;
