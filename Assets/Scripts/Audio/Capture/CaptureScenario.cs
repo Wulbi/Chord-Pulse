@@ -28,6 +28,8 @@ public sealed class CaptureScenario : MonoBehaviour
     [Tooltip("Every frame: _variationNext = 0, _styleNext = 0 and FeatureSelector.CancelNext(), so nothing about the " +
              "arrangement changes at a phrase boundary (diagnosis of the beat-64 landing delay).")]
     [SerializeField] bool holdArrangement;
+    [Tooltip("> 0: Application.targetFrameRate = this and vSync off (low-frame-rate takes). 0 = leave the project's setting.")]
+    [SerializeField] int targetFps;
 
     [Header("spike (scheduling accuracy)")]
     [Tooltip("OneShotScheduler.ScheduleOffsetSamples for this take (default: the measured constant).")]
@@ -88,6 +90,11 @@ public sealed class CaptureScenario : MonoBehaviour
 
     IEnumerator Start()
     {
+        if (targetFps > 0)
+        {
+            QualitySettings.vSyncCount = 0;
+            Application.targetFrameRate = targetFps;
+        }
         var sound = SoundManager.Instance;
         typeof(SoundManager).GetField("sectionSeed", BindingFlags.Instance | BindingFlags.NonPublic).SetValue(sound, seed);
 
@@ -470,6 +477,13 @@ public sealed class CaptureScenario : MonoBehaviour
         string killSummary = string.Format(CultureInfo.InvariantCulture,
             "; KILLS one-shots started {0}, late (scheduler) {1}, dropped (backend) {2}, cancelled {3}",
             _killBackend.StartedCount, scheduler != null ? scheduler.LateCount : 0, _killBackend.DroppedCount, _killBackend.CancelledCount);
+        // Total across every one-shot user of this take: the kill chords plus, in spike takes, the SpikeClick scheduler.
+        string oneShotSummary = string.Format(CultureInfo.InvariantCulture,
+            "; ONESHOTS started {0}, late {1}, dropped {2}, cancelled {3}",
+            _killBackend.StartedCount + (_backend != null ? _backend.StartedCount : 0),
+            (scheduler != null ? scheduler.LateCount : 0) + (_scheduler != null ? _scheduler.LateCount : 0),
+            _killBackend.DroppedCount + (_backend != null ? _backend.DroppedCount : 0),
+            _killBackend.CancelledCount + (_backend != null ? _backend.CancelledCount : 0));
         var losses = new StringBuilder("beat_now,late,dropped\n");
         foreach (var line in _killLossLog)
             losses.Append(line).Append('\n');
@@ -488,7 +502,7 @@ public sealed class CaptureScenario : MonoBehaviour
         string summary = string.Format(CultureInfo.InvariantCulture,
             "[CaptureScenario] DONE {0}: STUDIO update avg {9:F2}% max {10:F2}%; CORE dsp avg {1:F2}% max {2:F2}%, core total (dsp+stream+update) avg {3:F2}% max {4:F2}%, samples {5}, dropped frames {6}, stalls >100 ms after the first beat {7} (take is only a valid reference if 0), longest frame {8:F0} ms",
             Path.GetFileName(path), dspAvg, _dspMax, totalAvg, _totalMax, _cpuSamples, AudioCapture.FramesDropped,
-            _stalls, _longestFrame * 1000f, studioAvg, _studioMax) + spikeSummary + killSummary;
+            _stalls, _longestFrame * 1000f, studioAvg, _studioMax) + spikeSummary + killSummary + oneShotSummary;
         Debug.Log(summary);
         File.WriteAllText(Path.ChangeExtension(path, ".cpu.txt"), summary + "\n");
 #if UNITY_EDITOR
