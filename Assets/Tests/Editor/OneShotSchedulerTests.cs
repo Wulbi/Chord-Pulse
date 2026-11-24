@@ -5,8 +5,9 @@ public class OneShotSchedulerTests
 {
     sealed class FakeBackend : IOneShotBackend
     {
-        public readonly List<(int handle, Instrument inst, int midi, float gainDb, ulong dspStart)> Starts =
-            new List<(int, Instrument, int, float, ulong)>();
+        public readonly List<(int handle, Instrument inst, OutputBus bus, int midi, float gainDb, ulong dspStart)> Starts =
+            new List<(int, Instrument, OutputBus, int, float, ulong)>();
+        public readonly HashSet<int> Finished = new HashSet<int>();
         public readonly List<(int handle, ulong dspStop)> Stops = new List<(int, ulong)>();
         public readonly List<int> Releases = new List<int>();
         public ulong Now;
@@ -24,19 +25,25 @@ public class OneShotSchedulerTests
             }
         }
 
-        public int Start(Instrument inst, int midi, float gainDb, ulong dspStart)
+        public int Start(Instrument inst, OutputBus bus, int midi, float gainDb, ulong dspStart)
         {
             int handle = _next++;
-            Starts.Add((handle, inst, midi, gainDb, dspStart));
+            Starts.Add((handle, inst, bus, midi, gainDb, dspStart));
             return handle;
         }
 
         public void Stop(int handle, ulong dspStop) => Stops.Add((handle, dspStop));
         public void Release(int handle) => Releases.Add(handle);
+        public bool IsFinished(int handle) => Finished.Contains(handle);
     }
 
     const int Rate = 48000;
     static readonly Instrument Inst = (Instrument)0;
+
+    static readonly object Owner = new object();
+
+    static OneShotNote N(int midi, double beat, double length, float gain, double onset, double hold = 0, OutputBus bus = OutputBus.KillChords) =>
+        new OneShotNote(Inst, bus, midi, beat, length, hold, gain, onset);
 
     static (BeatClock clock, FakeBackend backend, OneShotScheduler scheduler) Make()
     {
@@ -52,7 +59,7 @@ public class OneShotSchedulerTests
         var (clock, backend, scheduler) = Make();
         clock.Anchor(0, 0, 120);
         backend.Now = 40000; // beat 2 = 48000, inside the half-beat window (12000 samples)
-        Assert.IsTrue(scheduler.Schedule(Inst, 72, 2, 0.5, -3f, 0.01));
+        Assert.IsTrue(scheduler.Schedule(N(72, 2, 0.5, -3f, 0.01), Owner));
         Assert.AreEqual(1, backend.Starts.Count);
         Assert.AreEqual(48000UL - 480UL, backend.Starts[0].dspStart);
         Assert.AreEqual(72, backend.Starts[0].midi);
@@ -65,7 +72,7 @@ public class OneShotSchedulerTests
         var (clock, backend, scheduler) = Make();
         clock.Anchor(0, 0, 120);
         backend.Now = 0;
-        Assert.IsTrue(scheduler.Schedule(Inst, 72, 2, 0.5, 0f, 0.0));
+        Assert.IsTrue(scheduler.Schedule(N(72, 2, 0.5, 0f, 0.0), Owner));
         Assert.AreEqual(0, backend.Starts.Count);
         backend.Now = 35999; // 12001 samples ahead: still outside
         scheduler.Update();
@@ -82,7 +89,7 @@ public class OneShotSchedulerTests
         var (clock, backend, scheduler) = Make();
         clock.Anchor(0, 0, 120);
         backend.Now = 0;
-        Assert.IsTrue(scheduler.Schedule(Inst, 72, 2, 0.5, 0f, 0.0, dispatchWindowBeats: 1.0));
+        Assert.IsTrue(scheduler.Schedule(N(72, 2, 0.5, 0f, 0.0), Owner, 1.0));
         Assert.AreEqual(0, backend.Starts.Count);
         backend.Now = 23999; // 24001 samples ahead: outside a 1-beat window
         scheduler.Update();
@@ -99,7 +106,7 @@ public class OneShotSchedulerTests
         var (clock, backend, scheduler) = Make();
         clock.Anchor(0, 0, 120);
         backend.Now = 374400; // beat 15.6: beat 16 (384000) is inside the window
-        Assert.IsTrue(scheduler.Schedule(Inst, 72, 16, 1, 0f, 0.0));
+        Assert.IsTrue(scheduler.Schedule(N(72, 16, 1, 0f, 0.0), Owner));
         Assert.AreEqual(1, backend.Starts.Count);
         Assert.AreEqual(384000UL, backend.Starts[0].dspStart);
         int oldHandle = backend.Starts[0].handle;
@@ -123,7 +130,7 @@ public class OneShotSchedulerTests
         var (clock, backend, scheduler) = Make();
         clock.Anchor(0, 0, 120);
         backend.Now = 374400;
-        scheduler.Schedule(Inst, 72, 15.8, 0.1, 0f, 0.0);
+        scheduler.Schedule(N(72, 15.8, 0.1, 0f, 0.0), Owner);
         clock.Anchor(16, 388000, 132);
         scheduler.RescheduleFrom(16);
         scheduler.Update();
@@ -137,9 +144,9 @@ public class OneShotSchedulerTests
         var (clock, backend, scheduler) = Make();
         clock.Anchor(0, 0, 120);
         backend.Now = 0;
-        scheduler.Schedule(Inst, 60, 4, 1, 0f, 0.0);
-        scheduler.Schedule(Inst, 64, 5, 1, 0f, 0.0);
-        scheduler.Schedule(Inst, 67, 6, 1, 0f, 0.0);
+        scheduler.Schedule(N(60, 4, 1, 0f, 0.0), Owner);
+        scheduler.Schedule(N(64, 5, 1, 0f, 0.0), Owner);
+        scheduler.Schedule(N(67, 6, 1, 0f, 0.0), Owner);
         scheduler.StopAll();
         backend.Now = 140000; // all three would be inside the window now
         scheduler.Update();
@@ -152,7 +159,7 @@ public class OneShotSchedulerTests
         var (clock, backend, scheduler) = Make();
         clock.Anchor(0, 0, 120);
         backend.Now = 40000;
-        scheduler.Schedule(Inst, 72, 2, 4, 0f, 0.0);
+        scheduler.Schedule(N(72, 2, 4, 0f, 0.0), Owner);
         int handle = backend.Starts[0].handle;
         backend.Now = 50000; // sounding
         scheduler.StopAll();
@@ -166,7 +173,7 @@ public class OneShotSchedulerTests
         var (clock, backend, scheduler) = Make();
         clock.Anchor(0, 0, 120);
         backend.Now = 40000;
-        scheduler.Schedule(Inst, 72, 2, 0.78, 0f, 0.0);
+        scheduler.Schedule(N(72, 2, 0.78, 0f, 0.0), Owner);
         Assert.AreEqual(1, backend.Starts.Count);
         ulong start = backend.Starts[0].dspStart;
         ulong expected = start + (ulong)System.Math.Round(0.78 * 60.0 / 120 * Rate);
@@ -188,7 +195,7 @@ public class OneShotSchedulerTests
         var (clock, backend, scheduler) = Make();
         clock.Anchor(0, 0, 120);
         backend.Now = 0;
-        scheduler.Schedule(Inst, 72, 2, 0.5, 0f, 0.0);
+        scheduler.Schedule(N(72, 2, 0.5, 0f, 0.0), Owner);
         backend.Now = 48000; // a hitch: Update was not called inside the window
         scheduler.Update();
         Assert.AreEqual(0, backend.Starts.Count);
@@ -204,7 +211,7 @@ public class OneShotSchedulerTests
         var (clock, backend, scheduler) = Make();
         clock.Anchor(0, 0, 120);
         backend.Now = 48000;
-        Assert.IsFalse(scheduler.Schedule(Inst, 72, 2, 0.5, 0f, 0.0));
+        Assert.IsFalse(scheduler.Schedule(N(72, 2, 0.5, 0f, 0.0), Owner));
         Assert.AreEqual(1, scheduler.LateCount);
         Assert.AreEqual(0, backend.Starts.Count);
     }
@@ -216,7 +223,7 @@ public class OneShotSchedulerTests
         clock.Anchor(0, 0, 120);
         backend.Now = 47999;        // first read: beat 2 (48000) is still ahead
         backend.AdvancePerRead = 1; // second read: 48000, the start has passed
-        Assert.IsFalse(scheduler.Schedule(Inst, 72, 2, 0.5, 0f, 0.0));
+        Assert.IsFalse(scheduler.Schedule(N(72, 2, 0.5, 0f, 0.0), Owner));
         Assert.AreEqual(1, scheduler.LateCount);
         Assert.AreEqual(0, scheduler.ActiveCount, "late note not kept");
         backend.AdvancePerRead = 0;
@@ -234,7 +241,7 @@ public class OneShotSchedulerTests
         clock.Anchor(15, 15 * 24000, 120);
         clock.SetTempoFrom(16, 132);
         backend.Now = 16 * 24000 - 6000;
-        Assert.IsTrue(scheduler.Schedule(Inst, 72, 16, 0.5, 0f, 0.045));
+        Assert.IsTrue(scheduler.Schedule(N(72, 16, 0.5, 0f, 0.045), Owner));
         Assert.AreEqual(1, backend.Starts.Count);
         Assert.AreEqual(16UL * 24000 - 2160, backend.Starts[0].dspStart, "landing minus 45 ms");
         ulong expectedStop = 16UL * 24000 + (ulong)System.Math.Round(0.5 * 60.0 / 132 * Rate);
@@ -245,7 +252,7 @@ public class OneShotSchedulerTests
     public void Schedule_WithoutAnchor_ReturnsFalse()
     {
         var (_, backend, scheduler) = Make();
-        Assert.IsFalse(scheduler.Schedule(Inst, 72, 2, 0.5, 0f, 0.0));
+        Assert.IsFalse(scheduler.Schedule(N(72, 2, 0.5, 0f, 0.0), Owner));
         scheduler.Update();
         Assert.AreEqual(0, backend.Starts.Count);
     }
@@ -260,8 +267,126 @@ public class OneShotSchedulerTests
         double beat = 17;
         ulong expected = 16 * 24000 + (ulong)System.Math.Round(60.0 / 132 * Rate);
         backend.Now = expected - 6545; // 0.3 beat at 132 BPM ahead
-        Assert.IsTrue(scheduler.Schedule(Inst, 72, beat, 0.5, 0f, 0.0));
+        Assert.IsTrue(scheduler.Schedule(N(72, beat, 0.5, 0f, 0.0), Owner));
         Assert.AreEqual(1, backend.Starts.Count);
         Assert.AreEqual(expected, backend.Starts[0].dspStart);
+    }
+
+    [Test]
+    public void CancelFrom_CancelsOwnNotesOnly()
+    {
+        var (clock, backend, scheduler) = Make();
+        clock.Anchor(0, 0, 120);
+        var a = new object();
+        var b = new object();
+        backend.Now = 0;
+        scheduler.Schedule(N(60, 4, 1, 0f, 0), a);
+        scheduler.Schedule(N(62, 8, 1, 0f, 0), a);
+        scheduler.Schedule(N(64, 8, 1, 0f, 0), b);
+        Assert.AreEqual(1, scheduler.CancelFrom(6, a));
+        backend.Now = 180000; // beat 8 (192000) inside the window
+        scheduler.Update();
+        Assert.AreEqual(1, backend.Starts.Count);
+        Assert.AreEqual(64, backend.Starts[0].midi);
+    }
+
+    [Test]
+    public void CancelFrom_StopsDispatchedNotStarted()
+    {
+        var (clock, backend, scheduler) = Make();
+        clock.Anchor(0, 0, 120);
+        backend.Now = 40000;
+        scheduler.Schedule(N(72, 2, 1, 0f, 0), Owner);
+        int handle = backend.Starts[0].handle;
+        backend.Now = 41000;
+        Assert.AreEqual(1, scheduler.CancelFrom(0, Owner));
+        Assert.Contains((handle, 41000UL), backend.Stops);
+        Assert.Contains(handle, backend.Releases);
+        backend.Now = 47000;
+        scheduler.Update();
+        Assert.AreEqual(1, backend.Starts.Count, "not dispatched again");
+        Assert.AreEqual(0, scheduler.ActiveCount);
+    }
+
+    [Test]
+    public void CancelFrom_LeavesSoundingNotes()
+    {
+        var (clock, backend, scheduler) = Make();
+        clock.Anchor(0, 0, 120);
+        backend.Now = 40000;
+        scheduler.Schedule(N(72, 2, 4, 0f, 0), Owner);
+        int stops = backend.Stops.Count;
+        backend.Now = 50000; // start (48000) has passed
+        Assert.AreEqual(0, scheduler.CancelFrom(0, Owner));
+        Assert.AreEqual(stops, backend.Stops.Count);
+        Assert.AreEqual(0, backend.Releases.Count);
+    }
+
+    [Test]
+    public void ZeroLength_NeverStopsAtStart()
+    {
+        var (clock, backend, scheduler) = Make();
+        clock.Anchor(0, 0, 120);
+        backend.Now = 40000;
+        scheduler.Schedule(N(72, 2, 0, 0f, 0), Owner);
+        Assert.AreEqual(1, backend.Starts.Count);
+        Assert.AreEqual(0, backend.Stops.Count);
+        backend.Now = 400000;
+        scheduler.Update();
+        Assert.AreEqual(0, backend.Releases.Count, "not released by a stop time");
+        Assert.AreEqual(1, scheduler.ActiveCount);
+        backend.Finished.Add(backend.Starts[0].handle);
+        scheduler.Update();
+        Assert.AreEqual(1, backend.Releases.Count);
+        Assert.AreEqual(0, scheduler.ActiveCount);
+    }
+
+    [Test]
+    public void HoldSeconds_ExtendsShortNote()
+    {
+        var (clock, backend, scheduler) = Make();
+        clock.Anchor(0, 0, 120);
+        backend.Now = 40000;
+        scheduler.Schedule(N(72, 2, 0.25, 0f, 0, hold: 0.6), Owner);
+        Assert.AreEqual(1, backend.Stops.Count);
+        Assert.AreEqual(48000UL + 28800UL, backend.Stops[0].dspStop);
+    }
+
+    [Test]
+    public void StopAll_StopsZeroLengthNotes()
+    {
+        var (clock, backend, scheduler) = Make();
+        clock.Anchor(0, 0, 120);
+        backend.Now = 40000;
+        scheduler.Schedule(N(72, 2, 0, 0f, 0), Owner);
+        int handle = backend.Starts[0].handle;
+        backend.Now = 50000;
+        scheduler.StopAll();
+        Assert.Contains((handle, 50000UL), backend.Stops);
+        Assert.Contains(handle, backend.Releases);
+    }
+
+    [Test]
+    public void Start_PassesBus()
+    {
+        var (clock, backend, scheduler) = Make();
+        clock.Anchor(0, 0, 120);
+        backend.Now = 40000;
+        scheduler.Schedule(N(72, 2, 1, 0f, 0, bus: OutputBus.KillChords), Owner);
+        Assert.AreEqual(OutputBus.KillChords, backend.Starts[0].bus);
+    }
+
+    [Test]
+    public void ReleaseSamples_IsPerInstrumentBusPair()
+    {
+        // The FMOD backend stores this per note at Start; a value computed once from the first note would be wrong here.
+        var real = (Instrument)0;
+        var missing = (Instrument)9999; // combination without an event: no release
+        Assert.AreEqual((ulong)System.Math.Round(InstrumentTable.ReleaseSeconds(real, OutputBus.KillChords) * Rate),
+            OneShotTimes.ReleaseSamples(real, OutputBus.KillChords, Rate));
+        Assert.Greater(OneShotTimes.ReleaseSamples(real, OutputBus.KillChords, Rate), 0UL);
+        Assert.AreEqual(0UL, OneShotTimes.ReleaseSamples(missing, OutputBus.KillChords, Rate));
+        Assert.AreEqual(5760UL, OneShotTimes.ReleaseSamples(0.12, 48000));
+        Assert.AreEqual(2646UL, OneShotTimes.ReleaseSamples(0.06, 44100));
     }
 }

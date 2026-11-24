@@ -53,6 +53,7 @@ public sealed class SoundManager : SingletonBehaviour<SoundManager>
     readonly List<KillNote> _voicedAfter = new List<KillNote>();
     readonly FmodOneShotBackend _killBackend = new FmodOneShotBackend();
     OneShotScheduler _killScheduler;
+    readonly object _killOwner = new object();
     FMOD.Studio.Bus _killBus;
 
     [Tooltip("Shifts visuals later to match audible output latency (measure per device).")]
@@ -480,8 +481,8 @@ public sealed class SoundManager : SingletonBehaviour<SoundManager>
         {
             if (RemoveSame(_voicedBefore, note))
                 continue; // already scheduled by an earlier kill of this beat
-            KillScheduler.Schedule(note.Instrument, note.Midi, beat, note.LengthBeats, note.GainDb,
-                KillChordVoicer.OnsetShiftSeconds(note), window);
+            KillScheduler.Schedule(new OneShotNote(note.Instrument, OutputBus.KillChords, note.Midi, beat, note.LengthBeats, 0.0,
+                note.GainDb, KillChordVoicer.OnsetShiftSeconds(note)), _killOwner, window);
         }
     }
 

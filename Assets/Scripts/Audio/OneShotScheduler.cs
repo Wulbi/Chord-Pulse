@@ -5,11 +5,45 @@ using System.Collections.Generic;
 public interface IOneShotBackend
 {
     /// <summary>Starts a note so its sample begins at <paramref name="dspStart"/>; returns a handle, or -1 on failure.</summary>
-    int Start(Instrument inst, int midi, float gainDb, ulong dspStart);
+    int Start(Instrument inst, OutputBus bus, int midi, float gainDb, ulong dspStart);
     void Stop(int handle, ulong dspStop);
     void Release(int handle);
+    /// <summary>True once the note has ended on its own (or is unknown): its sample played to the end.</summary>
+    bool IsFinished(int handle);
     /// <summary>Current DSP clock of the master channel group.</summary>
     ulong NowDsp { get; }
+}
+
+/// <summary>One note for <see cref="OneShotScheduler.Schedule"/>. <c>LengthBeats &lt;= 0</c> plays the sample to its end.</summary>
+public readonly struct OneShotNote
+{
+    public readonly Instrument Instrument;
+    public readonly OutputBus Bus;
+    public readonly int Midi;
+    public readonly double Beat;
+    public readonly double LengthBeats;
+    /// <summary>Minimum sounding time in seconds from the start (0 = none): the stop is the later of the beat length and this.</summary>
+    public readonly double HoldSeconds;
+    public readonly float GainDb;
+    public readonly double OnsetSeconds;
+
+    public OneShotNote(Instrument instrument, OutputBus bus, int midi, double beat, double lengthBeats, double holdSeconds,
+        float gainDb, double onsetSeconds)
+    {
+        Instrument = instrument; Bus = bus; Midi = midi; Beat = beat; LengthBeats = lengthBeats;
+        HoldSeconds = holdSeconds; GainDb = gainDb; OnsetSeconds = onsetSeconds;
+    }
+}
+
+/// <summary>Pure time helpers shared by the scheduler and the FMOD backend.</summary>
+public static class OneShotTimes
+{
+    /// <summary>Release fade of one (instrument, bus) combination in samples; 0 for a combination that does not exist.</summary>
+    public static ulong ReleaseSamples(Instrument inst, OutputBus bus, int sampleRate) =>
+        ReleaseSamples(InstrumentTable.ReleaseSeconds(inst, bus), sampleRate);
+
+    public static ulong ReleaseSamples(double releaseSeconds, int sampleRate) =>
+        releaseSeconds <= 0 ? 0UL : (ulong)Math.Round(releaseSeconds * (sampleRate > 0 ? sampleRate : 48000));
 }
 
 /// <summary>
@@ -25,6 +59,9 @@ public sealed class OneShotScheduler
     sealed class Note
     {
         public Instrument Inst;
+        public OutputBus Bus;
+        public object Owner;
+        public double HoldSeconds;
         public int Midi;
         public double Beat;
         public double LengthBeats;
@@ -65,22 +102,28 @@ public sealed class OneShotScheduler
     public int ActiveCount => _notes.Count;
 
     /// <summary>
-    /// Plays <paramref name="midi"/> on <paramref name="inst"/> so its attack lands on <paramref name="beat"/>
-    /// (the sample starts <paramref name="onsetSeconds"/> earlier) and stops it <paramref name="lengthBeats"/> later.
-    /// A note already inside the dispatch window goes to the backend at once.
+    /// Plays <paramref name="note"/> so its attack lands on its beat (the sample starts OnsetSeconds earlier) and stops it
+    /// LengthBeats later (at least HoldSeconds after the start); LengthBeats &lt;= 0 plays the sample to its end.
+    /// <paramref name="owner"/> scopes <see cref="CancelFrom"/>. A note already inside the dispatch window goes to the
+    /// backend at once.
     /// False if the clock has no anchor yet, the start is already in the past (counted in <see cref="LateCount"/>),
     /// or the backend failed on an immediate start.
     /// <paramref name="dispatchWindowBeats"/> widens (or narrows) the dispatch window for this note, e.g. to create the
     /// instance before FMOD Studio's stall at a section-jump landing.
     /// </summary>
-    public bool Schedule(Instrument inst, int midi, double beat, double lengthBeats, float gainDb, double onsetSeconds,
-        double dispatchWindowBeats = DispatchWindowBeats)
+    public bool Schedule(in OneShotNote note, object owner, double dispatchWindowBeats = DispatchWindowBeats)
     {
-        var note = new Note
+        var n = new Note
         {
-            Inst = inst, Midi = midi, Beat = beat, LengthBeats = Math.Max(0, lengthBeats), GainDb = gainDb,
-            OnsetSeconds = onsetSeconds, WindowBeats = Math.Max(0, dispatchWindowBeats),
+            Inst = note.Instrument, Bus = note.Bus, Owner = owner, HoldSeconds = Math.Max(0, note.HoldSeconds),
+            Midi = note.Midi, Beat = note.Beat, LengthBeats = Math.Max(0, note.LengthBeats), GainDb = note.GainDb,
+            OnsetSeconds = note.OnsetSeconds, WindowBeats = Math.Max(0, dispatchWindowBeats),
         };
+        return ScheduleNote(n);
+    }
+
+    bool ScheduleNote(Note note)
+    {
         if (!Times(note, out long start, out _, out _))
             return false;
         if (start <= (long)_backend.NowDsp)
@@ -112,7 +155,8 @@ public sealed class OneShotScheduler
             var note = _notes[i];
             if (note.Handle >= 0)
             {
-                if (now >= note.Stop)
+                bool done = note.LengthBeats > 0 ? now >= note.Stop : _backend.IsFinished(note.Handle);
+                if (done)
                 {
                     _backend.Release(note.Handle);
                     _notes.RemoveAt(i);
@@ -144,6 +188,32 @@ public sealed class OneShotScheduler
         Update();
     }
 
+    /// <summary>
+    /// Cancels <paramref name="owner"/>'s notes on or after <paramref name="beat"/> that have not started sounding:
+    /// waiting notes are dropped, notes handed to the backend but not yet started are stopped and released.
+    /// Notes already sounding are left alone. Returns the number cancelled.
+    /// </summary>
+    public int CancelFrom(double beat, object owner)
+    {
+        ulong now = _backend.NowDsp;
+        int cancelled = 0;
+        for (int i = _notes.Count - 1; i >= 0; i--)
+        {
+            var note = _notes[i];
+            if (!ReferenceEquals(note.Owner, owner) || note.Beat < beat)
+                continue;
+            if (note.Handle >= 0)
+            {
+                if (note.Start <= now)
+                    continue;
+                Cancel(note, now);
+            }
+            _notes.RemoveAt(i);
+            cancelled++;
+        }
+        return cancelled;
+    }
+
     /// <summary>Drops every waiting note and stops every note handed to the backend now.</summary>
     public void StopAll()
     {
@@ -167,13 +237,14 @@ public sealed class OneShotScheduler
         }
         if (start - (long)now > window)
             return DispatchResult.Waiting;
-        int handle = _backend.Start(note.Inst, note.Midi, note.GainDb, (ulong)start);
+        int handle = _backend.Start(note.Inst, note.Bus, note.Midi, note.GainDb, (ulong)start);
         if (handle < 0)
             return DispatchResult.Failed;
         note.Handle = handle;
         note.Start = (ulong)start;
         note.Stop = (ulong)Math.Max(stop, start);
-        _backend.Stop(handle, note.Stop);
+        if (note.LengthBeats > 0)
+            _backend.Stop(handle, note.Stop); // zero length: no stop time, the sample plays to its end
         return DispatchResult.Sent;
     }
 
@@ -192,6 +263,8 @@ public sealed class OneShotScheduler
             return false;
         start = (long)onBeat + ScheduleOffsetSamples - (long)Math.Round(note.OnsetSeconds * _clock.SampleRate);
         stop = (long)offBeat + ScheduleOffsetSamples;
+        if (note.HoldSeconds > 0)
+            stop = Math.Max(stop, start + (long)Math.Round(note.HoldSeconds * _clock.SampleRate));
         // Window measured backwards from the beat at the tempo that leads into it; near DSP 0 just send.
         window = _clock.DspAt(note.Beat - note.WindowBeats, out ulong before) ? (long)onBeat - (long)before : long.MaxValue;
         return true;
@@ -219,16 +292,14 @@ public sealed class FmodOneShotBackend : IOneShotBackend
         public ulong Stop;
         public bool Released;
         public int Frames;
+        public ulong ReleaseSamples; // fade after Stop, from this note's own (instrument, bus)
     }
 
     readonly Dictionary<int, Note> _notes = new Dictionary<int, Note>();
     readonly List<int> _keys = new List<int>();
     readonly Dictionary<(Instrument, OutputBus), FMOD.Studio.EventDescription> _descriptions = new Dictionary<(Instrument, OutputBus), FMOD.Studio.EventDescription>();
     int _next;
-    ulong _releaseSamples;
-
-    /// <summary>The bus every note of this backend plays on (the scheduler only drives kill chords so far).</summary>
-    const OutputBus Bus = OutputBus.KillChords;
+    int _sampleRate;
 
     /// <summary>
     /// Notes stopped without sounding: their channel group appeared only after the start time had passed, or never
@@ -241,12 +312,12 @@ public sealed class FmodOneShotBackend : IOneShotBackend
 
     public ulong NowDsp => MusicConductor.MasterDsp();
 
-    public int Start(Instrument inst, int midi, float gainDb, ulong dspStart)
+    public int Start(Instrument inst, OutputBus bus, int midi, float gainDb, ulong dspStart)
     {
-        var key = (inst, Bus);
+        var key = (inst, bus);
         if (!_descriptions.TryGetValue(key, out var description))
         {
-            string path = InstrumentTable.EventPath(inst, Bus);
+            string path = InstrumentTable.EventPath(inst, bus);
             if (path == null || FMODUnity.RuntimeManager.StudioSystem.getEvent(path, out description) != FMOD.RESULT.OK)
                 return -1;
             _descriptions[key] = description;
@@ -255,10 +326,10 @@ public sealed class FmodOneShotBackend : IOneShotBackend
             return -1;
         instance.setParameterByName("Note", midi, true);
         instance.setVolume((float)Math.Pow(10.0, gainDb / 20.0));
-        if (_releaseSamples == 0)
+        if (_sampleRate == 0)
         {
             FMODUnity.RuntimeManager.CoreSystem.getSoftwareFormat(out int rate, out _, out _);
-            _releaseSamples = (ulong)Math.Round(InstrumentTable.ReleaseSeconds(inst, Bus) * (rate > 0 ? rate : 48000));
+            _sampleRate = rate > 0 ? rate : 48000;
         }
         if (instance.start() != FMOD.RESULT.OK)
         {
@@ -267,8 +338,16 @@ public sealed class FmodOneShotBackend : IOneShotBackend
         }
         StartedCount++;
         int handle = _next++;
-        _notes[handle] = new Note { Instance = instance, Start = dspStart };
+        _notes[handle] = new Note { Instance = instance, Start = dspStart, ReleaseSamples = OneShotTimes.ReleaseSamples(inst, bus, _sampleRate) };
         return handle;
+    }
+
+    /// <summary>Unknown handle, or an applied note whose event reports STOPPED (its sample played out).</summary>
+    public bool IsFinished(int handle)
+    {
+        if (!_notes.TryGetValue(handle, out var n))
+            return true;
+        return n.Instance.getPlaybackState(out var state) == FMOD.RESULT.OK && state == FMOD.Studio.PLAYBACK_STATE.STOPPED;
     }
 
     public void Stop(int handle, ulong dspStop)
@@ -319,7 +398,7 @@ public sealed class FmodOneShotBackend : IOneShotBackend
     // Start, then full level until the stop time, then a linear fade to silence over the release (Stop 0 = no stop yet).
     void ApplyTimes(FMOD.ChannelGroup group, Note n)
     {
-        ulong end = n.Stop > 0 ? n.Stop + _releaseSamples : 0;
+        ulong end = n.Stop > 0 ? n.Stop + n.ReleaseSamples : 0;
         group.setDelay(n.Start, end, true);
         group.removeFadePoints(0, ulong.MaxValue);
         if (n.Stop > 0)
@@ -345,7 +424,8 @@ public sealed class FmodOneShotBackend : IOneShotBackend
             var n = _notes[key];
             if (n.Applied)
             {
-                if (n.Released && n.Stop > 0 && now >= n.Stop + _releaseSamples)
+                bool playedOut = n.Stop == 0 && n.Released && IsFinished(key);
+                if (playedOut || (n.Released && n.Stop > 0 && now >= n.Stop + n.ReleaseSamples))
                 {
                     n.Instance.stop(FMOD.Studio.STOP_MODE.IMMEDIATE);
                     n.Instance.release();

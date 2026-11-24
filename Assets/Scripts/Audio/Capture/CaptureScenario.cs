@@ -261,7 +261,7 @@ public sealed class CaptureScenario : MonoBehaviour
         var clock = _conductor.Clock;
         clock.DspAt(beat, out ulong target);
         ulong now = _backend.NowDsp;
-        bool ok = _scheduler.Schedule(Instrument.SpikeClick, 72, beat, 0.25, 0f, 0.0);
+        bool ok = _scheduler.Schedule(new OneShotNote(Instrument.SpikeClick, OutputBus.KillChords, 72, beat, 0.25, 0.0, 0f, 0.0), this);
         _spikeLog.Add(string.Format(CultureInfo.InvariantCulture, "{0},{1},{2},{3},{4},{5}",
             beat, lead, ok ? 1 : 0, target, clock.AnchorBeat, (long)target - (long)now));
     }
