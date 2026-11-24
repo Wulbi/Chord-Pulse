@@ -5,7 +5,7 @@ using FMODUnity;
 using UnityEngine;
 
 [DefaultExecutionOrder(-100), DisallowMultipleComponent]
-public sealed class SoundManager : SingletonBehaviour<SoundManager>, IKillBedState
+public sealed class SoundManager : SingletonBehaviour<SoundManager>, IKillBedState, IArrangement
 {
     public const int BeatsPerBar = 4;
     public const int StepsPerBeat = 2;
@@ -32,8 +32,16 @@ public sealed class SoundManager : SingletonBehaviour<SoundManager>, IKillBedSta
     const string KillBusPath = "bus:/Kill Chords";
     readonly KillChordPlanner _killPlanner = new KillChordPlanner();
     readonly List<OneShotNote> _killNotes = new List<OneShotNote>();
-    readonly FmodOneShotBackend _killBackend = new FmodOneShotBackend();
-    OneShotScheduler _killScheduler;
+    // One scheduler and backend for every one-shot (kill chords and the bed's pattern layers; owners scope CancelFrom).
+    readonly FmodOneShotBackend _shotBackend = new FmodOneShotBackend();
+    OneShotScheduler _shots;
+    // The bed's pitched layers (PatternTable) as one-shots, unless legacyLayers keeps them on the timeline.
+    // Lookahead: one beat of dispatch window after a phrase boundary plus the largest sample onset, with margin.
+    const double PatternLookaheadBeats = 1.5;
+    PatternScheduler _patterns;
+    ArrangementInputs _arrangement;
+    bool _arrangementValid;
+    bool _legacyActive = true;
     FMOD.Studio.Bus _killBus;
     // MusicMix: the music event's output (Music Bed group + Harmony, which sits below it) and the Feature bus.
     const string MusicBedBusPath = "bus:/Music Bed";
@@ -50,8 +58,9 @@ public sealed class SoundManager : SingletonBehaviour<SoundManager>, IKillBedSta
     [SerializeField, Range(0f, 1f)] float killChordMix = 1f;
     [Tooltip("Seed for the per-phrase section choice. 0 = different every round.")]
     [SerializeField] int sectionSeed;
-    [Tooltip("Global FMOD parameter LegacyLayers (1 = the old timeline layers sound, 0 = their scheduled one-shot replacements). " +
-             "Nothing reads it yet; kept true until the first layer moves to one-shots.")]
+    [Tooltip("Bed pitched layers (bass, pluck, combo, tension, style layers): true = the old timeline tracks play them " +
+             "(global FMOD parameter LegacyLayers 1, PatternScheduler silent); false = Unity schedules them as one-shots " +
+             "(LegacyLayers 0). Read when the music starts.")]
     [SerializeField] bool legacyLayers = true;
 
     SectionSelector _sections = new SectionSelector(0);
@@ -92,6 +101,9 @@ public sealed class SoundManager : SingletonBehaviour<SoundManager>, IKillBedSta
     bool _featuresAvailable;
     int _lastPhrase = -1;
     int _phraseStartStep;
+    // Where the timeline is in its section's 8 bars (1 = bars 1-4, 2 = bars 5-8; ArrangementTimeline.NextSectionPhrase).
+    int _sectionPhraseCurrent = 1;
+    int _sectionPhraseNext = 2;
 
     float _appliedMusicMix = -1f;
     float _appliedKillChordMix = -1f;
@@ -279,6 +291,10 @@ public sealed class SoundManager : SingletonBehaviour<SoundManager>, IKillBedSta
         _featuresAvailable = false;
         _lastPhrase = -1;
         _phraseStartStep = 0;
+        _sectionPhraseCurrent = 1;
+        _sectionPhraseNext = ArrangementTimeline.NextSectionPhrase(_sections.Current.Section, 1, _sections.Next.Section);
+        _legacyActive = legacyLayers;
+        _arrangementValid = false;
         _killPlanner.Clear();
         _startRoutine = StartCoroutine(LoadAndStartMusic());
     }
@@ -345,8 +361,9 @@ public sealed class SoundManager : SingletonBehaviour<SoundManager>, IKillBedSta
         _appliedMusicMix = _appliedKillChordMix = -1f;
         if (!ApplyMix())
             yield break;
-        // Global, optional (banks built before mixer.py lack it): nothing reads it yet, so a missing one only warns.
-        if (RuntimeManager.StudioSystem.setParameterByName("LegacyLayers", legacyLayers ? 1f : 0f, true) != FMOD.RESULT.OK &&
+        // Global, optional (banks built before mixer.py lack it; then the timeline tracks play whatever is set here, so
+        // a missing one only warns). Gates the 13 migrated timeline tracks (FMOD/Tools/legacy_gate.py).
+        if (RuntimeManager.StudioSystem.setParameterByName("LegacyLayers", _legacyActive ? 1f : 0f, true) != FMOD.RESULT.OK &&
             !_legacyLayersWarned)
         {
             _legacyLayersWarned = true;
@@ -389,8 +406,10 @@ public sealed class SoundManager : SingletonBehaviour<SoundManager>, IKillBedSta
             _startRoutine = null;
         }
         _musicPlaying = false;
-        KillScheduler.StopAll();
-        _killBackend.StopAll(); // also the release tails the scheduler has already let go of
+        Shots.StopAll();
+        _shotBackend.StopAll(); // also the release tails the scheduler has already let go of
+        Patterns.Reset();
+        _arrangementValid = false;
         _killPlanner.Clear();
         _conductor.Detach();
         if (_music.isValid())
@@ -423,7 +442,7 @@ public sealed class SoundManager : SingletonBehaviour<SoundManager>, IKillBedSta
             int buildBeat = (feverStart - FeverBuildSteps) / StepsPerBeat;
             _killNotes.Clear();
             int firstBeat = _killPlanner.Restate(nowBeat, buildBeat, this, _killNotes);
-            KillScheduler.CancelFrom(firstBeat, _killPlanner); // exactly the beats Restate re-emitted
+            Shots.CancelFrom(firstBeat, _killPlanner); // exactly the beats Restate re-emitted
             ScheduleKillNotes();
         }
 
@@ -435,8 +454,12 @@ public sealed class SoundManager : SingletonBehaviour<SoundManager>, IKillBedSta
         if (FeverHoldsBoundary(NextPhraseStep))
         {
             Check(SetMusicParameter("NextSection", _sections.HoldNext().Section));
+            _sectionPhraseNext = ArrangementTimeline.NextSectionPhrase(_sections.Current.Section, _sectionPhraseCurrent, _sections.Next.Section);
             OnNextSectionChanged();
         }
+        // Pattern notes already scheduled from the build-up bar on change too (style / variation / combo 0 there).
+        if (_conductor.Clock.BeatAt(MusicConductor.MasterDsp(), out double now))
+            RefreshArrangement(now);
     }
 
     /// <summary>Length of one beat at the tempo FMOD is playing (108 BPM before the music starts).</summary>
@@ -461,13 +484,70 @@ public sealed class SoundManager : SingletonBehaviour<SoundManager>, IKillBedSta
         return target;
     }
 
-    OneShotScheduler KillScheduler => _killScheduler ??= new OneShotScheduler(_conductor.Clock, _killBackend);
+    /// <summary>The one-shot scheduler shared by the kill chords and the pattern layers.</summary>
+    OneShotScheduler Shots => _shots ??= new OneShotScheduler(_conductor.Clock, _shotBackend);
+    PatternScheduler Patterns => _patterns ??= new PatternScheduler(Shots, this, PatternLookaheadBeats);
 
     void ScheduleKillNotes()
     {
         foreach (var note in _killNotes)
-            KillScheduler.Schedule(note, _killPlanner, KillChordPlanner.DispatchWindow((int)note.Beat));
+            Shots.Schedule(note, _killPlanner, KillChordPlanner.DispatchWindow((int)note.Beat));
         _killNotes.Clear();
+    }
+
+    // IArrangement: what the bed's pattern layers play at a step, from the decisions made so far (no lead; fever zone =
+    // style 0, variation 0, combo 0; ArrangementTimeline). Cheap and allocation-free (PatternScheduler asks per note).
+    ArrangementState IArrangement.At(int step) => ArrangementTimeline.At(step, in _arrangement);
+
+    // The decisions SoundManager has made, as ArrangementTimeline inputs (the same values UpdateStyle / UpdateVariation /
+    // UpdateCombo / UpdateFever / UpdateFeature use, without their parameter lead).
+    ArrangementInputs CurrentArrangement()
+    {
+        return new ArrangementInputs
+        {
+            PhraseStartStep = _phraseStartStep,
+            StyleCurrent = _styleAvailable ? _styleCurrent : StyleSynthpop,
+            StyleNext = _styleAvailable ? _styleNext : StyleSynthpop,
+            VariationCurrent = _variationAvailable ? _variationCurrent : 0,
+            VariationNext = _variationAvailable ? _variationNext : 0,
+            BreathCurrent = _sections.Current.Breath,
+            BreathNext = _sections.Next.Breath,
+            FeatureCurrent = _featuresAvailable && _features.Current != null ? _features.Current.Id : 0,
+            FeatureNext = _featuresAvailable && _features.Next != null ? _features.Next.Id : 0,
+            SectionPhraseCurrent = _sectionPhraseCurrent,
+            SectionPhraseNext = _sectionPhraseNext,
+            Intensity = _intensity,
+            LiveCombo = _comboAvailable ? _combo : 0,
+            AppliedCombo = _comboAvailable ? _appliedCombo : 0,
+            ComboBar = _comboAvailable ? _comboBar : int.MaxValue,
+            FeverStart = _feverStart,
+            Legacy = _legacyActive,
+        };
+    }
+
+    // Takes the current decisions for the pattern layers; if they change a step that may already be scheduled (now ..
+    // now + lookahead), PatternScheduler.Invalidate from the first such step (it keeps notes within its onset safety).
+    void RefreshArrangement(double now)
+    {
+        var next = CurrentArrangement();
+        if (_arrangementValid && !_legacyActive)
+        {
+            int from = (int)Math.Floor(now * StepsPerBeat);
+            int to = (int)Math.Ceiling((now + PatternLookaheadBeats) * StepsPerBeat);
+            int step = ArrangementTimeline.FirstDifferentStep(in _arrangement, in next, from, to);
+            if (step >= 0)
+                Patterns.Invalidate((double)step / StepsPerBeat, now, SafetyBeatsPerSecond());
+        }
+        _arrangement = next;
+        _arrangementValid = true;
+    }
+
+    // Tempo for Invalidate's onset safety (seconds -> beats ahead of now): the faster of the playing and the next
+    // section's BPM, so the protected span is never too short across a boundary.
+    double SafetyBeatsPerSecond()
+    {
+        double bpm = Math.Max(_conductor.Tempo, SectionSelector.Bpm(_sections.Next.Section));
+        return Math.Max(bpm, SectionSelector.Bpm(_sections.Current.Section)) / 60.0;
     }
 
     // IKillBedState: the bed state at a beat, from the step-based helpers.
@@ -498,7 +578,7 @@ public sealed class SoundManager : SingletonBehaviour<SoundManager>, IKillBedSta
     {
         int boundaryBeat = NextPhraseStep / StepsPerBeat;
         _conductor.Clock.SetTempoFrom(boundaryBeat, SectionSelector.Bpm(_sections.Next.Section));
-        KillScheduler.RescheduleFrom(boundaryBeat);
+        Shots.RescheduleFrom(boundaryBeat); // every owner: kill chords and pattern notes
     }
 
     void Update()
@@ -529,7 +609,7 @@ public sealed class SoundManager : SingletonBehaviour<SoundManager>, IKillBedSta
         _conductor.Clock.SetTempoFrom(NextPhraseStep / StepsPerBeat, SectionSelector.Bpm(_sections.Next.Section));
         UpdatePhrase();
         UpdateFever();
-        UpdateKillChords();
+        UpdateOneShots();
     }
 
     // Each 4-bar phrase: the queued phrase becomes current and the one after it is chosen and sent to FMOD,
@@ -549,6 +629,8 @@ public sealed class SoundManager : SingletonBehaviour<SoundManager>, IKillBedSta
         var next = _sections.Advance(_intensity,
             allowBreath: _feverStart < 0 || AudioStep >= _feverStart + FeverSteps,
             hold: FeverHoldsBoundary(_phraseStartStep + StepsPerPhrase));
+        _sectionPhraseCurrent = phrase == 0 ? 1 : _sectionPhraseNext;
+        _sectionPhraseNext = ArrangementTimeline.NextSectionPhrase(_sections.Current.Section, _sectionPhraseCurrent, next.Section);
         Check(SetMusicParameter("NextSection", next.Section));
         OnNextSectionChanged();
         bool feverNext = FeverOverlaps(NextPhraseStep, NextPhraseStep + StepsPerPhrase);
@@ -727,13 +809,24 @@ public sealed class SoundManager : SingletonBehaviour<SoundManager>, IKillBedSta
             _appliedFever[index] = on;
     }
 
+    // After this frame's decisions (UpdatePhrase, UpdateFever): pattern notes up to now + lookahead, then the
     // OneShotScheduler caller contract: scheduler first, then the backend, every frame (a note dispatched by the
     // scheduler gets its start time the same frame; skipping either leaves FMOD instances unreleased).
-    void UpdateKillChords()
+    // "Now" is the mixer clock, as for the kill chords. The clock's first anchor comes with beat 0's callback, i.e.
+    // after beat 0 started: the first call is already past beat 0, so beat 0's notes of a run are not played on the
+    // one-shot path (PatternScheduler starts with (now, ...]; Docs/Captures/README.md Task 11, known limitation).
+    void UpdateOneShots()
     {
-        KillScheduler.Update();
-        _killBackend.Update();
-        if (_conductor.Clock.BeatAt(MusicConductor.MasterDsp(), out double now))
+        bool hasNow = _conductor.Clock.BeatAt(MusicConductor.MasterDsp(), out double now);
+        if (hasNow)
+        {
+            RefreshArrangement(now);
+            if (!_legacyActive)
+                Patterns.Update(now);
+        }
+        Shots.Update();
+        _shotBackend.Update();
+        if (hasNow)
             _killPlanner.Expire(now);
     }
 

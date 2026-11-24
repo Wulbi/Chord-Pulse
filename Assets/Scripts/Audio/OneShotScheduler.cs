@@ -111,6 +111,9 @@ public sealed class OneShotScheduler
     /// <summary>Notes that were never started because their start time had already passed (never played late).</summary>
     public int LateCount { get; private set; }
 
+    /// <summary>Diagnostics: a note was counted in <see cref="LateCount"/> (its owner and beat).</summary>
+    public event Action<object, double> NoteLate;
+
     /// <summary>
     /// Notes waiting for the dispatch window plus notes handed to the backend that are still sounding or pending
     /// (stop time not passed; for zero-length notes, not yet reported finished by the backend).
@@ -145,6 +148,7 @@ public sealed class OneShotScheduler
         if (start <= (long)_backend.NowDsp)
         {
             LateCount++;
+            NoteLate?.Invoke(note.Owner, note.Beat);
             return false;
         }
         _notes.Add(note);
@@ -250,6 +254,7 @@ public sealed class OneShotScheduler
         if (start <= (long)now)
         {
             LateCount++; // never hand the backend a start that is already past
+            NoteLate?.Invoke(note.Owner, note.Beat);
             return DispatchResult.Late;
         }
         if (start - (long)now > window)
@@ -338,6 +343,25 @@ public sealed class FmodOneShotBackend : IOneShotBackend
         public int Frames; // DiagnosticLog only: Update calls before the start was applied
         public int Checks; // DiagnosticLog only
         public ulong ReleaseSamples; // fade after Stop, from this note's own (instrument, bus)
+        public OutputBus Bus; // diagnostics: StartedOn / DroppedOn / NoteDropped
+    }
+
+    readonly int[] _startedByBus = new int[64];
+    readonly int[] _droppedByBus = new int[64];
+
+    /// <summary>Notes started on one output bus (diagnostics; e.g. kill chords vs the bed's pattern layers).</summary>
+    public int StartedOn(OutputBus bus) => (uint)bus < 64 ? _startedByBus[(int)bus] : 0;
+    /// <summary>Notes counted in <see cref="DroppedCount"/> on one output bus.</summary>
+    public int DroppedOn(OutputBus bus) => (uint)bus < 64 ? _droppedByBus[(int)bus] : 0;
+    /// <summary>Diagnostics: a note was dropped (its bus and scheduled DSP start).</summary>
+    public event Action<OutputBus, ulong> NoteDropped;
+
+    void CountDrop(in Note n)
+    {
+        DroppedCount++;
+        if ((uint)n.Bus < 64)
+            _droppedByBus[(int)n.Bus]++;
+        NoteDropped?.Invoke(n.Bus, n.Start);
     }
 
     readonly Dictionary<int, Note> _notes = new Dictionary<int, Note>();
@@ -420,8 +444,10 @@ public sealed class FmodOneShotBackend : IOneShotBackend
             return -1;
         }
         StartedCount++;
+        if ((uint)bus < 64)
+            _startedByBus[(int)bus]++;
         int handle = _next++;
-        _notes[handle] = new Note { Instance = instance, Start = dspStart, ReleaseSamples = _release.SamplesFor(inst, bus, _sampleRate) };
+        _notes[handle] = new Note { Instance = instance, Start = dspStart, ReleaseSamples = _release.SamplesFor(inst, bus, _sampleRate), Bus = bus };
         DiagnosticLog?.Invoke("start," + handle + "," + NowDsp + "," + dspStart);
         return handle;
     }
@@ -458,7 +484,7 @@ public sealed class FmodOneShotBackend : IOneShotBackend
         if (n.Applied && !ApplyTimes(n.Group, n))
         {
             // The stop time could not be set: never let the note run on unbounded.
-            DroppedCount++;
+            CountDrop(in n);
             n.Instance.stop(FMOD.Studio.STOP_MODE.IMMEDIATE);
             n.Instance.release();
             _notes.Remove(handle);
@@ -559,7 +585,7 @@ public sealed class FmodOneShotBackend : IOneShotBackend
                 {
                     // Never let a note start un-delayed.
                     DiagnosticLog?.Invoke("drop," + key + "," + now + "," + n.Start + "," + n.Frames + ",delayfail");
-                    DroppedCount++;
+                    CountDrop(in n);
                     n.Instance.stop(FMOD.Studio.STOP_MODE.IMMEDIATE);
                     n.Instance.release();
                     _notes.Remove(key);
@@ -579,7 +605,7 @@ public sealed class FmodOneShotBackend : IOneShotBackend
             }
             // Start reached before it could be applied, or the instance is gone: drop it, never play it late.
             DiagnosticLog?.Invoke("drop," + key + "," + now + "," + n.Start + "," + n.Frames + "," + (hasGroup ? 1 : 0));
-            DroppedCount++;
+            CountDrop(in n);
             n.Instance.stop(FMOD.Studio.STOP_MODE.IMMEDIATE);
             n.Instance.release();
             _notes.Remove(key);
