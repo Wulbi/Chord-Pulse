@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<objects serializationModel="Studio.02.02.00">
+	<object class="MixerReturn" id="{194b4959-1e37-4074-9db3-89b286880537}">
+		<property name="volume">
+			<value>-8</value>
+		</property>
+		<property name="name">
+			<value>Feature Duck</value>
+		</property>
+		<relationship name="effectChain">
+			<destination>{55244638-fc11-46c0-aa0a-53b9a87def54}</destination>
+		</relationship>
+		<relationship name="panner">
+			<destination>{b37cbcda-ed92-4dbe-b8e8-0a9857b46888}</destination>
+		</relationship>
+		<relationship name="output">
+			<destination>{af9d027a-3a1f-49a8-a9ef-4cbe20673632}</destination>
+		</relationship>
+	</object>
+	<object class="MixerBusEffectChain" id="{55244638-fc11-46c0-aa0a-53b9a87def54}">
+		<relationship name="effects">
+			<destination>{928ff30b-0419-4438-ab8a-c7b3ff26d3df}</destination>
+			<destination>{a276fc48-a8b4-4f47-aa04-ef02a4d3cadb}</destination>
+			<destination>{97903225-9133-48fe-80f5-655b2f97115f}</destination>
+			<destination>{3ce2785f-8aa8-45b2-9aba-a460df973186}</destination>
+		</relationship>
+	</object>
+	<object class="MixerBusPanner" id="{b37cbcda-ed92-4dbe-b8e8-0a9857b46888}" />
+	<object class="CompressorEffect" id="{928ff30b-0419-4438-ab8a-c7b3ff26d3df}">
+		<property name="threshold">
+			<value>-24</value>
+		</property>
+		<property name="ratio">
+			<value>3</value>
+		</property>
+		<property name="attackTime">
+			<value>3</value>
+		</property>
+		<property name="releaseTime">
+			<value>140</value>
+		</property>
+		<relationship name="sidechains">
+			<destination>{34cf709a-1587-4447-aa6a-e996b5d10e2a}</destination>
+		</relationship>
+	</object>
+	<object class="SFXReverbEffect" id="{a276fc48-a8b4-4f47-aa04-ef02a4d3cadb}">
+		<property name="decayTime">
+			<value>900</value>
+		</property>
+		<property name="earlyDelay">
+			<value>10</value>
+		</property>
+		<property name="lateDelay">
+			<value>20</value>
+		</property>
+		<property name="highCut">
+			<value>6000</value>
+		</property>
+		<property name="wetLevel">
+			<value>-14</value>
+		</property>
+	</object>
+	<object class="LimiterEffect" id="{97903225-9133-48fe-80f5-655b2f97115f}">
+		<property name="ceiling">
+			<value>-4</value>
+		</property>
+		<property name="release">
+			<value>30</value>
+		</property>
+	</object>
+	<object class="MixerBusFader" id="{3ce2785f-8aa8-45b2-9aba-a460df973186}" />
+</objects>

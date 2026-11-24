@@ -10,6 +10,12 @@ public sealed class SectionSelector
     public const int SectionCount = 4;
     public const int BarsPerPhrase = 4;
 
+    // Tempo of each section: the FMOD tempo markers of event:/Music/ChordPulseGame (Docs/AdaptiveAudioPlan.md).
+    static readonly double[] SectionBpm = { 108, 116, 124, 132 };
+
+    /// <summary>BPM of a section (clamped to the known sections).</summary>
+    public static double Bpm(int section) => SectionBpm[Math.Max(0, Math.Min(section, SectionBpm.Length - 1))];
+
     public struct Phrase
     {
         public int Section;

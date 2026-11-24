@@ -33,7 +33,7 @@ public static class KillChordTable
     };
 
     /// <summary>[style] main-note target level in dB; style 0 keeps the original per-note level.</summary>
-    public static readonly float[] TargetDb = { -27.0f, -27.0f, -27.0f, -28.0f };
+    public static readonly float[] TargetDb = { -27.0f, -27.0f, -27.0f, -28.5f };
 
     /// <summary>[chord, voice] MIDI note, lowest first.</summary>
     public static readonly int[,] Voicing =

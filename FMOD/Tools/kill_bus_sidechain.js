@@ -9,6 +9,9 @@
 // send, and loud one-shots on bus:/Kill Chords give 0.00 dB gain reduction. So the project is left WITHOUT the link
 // (REMOVE = true undoes it). Task 6 needs Harmony on a global bus instead (bus -> bus sidechain).
 var REMOVE = true;
+// SUPERSEDED (Task 6): kill_oneshots.js now puts a Sidechain on bus:/Kill Chords that keys the Harmony Duck / Feature
+// Duck returns; running this script (REMOVE = true) would delete it. Kept only as the record of the failed approach.
+throw "kill_bus_sidechain.js is superseded by kill_oneshots.js - do not run";
 
 function log(m) { console.log("[kill-bus-sidechain] " + m); }
 var project = studio.project;

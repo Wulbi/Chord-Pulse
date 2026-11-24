@@ -544,12 +544,15 @@ fmodstudiocl.exe -script FMOD/Tools/bed_tension.js    FMOD/ChordPulse/ChordPulse
 fmodstudiocl.exe -script FMOD/Tools/bed_variation.js  FMOD/ChordPulse/ChordPulse.fspro
 fmodstudiocl.exe -script FMOD/Tools/bed_combo.js      FMOD/ChordPulse/ChordPulse.fspro
 fmodstudiocl.exe -script FMOD/Tools/bed_style.js      FMOD/ChordPulse/ChordPulse.fspro
-fmodstudiocl.exe -script FMOD/Tools/kill_voices.js    FMOD/ChordPulse/ChordPulse.fspro   # 처치 화음 (9장), bed_style 다음
-fmodstudiocl.exe -build FMOD/ChordPulse/ChordPulse.fspro
+fmodstudiocl.exe -script FMOD/Tools/instruments.js    FMOD/ChordPulse/ChordPulse.fspro   # 악기 원샷 이벤트 event:/Inst/* (10-4)
+fmodstudiocl.exe -script FMOD/Tools/kill_oneshots.js  FMOD/ChordPulse/ChordPulse.fspro   # 옛 처치 화음 트랙·파라미터 제거, Kill Chords 버스·덕킹 리턴 (10-4)
+fmodstudiocl.exe -build FMOD/ChordPulse/ChordPulse.fspro                                   # 반드시 따로 실행 (10-6)
 → Build/Desktop의 ChordPulse.bank, ChordPulse.strings.bank를 Assets/StreamingAssets로 복사
 ```
 
-- `kill_voices`는 원래 처치 화음에 `BedStyle` 0 조건만 걸고 자기 `Kill *` 트랙은 직접 조건을 갖고 있어, `bed_style` 뒤에 돌린다 (노트 10,368개라 저장에 수 분 걸림).
+- `instruments.js`·`kill_oneshots.js`·`InstrumentTable.g.cs`·`KillChordTable.g.cs`는 `python FMOD/Tools/instruments.py` 한 번으로 다시 생성된다.
+- `kill_voices.py/.js`, `kill_parity.js`, `kill_voices_remove.js`는 삭제됨 (처치 화음은 원샷, 10-4). `kill_oneshots.js`가 남은 `Kill *` 트랙·패리티 파라미터도 지운다.
+- **주의**: `feature_loops.js`를 다시 돌리면 `Feature` 그룹이 이벤트 안 컴프레서 구조로 되돌아가고, 이벤트 안 `Kill Chords` 그룹이 없어서 실패한다 → 그 뒤에는 `kill_oneshots.js`를 다시 돌리고, `feature_loops.py`는 다음 계획(믹서 이전)에서 고친다.
 - `bed_style`은 다른 생성기가 만든 음에도 스타일 조건을 거므로, `bed_variation` / `bed_combo`를 다시 돌렸다면 `bed_style`도 다시 돌린다.
 - 각 `.js`는 같은 이름의 `.py`를 실행하면 다시 생성된다 (`python FMOD/Tools/<name>.py`).
 
@@ -585,7 +588,9 @@ fmodstudiocl.exe -build FMOD/ChordPulse/ChordPulse.fspro
 - 상수 `StyleSynthpop / StyleLatin / StyleFunk / StyleDreamy`, `CurrentStyle`, `UpcomingStyle`.
 - 남은 것: 스타일별 배경 팔레트(`MusicReactiveVisuals`), 라틴·펑크용 패턴 변형, 스타일 전환 직전 필.
 
-## 9. 적응형 배경을 따라 바뀌는 처치 화음 (구현됨 2026-11-24, 렌더 검증 전 — 9-7)
+## 9. 적응형 배경을 따라 바뀌는 처치 화음 (2026-11-24 구현 → 같은 날 제거, 10-5)
+
+> **제거됨**: 이 장의 스타일별 처치 트랙(노트 10,368개)이 FMOD Studio 업데이트 스레드를 90%+로 과부하시켜 음악이 끊겼다(10-5). `FMOD/Tools/kill_voices_remove.js`로 제거했고, 원래 처치 화음이 모든 스타일에서 울린다. 스타일별 음색은 B안(10-4)으로 다시 구현할 계획 — 아래는 그때 참고할 원래 설계.
 
 > 배경 루프가 신스팝 → 라틴 → 펑크 → 드리미로 바뀌고, 위기감·콤보에 따라 두꺼워지는데 처치 화음만 늘 같은 신스 리드면 플레이어의 소리가 곡에서 떠 보인다. 처치 화음도 **지금 배경의 악기 편성 안에서** 울리게 해서, 플레이어가 그 밴드의 일원으로 연주하는 느낌을 만든다.
 
@@ -665,3 +670,63 @@ fmodstudiocl.exe -build FMOD/ChordPulse/ChordPulse.fspro
 - 알려진 점: 글로켄 노트는 볼륨 상한(+10 dB)에 걸려 목표보다 약 4 dB 작음.
 - 복사본 프로젝트에서 두 번 실행 → 두 번째 실행이 이전 트랙을 지우고 같은 결과를 만듦 (멱등성 확인), 빌드 성공.
 - **아직 안 한 것**: 9-5의 오프라인 렌더 레벨·음높이 검증, 플레이 모드 확인. 실제로 들어보고 스타일별 레벨을 다듬을 것.
+
+---
+
+## 10. 피버 전후 타이밍 문제와 크래시 조사 (2026-11-24)
+
+### 10-1. 증상과 원인 (기록으로 확정)
+- **처치음이 두 번 울림**: 처치 화음 파라미터(`RedKills` 등)를 박 0.09초 전에 켜고, **다음 박 0.09초 전까지 켜 둔다.** FMOD는 박의 악기를 울릴지 그보다 이르게(약 0.15초 이상 전, 믹서 버퍼 1024×4=85ms + Studio 업데이트 20ms + 1프레임) 결정하므로, 다음 박 화음도 켜진 것으로 보고 **한 번 더 울린다.**
+  - 측정: 4박마다 1번 처치 → 처치 10번에 화음 16번, 그중 6번이 정확히 1박 뒤 반복.
+- **다운비트 드럼 지연**: 피버 시작·종료(프레이즈 경계)에서 피버·임팩트·밀도·특색 루프 파라미터가 다운비트 0.15초 전에 한꺼번에 바뀌면, FMOD가 그 다운비트의 모든 트랙을 같은 양만큼 늦게 시작했다(구 뱅크 기준 +50ms, +121ms, `Loading delay exceeded`). 샘플은 이미 전부 메모리에 있다(스트리밍 없음) — "미리 로드"로는 해결되지 않는다.
+
+### 10-2. 시도했다가 되돌린 것
+| 시도 | 결과 |
+|---|---|
+| 편성 파라미터를 0.4초 / 반 박 앞당김 | 구 뱅크에서는 늦은 채널 26→4. 새 뱅크(스타일 처치 화음·어쿠스틱 드럼 포함)에서는 A/B 비교 시 개선 없음 → 되돌림 |
+| 처치 화음을 0.2초 전에 켜고 박 직후 끄기 + 악기 async/cut + 영역 16분음표 | 이전 박 악기 영역 안에서 켜져 엇박 화음 발생, async가 샘플 전체(3~8초)를 재생 → 되돌림 |
+
+→ **타임라인 악기 + 파라미터 하나** 구조에서는 "일찍 켜기"와 "일찍 끄기"가 악기 영역과 충돌한다. 값 조정이 아니라 구조 변경이 필요.
+
+### 10-3. A. 짝수/홀수 박 파라미터 분리 (적용됨 2026-11-24 → **대체됨**: 10-4 원샷, 2026-11-24 Task 6)
+> 대체됨: 처치 화음은 이제 Unity가 예약하는 원샷이다(10-4). 패리티 파라미터·`kill_parity.js`·타임라인 처치 트랙은 삭제됐다. 측정해 보니 이 방식은 "끄기"가 노트를 실제로 끊어서(0.25박 + 120ms 릴리즈) 처치 화음이 표의 0.78박보다 훨씬 짧게 울렸다 — 원샷은 표 길이대로 울린다.
+
+- 처치 화음 파라미터를 색 × 박 홀짝으로 나눴다: `RedKillsEven / RedKillsOdd`, `BlueKills…`, `YellowKills…` (6개, 0~3).
+- 타임라인의 모든 처치 화음 노트(원래 3트랙, 1,920개 — 변환 당시엔 스타일 트랙 포함 12,288개)는 **자기 박의 홀짝 파라미터**에 묶인다 → `FMOD/Tools/kill_parity.js` (멱등, `kill_voices.js`를 다시 돌린 뒤 반드시 다시 실행).
+- Unity(`SoundManager.UpdateKillChords`)는 목표 박 **0.4박 전**에 그 박의 홀짝 파라미터만 켜고, 화음이 시작된 뒤 **0.25박 후에 끈다**. 끄는 것은 노트를 자르지 않는다(처치 화음 노트는 Cut 꺼짐 → 샘플 끝까지 울림).
+- **측정으로 알게 된 FMOD 동작**: FMOD는 트랙에서 지금 울리는 노트가 **끝나는 순간** 그 트랙의 다음 노트들을 그때의 파라미터 값으로 예약한다(처치 노트는 다음 박 0.22박 전에 끝남). 그래서 리드 시간을 늘려도(0.35s, 0.5s) 2박 뒤 반복이 그대로였고, "시작 직후 끄기"로 바꾸자 처치 8번 = 화음 8번이 됐다.
+- **검증**: FMOD 과부하(10-5)를 없앤 뒤 처치 9번→화음 9번, 37번→37번, 피버 포함 34번→34번(모두 정확히 1박 간격). 그 전의 누락·엇박(처치 7/17/30번 → 화음 6/13/24번)은 과부하로 Unity 프레임이 0.2~0.4박 밀렸기 때문.
+- 남은 약점: 켜고 끄는 시점이 1/4박 단위라 큰 프레임 히치(수백 ms)에는 여전히 약하다 → 완전한 해결은 B.
+- 제약: 같은 홀짝의 2박 전 노트 영역 안에서 값이 바뀌면 그 노트가 잘리거나 엇박으로 울린다 → 처치 화음 노트 영역은 **최대 1.45박**으로 제한(`Kill combo`·`Kill dreamy` 2박→1.45박, `Kill latin` 1.5박→1.45박; 끝은 120ms 릴리즈로 페이드).
+- 실행 순서: (다른 생성기들) → `kill_parity.js` → `-build`(따로 실행, 10-6) → 뱅크를 `Assets/StreamingAssets`로 복사(8-10).
+
+### 10-4. B. 처치 화음을 원샷 이벤트로 (계획 → **구현됨** 2026-11-24, 아래 원래 계획은 참고용)
+> 구현: `Docs/superpowers/plans/2026-11-24-fmod-scheduled-kill-chords.md`. 악기별 원샷 이벤트 `event:/Inst/<악기>`(`Note` 파라미터, `instruments.py`) → `bus:/Kill Chords`(사이드체인·컴프·리미터·-8 dB = 옛 이벤트 마스터 레벨). `SoundManager.QueueKillChord`가 목표 박(DSP 시계 기준, 0.4박 규칙)에 `KillChordVoicer`로 음을 골라 `OneShotScheduler`로 예약(`ChannelGroup.setDelay` + 120ms 페이드아웃). 같은 박 추가 처치는 늘어난 음만 예약, 피버·빌드업 박은 스타일·콤보·긴장도 0. `KillChordMix`는 버스 볼륨. 덕킹: 버스→이벤트 안 컴프 사이드체인은 런타임에 안 걸려서(Task 3), `Harmony`/`Feature` 그룹을 프리페이더 Send로 리턴 `Harmony Duck`/`Feature Duck`(버스 키 컴프)에 보내고 그룹 페이더는 -80 dB. 리턴 버스는 전역 파라미터로만 자동화되므로 `Harmony`가 받던 Music Bed 처리(MusicMix 볼륨, Danger 로우패스, Hurt EQ·게인)는 Send 앞 `Harmony` 그룹 안에 같은 커브로 복제했다. 측정: `Docs/Captures/README.md` "Task 6".
+
+타임라인 노트 + 파라미터 방식은 "언제 켜고 언제 끄나"가 노트 영역 길이에 묶인다(10-2, 10-3의 1.45박 제한). 처치음 표현을 더 자유롭게 하고 싶어지면 이 방식으로 옮긴다.
+- **구조**: 처치 화음을 음악 이벤트에서 빼서 `event:/SFX/KillChord`(색·보이싱·스타일은 이벤트 파라미터) 원샷 이벤트로 만들고, 처치마다 인스턴스를 하나 만든다.
+- **박 맞추기**: 음악의 DSP 시계와 박 위치로 목표 박의 DSP 시각을 계산해, 인스턴스의 예약 시작(`EVENT_PROPERTY.SCHEDULE_DELAY` / `SCHEDULE_LOOKAHEAD`)으로 **샘플 단위 정확히** 시작시킨다. 박 콜백 + `ChannelGroup.getDSPClock`으로 "박 n의 DSP 시각"을 유지하는 클래스가 필요하다(`MusicConductor` 확장).
+- **장점**: 노트 길이 제한이 없고(자연 감쇠), 화음 코드(C·Am·F·G)를 이벤트 파라미터로 넘기므로 타임라인에 12,288개 노트를 깔 필요가 없다. 처치마다 패닝·피치·스트럼(같은 박 안의 16분 아르페지오, 3장 후보 5번)도 쉽다.
+- **비용**: DSP 시각 계산·지연 보정 코드, 인스턴스 수 관리(동시 처치 상한·스틸링), 믹싱 버스/사이드체인 재연결, `kill_voices.py` 대체.
+- **언제**: 처치음에 스트럼·자연 감쇠·위치감 같은 표현이 필요해지거나, 1.45박 제한이 소리를 해칠 때.
+
+### 10-5. 음악 끊김·`Loading delay exceeded`의 진짜 원인: FMOD Studio 업데이트 과부하 (2026-11-24 측정)
+- `StudioSystem.getCPUUsage`로 재보니 음악 재생 중 **Studio 업데이트 스레드가 100~150%** (실제 소리 나는 채널은 7~14개, DSP는 1%). 타임라인 처리가 제시간에 끝나지 않아 노트가 늦게 시작 → 경고와 끊김.
+- 프로젝트 사본으로 비교(같은 Unity 코드, 뱅크만 교체):
+
+| 뱅크 | Studio 업데이트 평균 / 최대 | 경고 |
+|---|---|---|
+| 현재 (노트 22,616개) | 89.5% / 147.5% | 30 |
+| 스타일 처치 트랙 5개 제거 (`kill_voices`, 10,368개) | **11.1% / 40.9%** | **0** |
+| 스타일 처치 트랙 유지, 노트별 ADSR만 제거 | 93.9% / 158.3% | 14 |
+
+- 결론: 무거운 것은 **스타일 처치 트랙의 노트 수**다(엔벨로프 아님). 추정: 매 박 여러 번 바뀌는 처치 파라미터에 수천 개 노트가 묶여 있어 값이 바뀔 때마다 재평가된다(미검증).
+- 인코딩(Vorbis→PCM)은 무관했다(경고 수 차이 없음, 원복함). 리드 시간 조정도 근본 해결이 아니었다.
+- **적용**: 스타일 처치 트랙 제거 + 원래 처치 화음의 `BedStyle` 조건 해제(`kill_voices_remove.js`), 뱅크 12.5MB → 5.5MB. 결과: Studio 업데이트 평균 11~12%.
+- **편성 파라미터 리드 0.15초 → 0.25초**: 남은 경고는 프레이즈 경계 직전에만 몰려 있었다(피버 시작·종료, 일반 경계). 과부하가 사라진 뒤 다시 A/B — 40박당 경고(마지막 측정 박 제외): 0.15초 31·27회 → **0.25초 1·7회** (0.35초 12·6회). 부작용: 옛 마디의 마지막 약 1/3~1/2박이 새 상태(피버·스타일 등)를 따른다.
+- 스타일별 처치 음색은 B안(10-4, 원샷 이벤트의 스타일 파라미터)으로 다시 구현한다.
+
+### 10-6. 크래시 원인
+- **FMOD 커맨드라인(`fmodstudiocl.exe`) 크래시**(04:35, 04:41, 12:12): 모두 `FMOD/Tools/kill_voices.js` 실행 끝, **저장 직후 스크립트 엔진(`Qt5Script.dll`)이 정리되는 중** 접근 위반(`0xc0000005`, 같은 오프셋). 1만 개 노트·수백 개 오디오 임포트처럼 큰 스크립트에서만 발생. 저장은 끝난 뒤라 프로젝트는 손상되지 않음(`-diagnostic` 통과). **주의: 같은 명령 줄에서 뒤이어 하던 뱅크 빌드가 실행되지 않는다** → 큰 스크립트 뒤에는 `-build`를 따로 돌리고 뱅크 시각을 확인할 것.
+- **Unity 에디터 크래시**(02:38, 12:04): 오디오 장치가 끊겨("Device was unplugged!") FMOD 믹서 스레드가 Unity 로그 콜백을 계속 부르는 중에 **스크립트 리로드(도메인 리로드)**가 일어나 Mono가 종료. 다른 세션이 Play 중 스크립트를 고치면 리로드가 생긴다.
+  - 완화: Unity Preferences → General → **Script Changes While Playing = Recompile After Finished Playing** (현재 0 = 재생 중 재컴파일), Play 중 오디오 장치 변경 피하기.

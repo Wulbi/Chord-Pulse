@@ -15,7 +15,7 @@ using UnityEngine;
 /// </summary>
 public sealed class CaptureScenario : MonoBehaviour
 {
-    public enum Scenario { baseline, heavy, spike }
+    public enum Scenario { baseline, heavy, spike, styles, duck }
 
     [SerializeField] Scenario scenario = Scenario.baseline;
     [SerializeField] int seed = 7;
@@ -23,6 +23,8 @@ public sealed class CaptureScenario : MonoBehaviour
     [Tooltip("Appended to the file name, e.g. _run2 for a reproducibility recording.")]
     [SerializeField] string suffix = "";
     [SerializeField] bool exitPlayModeWhenDone = true;
+    [Tooltip("MusicMix 0: only the kill chords are heard (styles always does this).")]
+    [SerializeField] bool killsOnly;
 
     [Header("spike (scheduling accuracy)")]
     [Tooltip("OneShotScheduler.ScheduleOffsetSamples for this take (default: the measured constant).")]
@@ -32,6 +34,10 @@ public sealed class CaptureScenario : MonoBehaviour
     [Tooltip("Trigger the 0.3-beat-lead clicks from the beat clock's DSP time instead of SoundManager.BeatPosition, which " +
              "stalls at anchor + 0.999 beat while a jump landing's beat callback is late (Task 5 take spike_seed33_task5).")]
     [SerializeField] bool shortLeadOnDsp;
+
+    [Header("duck (kill-chord ducking of the Harmony group)")]
+    [Tooltip("Off = the same take without kills, the reference the ducked take is compared with.")]
+    [SerializeField] bool duckKills = true;
 
     const int Colors = 3;
 
@@ -57,6 +63,14 @@ public sealed class CaptureScenario : MonoBehaviour
     readonly List<string> _spikeLog = new List<string>();
     int _stalls;
     float _longestFrame;
+    // kill-chord one-shots (SoundManager's scheduler / backend, read through reflection)
+    FmodOneShotBackend _killBackend;
+    FieldInfo _killSchedulerField;
+    int _killDropped, _killLate;
+    readonly List<string> _killLossLog = new List<string>();
+    // styles: 4 phrases (64 beats) per bed style 0..3
+    const int StyleBlockBeats = 64;
+    FieldInfo _styleCurrent, _styleNext;
 
     IEnumerator Start()
     {
@@ -71,6 +85,10 @@ public sealed class CaptureScenario : MonoBehaviour
         _conductor = (MusicConductor)typeof(SoundManager).GetField("_conductor", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(sound);
         _anchorSeconds = typeof(MusicConductor).GetField("_anchorSeconds", BindingFlags.Instance | BindingFlags.NonPublic);
         _conductor.BeatChanged += OnBeat;
+        _killBackend = (FmodOneShotBackend)typeof(SoundManager).GetField("_killBackend", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(sound);
+        _killSchedulerField = typeof(SoundManager).GetField("_killScheduler", BindingFlags.Instance | BindingFlags.NonPublic);
+        _styleCurrent = typeof(SoundManager).GetField("_styleCurrent", BindingFlags.Instance | BindingFlags.NonPublic);
+        _styleNext = typeof(SoundManager).GetField("_styleNext", BindingFlags.Instance | BindingFlags.NonPublic);
         if (scenario == Scenario.spike)
         {
             _backend = new FmodOneShotBackend();
@@ -90,6 +108,18 @@ public sealed class CaptureScenario : MonoBehaviour
             // Applied after StartMusic, which resets both to 0.
             sound.Combo = 3;
             sound.Tension = 0.8f;
+        }
+        if (scenario == Scenario.styles || killsOnly)
+            sound.MusicMix = 0f; // kill chords alone: the bed would differ between styles
+        if (scenario == Scenario.duck)
+        {
+            // Only the Harmony group is heard: kill chords at -60 dB (their bus key sits before the fader, so they
+            // still duck; at volume 0 FMOD would virtualise their voices and the key would go silent too), Feature
+            // return muted, the other Music Bed tracks muted once the event has built them.
+            sound.Intensity = SoundManager.MaxIntensity; // the offbeat pluck plays from intensity 1
+            StartCoroutine(QuietKillBus());
+            RuntimeManager.GetBus("bus:/Feature Duck").setMute(true);
+            StartCoroutine(MuteMusicBed(sound));
         }
         Debug.Log("[CaptureScenario] " + scenario + " seed " + seed + ", " + beats + " beats -> " + _wavPath);
     }
@@ -125,6 +155,9 @@ public sealed class CaptureScenario : MonoBehaviour
 
         if (scenario == Scenario.spike)
             UpdateSpike(sound);
+        if (scenario == Scenario.styles)
+            ForceStyle(sound);
+        TrackKillLosses(sound);
 
         int beat = sound.CurrentBeat;
         while (beat > _lastBeat && _lastBeat < beats)
@@ -160,9 +193,7 @@ public sealed class CaptureScenario : MonoBehaviour
             if (music.isValid() && music.setParameterByName("SpikeRef", 1f, true) == FMOD.RESULT.OK)
                 _spikeRefSet = true;
         }
-        // R11: the next phrase's BPM is known a phrase ahead (sections are 108 + 8 * index BPM, Docs/AdaptiveAudioPlan.md),
-        // so beats past the boundary are timed with it before the landing beat's anchor arrives.
-        _conductor.Clock.SetTempoFrom(sound.NextPhraseStep / SoundManager.StepsPerBeat, 108 + 8 * sound.UpcomingPhrase.Section);
+        // R11 (SetTempoFrom with the next section's BPM) is fed by SoundManager.Update every frame.
         _scheduler.Update();
         _backend.Update();
         // Short lead: odd beats, 0.3 beat ahead of the (visual) beat position.
@@ -195,6 +226,96 @@ public sealed class CaptureScenario : MonoBehaviour
             beat, lead, ok ? 1 : 0, target, clock.AnchorBeat, (long)target - (long)now));
     }
 
+    static int StyleFor(int beat) => Math.Max(0, beat) / StyleBlockBeats % 4;
+
+    // Holds the bed style (and so the kill-chord style) at StyleFor(beat) for the current and the next phrase.
+    void ForceStyle(SoundManager sound)
+    {
+        int beat = Math.Max(0, sound.CurrentBeat);
+        _styleCurrent.SetValue(sound, StyleFor(beat));
+        _styleNext.SetValue(sound, StyleFor(sound.NextPhraseStep / SoundManager.StepsPerBeat));
+    }
+
+    // Studio names every event group "Group Bus" at runtime, so the tree is matched by shape: the event master's
+    // child with the most subgroups is Music Bed, and Music Bed's only child with subgroups is Harmony. Every other
+    // child of Music Bed (the bed's leaf tracks) is muted; Harmony itself is left alone (it reaches the output through
+    // its send to return:/Harmony Duck).
+    IEnumerator MuteMusicBed(SoundManager sound)
+    {
+        var field = typeof(SoundManager).GetField("_music", BindingFlags.Instance | BindingFlags.NonPublic);
+        for (int frame = 0; frame < 20000; frame++)
+        {
+            var music = (FMOD.Studio.EventInstance)field.GetValue(sound);
+            if (music.isValid() && music.getChannelGroup(out FMOD.ChannelGroup root) == FMOD.RESULT.OK && root.hasHandle() &&
+                MuteBedLeaves(root, out int muted))
+            {
+                Debug.Log("[CaptureScenario] duck: muted " + muted + " Music Bed tracks at frame " + frame);
+                yield break;
+            }
+            yield return null;
+        }
+        Debug.LogError("[CaptureScenario] duck: Music Bed channel group not found");
+    }
+
+    // SoundManager sets the bus volume once when the music starts (and again only if KillChordMix changes).
+    IEnumerator QuietKillBus()
+    {
+        while (SoundManager.Instance.BeatPosition < 0) // music not running yet
+            yield return null;
+        RuntimeManager.GetBus("bus:/Kill Chords").setVolume(0.001f);
+        Debug.Log("[CaptureScenario] duck: bus:/Kill Chords at -60 dB");
+    }
+
+    static bool MuteBedLeaves(FMOD.ChannelGroup root, out int muted)
+    {
+        muted = 0;
+        root.getNumGroups(out int count);
+        FMOD.ChannelGroup bed = default;
+        int most = 0;
+        for (int i = 0; i < count; i++)
+        {
+            root.getGroup(i, out FMOD.ChannelGroup child);
+            child.getNumGroups(out int n);
+            if (n > most)
+            {
+                most = n;
+                bed = child;
+            }
+        }
+        if (most < 21) // Music Bed has 21 tracks (incl. Harmony) once the event has built them
+            return false;
+        int withChildren = 0;
+        for (int i = 0; i < most; i++)
+        {
+            bed.getGroup(i, out FMOD.ChannelGroup track);
+            track.getNumGroups(out int n);
+            if (n > 0)
+            {
+                withChildren++;
+                continue;
+            }
+            track.setMute(true);
+            muted++;
+        }
+        return withChildren == 1;
+    }
+
+    // One-shots lost by the kill-chord path: late in the scheduler (start passed before dispatch) or dropped by the
+    // backend (channel group appeared after the start, e.g. during FMOD's stall at a jump landing). Logged against the
+    // beat heard when the loss was noticed, which is the beat the note was due on (or the one after).
+    void TrackKillLosses(SoundManager sound)
+    {
+        var scheduler = (OneShotScheduler)_killSchedulerField.GetValue(sound);
+        int late = scheduler != null ? scheduler.LateCount : 0;
+        int dropped = _killBackend.DroppedCount;
+        if (late == _killLate && dropped == _killDropped)
+            return;
+        bool okNow = _conductor.Clock.BeatAt(MusicConductor.MasterDsp(), out double now);
+        _killLossLog.Add(string.Format(CultureInfo.InvariantCulture, "{0:F2},{1},{2}", okNow ? now : -1, late - _killLate, dropped - _killDropped));
+        _killLate = late;
+        _killDropped = dropped;
+    }
+
     void QueueKills(SoundManager sound, int beat)
     {
         switch (scenario)
@@ -211,6 +332,15 @@ public sealed class CaptureScenario : MonoBehaviour
                 break;
             case Scenario.spike:
                 // No kills: SpikeClick one-shots are scheduled on the beat clock instead (UpdateSpike / OnBeat).
+                break;
+            case Scenario.styles:
+                for (int color = 0; color < Colors; color++)
+                    sound.QueueKillChord(color);
+                break;
+            case Scenario.duck:
+                if (duckKills && beat % 4 == 0)
+                    for (int color = 0; color < Colors; color++)
+                        sound.QueueKillChord(color);
                 break;
         }
     }
@@ -242,13 +372,22 @@ public sealed class CaptureScenario : MonoBehaviour
                 scheduleOffsetSamples, _spikeLog.Count, _backend.StartedCount, _scheduler.LateCount, _backend.DroppedCount, _backend.CancelledCount);
         }
 
+        var scheduler = (OneShotScheduler)_killSchedulerField.GetValue(sound);
+        string killSummary = string.Format(CultureInfo.InvariantCulture,
+            "; KILLS one-shots started {0}, late (scheduler) {1}, dropped (backend) {2}, cancelled {3}",
+            _killBackend.StartedCount, scheduler != null ? scheduler.LateCount : 0, _killBackend.DroppedCount, _killBackend.CancelledCount);
+        var losses = new StringBuilder("beat_now,late,dropped\n");
+        foreach (var line in _killLossLog)
+            losses.Append(line).Append('\n');
+        File.WriteAllText(Path.ChangeExtension(path, ".kills.csv"), losses.ToString());
+
         double dspAvg = _cpuSamples > 0 ? _dspSum / _cpuSamples : 0;
         double totalAvg = _cpuSamples > 0 ? _totalSum / _cpuSamples : 0;
         double studioAvg = _cpuSamples > 0 ? _studioSum / _cpuSamples : 0;
         string summary = string.Format(CultureInfo.InvariantCulture,
             "[CaptureScenario] DONE {0}: STUDIO update avg {9:F2}% max {10:F2}%; CORE dsp avg {1:F2}% max {2:F2}%, core total (dsp+stream+update) avg {3:F2}% max {4:F2}%, samples {5}, dropped frames {6}, stalls >100 ms after the first beat {7} (take is only a valid reference if 0), longest frame {8:F0} ms",
             Path.GetFileName(path), dspAvg, _dspMax, totalAvg, _totalMax, _cpuSamples, AudioCapture.FramesDropped,
-            _stalls, _longestFrame * 1000f, studioAvg, _studioMax) + spikeSummary;
+            _stalls, _longestFrame * 1000f, studioAvg, _studioMax) + spikeSummary + killSummary;
         Debug.Log(summary);
         File.WriteAllText(Path.ChangeExtension(path, ".cpu.txt"), summary + "\n");
 #if UNITY_EDITOR

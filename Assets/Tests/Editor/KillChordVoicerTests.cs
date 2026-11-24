@@ -78,9 +78,10 @@ public class KillChordVoicerTests
     }
 
     [Test]
-    public void Dreamy_MainNotesAreOneDbQuieter()
+    public void Dreamy_MainNotesAreOneAndAHalfDbQuieter()
     {
-        foreach (var n in Voice(3, 1, 0, 1)) Assert.AreEqual(-1f, n.GainDb, 1e-4);
+        // -28.5 dB target (trimmed by the Task 6 styles capture) vs the -27 dB instrument level
+        foreach (var n in Voice(3, 1, 0, 1)) Assert.AreEqual(-1.5f, n.GainDb, 1e-4);
     }
 
     [Test]

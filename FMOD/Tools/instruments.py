@@ -5,6 +5,7 @@ Writes instruments.js (next to this file) and Assets/Scripts/Audio/Generated/Ins
 Run on the FMOD project (FMOD Studio closed), then build the banks as a SEPARATE command:
     python FMOD/Tools/instruments.py
     fmodstudiocl.exe -script FMOD/Tools/instruments.js FMOD/ChordPulse/ChordPulse.fspro
+    fmodstudiocl.exe -script FMOD/Tools/kill_oneshots.js FMOD/ChordPulse/ChordPulse.fspro
     fmodstudiocl.exe -build FMOD/ChordPulse/ChordPulse.fspro
 Idempotent: the script deletes the Inst events it made before and recreates them.
 
@@ -203,6 +204,7 @@ def main():
     write(JS_PATH, JS_TEMPLATE.replace("__INSTRUMENTS__", json.dumps(insts, indent=1)))
     write(CS_PATH, cs_text(insts))
     kill_oneshots.write_table()
+    kill_oneshots.write_js()
     print(len(insts), "instruments,", sum(len(i["notes"]) for i in insts), "notes -> instruments.js, InstrumentTable.g.cs")
 
 

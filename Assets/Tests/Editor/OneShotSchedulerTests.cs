@@ -67,6 +67,23 @@ public class OneShotSchedulerTests
     }
 
     [Test]
+    public void Schedule_WiderWindow_DispatchesUpToThatManyBeatsEarly()
+    {
+        var (clock, backend, scheduler) = Make();
+        clock.Anchor(0, 0, 120);
+        backend.Now = 0;
+        Assert.IsTrue(scheduler.Schedule(Inst, 72, 2, 0.5, 0f, 0.0, dispatchWindowBeats: 1.0));
+        Assert.AreEqual(0, backend.Starts.Count);
+        backend.Now = 23999; // 24001 samples ahead: outside a 1-beat window
+        scheduler.Update();
+        Assert.AreEqual(0, backend.Starts.Count);
+        backend.Now = 24000; // exactly one beat ahead
+        scheduler.Update();
+        Assert.AreEqual(1, backend.Starts.Count);
+        Assert.AreEqual(48000UL, backend.Starts[0].dspStart);
+    }
+
+    [Test]
     public void Reschedules_WhenTempoChangesAfterBoundary()
     {
         var (clock, backend, scheduler) = Make();

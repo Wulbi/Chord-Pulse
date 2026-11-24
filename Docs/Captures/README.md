@@ -248,3 +248,62 @@ made: the compressor DSP keeps only its two in-event `SEND_SIDECHAIN` inputs, th
 three bursts of loud Marimba one-shots on the bus (bus level +1 to +2 dBFS, Harmony playing) gave 0.00 dB gain
 reduction. The link was removed again (`REMOVE = true`). Ducking from one-shots needs Harmony on a global bus too
 (bus -> bus sidechain), which the spec's bus layout already plans.
+
+## Task 6: kill chords as scheduled one-shots
+
+New scenarios in `CaptureScenario`: `styles` (MusicMix 0, bed style forced to `beat / 64 % 4`, 3 colours x voicing 1
+on every beat; 256 beats), `duck` (only the Harmony group audible: other Music Bed tracks muted, Feature Duck return
+muted, bus:/Kill Chords at -60 dB so its pre-fader key still ducks; kills every 4th beat, `duckKills` off = reference
+take). Every take also writes `.kills.csv` (one-shots lost: late in the scheduler / dropped by the backend, by beat)
+and a `KILLS` line in `.cpu.txt`. `killsOnly` = MusicMix 0 for any scenario.
+
+All takes: Unity Editor, 0 stalls, 0 late, 0 dropped.
+
+| take | Studio update avg / max | Core dsp avg / max | one-shots started |
+|---|---:|---:|---:|
+| baseline_seed7 (Task 1) | 10.02 / 91.17 | 1.54 / 2.36 | - |
+| baseline_seed7_task6 | 8.93 / 87.53 | 3.17 / 5.63 | 288 |
+| heavy_seed7 (Task 1) | 20.54 / 106.66 | 3.39 / 5.00 | - |
+| heavy_seed7_task6 | 9.63 / 90.26 | 7.12 / 10.19 | 3021 |
+| styles_seed7_task6 | 6.54 / 69.02 | 2.55 / 3.69 | 2304 |
+| heavy_seed33_task6_r15 (4 jumps, 68 beats) | 7.16 / 57.73 | 5.82 / 7.57 | 1629 |
+
+The music event went from 12,376 to 10,456 notes (1,920 kill notes removed; 128 of the rest are the Spike ref track).
+A first heavy take before the backend stopped finished instances explicitly had Studio update 20.29% and Core dsp
+20.88% avg: instances whose channels had ended kept running until their timeline reached the end of the sample.
+
+Levels (dBFS, `analyze_capture.py rms --compare` and per-beat windows):
+
+| | Task 1 | Task 6 | diff |
+|---|---:|---:|---:|
+| baseline, 4-beat windows, mean of 32 | | | +0.84 (3 windows > 1 dB, max +1.41) |
+| baseline, first 150 ms of the chord beat | -30.39 | -30.49 | -0.10 |
+| baseline, whole chord beat | -33.49 | -31.53 | +1.96 |
+| baseline, beats 2-4 of each window (no chord) | -35.79 | -35.60 | +0.19 |
+| heavy, 4-beat windows | | | +1.70 .. +3.54 (mean +2.84) |
+| heavy, first 150 ms of every beat | -29.23 | -28.29 | +0.94 |
+
+The attack level of a style-0 kill chord is unchanged; the chord now rings for its table length (0.78 beat, then a
+120 ms fade). The old timeline chords were effectively cut after about 0.36 beat: the parity scheme switched the
+parameter off 0.25 beat after the chord started and FMOD untriggered the notes (120 ms ADSR release), contrary to the
+comment in the old code. heavy also gains the combo/tension extensions (7th, bell, punch), which the Task 1 build did
+not play (removed with kill_voices). Attack time vs the beat log, chord beats of baseline: new - old median 0.0 ms,
+mean +0.8 ms (Task 1 run-to-run: +0.5 / -1.3 ms).
+
+Styles (kill chords only, steady state over 59 beats each, after trimming dreamy's target to -28.5 dB):
+
+| style | beat RMS vs style 0 | first 150 ms vs style 0 |
+|---|---:|---:|
+| 1 latin | +0.88 | +0.27 |
+| 2 funk | -0.50 | -0.19 |
+| 3 dreamy | +0.93 (was +1.14 at -28 dB) | -0.29 |
+
+Ducking (`duck_seed7_task6` vs `_nokills`, Harmony only, 31 chord beats averaged): the bus:/Kill Chords key does duck
+the `Harmony Duck` return (thr -32, 4:1, 5/180 ms). Depth: -2 dB at 20 ms, -6 to -9 dB through the chord, deepest
+-14.2 dB at 460 ms, mean -7.9 dB while the chord sounds; back within 3 dB about 225 ms after the chord's end (~495 ms)
+and within 0.5 dB 626 ms after it. That is deeper and longer than the 2-4 dB / 180 ms target.
+
+Section-jump landings (heavy seed 33, kills every beat, jumps at 16/32/48/64): 0 late, 0 dropped, chords present on
+L..L+3 for every landing, with the 1-beat post-boundary dispatch window (R15) and without it (0.5 beat): no difference
+in this scenario. Spike re-measure with Task 6 code (`spike_seed33_task6`, DSP trigger): 64 / 64 scheduled and started,
+0 dropped (Task 5 lost 17 and 49), mean 0.48 / max 1.54 ms before correction, 4 beats after a change 0.55 / 1.54 ms.

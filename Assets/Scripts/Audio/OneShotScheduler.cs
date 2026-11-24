@@ -19,7 +19,7 @@ public interface IOneShotBackend
 /// </summary>
 public sealed class OneShotScheduler
 {
-    /// <summary>Notes are handed to the backend once their start is at most this many beats ahead.</summary>
+    /// <summary>Notes are handed to the backend once their start is at most this many beats ahead (default per note).</summary>
     public const double DispatchWindowBeats = 0.5;
 
     sealed class Note
@@ -30,6 +30,7 @@ public sealed class OneShotScheduler
         public double LengthBeats;
         public float GainDb;
         public double OnsetSeconds;
+        public double WindowBeats;
         public int Handle = -1; // >= 0 once handed to the backend
         public ulong Start;
         public ulong Stop;
@@ -69,13 +70,16 @@ public sealed class OneShotScheduler
     /// A note already inside the dispatch window goes to the backend at once.
     /// False if the clock has no anchor yet, the start is already in the past (counted in <see cref="LateCount"/>),
     /// or the backend failed on an immediate start.
+    /// <paramref name="dispatchWindowBeats"/> widens (or narrows) the dispatch window for this note, e.g. to create the
+    /// instance before FMOD Studio's stall at a section-jump landing.
     /// </summary>
-    public bool Schedule(Instrument inst, int midi, double beat, double lengthBeats, float gainDb, double onsetSeconds)
+    public bool Schedule(Instrument inst, int midi, double beat, double lengthBeats, float gainDb, double onsetSeconds,
+        double dispatchWindowBeats = DispatchWindowBeats)
     {
         var note = new Note
         {
             Inst = inst, Midi = midi, Beat = beat, LengthBeats = Math.Max(0, lengthBeats), GainDb = gainDb,
-            OnsetSeconds = onsetSeconds,
+            OnsetSeconds = onsetSeconds, WindowBeats = Math.Max(0, dispatchWindowBeats),
         };
         if (!Times(note, out long start, out _, out _))
             return false;
@@ -186,7 +190,7 @@ public sealed class OneShotScheduler
         start = (long)onBeat + ScheduleOffsetSamples - (long)Math.Round(note.OnsetSeconds * _clock.SampleRate);
         stop = (long)offBeat + ScheduleOffsetSamples;
         // Window measured backwards from the beat at the tempo that leads into it; near DSP 0 just send.
-        window = _clock.DspAt(note.Beat - DispatchWindowBeats, out ulong before) ? (long)onBeat - (long)before : long.MaxValue;
+        window = _clock.DspAt(note.Beat - note.WindowBeats, out ulong before) ? (long)onBeat - (long)before : long.MaxValue;
         return true;
     }
 }
@@ -198,6 +202,8 @@ public sealed class OneShotScheduler
 /// Call Update every frame. (Task 3 spike: EVENT_PROPERTY.SCHEDULE_DELAY was as precise but about 24 ms late on
 /// average, an offset that depends on the Studio update timing; see Docs/Captures/README.md.)
 /// <see cref="Stop"/> with a time at or before now, or at or before the note's start, cancels the note at once.
+/// A note stopped at its end time fades out over <see cref="ReleaseSeconds"/> from that time (like the 120 ms ADSR
+/// release of the timeline notes it replaces) instead of being cut.
 /// </summary>
 public sealed class FmodOneShotBackend : IOneShotBackend
 {
@@ -216,6 +222,10 @@ public sealed class FmodOneShotBackend : IOneShotBackend
     readonly List<int> _keys = new List<int>();
     readonly Dictionary<Instrument, FMOD.Studio.EventDescription> _descriptions = new Dictionary<Instrument, FMOD.Studio.EventDescription>();
     int _next;
+    ulong _releaseSamples;
+
+    /// <summary>Fade-out after a note's stop time (the instrument events' ADSR release).</summary>
+    public const double ReleaseSeconds = 0.12;
 
     /// <summary>
     /// Notes stopped without sounding: their channel group appeared only after the start time had passed, or never
@@ -240,6 +250,11 @@ public sealed class FmodOneShotBackend : IOneShotBackend
             return -1;
         instance.setParameterByName("Note", midi, true);
         instance.setVolume((float)Math.Pow(10.0, gainDb / 20.0));
+        if (_releaseSamples == 0)
+        {
+            FMODUnity.RuntimeManager.CoreSystem.getSoftwareFormat(out int rate, out _, out _);
+            _releaseSamples = (ulong)Math.Round(ReleaseSeconds * (rate > 0 ? rate : 48000));
+        }
         if (instance.start() != FMOD.RESULT.OK)
         {
             instance.release();
@@ -267,23 +282,46 @@ public sealed class FmodOneShotBackend : IOneShotBackend
         }
         n.Stop = dspStop;
         if (n.Applied)
-            n.Group.setDelay(n.Start, n.Stop, true);
+            ApplyTimes(n.Group, n);
         _notes[handle] = n;
     }
 
+    /// <summary>
+    /// The caller is done with the handle. The instance is kept until its stop time plus the release has passed, then
+    /// stopped and released by <see cref="Update"/>: its channels end with setDelay, but the Studio event itself would
+    /// otherwise keep running (and keep its channel group and DSP chain alive) until its timeline reaches the end of
+    /// the sample.
+    /// </summary>
     public void Release(int handle)
     {
         if (!_notes.TryGetValue(handle, out var n))
             return;
-        if (n.Applied)
-        {
-            // FMOD frees the instance once it has stopped; nothing left to change for this handle.
-            n.Instance.release();
-            _notes.Remove(handle);
-            return;
-        }
         n.Released = true;
         _notes[handle] = n;
+    }
+
+    /// <summary>Stops and releases every instance at once (e.g. when the music stops).</summary>
+    public void StopAll()
+    {
+        foreach (var n in _notes.Values)
+        {
+            n.Instance.stop(FMOD.Studio.STOP_MODE.IMMEDIATE);
+            n.Instance.release();
+        }
+        _notes.Clear();
+    }
+
+    // Start, then full level until the stop time, then a linear fade to silence over the release (Stop 0 = no stop yet).
+    void ApplyTimes(FMOD.ChannelGroup group, Note n)
+    {
+        ulong end = n.Stop > 0 ? n.Stop + _releaseSamples : 0;
+        group.setDelay(n.Start, end, true);
+        group.removeFadePoints(0, ulong.MaxValue);
+        if (n.Stop > 0)
+        {
+            group.addFadePoint(n.Stop, 1f);
+            group.addFadePoint(end, 0f);
+        }
     }
 
     /// <summary>
@@ -301,7 +339,15 @@ public sealed class FmodOneShotBackend : IOneShotBackend
         {
             var n = _notes[key];
             if (n.Applied)
+            {
+                if (n.Released && n.Stop > 0 && now >= n.Stop + _releaseSamples)
+                {
+                    n.Instance.stop(FMOD.Studio.STOP_MODE.IMMEDIATE);
+                    n.Instance.release();
+                    _notes.Remove(key);
+                }
                 continue;
+            }
             bool hasGroup = n.Instance.getChannelGroup(out FMOD.ChannelGroup group) == FMOD.RESULT.OK && group.hasHandle();
             if (!hasGroup && ++n.Frames <= 30)
             {
@@ -310,13 +356,7 @@ public sealed class FmodOneShotBackend : IOneShotBackend
             }
             if (hasGroup && n.Start > now)
             {
-                group.setDelay(n.Start, n.Stop, true);
-                if (n.Released)
-                {
-                    n.Instance.release();
-                    _notes.Remove(key);
-                    continue;
-                }
+                ApplyTimes(group, n);
                 n.Group = group;
                 n.Applied = true;
                 _notes[key] = n;
