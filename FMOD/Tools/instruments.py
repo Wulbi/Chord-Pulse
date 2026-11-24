@@ -87,7 +87,8 @@ def build():
     onsets = {}
     for i in insts:
         for n in i["notes"]:
-            assert onsets.setdefault((i["name"], n["midi"]), n["onset"]) == n["onset"],                 f"{i['name']} note {n['midi']} has different onsets on different buses"
+            first = onsets.setdefault((i["name"], n["midi"]), n["onset"])
+            assert first == n["onset"], f"{i['name']} note {n['midi']} has different onsets on different buses"
     return insts
 
 
@@ -257,8 +258,16 @@ INSTRUMENTS.forEach(function (inst) {
     noteProxies.slice(1).forEach(function (p) { project.deleteObject(p); evChanged = true; });
     if (noteProxies.length === 0) { ev.addGameParameter(noteParam); evChanged = true; }
 
-    var track = null;
-    ev.groupTracks.forEach(function (t) { if (t.mixerGroup.name === "Notes") track = t; });
+    // keep the first Notes track (its sounds are reconciled below); extra Notes tracks go, with their sounds
+    var noteTracks = [];
+    ev.groupTracks.forEach(function (t) { if (t.mixerGroup.name === "Notes") noteTracks.push(t); });
+    var track = noteTracks[0];
+    noteTracks.slice(1).forEach(function (t) {
+        t.modules.slice().forEach(function (s) { project.deleteObject(s); counts.removed++; });
+        project.deleteObject(t);
+        counts.removed++;
+        evChanged = true;
+    });
     if (!track) { track = ev.addGroupTrack("Notes"); evChanged = true; }
 
     // match the track's sounds to the wanted notes by the MIDI number in their Note condition
@@ -276,11 +285,11 @@ INSTRUMENTS.forEach(function (inst) {
             isNew = true;
             counts.added++;
         }
-        if (syncSound(s, n, inst, isNew) && !isNew) counts.updated++;
+        if (syncSound(s, n, inst, isNew)) evChanged = true;   // a new or changed sound counts as an update of its event
         soundCount++;
     });
     Object.keys(byMidi).forEach(function (k) { drop.push(byMidi[k]); });
-    drop.forEach(function (s) { project.deleteObject(s); counts.removed++; });
+    drop.forEach(function (s) { project.deleteObject(s); counts.removed++; evChanged = true; });
     if (evChanged && !isNewEvent) counts.updated++;
 });
 
@@ -293,6 +302,9 @@ project.model.Event.findInstances().forEach(function (ev) {
 });
 stale.forEach(function (ev) { log("removing " + ev.getPath()); project.deleteObject(ev); counts.removed++; });
 
+// moved: events moved from event:/Inst/<Name> into their bus folder; updated: existing events (moved ones included) where
+// any property, sound value or structure was written; added: new events plus new sounds; removed: deleted sounds,
+// extra Notes tracks and stale events.
 log("moved " + counts.moved + ", updated " + counts.updated + ", added " + counts.added + ", removed " + counts.removed);
 log("events " + INSTRUMENTS.length + ", sounds " + soundCount);
 project.save();
