@@ -29,6 +29,9 @@ public sealed class CaptureScenario : MonoBehaviour
     [SerializeField] long scheduleOffsetSamples = OneShotScheduler.DefaultScheduleOffsetSamples;
     [Tooltip("Beats with a SpikeClick scheduled (1 .. this). Even beats are scheduled 1 beat ahead, odd beats 0.3 beat ahead.")]
     [SerializeField] int spikeBeats = 64;
+    [Tooltip("Trigger the 0.3-beat-lead clicks from the beat clock's DSP time instead of SoundManager.BeatPosition, which " +
+             "stalls at anchor + 0.999 beat while a jump landing's beat callback is late (Task 5 take spike_seed33_task5).")]
+    [SerializeField] bool shortLeadOnDsp;
 
     const int Colors = 3;
 
@@ -164,7 +167,7 @@ public sealed class CaptureScenario : MonoBehaviour
         _backend.Update();
         // Short lead: odd beats, 0.3 beat ahead of the (visual) beat position.
         double position = sound.BeatPosition;
-        while (_nextShort <= spikeBeats && position >= _nextShort - ShortLead)
+        while (_nextShort <= spikeBeats && ShortLeadDue(position))
         {
             if (_conductor.Clock.HasAnchor)
                 ScheduleClick(_nextShort, ShortLead);
@@ -172,6 +175,14 @@ public sealed class CaptureScenario : MonoBehaviour
                 _spikeLog.Add(_nextShort + "," + ShortLead.ToString(CultureInfo.InvariantCulture) + ",0,0,-1,0");
             _nextShort += 2;
         }
+    }
+
+    bool ShortLeadDue(double position)
+    {
+        if (!shortLeadOnDsp)
+            return position >= _nextShort - ShortLead;
+        bool okDue = _conductor.Clock.DspAt(_nextShort - ShortLead, out ulong due);
+        return okDue && _backend.NowDsp >= due;
     }
 
     void ScheduleClick(int beat, double lead)

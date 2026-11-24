@@ -194,6 +194,29 @@ late; the capture log shows it as "dropped (backend)" (0 in every take above).
   the clock has no anchor for the landing beat yet and the next beat is already past. Scheduling across a section
   boundary has to extrapolate with the next section's tempo, which `SectionSelector` knows a phrase ahead (Task 5).
 
+### Task 5 re-measure: short lead across a jump landing (R11)
+
+`OneShotScheduler` now holds notes until their start is at most 0.5 beat away, and `BeatClock.SetTempoFrom(beat, bpm)`
+times beats past the next phrase boundary with the next section's BPM (the spike scenario feeds it every frame from
+`SoundManager.NextPhraseStep` / `UpcomingPhrase`, BPM = 108 + 8 * section). Seed 33, 68 beats, offset -110, 0 stalls:
+
+| take | short-lead trigger | paired | after correction: mean / max | 4 beats after change | not scheduled |
+|---|---|---:|---:|---:|---|
+| `spike_seed33_task5` | `SoundManager.BeatPosition` (as in Task 3) | 57 of 64 | 0.49 / 1.35 ms | 0.37 / 1.04 ms (6) | 17, 33, 49 |
+| `spike_seed33_task5_dsp` | beat clock DSP (`shortLeadOnDsp`) | 58 of 64 | 0.53 / 2.06 ms | 0.56 / 1.02 ms (7) | 17, 49 |
+
+Every scheduled click lands within 2 / 5 ms; beat 33 (post-landing, 0.3-beat lead) is now scheduled and measured.
+17 and 49 are still missed, and the cause is upstream of the scheduler (debug take, per-frame log of the clock):
+
+- `SoundManager.BeatPosition` is capped at anchor + 0.999 beat (`MusicConductor.MaxExtrapolationBeats`), so while the
+  landing beat's callback is late it sits at 15.999 and a beat-position trigger fires only after beat 17 has passed.
+- With the DSP trigger, the pending tempo gives the right time (`DspAt(16.7)` = anchor 15 + 1 beat at 108 + 0.7 at 116,
+  exactly), but anchor B's running mean for beat 15 drifts later every frame from about beat 15.9 (583296 -> 585600+
+  samples, still growing at the boundary): the timeline position stalls ahead of the jump while the DSP clock runs on,
+  and those polls are still averaged in. The drift pushes beat 17 late in 2 of 3 takes. Fix belongs in
+  `MusicConductor.PollAnchor` (e.g. stop averaging once a beat is settled or the timeline stops advancing) and
+  game triggers should use DSP time, not the capped beat position (Task 6).
+
 ### Note parameter is per instance
 
 Runtime check (Editor, play mode): two `event:/Inst/Marimba` instances started together with `Note` 72 and 79 each
