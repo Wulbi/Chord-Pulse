@@ -34,6 +34,24 @@
       its logged frame) is entirely silent by the same rule; a run starting less than 20 ms after the boundary, or any run when beat b-4 is not in the
       beat log, is always a gap.
 
+  python FMOD/Tools/analyze_capture.py bands <wav> [--compare <ref wav>] [--window-beats 4] [--from-beat 8]
+        [--hit-every N --hit-from M] [--chord-every 4 --chord-offset 1 --chord-ms 80]
+        [--period 4 --region 2.5-4.0 ...]
+      Band-limited RMS (dBFS) in <300 Hz, 300-2000 Hz and >2000 Hz (4th-order Butterworth, zero phase, mono mean), per
+      window of --window-beats beats cut along each take's own beat log. With --compare the reference take is cut the
+      same way and the per-band difference (take - reference) is printed, plus the median over the windows from
+      --from-beat on (a Danger take needs ~0.5 s for its low-pass to arrive). --hit-every N: for every beat that is a
+      multiple of N (from --hit-from, default N) the --hit-step-ms (100) windows from the beat, --hit-steps (8) of them, per band, take vs
+      reference (Hurt dip and recovery). --chord-every K --chord-ms L: the first L ms after every K-th beat (the kill
+      chord attacks of the baseline scenario), take vs reference.
+
+  python FMOD/Tools/analyze_capture.py duck <duck wav> --compare <duck nokills wav> [--chord-every 4 --chord-offset 1]
+      Kill-chord ducking of the Harmony bus (Task 6/7 method): the gain that maps the no-kill take onto the duck take,
+      least squares per 20 ms bin (bins with the no-kill RMS below -60 dBFS skipped) over the 375 ms after every chord beat (beat k*4+1: the baseline scenario queues the
+      kill on beat k*4 for the next beat), each no-kill segment aligned to the duck segment by cross-correlation
+      (+-20 ms). Prints the median over chords of the per-chord mean gain (dB), the mean over all bins and the median
+      of the per-chord minimum.
+
 Needs numpy and scipy. Note: numpy lives in the user site-packages here, so `python -I` (isolated mode) cannot import
 it; run with plain `python` (the WAVs are our own captures, nothing untrusted is loaded).
 """
@@ -498,6 +516,167 @@ def cmd_tail(args):
     return status
 
 
+BANDS = (("<300", None, 300.0), ("300-2k", 300.0, 2000.0), (">2k", 2000.0, None))
+
+
+def band_signals(wav_path):
+    """(mono signal per band, rate) for the three BANDS."""
+    from scipy import signal
+    audio, rate = read_wav(wav_path)
+    mono = audio.mean(axis=1).astype(np.float64)
+    out = []
+    for _, lo, hi in BANDS:
+        if lo is None:
+            sos = signal.butter(4, hi, btype="lowpass", fs=rate, output="sos")
+        elif hi is None:
+            sos = signal.butter(4, lo, btype="highpass", fs=rate, output="sos")
+        else:
+            sos = signal.butter(4, [lo, hi], btype="bandpass", fs=rate, output="sos")
+        out.append(signal.sosfiltfilt(sos, mono))
+    return out, rate
+
+
+def band_levels(signals, a, b):
+    return [rms_db(s, a, b) for s in signals]
+
+
+def cmd_bands(args):
+    sigs, rate = band_signals(args.wav)
+    beats = {b: f for b, f, _ in read_beats(args.wav, None)}
+    ref = ref_beats = None
+    if args.compare:
+        ref, _ = band_signals(args.compare)
+        ref_beats = {b: f for b, f, _ in read_beats(args.compare, None)}
+
+    def levels(which, table, a, b):
+        return band_levels(which, a, b)
+
+    names = [n for n, _, _ in BANDS]
+    print("%s%s  (dBFS per band%s)" % (args.wav, " vs " + args.compare if args.compare else "", "; diff = take - reference" if ref else ""))
+    head = "window  beat  " + "  ".join("%8s" % n for n in names)
+    if ref:
+        head += "   |  " + "  ".join("%8s" % ("d" + n) for n in names)
+    print(head)
+    diffs = []
+    w = args.window_beats
+    for first in range(0, max(beats) - w + 1, w):
+        if first not in beats or first + w not in beats:
+            continue
+        lv = band_levels(sigs, beats[first], beats[first + w])
+        line = "%5d  %4d  " % (first // w, first) + "  ".join("%8.1f" % v for v in lv)
+        if ref and first in ref_beats and first + w in ref_beats:
+            rl = band_levels(ref, ref_beats[first], ref_beats[first + w])
+            d = [a - b for a, b in zip(lv, rl)]
+            line += "   |  " + "  ".join("%8.1f" % v for v in d)
+            if first >= args.from_beat:
+                diffs.append(d)
+        print(line)
+    if diffs:
+        d = np.array(diffs)
+        print("median diff from beat %d over %d windows: " % (args.from_beat, len(d)) +
+              ", ".join("%s %.2f dB" % (n, np.median(d[:, i])) for i, n in enumerate(names)))
+    if args.hit_every > 0:
+        if not ref:
+            raise SystemExit("--hit-every needs --compare")
+        step = int(args.hit_step_ms / 1000.0 * rate)
+        print("\nHurt windows (%g ms steps after every %d-th beat from beat %d); take - reference per band, dB" % (args.hit_step_ms, args.hit_every, args.hit_from or args.hit_every))
+        print("hit beat  " + "".join("%24s" % ("+%g ms" % (i * args.hit_step_ms)) for i in range(args.hit_steps)))
+        rows = []
+        for hb in range(args.hit_from or args.hit_every, max(beats) - 3, args.hit_every):
+            if hb not in beats or hb not in ref_beats:
+                continue
+            row = []
+            for i in range(args.hit_steps):
+                a = beats[hb] + i * step
+                ra = ref_beats[hb] + i * step
+                row.append([x - y for x, y in zip(band_levels(sigs, a, a + step), band_levels(ref, ra, ra + step))])
+            rows.append(row)
+            print("%8d  " % hb + "".join("%24s" % " ".join("%6.1f" % v for v in c) for c in row))
+        if rows:
+            m = np.median(np.array(rows), axis=0)
+            print("median    " + "".join("%24s" % " ".join("%6.1f" % v for v in c) for c in m))
+            print("(columns per cell: " + " / ".join(names) + ")")
+    if args.chord_every > 0:
+        if not ref:
+            raise SystemExit("--chord-every needs --compare")
+        length = int(args.chord_ms / 1000.0 * rate)
+        rows = []
+        for cb in range(args.chord_offset or args.chord_every, max(beats) - 1, args.chord_every):
+            if cb < args.from_beat or cb not in beats or cb not in ref_beats:
+                continue
+            rows.append([x - y for x, y in zip(band_levels(sigs, beats[cb], beats[cb] + length),
+                                               band_levels(ref, ref_beats[cb], ref_beats[cb] + length))])
+        if rows:
+            m = np.median(np.array(rows), axis=0)
+            print("\nchord attacks (first %.0f ms of every %d-th beat from beat %d, %d of them): median take - reference " %
+                  (args.chord_ms, args.chord_every, args.chord_offset or args.chord_every, len(rows)) +
+                  ", ".join("%s %.2f dB" % (n, m[i]) for i, n in enumerate(names)))
+    if args.region:
+        if not ref:
+            raise SystemExit("--region needs --compare")
+
+        def at(table, k, x):
+            return int(round(table[k] + x * (table[k + 1] - table[k])))
+        for region in args.region:
+            lo, hi = (float(v) for v in region.split("-"))
+            rows = []
+            for k in range(args.from_beat, max(beats) - 1, args.period):
+                if k + 1 in beats and k + 1 in ref_beats:
+                    rows.append([x - y for x, y in zip(band_levels(sigs, at(beats, k, lo), at(beats, k, hi)),
+                                                       band_levels(ref, at(ref_beats, k, lo), at(ref_beats, k, hi)))])
+            if rows:
+                m = np.median(np.array(rows), axis=0)
+                print("\nregion beat k+%s of every %d-th beat from %d (%d spans): median take - reference " %
+                      (region, args.period, args.from_beat, len(rows)) + ", ".join("%s %.2f dB" % (n, m[i]) for i, n in enumerate(names)))
+    return 0
+
+
+def cmd_duck(args):
+    audio, rate = read_wav(args.wav)
+    other, _ = read_wav(args.compare)
+    duck, free = audio.mean(axis=1).astype(np.float64), other.mean(axis=1).astype(np.float64)
+    beats = {b: f for b, f, _ in read_beats(args.wav, None)}
+    beats2 = {b: f for b, f, _ in read_beats(args.compare, None)}
+    length, bin_len, max_shift = int(0.375 * rate), int(0.02 * rate), int(0.02 * rate)
+    per_chord, all_bins, mins = [], [], []
+    for b in range(args.chord_offset, max(beats), args.chord_every):
+        if b not in beats or b not in beats2 or b < 8:
+            continue
+        y = duck[beats[b]:beats[b] + length]
+        if len(y) < length:
+            continue
+        best, shift = None, 0
+        for s in range(-max_shift, max_shift + 1, 4):
+            a = beats2[b] + s
+            if a < 0:
+                continue
+            x = free[a:a + length]
+            if len(x) < length:
+                continue
+            c = float(np.dot(x, y)) / (np.linalg.norm(x) * np.linalg.norm(y) + 1e-30)
+            if best is None or c > best:
+                best, shift = c, s
+        x = free[beats2[b] + shift:beats2[b] + shift + length]
+        gains = []
+        for i in range(0, length - bin_len + 1, bin_len):
+            xx = float(np.dot(x[i:i + bin_len], x[i:i + bin_len]))
+            if xx / bin_len < 10 ** (-60.0 / 10.0):   # the bin is silent in the no-kill take (a Harmony rest): no gain to measure
+                continue
+            g = float(np.dot(x[i:i + bin_len], y[i:i + bin_len])) / xx
+            if g > 0:
+                gains.append(20 * np.log10(g))
+        if gains:
+            per_chord.append(np.mean(gains))
+            all_bins.extend(gains)
+            mins.append(min(gains))
+    if not per_chord:
+        raise SystemExit("no chord windows")
+    print("%s vs %s: %d chords" % (args.wav, args.compare, len(per_chord)))
+    print("duck gain over the 375 ms after the chord beat: median of per-chord means %.2f dB, mean of all bins %.2f dB, median per-chord minimum %.2f dB" %
+          (np.median(per_chord), np.mean(all_bins), np.median(mins)))
+    return 0
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     sub = parser.add_subparsers(dest="command", required=True)
@@ -528,6 +707,27 @@ def main():
     p = sub.add_parser("tail")
     p.add_argument("wav")
     p.set_defaults(func=cmd_tail)
+    p = sub.add_parser("duck")
+    p.add_argument("wav")
+    p.add_argument("--compare", required=True, help="the same take without kills (duckKills off)")
+    p.add_argument("--chord-every", type=int, default=4)
+    p.add_argument("--chord-offset", type=int, default=1)
+    p.set_defaults(func=cmd_duck)
+    p = sub.add_parser("bands")
+    p.add_argument("wav")
+    p.add_argument("--compare", default=None, help="reference recording (cut by its own beat log)")
+    p.add_argument("--window-beats", type=int, default=4)
+    p.add_argument("--from-beat", type=int, default=8, help="first beat counted in the medians")
+    p.add_argument("--hit-every", type=int, default=0, help="Hurt: every N-th beat is a hit; prints 100 ms windows after it")
+    p.add_argument("--hit-from", type=int, default=0, help="first hit beat (default N)")
+    p.add_argument("--hit-step-ms", type=float, default=100.0)
+    p.add_argument("--hit-steps", type=int, default=8)
+    p.add_argument("--chord-every", type=int, default=0, help="kill chord attacks on every K-th beat")
+    p.add_argument("--chord-ms", type=float, default=80.0)
+    p.add_argument("--chord-offset", type=int, default=0, help="first chord beat (default = --chord-every); the baseline scenario's chords sit on 4k+1")
+    p.add_argument("--period", type=int, default=4)
+    p.add_argument("--region", action="append", help="A-B in beats after every --period-th beat; repeatable")
+    p.set_defaults(func=cmd_bands)
     args = parser.parse_args()
     sys.exit(args.func(args))
 

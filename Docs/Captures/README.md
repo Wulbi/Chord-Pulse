@@ -693,3 +693,125 @@ meters the kill-keyed compressor of bus:/Music Bed/Harmony and mutes bus:/Featur
 Not explained: heavy after started 24 fewer one-shots (3045) than before (3069, also the Task 5b count) with 0 late /
 dropped / cancelled in both; levels agree within 0.7 dB. The 9 backend drops in `duck_seed7_s7_before` are the known
 jump-landing drops.
+
+## Task 8: `SoundManager` on the global mix (bus volumes, global parameters)
+
+`SoundManager` now writes `Tension` / `Danger` / `Hurt` straight to `RuntimeManager.StudioSystem` (no event attempt first),
+sets the discrete global `LegacyLayers` (inspector field `legacyLayers`, default true: no layer is a one-shot yet; one warning
+if the bank lacks it) in `StartMusic` before the music starts, and applies `MusicMix` as `setVolume(MusicMixGain(musicMix))`
+on `bus:/Music Bed` and `bus:/Feature`. The event's `MusicMix` parameter is no longer written. `HeardTension` /
+`HeardDanger` / `HeardHurt` still read the event's `getParameterByName(...)` final value: checked in play mode with
+`forceDanger` + `hurtEveryBeats` 4, `HeardDanger` 1.000 and `HeardHurt` 0.625 in mid-recovery. `CaptureScenario` got
+`musicMix`, `forceDanger`, `hurtEveryBeats`. No FMOD project change, no bank rebuild (`git status FMOD/ChordPulse` is clean);
+only comments of generator files changed (below).
+
+### The MusicMix curve and what it covers
+
+Read from `FMOD/ChordPulse/Metadata/Event/{3d468f15-...}.xml`: the parameter preset `MusicMix` (initial value 1, range 0..1)
+is used by exactly two automation curves of the music event, both with the same 5 linear points (dB at 0 / .25 / .5 / .75 / 1):
+**-80 / -18 / -9 / -3.5 / 0** - the `volume` of the Music Bed group and the `gain` effect of the Harmony group (added by
+`mixer.py`, a copy of the first). `MusicMixGain` reproduces it (linear in dB, 0 = silent), the same table as `KillChordGain`.
+
+| signal | before (event parameter) | now (bus volume) |
+|---|---|---|
+| Music Bed tracks (drums, bass, tension, combo, fever, styles ...) | Music Bed group volume | `bus:/Music Bed` (the event's output) |
+| Harmony tracks (pluck, pads, keys ...) | Harmony group gain | `bus:/Music Bed/Harmony`, a child of `bus:/Music Bed` |
+| Feature (guest loops) | **not attenuated**: the Feature group goes to the event master, no MusicMix automation | `bus:/Feature`: **now attenuated** (the brief's mapping; at `musicMix` 1 nothing changes) |
+| Spike ref (silent test track) | not attenuated | `bus:/Music Bed` (silent anyway) |
+| Kill chords | `bus:/Kill Chords` volume (`KillChordMix`) | unchanged |
+
+No double or missing attenuation: the event parameter now sits at its initial value 1, where both curves are 0 dB, so the
+event groups are neutral and the bus volume is the only attenuation. `Bus.setVolume` is a scale on top of the fader authored
+in Studio (-8 dB on `bus:/Feature` stays): `musicMix` 1 gives volume 1.0 and the levels below match Task 7's takes, which
+would be +8 dB on the Feature windows if setVolume replaced the fader.
+
+RED/GREEN: `MixGainTests` (7 cases: end points 0 -> 0 and 1 -> 1.0, table points, linear-in-dB interior, monotonic over 100
+steps, `KillChordGain` unchanged) first failed to compile (`MusicMixGain` missing, `KillChordGain` private), then
+EditMode 87 / 87 passed (80 before).
+
+### Levels against Task 7's after-takes (seed 7, 128 beats, `rms --compare`, 4-beat windows)
+
+| take | max abs diff (dB) | window | Studio update avg / max | Core dsp avg / max | one-shots started |
+|---|---:|---|---:|---:|---:|
+| baseline_seed7_s8_after vs s7_after | 0.19 | - | 6.36 / 79.92 | 1.70 / 2.71 | 288 |
+| heavy_seed7_s8_after vs s7_after | 0.86 | beat 96 (flagged `?`, also Task 7's worst) | 7.65 / 86.04 | 5.38 / 7.00 | 3069 |
+| duck_seed7_s8_after vs s7_after | 0.91 | beat 112 (flagged `?`) | 9.06 / 88.05 | 1.74 / 2.98 | 288 |
+| duck_seed7_s8_after_nokills vs s7_after_nokills | 0.60 | beats 80, 112 (flagged `?`) | 7.67 / 80.35 | 0.81 / 1.42 | 0 |
+
+All takes 0 stalls after the first beat, 0 dropped frames, late 0 / dropped 0 / cancelled 0. No window over 1 dB.
+Budgets: Studio update avg baseline 6.36 % (limit 11), Core dsp avg baseline 1.70 % (6), heavy 5.38 % (12).
+
+Ducking (`python FMOD/Tools/analyze_capture.py duck <duck> --compare <nokills>`, the Task 7 method now in the script: least
+squares gain per 20 ms bin over the 375 ms after the chord beat 4k+1, cross-correlation alignment, bins silent in the no-kill
+take skipped): median of the per-chord means **-3.59 dB** (30 chords; the same script gives -3.34 for `s7_after` and -3.51
+for `s7_before`; Task 7's README: -3.27 / -3.56 with a slightly different bin filter). In range -3.5 +- 1.
+
+### MusicMix 0.5 against 1 (the curve is applied once)
+
+- `duck ... nokills` (Harmony only) at `musicMix` 0.5 vs 1 (`..._s8_after_nokills_mix05` vs `..._s8_after_nokills`): 28
+  4-beat windows, **median -9.00 dB** (mean -9.00, range -9.32 .. -8.56). Expected: the table's dB at 0.5 = -9.0; a double
+  attenuation would read -18.
+- `baseline` 64 beats at 0.5 vs 1 (`baseline_seed7_s8_b64_mix05` vs `_s8_b64`), full bed with the kill chords: the chord
+  energy is taken from `baseline_seed7_s8_b64_killsonly` (MusicMix 0) and removed per window (power subtraction): bed
+  gain **median -9.00 dB** over 13 windows (-8.66 .. -9.75), including the Feature windows (beats 32-47: -9.00, -8.97, -8.66).
+  The total window level moves only -3.2 .. -3.9 dB because the chords (-38 dBFS alone vs -34 dBFS total) are unchanged.
+- `styles` (MusicMix 0 forced) and `killsOnly` still play the chords alone: `styles_seed7_s8` -32.0 dBFS mean over the 4-beat
+  windows, `baseline_seed7_s8_b64_killsonly` -38 dBFS (chords on every 4th beat). `styles_seed7_s8` against `styles_seed7_finalfix`
+  differs by up to 2.4 dB, but two finalfix takes of the same code differ by 2.2 dB (random kill voicing), so that
+  comparison says only "same level class". `duck` works (above); its Feature mute is `bus:/Feature`.
+
+### Danger and Hurt on the global buses (baseline seed 7, 64 beats; no pre-Task 7 recording exists, so absolute expectations)
+
+Takes: `baseline_seed7_s8_b64` (neither), `..._s8_b64_danger` (`forceDanger`), `..._s8_b64_hurt8` (`hurtEveryBeats` 8). 0 stalls;
+`.params.csv`: Danger 1 at beat 0; Hurt 1, 0 at beats 7.99, 15.97, 24.00 ... Bands via
+`analyze_capture.py bands <take> --compare <neither>` (4th-order Butterworth, mono, take minus reference).
+
+Danger, authored `DANGER_CUTOFF` (bed_tension.py): Danger 0 -> 20 kHz, 0.4 -> 5 kHz, **1 -> 900 Hz** low-pass on `bus:/Music Bed`
+(seek 3/s up, so settled after 0.33 s).
+
+| region (median over the spans from beat 8, dB) | <300 Hz | 300-2k | >2k |
+|---|---:|---:|---:|
+| 4-beat windows (13), kill chord on beat 4k+1 inside | 0.00 | -0.02 | -0.52 |
+| bed alone: beat k+2.5 .. k+4 of every 4th beat (the chord is over) | -0.01 | -0.25 | **-42.05** |
+| kill chord ringing: beat k+1.0 .. k+1.8 | 0.03 | 0.03 | -0.23 |
+| kill chord attack: first 80 ms of beat 4k+1 | 0.01 | 0.07 | **-0.51** |
+
+Verdict **Danger: as expected.** Above 2 kHz the bed falls by 42 dB (steep), below 500 Hz it is within 0.01 dB. The 4-beat
+windows show only -0.5 dB above 2 kHz because the kill chords dominate that band and are not on the Music Bed bus: the chord
+attack is within 0.5 dB of the baseline's, i.e. not low-passed. (300-2k -0.25 dB: the bed's content there is mostly below 900 Hz.)
+
+Hurt, authored (bed_combo.py): 3-EQ low band (crossover 300 Hz) 0 -> 0 dB, 0.3 -> -8, **1 -> -24 dB**; gain 0 -> 0, **1 -> -4 dB**;
+snapped to 1 then seeks down at 1.6/s (0.625 s). Median over the hits at beats 8, 16, 24, 32, 40, 56 (beat 48 is a timeline
+jump landing with different content), 50 ms windows after the hit beat, take minus neither:
+
+| after the hit (ms) | 0 | 50 | 100 | 150 | 200 | 250 | 300 | 350 | 400 | 450 | 500 | 550 | 600 |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| <300 Hz | -6.5 | **-23.4** | -21.1 | -19.4 | -17.6 | -16.4 | -13.7 | -12.4 | -9.8 | -7.8 | -4.6 | -0.3 | -0.3 |
+| 300-2k | -2.0 | -5.2 | -4.5 | -5.8 | -4.8 | -5.3 | -4.6 | -3.3 | -2.4 | -2.0 | -1.4 | 0.0 | 0.0 |
+| >2k (gain only) | -0.1 | **-3.5** | -3.2 | -2.9 | -2.3 | -2.0 | 0.0 | +2.5 | -1.2 | -1.0 | -0.7 | 0.1 | 0.0 |
+
+Verdict **Hurt: as expected.** Lows are down 23.4 dB 50 ms after the hit (authored -24), the gain part -3.5 dB (authored -4; the
+>2k cells at 300-350 ms are disturbed by the kill chord of beat 8k+1 at about +460 ms and by the jitter of the beat log), and the
+recovery follows the authored curve: predicted lows for Hurt = 1 - 1.6 t are -21 / -18 / -16 / -12 / -9 / -4 dB at 50 / 150 / 250 /
+350 / 450 / 550 ms, observed -23 / -19 / -16 / -12 / -8 / -0.3 dB, complete at about 550 ms (authored 625 ms). The first 50 ms are partly
+before the parameter took effect (one frame plus FMOD's update and mixer block).
+
+Signal-order change from Task 7 (recorded here): Danger and Hurt now act on `bus:/Music Bed` after the event master's limiter and
+-8 dB fader; they used to act inside the event before them. The silent `Spike ref` test track also passes through the Music Bed
+bus processing now.
+
+### Stop tail with the new `TailBuses` (`heavy_seed7_s8_after_b111`: heavy, 111 beats, 2 s tail, restart)
+
+`TAIL PASS`: [stop, +100 ms] -38.8 dBFS, [+100 ms, end] silent. In 10 ms steps: -30.7, -33.8, -43.8 dBFS, then silent from
+30 ms on (Task 6's after-take: silent from about 50 ms). Restart: first 4 beats -30.06 dBFS at start, -30.29 dBFS after restart,
+-0.23 dB (limit 1 dB). 0 stalls, Studio update avg 7.22 %, Core dsp avg 5.29 %, cancelled 48 (the stop). `TailBuses` keeps
+`bus:/Music Bed/Harmony`; this take is silent with both muted, but it does not prove Harmony is needed (the bus has no
+effect with a tail of its own); the comment in `SoundManager` says so.
+
+### Small fixes
+
+`CaptureScenario` duck comment (bus:/Feature carries the Feature group and the Feature sidechain key); `instruments.py`
+docstring run order (instruments.js -> mixer.js -> kill_oneshots.js; `instruments.js` regenerated unchanged);
+`feature_loops.py` comment and log line (mixer.js sets up the Feature ducking; `feature_loops.js` differs only in that
+comment and log string, no FMOD run); `mixer.py` docstring (the buses are owned by the script, hand edits of their effect chains
+are discarded; `mixer.js` unchanged). `analyze_capture.py` got `bands` and `duck`.

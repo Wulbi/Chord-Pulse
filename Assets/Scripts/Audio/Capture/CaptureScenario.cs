@@ -28,6 +28,12 @@ public sealed class CaptureScenario : MonoBehaviour
     [Tooltip("Every frame: _variationNext = 0, _styleNext = 0 and FeatureSelector.CancelNext(), so nothing about the " +
              "arrangement changes at a phrase boundary (diagnosis of the beat-64 landing delay).")]
     [SerializeField] bool holdArrangement;
+    [Tooltip("SoundManager.MusicMix for the whole take (killsOnly / styles still force 0). Bus volumes of Music Bed and Feature.")]
+    [SerializeField, Range(0f, 1f)] float musicMix = 1f;
+    [Tooltip("SoundManager.Danger = true for the whole take (last-life low-pass on bus:/Music Bed).")]
+    [SerializeField] bool forceDanger;
+    [Tooltip("> 0: SoundManager.Hurt() on every beat that is a multiple of this (beats 0 excluded). 0 = off.")]
+    [SerializeField] int hurtEveryBeats;
     [Tooltip("> 0: Application.targetFrameRate = this and vSync off (low-frame-rate takes). 0 = leave the project's setting.")]
     [SerializeField] int targetFps;
 
@@ -166,13 +172,16 @@ public sealed class CaptureScenario : MonoBehaviour
             sound.Combo = 3;
             sound.Tension = 0.8f;
         }
+        sound.MusicMix = musicMix;
         if (scenario == Scenario.styles || killsOnly)
             sound.MusicMix = 0f; // kill chords alone: the bed would differ between styles
+        sound.Danger = forceDanger; // applied after StartMusic, which resets it
         if (scenario == Scenario.duck)
         {
             // Only the Harmony group is heard: kill chords at -60 dB (their bus key sits before the fader, so they
-            // still duck; at volume 0 FMOD would virtualise their voices and the key would go silent too), Feature
-            // return muted, the other Music Bed tracks muted once the event has built them.
+            // still duck; at volume 0 FMOD would virtualise their voices and the key would go silent too), bus:/Feature
+            // muted (it carries the Feature group and also the Feature sidechain key, so the Feature duck is off too),
+            // the other Music Bed tracks muted once the event has built them.
             sound.Intensity = SoundManager.MaxIntensity; // the offbeat pluck plays from intensity 1
             StartCoroutine(QuietKillBus());
             RuntimeManager.GetBus("bus:/Feature").setMute(true);
@@ -516,6 +525,8 @@ public sealed class CaptureScenario : MonoBehaviour
 
     void QueueKills(SoundManager sound, int beat)
     {
+        if (hurtEveryBeats > 0 && beat > 0 && beat % hurtEveryBeats == 0)
+            sound.Hurt();
         switch (scenario)
         {
             case Scenario.baseline:

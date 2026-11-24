@@ -32,6 +32,9 @@ compressor move to the buses); the Feature group keeps only its send. MusicMix s
 Parameters: Tension, Danger, Hurt become global (same presets, same GUIDs, the event's automation keeps working);
 LegacyLayers (0/1, discrete, global) is new. Unity must set global parameters on the Studio system, not on the event.
 
+The buses and returns named here are owned by this script: it rebuilds their effect chains (effects, automation, sidechain
+keys, faders) to match the tables above, so a hand edit of those chains in FMOD Studio is discarded on the next run.
+
 Idempotent: every write is guarded by "only when different"; a second run logs created 0, updated 0, added 0, removed 0
 and leaves FMOD/ChordPulse/Metadata unchanged. Layer tasks add their own sub-buses to SUB_BUSES (rule: only tracks with
 their own effects or automation get a sub-bus; the rest use the family bus).

@@ -3,9 +3,11 @@ Shared instrument library: one small FMOD one-shot event per (instrument, bus), 
 (BusFolder = the bus name without spaces, e.g. Kill Chords -> KillChords).
 
 Writes instruments.js (next to this file) and Assets/Scripts/Audio/Generated/InstrumentTable.g.cs.
-Run on the FMOD project (FMOD Studio closed), then build the banks as a SEPARATE command:
+Run on the FMOD project (FMOD Studio closed), then build the banks as a SEPARATE command. Run order: instruments.js ->
+mixer.js (python -I FMOD/Tools/mixer.py; it owns the buses these events output to) -> kill_oneshots.js -> the rest:
     python -I FMOD/Tools/instruments.py
     fmodstudiocl.exe -script FMOD/Tools/instruments.js FMOD/ChordPulse/ChordPulse.fspro
+    fmodstudiocl.exe -script FMOD/Tools/mixer.js FMOD/ChordPulse/ChordPulse.fspro
     fmodstudiocl.exe -script FMOD/Tools/kill_oneshots.js FMOD/ChordPulse/ChordPulse.fspro
     fmodstudiocl.exe -build FMOD/ChordPulse/ChordPulse.fspro
 Idempotent: the script updates the events in place (GUIDs stay, so Unity shows no "Events Renamed" dialog). It finds each

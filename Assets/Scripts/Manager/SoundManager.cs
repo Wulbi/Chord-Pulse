@@ -35,15 +35,24 @@ public sealed class SoundManager : SingletonBehaviour<SoundManager>, IKillBedSta
     readonly FmodOneShotBackend _killBackend = new FmodOneShotBackend();
     OneShotScheduler _killScheduler;
     FMOD.Studio.Bus _killBus;
+    // MusicMix: the music event's output (Music Bed group + Harmony, which sits below it) and the Feature bus.
+    const string MusicBedBusPath = "bus:/Music Bed";
+    const string FeatureBusPath = "bus:/Feature";
+    FMOD.Studio.Bus _musicBedBus;
+    FMOD.Studio.Bus _featureBus;
+    bool _legacyLayersWarned;
 
     [Tooltip("Shifts visuals later to match audible output latency (measure per device).")]
     [SerializeField] float visualLatencyMs;
-    [Tooltip("Accompaniment level (drums, bass, harmony). Drives the FMOD MusicMix parameter.")]
+    [Tooltip("Accompaniment level (drums, bass, harmony, guest loops). Drives the volume of bus:/Music Bed and bus:/Feature (MusicMixGain curve).")]
     [SerializeField, Range(0f, 1f)] float musicMix = 1f;
     [Tooltip("Kill chord level, mixed independently of the accompaniment. Drives the volume of bus:/Kill Chords.")]
     [SerializeField, Range(0f, 1f)] float killChordMix = 1f;
     [Tooltip("Seed for the per-phrase section choice. 0 = different every round.")]
     [SerializeField] int sectionSeed;
+    [Tooltip("Global FMOD parameter LegacyLayers (1 = the old timeline layers sound, 0 = their scheduled one-shot replacements). " +
+             "Nothing reads it yet; kept true until the first layer moves to one-shots.")]
+    [SerializeField] bool legacyLayers = true;
 
     SectionSelector _sections = new SectionSelector(0);
     FeatureSelector _features = new FeatureSelector(0);
@@ -213,7 +222,10 @@ public sealed class SoundManager : SingletonBehaviour<SoundManager>, IKillBedSta
         _feverStart >= 0 && step >= _feverStart && step < _feverStart + FeverSteps;
 
     // Buses that keep ringing (reverb tails) after the music event is stopped; muted by StopMusic, unmuted before the next
-    // start. Since FMOD/Tools/mixer.py the feature reverb is on bus:/Feature (return:/Feature Duck only routes into it).
+    // start. Since FMOD/Tools/mixer.py the feature reverb is on bus:/Feature (return:/Feature Duck only routes into it);
+    // Harmony is listed because its tracks reach the mixer only through return:/Harmony Duck: the bus is where anything the
+    // event leaves in flight there would ring out. Its effects (two compressors) have no tail of their own, so this is
+    // belt and braces; the Task 8 stop-tail take shows the tail is silent with both buses muted.
     static readonly string[] TailBuses = { "bus:/Feature", "bus:/Music Bed/Harmony" };
 
     // A bus the loaded banks do not have, or FMOD shutting down, is not an error: the lookup throws and is ignored.
@@ -322,6 +334,8 @@ public sealed class SoundManager : SingletonBehaviour<SoundManager>, IKillBedSta
         try
         {
             _killBus = RuntimeManager.GetBus(KillBusPath);
+            _musicBedBus = RuntimeManager.GetBus(MusicBedBusPath);
+            _featureBus = RuntimeManager.GetBus(FeatureBusPath);
         }
         catch (Exception exception)
         {
@@ -331,6 +345,13 @@ public sealed class SoundManager : SingletonBehaviour<SoundManager>, IKillBedSta
         _appliedMusicMix = _appliedKillChordMix = -1f;
         if (!ApplyMix())
             yield break;
+        // Global, optional (banks built before mixer.py lack it): nothing reads it yet, so a missing one only warns.
+        if (RuntimeManager.StudioSystem.setParameterByName("LegacyLayers", legacyLayers ? 1f : 0f, true) != FMOD.RESULT.OK &&
+            !_legacyLayersWarned)
+        {
+            _legacyLayersWarned = true;
+            Debug.LogWarning("[SoundManager / FMOD] No global LegacyLayers parameter in the bank; it is ignored. Rebuild the FMOD banks.", this);
+        }
         foreach (var parameter in FeverParameters)
             if (!Check(SetMusicParameter(parameter, 0f, true)))
                 yield break;
@@ -722,7 +743,8 @@ public sealed class SoundManager : SingletonBehaviour<SoundManager>, IKillBedSta
     {
         if (!Mathf.Approximately(musicMix, _appliedMusicMix))
         {
-            if (!Check(SetMusicParameter("MusicMix", musicMix)))
+            float gain = MusicMixGain(musicMix);
+            if (!Check(_musicBedBus.setVolume(gain)) || !Check(_featureBus.setVolume(gain)))
                 return false;
             _appliedMusicMix = musicMix;
         }
@@ -735,17 +757,22 @@ public sealed class SoundManager : SingletonBehaviour<SoundManager>, IKillBedSta
         return true;
     }
 
-    // The fader curve the old KillChordMix parameter drove (dB at 0, .25, .5, .75, 1), as a linear bus volume.
+    // The fader curves the old MusicMix / KillChordMix parameters drove (dB at 0, .25, .5, .75, 1), as a linear bus volume.
+    // MusicMix: the automation of the music event's Music Bed group volume and Harmony gain in FMOD/ChordPulse.
+    static readonly float[] MusicMixDb = { -80f, -18f, -9f, -3.5f, 0f };
     static readonly float[] KillChordMixDb = { -80f, -18f, -9f, -3.5f, 0f };
 
-    static float KillChordGain(float mix)
+    public static float MusicMixGain(float mix) => DbCurveGain(MusicMixDb, mix);
+    public static float KillChordGain(float mix) => DbCurveGain(KillChordMixDb, mix);
+
+    // Linear interpolation in dB between evenly spaced points; 0 is silent (not -80 dB).
+    static float DbCurveGain(float[] db, float mix)
     {
         if (mix <= 0f)
             return 0f;
-        float x = Mathf.Clamp01(mix) * (KillChordMixDb.Length - 1);
-        int i = Mathf.Min((int)x, KillChordMixDb.Length - 2);
-        float db = Mathf.Lerp(KillChordMixDb[i], KillChordMixDb[i + 1], x - i);
-        return Mathf.Pow(10f, db / 20f);
+        float x = Mathf.Clamp01(mix) * (db.Length - 1);
+        int i = Mathf.Min((int)x, db.Length - 2);
+        return Mathf.Pow(10f, Mathf.Lerp(db[i], db[i + 1], x - i) / 20f);
     }
 
     /// <summary>Raised after every music-event parameter write that FMOD accepted (capture / diagnostics).</summary>
@@ -756,11 +783,11 @@ public sealed class SoundManager : SingletonBehaviour<SoundManager>, IKillBedSta
     /// <summary>The one place the music event's parameters are written.</summary>
     FMOD.RESULT SetMusicParameter(string name, float value, bool ignoreSeek = false)
     {
-        var result = _music.setParameterByName(name, value, ignoreSeek);
-        // Tension / Danger / Hurt are global since FMOD/Tools/mixer.py (they also drive bus effects): the event rejects
-        // them with ERR_INVALID_PARAM, the Studio system takes them. Banks built before that keep the event write.
-        if (result == FMOD.RESULT.ERR_INVALID_PARAM && Array.IndexOf(GlobalMusicParameters, name) >= 0)
-            result = RuntimeManager.StudioSystem.setParameterByName(name, value, ignoreSeek);
+        // Tension / Danger / Hurt are global since FMOD/Tools/mixer.py (they also drive bus effects, and so reach the
+        // instrument one-shots): the event rejects them, the Studio system takes them.
+        var result = Array.IndexOf(GlobalMusicParameters, name) >= 0
+            ? RuntimeManager.StudioSystem.setParameterByName(name, value, ignoreSeek)
+            : _music.setParameterByName(name, value, ignoreSeek);
         if (result == FMOD.RESULT.OK)
             MusicParameterSet?.Invoke(name, value);
         return result;
