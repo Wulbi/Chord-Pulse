@@ -619,3 +619,77 @@ Restart check (`heavy_seed7_s6_after_b111_r2`): first 4 beats at start -30.09 dB
 -30.12 dBFS, difference -0.03 dB (limit 1 dB), so the unmute works and the return is audible again. (A first take,
 `_s6_after_b111`, restarted without the kills and Combo/Tension of the heavy scenario and read -6.6 dB; the scenario was
 fixed, not the SoundManager, and that take only shows the bug of the capture code.)
+
+## Task 7: global mixer buses and global Tension / Danger / Hurt (`FMOD/Tools/mixer.py`)
+
+`mixer.py` writes `mixer.js` (run after `instruments.js`, before `kill_oneshots.js`; Docs/AdaptiveAudioPlan.md 8-10). It
+owns the global buses, the returns, the ducking and the global mix parameters; `kill_oneshots.js` now only removes the old
+timeline kill chords. Built structure (signal order, every effect before the fader):
+
+```
+bus:/Music Bed            [low-pass (Danger), 3-EQ low band (Hurt), gain (Hurt)] 0 dB   <- music event output
+  bus:/Music Bed/Harmony  [compressor keyed by bus:/Feature -32 dB 4:1 5/180 ms,
+                           compressor keyed by bus:/Kill Chords -20 dB 2:1 5/60 ms] -8 dB
+    return:/Harmony Duck  (no effects, 0 dB) <- pre-fader send of the event's Harmony group (MusicMix gain, send, fader -80)
+bus:/Feature              [key, compressor keyed by bus:/Kill Chords, reverb, limiter] -8 dB
+  return:/Feature Duck    (no effects, 0 dB) <- pre-fader send of the event's Feature group (send, fader -80)
+bus:/Kill Chords          [key, compressor, limiter] -8 dB (unchanged, same GUIDs)
+```
+
+Parameters Tension, Danger, Hurt are now global (same presets and GUIDs, same seek speeds); LegacyLayers (discrete,
+global, 0/1) is new. The -8 dB of the event master moved from the returns to the buses after them, so every compressor sees
+the same input level as before. Differences from the plan's brief: two Harmony compressors instead of one compressor with
+both keys (one compressor would have changed the Feature duck from -32 dB 4:1 180 ms to the kill duck's -20 dB 2:1 60 ms);
+the event's Harmony group keeps its MusicMix gain (MusicMix stays an event parameter until it moves to a bus volume).
+
+### Feasibility (on a copy of the project, FMOD Studio 2.02.35 CLI, then its bank loaded in a separate NRT Studio system in the Editor)
+
+- (a) A return's `output` set by script to a group bus: accepted (`return.output = bus`), path of the bus
+  `bus:/Music Bed/Harmony`. At runtime the returns are no longer found as `bus:/Harmony Duck` / `bus:/Feature Duck`
+  (`ERR_EVENT_NOTFOUND`: a return is addressed below the bus it feeds), so `SoundManager.TailBuses` and the `duck` scenario
+  now use `bus:/Feature` and `bus:/Music Bed/Harmony`.
+- (b) `GameParameter.isGlobal = true` on the event-local presets keeps every automation curve (4 Tension curves on the
+  event tracks, points unchanged) and the event's proxy; the bank builds. At runtime the event lists them as
+  `READONLY, GLOBAL`: `EventInstance.setParameterByName("Tension")` returns `ERR_INVALID_PARAM`, so
+  `SoundManager.SetMusicParameter` now writes Tension / Danger / Hurt to the Studio system when the event rejects them
+  (old banks keep the event write). Reading the final value through the event still works (`getParameterByName` final
+  0.6 after a system write of 0.6); Hurt's snap-to-1-then-seek still works (1 -> 0.59 after 256 ms at 1.6/s).
+- Bus -> bus sidechain between global group buses (the README's earlier negative result was bus -> in-event compressor):
+  works at runtime. Both Harmony compressors and the Feature compressor have a `SEND_SIDECHAIN` input. Metered in the NRT
+  system: kill-keyed compressor out - in 0.00 dB with music only, mean -7.1 dB (input meter includes the key) with loud
+  Marimba one-shots on bus:/Kill Chords, back to -0.1 dB after; Feature-keyed compressor 0.00 dB with FeatureLoop 0 and
+  mean -2.0 / min -10 dB with FeatureLoop 1.
+- Discrete global parameter: Studio's maximum is one past the last value. LegacyLayers built with maximum 1 reported
+  maximum 0 at runtime and clamped a write of 1 to 0; with maximum 2 it takes 0 and 1. `mixer.py` uses 0..2.
+- Running the full generator order on the copy (`feature_loops`, `bed_tension`, `bed_variation`, `bed_combo`, `bed_style`,
+  `instruments`, `mixer`, `kill_oneshots`, `mixer`): `mixer.js` removed the 6 effects the older scripts re-create in the
+  event (Music Bed Danger / Hurt, Feature reverb / key / limiter), re-added the Feature send, and the final run logged
+  `created 0, updated 0, added 0, removed 0`. `feature_loops.py` now tolerates the missing in-event Harmony compressor.
+
+Idempotence on the real project: second `mixer.js` run `created 0, updated 0, added 0, removed 0`, `kill_oneshots.js`
+"nothing to do", `instruments.js` `moved 0, updated 0, added 0, removed 0`, Metadata byte-identical to the first run.
+
+### Before / after (Editor, seed 7, 128 beats, every take `stalls >100 ms after the first beat 0`)
+
+| take | Studio update avg / max | Core dsp avg / max | one-shots started / late / dropped / cancelled |
+|---|---:|---:|---|
+| baseline_seed7_s7_before | 6.06 / 81.75 | 1.69 / 2.65 | 288 / 0 / 0 / 0 |
+| baseline_seed7_s7_after | 6.08 / 80.27 | 1.71 / 2.80 | 288 / 0 / 0 / 0 |
+| heavy_seed7_s7_before | 6.82 / 83.32 | 5.37 / 6.88 | 3069 / 0 / 0 / 0 |
+| heavy_seed7_s7_after | 7.73 / 81.60 | 5.37 / 6.85 | 3045 / 0 / 0 / 0 |
+| duck_seed7_s7_before | 8.03 / 81.52 | 1.76 / 2.87 | 288 / 0 / 9 / 0 |
+| duck_seed7_s7_after | 7.51 / 81.45 | 1.75 / 2.86 | 288 / 0 / 0 / 0 |
+| duck_seed7_s7_before_nokills | 8.20 / 86.47 | 0.93 / 1.87 | 0 |
+| duck_seed7_s7_after_nokills | 8.15 / 87.08 | 0.86 / 1.50 | 0 |
+
+`rms --compare` (after vs before, 4-beat windows): baseline max |diff| 0.17 dB, heavy max 0.69 dB (window 24, beat 96,
+flagged `?`), duck 0.16 dB, duck nokills 0.53 dB; no window over 1 dB. heavy's Tension 0.8 write was accepted (`.params.csv`).
+
+Ducking (`duck` vs `duck ... nokills`, least-squares gain per 20 ms bin over the 375 ms after each chord beat, chords on
+beat 4k+1, segments aligned by cross-correlation): median of the per-chord means -3.56 dB before, -3.27 dB after (mean over
+all bins -3.76 / -3.26 dB; the landing chords 49 and 81 and a few outliers are in those means). The `duck` scenario now
+meters the kill-keyed compressor of bus:/Music Bed/Harmony and mutes bus:/Feature.
+
+Not explained: heavy after started 24 fewer one-shots (3045) than before (3069, also the Task 5b count) with 0 late /
+dropped / cancelled in both; levels agree within 0.7 dB. The 9 backend drops in `duck_seed7_s7_before` are the known
+jump-landing drops.
