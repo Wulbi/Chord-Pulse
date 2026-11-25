@@ -76,10 +76,16 @@ def write_wav(rel, samples):
 CLICK_3K_RMS_DB = round(short_term_rms_db(click_samples(3000)), 1)
 
 
+# Buses the click event exists on: Kill Chords (Task 3 spike) and one per routing kind of the pattern layers (Task 12
+# follow-up: the one-shot latency is measured per bus with CaptureScenario.spikeTarget).
+BUSES = ["Kill Chords", "Music Bed/Layers", "Music Bed/Layers/Bass", "Music Bed/Harmony", "Music Bed/Harmony/Combo Pad"]
+
+
 def register(lib):
-    """instruments.py layer: one note (MIDI 72) of the 3 kHz click; onset 0."""
-    lib.add("SpikeClick", [(REL_3K, 72, CLICK_3K_RMS_DB, 0.0)], 8, bus="Kill Chords")
-    lib.need("SpikeClick", "Kill Chords", 72)
+    """instruments.py layer: one note (MIDI 72) of the 3 kHz click on each of BUSES; onset 0."""
+    for bus in BUSES:
+        lib.add("SpikeClick", [(REL_3K, 72, CLICK_3K_RMS_DB, 0.0)], 8, bus=bus)
+        lib.need("SpikeClick", bus, 72)
 
 
 def beat_times():

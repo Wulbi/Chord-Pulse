@@ -107,6 +107,10 @@ public static class InstrumentTable
         if (instrument == Instrument.SineSub && bus == OutputBus.MusicBed) return "event:/Inst/MusicBed/SineSub";
         if (instrument == Instrument.SineSub && bus == OutputBus.TensionSub) return "event:/Inst/TensionSub/SineSub";
         if (instrument == Instrument.SpikeClick && bus == OutputBus.KillChords) return "event:/Inst/KillChords/SpikeClick";
+        if (instrument == Instrument.SpikeClick && bus == OutputBus.Harmony) return "event:/Inst/Harmony/SpikeClick";
+        if (instrument == Instrument.SpikeClick && bus == OutputBus.ComboPad) return "event:/Inst/ComboPad/SpikeClick";
+        if (instrument == Instrument.SpikeClick && bus == OutputBus.MusicBed) return "event:/Inst/MusicBed/SpikeClick";
+        if (instrument == Instrument.SpikeClick && bus == OutputBus.Bass) return "event:/Inst/Bass/SpikeClick";
         if (instrument == Instrument.Strings && bus == OutputBus.TensionStrings) return "event:/Inst/TensionStrings/Strings";
         if (instrument == Instrument.Sub && bus == OutputBus.KillChords) return "event:/Inst/KillChords/Sub";
         if (instrument == Instrument.Vibes && bus == OutputBus.KillChords) return "event:/Inst/KillChords/Vibes";
@@ -601,6 +605,38 @@ public static class InstrumentTable
             }
             return false;
         }
+        if (instrument == Instrument.SpikeClick && bus == OutputBus.Harmony)
+        {
+            switch (midi)
+            {
+                case 72: return true;
+            }
+            return false;
+        }
+        if (instrument == Instrument.SpikeClick && bus == OutputBus.ComboPad)
+        {
+            switch (midi)
+            {
+                case 72: return true;
+            }
+            return false;
+        }
+        if (instrument == Instrument.SpikeClick && bus == OutputBus.MusicBed)
+        {
+            switch (midi)
+            {
+                case 72: return true;
+            }
+            return false;
+        }
+        if (instrument == Instrument.SpikeClick && bus == OutputBus.Bass)
+        {
+            switch (midi)
+            {
+                case 72: return true;
+            }
+            return false;
+        }
         if (instrument == Instrument.Strings && bus == OutputBus.TensionStrings)
         {
             switch (midi)
@@ -686,10 +722,71 @@ public static class InstrumentTable
         if (instrument == Instrument.SineSub && bus == OutputBus.MusicBed) return 0.005;
         if (instrument == Instrument.SineSub && bus == OutputBus.TensionSub) return 0.005;
         if (instrument == Instrument.SpikeClick && bus == OutputBus.KillChords) return 0.12;
+        if (instrument == Instrument.SpikeClick && bus == OutputBus.Harmony) return 0.005;
+        if (instrument == Instrument.SpikeClick && bus == OutputBus.ComboPad) return 0.005;
+        if (instrument == Instrument.SpikeClick && bus == OutputBus.MusicBed) return 0.005;
+        if (instrument == Instrument.SpikeClick && bus == OutputBus.Bass) return 0.005;
         if (instrument == Instrument.Strings && bus == OutputBus.TensionStrings) return 0.005;
         if (instrument == Instrument.Sub && bus == OutputBus.KillChords) return 0.12;
         if (instrument == Instrument.Vibes && bus == OutputBus.KillChords) return 0.12;
         return 0.0;
+    }
+
+    /// <summary>
+    /// Mixer blocks the event's voice starts after its channel group's delay start (instruments.MULTI_SOUND_VOICE_DELAY_BLOCKS:
+    /// events with more than one sound); 0 if the combination does not exist.
+    /// </summary>
+    public static int VoiceDelayBlocks(Instrument instrument, OutputBus bus)
+    {
+        if (instrument == Instrument.Acid && bus == OutputBus.TensionAcid) return 1;
+        if (instrument == Instrument.Bass && bus == OutputBus.KillChords) return 1;
+        if (instrument == Instrument.Bass && bus == OutputBus.Bass) return 1;
+        if (instrument == Instrument.BassEnv && bus == OutputBus.Bass) return 1;
+        if (instrument == Instrument.Bells && bus == OutputBus.KillChords) return 1;
+        if (instrument == Instrument.Bells && bus == OutputBus.Harmony) return 1;
+        if (instrument == Instrument.Bells && bus == OutputBus.DreamyBells) return 1;
+        if (instrument == Instrument.Brass && bus == OutputBus.KillChords) return 1;
+        if (instrument == Instrument.Choir && bus == OutputBus.DreamyChoir) return 1;
+        if (instrument == Instrument.Clav && bus == OutputBus.KillChords) return 1;
+        if (instrument == Instrument.ClavHigh && bus == OutputBus.FunkKeys) return 1;
+        if (instrument == Instrument.Drums && bus == OutputBus.MusicBed) return 1;
+        if (instrument == Instrument.Drums && bus == OutputBus.LatinPerc) return 1;
+        if (instrument == Instrument.Glass && bus == OutputBus.KillChords) return 1;
+        if (instrument == Instrument.GlassPad && bus == OutputBus.ComboPad) return 1;
+        if (instrument == Instrument.Glock && bus == OutputBus.KillChords) return 1;
+        if (instrument == Instrument.Guitar && bus == OutputBus.KillChords) return 1;
+        if (instrument == Instrument.Guitar && bus == OutputBus.FunkGuitar) return 1;
+        if (instrument == Instrument.Harp && bus == OutputBus.KillChords) return 1;
+        if (instrument == Instrument.Marimba && bus == OutputBus.KillChords) return 1;
+        if (instrument == Instrument.Marimba && bus == OutputBus.LatinMarimba) return 1;
+        if (instrument == Instrument.OrigBlue && bus == OutputBus.KillChords) return 1;
+        if (instrument == Instrument.OrigRed && bus == OutputBus.KillChords) return 1;
+        if (instrument == Instrument.OrigYellow && bus == OutputBus.KillChords) return 1;
+        if (instrument == Instrument.Pluck && bus == OutputBus.Harmony) return 1;
+        if (instrument == Instrument.Rubber && bus == OutputBus.Bass) return 1;
+        if (instrument == Instrument.SineSub && bus == OutputBus.MusicBed) return 1;
+        if (instrument == Instrument.SineSub && bus == OutputBus.TensionSub) return 1;
+        if (instrument == Instrument.Strings && bus == OutputBus.TensionStrings) return 1;
+        if (instrument == Instrument.Sub && bus == OutputBus.KillChords) return 1;
+        if (instrument == Instrument.Vibes && bus == OutputBus.KillChords) return 1;
+        return 0;
+    }
+
+    /// <summary>Mixer blocks a note on this bus sounds after its beat, like the legacy layers of its family
+    /// (instruments.PATH_DELAY_BLOCKS: the Harmony send / return).</summary>
+    public static int PathDelayBlocks(OutputBus bus)
+    {
+        switch (bus)
+        {
+            case OutputBus.Harmony: return 1;
+            case OutputBus.ComboPad: return 1;
+            case OutputBus.LatinMarimba: return 1;
+            case OutputBus.FunkKeys: return 1;
+            case OutputBus.FunkGuitar: return 1;
+            case OutputBus.DreamyChoir: return 1;
+            case OutputBus.DreamyBells: return 1;
+        }
+        return 0;
     }
 
     /// <summary>Seconds from the sample start to its attack, after pitch shifting; 0 if the note is not in the library.</summary>

@@ -49,6 +49,9 @@ public sealed class CaptureScenario : MonoBehaviour
     [SerializeField] long scheduleOffsetSamples = OneShotScheduler.DefaultScheduleOffsetSamples;
     [Tooltip("Beats with a SpikeClick scheduled (1 .. this). Even beats are scheduled 1 beat ahead, odd beats 0.3 beat ahead.")]
     [SerializeField] int spikeBeats = 64;
+    [Tooltip("What spike schedules on its beats: Instrument:OutputBus:MIDI (InstrumentTable). Default the 3 kHz click on " +
+             "Kill Chords; e.g. SpikeClick:MusicBed:72 or Drums:MusicBed:42 measures that routing's latency.")]
+    [SerializeField] string spikeTarget = "SpikeClick:KillChords:72";
     [Tooltip("Trigger the 0.3-beat-lead clicks from the beat clock's DSP time instead of SoundManager.BeatPosition, which " +
              "stalls at anchor + 0.999 beat while a jump landing's beat callback is late (Task 5 take spike_seed33_task5).")]
     [SerializeField] bool shortLeadOnDsp;
@@ -453,7 +456,11 @@ public sealed class CaptureScenario : MonoBehaviour
         var clock = _conductor.Clock;
         clock.DspAt(beat, out ulong target);
         ulong now = _backend.NowDsp;
-        bool ok = _scheduler.Schedule(new OneShotNote(Instrument.SpikeClick, OutputBus.KillChords, 72, beat, 0.25, 0.0, 0f, 0.0), this);
+        var t = spikeTarget.Split(':');
+        var inst = (Instrument)Enum.Parse(typeof(Instrument), t[0].Trim());
+        int midi = int.Parse(t[2].Trim(), CultureInfo.InvariantCulture);
+        bool ok = _scheduler.Schedule(new OneShotNote(inst, (OutputBus)Enum.Parse(typeof(OutputBus), t[1].Trim()), midi, beat,
+            inst == Instrument.SpikeClick ? 0.25 : 0.0, 0.0, 0f, InstrumentTable.OnsetSeconds(inst, midi)), this);
         _spikeLog.Add(string.Format(CultureInfo.InvariantCulture, "{0},{1},{2},{3},{4},{5}",
             beat, lead, ok ? 1 : 0, target, clock.AnchorBeat, (long)target - (long)now));
     }

@@ -47,6 +47,23 @@ VOLUME_MIN, VOLUME_MAX = -60.0, 10.0   # same clamp as the old kill_voices gener
 # (Task 11, offline render of the real banks: funk keys -44 -> -90 dBFS within the last ~5 ms; in game a 73 ms funk note
 # sounded 80 ms on the timeline, and 95 ms as a one-shot with the event's 20 ms fade: +1.2 dB). The events keep their ADSR.
 PATTERN_STOP_FADE_MS = 5
+# Start latency (Task 12 follow-up, spike clicks against the timeline's beat clicks, FMOD 2.02.35, 1024-sample blocks):
+# an instrument event with more than one sound (the Note condition picks one) starts its voice one mixer block after its
+# channel group's delay start; with one sound it starts on it (3 kHz click, same file / bus / ADSR: 1 sound +0.22 ms,
+# 8 sounds +21.71 ms). -> InstrumentTable.VoiceDelayBlocks; the backend starts the group that much earlier.
+MULTI_SOUND_VOICE_DELAY_BLOCKS = 1
+# The legacy Harmony layers reach the mixer one block late (their in-event group goes through a send to
+# return:/Harmony Duck; legacy pluck +21.77 ms after the beat click, legacy drums -0.41 ms). Harmony one-shots keep that
+# timing (legacy equivalence): bus path prefix -> blocks. -> InstrumentTable.PathDelayBlocks
+PATH_DELAY_BLOCKS = {"Music Bed/Harmony": 1}
+
+
+def voice_delay_blocks(inst):
+    return MULTI_SOUND_VOICE_DELAY_BLOCKS if len(inst["notes"]) > 1 else 0
+
+
+def path_delay_blocks(bus):
+    return max([b for p, b in PATH_DELAY_BLOCKS.items() if bus == p or bus.startswith(p + "/")] or [0])
 
 
 def stop_fade_ms(inst):
@@ -381,6 +398,22 @@ def cs_text(insts):
     for i in insts:
         lines.append(f"        if (instrument == Instrument.{i['name']} && bus == OutputBus.{i['busFolder']}) return {stop_fade_ms(i) / 1000.0!r};")
     lines += ["        return 0.0;", "    }", "",
+              "    /// <summary>",
+              "    /// Mixer blocks the event's voice starts after its channel group's delay start (instruments.MULTI_SOUND_VOICE_DELAY_BLOCKS:",
+              "    /// events with more than one sound); 0 if the combination does not exist.",
+              "    /// </summary>",
+              "    public static int VoiceDelayBlocks(Instrument instrument, OutputBus bus)", "    {"]
+    for i in insts:
+        if voice_delay_blocks(i):
+            lines.append(f"        if (instrument == Instrument.{i['name']} && bus == OutputBus.{i['busFolder']}) return {voice_delay_blocks(i)};")
+    lines += ["        return 0;", "    }", "",
+              "    /// <summary>Mixer blocks a note on this bus sounds after its beat, like the legacy layers of its family",
+              "    /// (instruments.PATH_DELAY_BLOCKS: the Harmony send / return).</summary>",
+              "    public static int PathDelayBlocks(OutputBus bus)", "    {", "        switch (bus)", "        {"]
+    for member, path in mixer.OUTPUT_BUSES:
+        if path_delay_blocks(path):
+            lines.append(f"            case OutputBus.{member}: return {path_delay_blocks(path)};")
+    lines += ["        }", "        return 0;", "    }", "",
               "    /// <summary>Seconds from the sample start to its attack, after pitch shifting; 0 if the note is not in the library.</summary>",
               "    public static double OnsetSeconds(Instrument instrument, int midi)", "    {",
               "        switch (instrument)", "        {"]

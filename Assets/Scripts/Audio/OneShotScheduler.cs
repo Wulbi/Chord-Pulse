@@ -108,6 +108,16 @@ public sealed class OneShotScheduler
     /// </summary>
     public long ScheduleOffsetSamples { get; set; } = DefaultScheduleOffsetSamples;
 
+    /// <summary>
+    /// A note already handed to the backend is re-timed (cancelled and handed over again) when the clock now puts its start
+    /// more than this many samples (2 ms at 48 kHz) from the start it was handed over with. Task 12 follow-up: core drums
+    /// handed over 4 beats ahead from a pre-landing anchor sounded 12-16 ms late four beats after a jump landing.
+    /// </summary>
+    public const long RetimeThresholdSamples = 96;
+
+    /// <summary>Notes starting sooner than this (4 mixer blocks) keep their time: a new instance needs that long to arm.</summary>
+    public const long RetimeMinLeadSamples = 4096;
+
     /// <summary>Notes that were never started because their start time had already passed (never played late).</summary>
     public int LateCount { get; private set; }
 
@@ -165,8 +175,9 @@ public sealed class OneShotScheduler
 
     /// <summary>
     /// Hands waiting notes whose start is at most <see cref="DispatchWindowBeats"/> away to the backend, drops waiting
-    /// notes whose start has already passed (<see cref="LateCount"/>), and releases handles whose stop time has passed
-    /// (zero-length notes: whose backend reports them finished).
+    /// notes whose start has already passed (<see cref="LateCount"/>), releases handles whose stop time has passed
+    /// (zero-length notes: whose backend reports them finished), and re-times handed-over notes the clock has moved
+    /// (<see cref="RetimeThresholdSamples"/>).
     /// </summary>
     public void Update()
     {
@@ -181,8 +192,11 @@ public sealed class OneShotScheduler
                 {
                     _backend.Release(note.Handle);
                     _notes.RemoveAt(i);
+                    continue;
                 }
-                continue;
+                if (!NeedsRetime(note, now))
+                    continue;
+                Cancel(note, now); // handed over again below with the clock as it is now
             }
             var result = Dispatch(note, now);
             if (result == DispatchResult.Late || result == DispatchResult.Failed)
@@ -270,6 +284,16 @@ public sealed class OneShotScheduler
         return DispatchResult.Sent;
     }
 
+    // A handed-over note that has not started yet, ahead of the clock's newest anchor, whose start the clock now puts more
+    // than RetimeThresholdSamples away.
+    bool NeedsRetime(Note note, ulong now)
+    {
+        if (!_clock.HasAnchor || note.Beat < _clock.AnchorBeat || (long)note.Start - (long)now <= RetimeMinLeadSamples ||
+            !Times(note, out long start, out _, out _))
+            return false;
+        return Math.Abs(start - (long)note.Start) > RetimeThresholdSamples;
+    }
+
     void Cancel(Note note, ulong now)
     {
         _backend.Stop(note.Handle, now);
@@ -322,12 +346,21 @@ public static class OneShotArming
         stop > 0 && now < stop && delayEnd != stop + releaseSamples;
 
     /// <summary>
-    /// Stop point in the group's delay clock. The voice starts one mixer block after its group's delay start (the start
-    /// times are computed so the attack still lands on the beat), while the delay end is exact: without this block a
-    /// note sounded one block (21 ms) shorter than its length (Task 11, funk keys 59 instead of 80 ms). The same on every
-    /// bus, kill chords included (Task 12). 0 = no stop.
+    /// Delay start of a note's channel group for an audible start at <paramref name="start"/>: a multi-sound instrument
+    /// event starts its voice <paramref name="voiceBlocks"/> mixer blocks after the group's delay start, so the group starts
+    /// that much earlier; <paramref name="pathBlocks"/> keeps the whole note as late as the legacy layers of its bus family
+    /// (InstrumentTable.VoiceDelayBlocks / PathDelayBlocks; Task 12 follow-up).
     /// </summary>
-    public static ulong StopAt(ulong stop, ulong blockSamples) => stop == 0 ? 0 : stop + blockSamples;
+    public static ulong DelayStart(ulong start, int voiceBlocks, int pathBlocks, ulong blockSamples) =>
+        (ulong)Math.Max(0L, (long)start + ((long)pathBlocks - voiceBlocks) * (long)blockSamples);
+
+    /// <summary>
+    /// Stop point in the group's delay clock (the delay end is exact, it does not wait for the voice): the stop plus the
+    /// bus family's path delay, so the note keeps its length. 0 = no stop. (Task 11 added one block to every stop because
+    /// the voice started a block late; that block now comes off the start instead.)
+    /// </summary>
+    public static ulong StopAt(ulong stop, int pathBlocks, ulong blockSamples) =>
+        stop == 0 ? 0 : stop + (ulong)Math.Max(0, pathBlocks) * blockSamples;
 }
 
 /// <summary>
@@ -358,6 +391,7 @@ public sealed class FmodOneShotBackend : IOneShotBackend
         public int Frames; // DiagnosticLog only: Update calls before the start was applied
         public int Checks; // DiagnosticLog only
         public ulong ReleaseSamples; // fade after Stop, from this note's own (instrument, bus)
+        public int VoiceBlocks, PathBlocks; // InstrumentTable.VoiceDelayBlocks / PathDelayBlocks of its (instrument, bus)
         public OutputBus Bus; // diagnostics: StartedOn / DroppedOn / NoteDropped
     }
 
@@ -466,7 +500,11 @@ public sealed class FmodOneShotBackend : IOneShotBackend
         if ((uint)bus < 64)
             _startedByBus[(int)bus]++;
         int handle = _next++;
-        _notes[handle] = new Note { Instance = instance, Start = dspStart, ReleaseSamples = _release.SamplesFor(inst, bus, _sampleRate), Bus = bus };
+        _notes[handle] = new Note
+        {
+            Instance = instance, Start = dspStart, ReleaseSamples = _release.SamplesFor(inst, bus, _sampleRate), Bus = bus,
+            VoiceBlocks = InstrumentTable.VoiceDelayBlocks(inst, bus), PathBlocks = InstrumentTable.PathDelayBlocks(bus),
+        };
         DiagnosticLog?.Invoke("start," + handle + "," + NowDsp + "," + dspStart);
         return handle;
     }
@@ -542,7 +580,7 @@ public sealed class FmodOneShotBackend : IOneShotBackend
     {
         ulong stop = StopAt(n);
         ulong end = n.Stop > 0 ? stop + n.ReleaseSamples : 0;
-        if (group.setDelay(n.Start, end, true) != FMOD.RESULT.OK)
+        if (group.setDelay(DelayStart(n), end, true) != FMOD.RESULT.OK)
             return false;
         group.removeFadePoints(0, ulong.MaxValue);
         if (n.Stop > 0)
@@ -553,7 +591,8 @@ public sealed class FmodOneShotBackend : IOneShotBackend
         return true;
     }
 
-    ulong StopAt(in Note n) => OneShotArming.StopAt(n.Stop, _blockSamples);
+    ulong StopAt(in Note n) => OneShotArming.StopAt(n.Stop, n.PathBlocks, _blockSamples);
+    ulong DelayStart(in Note n) => OneShotArming.DelayStart(n.Start, n.VoiceBlocks, n.PathBlocks, _blockSamples);
 
     /// <summary>
     /// Applies start / stop times once each instance's channel group exists, then unpauses it. A note keeps waiting
@@ -600,7 +639,9 @@ public sealed class FmodOneShotBackend : IOneShotBackend
             FMOD.ChannelGroup group = default;
             bool hasGroup = valid && n.Instance.getChannelGroup(out group) == FMOD.RESULT.OK && group.hasHandle();
             n.Frames++;
-            var arm = OneShotArming.Decide(valid, hasGroup, n.Start, now, _blockSamples);
+            // The group's delay must be in place a block before the group itself starts (DelayStart, up to a block before
+            // the audible start).
+            var arm = OneShotArming.Decide(valid, hasGroup, DelayStart(n), now, _blockSamples);
             if (arm == OneShotArm.Wait)
             {
                 _notes[key] = n;

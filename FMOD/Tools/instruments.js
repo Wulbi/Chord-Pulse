@@ -2265,6 +2265,74 @@ var INSTRUMENTS = [
   ]
  },
  {
+  "name": "SpikeClick",
+  "bus": "Music Bed/Harmony",
+  "busFolder": "Harmony",
+  "max": 8,
+  "attack": 1,
+  "release": 120,
+  "notes": [
+   {
+    "midi": 72,
+    "file": "Spike/click_3k.wav",
+    "pitch": 0,
+    "volume": -10.2,
+    "onset": 0.0
+   }
+  ]
+ },
+ {
+  "name": "SpikeClick",
+  "bus": "Music Bed/Harmony/Combo Pad",
+  "busFolder": "ComboPad",
+  "max": 8,
+  "attack": 1,
+  "release": 120,
+  "notes": [
+   {
+    "midi": 72,
+    "file": "Spike/click_3k.wav",
+    "pitch": 0,
+    "volume": -10.2,
+    "onset": 0.0
+   }
+  ]
+ },
+ {
+  "name": "SpikeClick",
+  "bus": "Music Bed/Layers",
+  "busFolder": "MusicBed",
+  "max": 8,
+  "attack": 1,
+  "release": 120,
+  "notes": [
+   {
+    "midi": 72,
+    "file": "Spike/click_3k.wav",
+    "pitch": 0,
+    "volume": -10.2,
+    "onset": 0.0
+   }
+  ]
+ },
+ {
+  "name": "SpikeClick",
+  "bus": "Music Bed/Layers/Bass",
+  "busFolder": "Bass",
+  "max": 8,
+  "attack": 1,
+  "release": 120,
+  "notes": [
+   {
+    "midi": 72,
+    "file": "Spike/click_3k.wav",
+    "pitch": 0,
+    "volume": -10.2,
+    "onset": 0.0
+   }
+  ]
+ },
+ {
   "name": "Strings",
   "bus": "Music Bed/Layers/Tension Strings",
   "busFolder": "TensionStrings",

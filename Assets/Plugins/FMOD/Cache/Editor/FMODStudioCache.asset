@@ -43,12 +43,12 @@ MonoBehaviour:
   Path: FMOD/ChordPulse/Build/Desktop/ChordPulse.bank
   Name: ChordPulse
   StudioPath: bank:/ChordPulse
-  lastModified: 639312106786689619
+  lastModified: 639312164595904368
   FileSizes:
   - Name: Desktop
-    Value: 6774272
+    Value: 6779104
   - Name: HTML5
-    Value: 6774144
+    Value: 6778976
   Exists: 1
 --- !u!114 &-8899148703420884499
 MonoBehaviour:
@@ -517,6 +517,34 @@ MonoBehaviour:
   MinDistance: 1
   MaxDistance: 20
   Length: 2500
+--- !u!114 &-5183991377076292756
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ceb653cd98e289a4e8697a1af55201f2, type: 3}
+  m_Name: event:/Inst/Bass/SpikeClick
+  m_EditorClassIdentifier: FMODUnityEditor::FMODUnity.EditorEventRef
+  Path: event:/Inst/Bass/SpikeClick
+  Guid:
+    Data1: 304068881
+    Data2: 1279842007
+    Data3: 1873955223
+    Data4: -1871335514
+  Banks:
+  - {fileID: -9072669451329646237}
+  IsStream: 0
+  Is3D: 0
+  IsOneShot: 1
+  Parameters:
+  - {fileID: 5393922492583003347}
+  MinDistance: 1
+  MaxDistance: 20
+  Length: 500
 --- !u!114 &-4535451405062758718
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -704,6 +732,30 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: fecb8ef7f94ca804a8ab72049b86782e, type: 3}
   m_Name: parameter:/SineSub/Note
+  m_EditorClassIdentifier: FMODUnityEditor::FMODUnity.EditorParamRef
+  Name: Note
+  StudioPath: 
+  Min: 0
+  Max: 127
+  Default: 0
+  ID:
+    data1: 1425377495
+    data2: 884273564
+  Type: 0
+  IsGlobal: 0
+  Labels: []
+  Exists: 1
+--- !u!114 &-3699274502486547583
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fecb8ef7f94ca804a8ab72049b86782e, type: 3}
+  m_Name: parameter:/SpikeClick/Note
   m_EditorClassIdentifier: FMODUnityEditor::FMODUnity.EditorParamRef
   Name: Note
   StudioPath: 
@@ -1209,6 +1261,34 @@ MonoBehaviour:
   IsGlobal: 0
   Labels: []
   Exists: 1
+--- !u!114 &-471944354014756349
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ceb653cd98e289a4e8697a1af55201f2, type: 3}
+  m_Name: event:/Inst/ComboPad/SpikeClick
+  m_EditorClassIdentifier: FMODUnityEditor::FMODUnity.EditorEventRef
+  Path: event:/Inst/ComboPad/SpikeClick
+  Guid:
+    Data1: 814130341
+    Data2: 1112366272
+    Data3: -993411420
+    Data4: 529345179
+  Banks:
+  - {fileID: -9072669451329646237}
+  IsStream: 0
+  Is3D: 0
+  IsOneShot: 1
+  Parameters:
+  - {fileID: 978370490995730061}
+  MinDistance: 1
+  MaxDistance: 20
+  Length: 500
 --- !u!114 &-420677660931435073
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1335,6 +1415,10 @@ MonoBehaviour:
   - {fileID: -9092102913781615635}
   - {fileID: -1881180457715371069}
   - {fileID: -3020266218715421635}
+  - {fileID: -5183991377076292756}
+  - {fileID: -471944354014756349}
+  - {fileID: 9121928765144397211}
+  - {fileID: 1788865042196728703}
   EditorParameters:
   - {fileID: 3039049200775309885}
   - {fileID: -4441234617737259462}
@@ -1344,7 +1428,7 @@ MonoBehaviour:
   - {fileID: -9072669451329646237}
   StringsBanks:
   - {fileID: 4610869450805227881}
-  cacheTime: 639312106787346380
+  cacheTime: 639312164596540815
   cacheVersion: 131637
 --- !u!114 &417851344225667453
 MonoBehaviour:
@@ -1450,6 +1534,30 @@ MonoBehaviour:
   IsGlobal: 0
   Labels: []
   Exists: 1
+--- !u!114 &978370490995730061
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fecb8ef7f94ca804a8ab72049b86782e, type: 3}
+  m_Name: parameter:/SpikeClick/Note
+  m_EditorClassIdentifier: FMODUnityEditor::FMODUnity.EditorParamRef
+  Name: Note
+  StudioPath: 
+  Min: 0
+  Max: 127
+  Default: 0
+  ID:
+    data1: 1425377495
+    data2: 884273564
+  Type: 0
+  IsGlobal: 0
+  Labels: []
+  Exists: 1
 --- !u!114 &1294274717008230211
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1474,6 +1582,34 @@ MonoBehaviour:
   IsGlobal: 1
   Labels: []
   Exists: 1
+--- !u!114 &1788865042196728703
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ceb653cd98e289a4e8697a1af55201f2, type: 3}
+  m_Name: event:/Inst/Harmony/SpikeClick
+  m_EditorClassIdentifier: FMODUnityEditor::FMODUnity.EditorEventRef
+  Path: event:/Inst/Harmony/SpikeClick
+  Guid:
+    Data1: -1838965544
+    Data2: 1327081518
+    Data3: 2069503628
+    Data4: -564867217
+  Banks:
+  - {fileID: -9072669451329646237}
+  IsStream: 0
+  Is3D: 0
+  IsOneShot: 1
+  Parameters:
+  - {fileID: -3699274502486547583}
+  MinDistance: 1
+  MaxDistance: 20
+  Length: 500
 --- !u!114 &2575213333030892608
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1749,12 +1885,12 @@ MonoBehaviour:
   Path: FMOD/ChordPulse/Build/Desktop/ChordPulse.strings.bank
   Name: ChordPulse.strings
   StudioPath: bank:/ChordPulse.strings
-  lastModified: 639312106787346380
+  lastModified: 639312164596540815
   FileSizes:
   - Name: Desktop
-    Value: 3822
+    Value: 4010
   - Name: HTML5
-    Value: 3822
+    Value: 4010
   Exists: 1
 --- !u!114 &4833843474174468983
 MonoBehaviour:
@@ -1960,6 +2096,30 @@ MonoBehaviour:
   IsGlobal: 0
   Labels: []
   Exists: 1
+--- !u!114 &5393922492583003347
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fecb8ef7f94ca804a8ab72049b86782e, type: 3}
+  m_Name: parameter:/SpikeClick/Note
+  m_EditorClassIdentifier: FMODUnityEditor::FMODUnity.EditorParamRef
+  Name: Note
+  StudioPath: 
+  Min: 0
+  Max: 127
+  Default: 0
+  ID:
+    data1: 1425377495
+    data2: 884273564
+  Type: 0
+  IsGlobal: 0
+  Labels: []
+  Exists: 1
 --- !u!114 &5439069564297189141
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2040,6 +2200,30 @@ MonoBehaviour:
   MinDistance: 1
   MaxDistance: 20
   Length: 14600
+--- !u!114 &6542424570340545675
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fecb8ef7f94ca804a8ab72049b86782e, type: 3}
+  m_Name: parameter:/SpikeClick/Note
+  m_EditorClassIdentifier: FMODUnityEditor::FMODUnity.EditorParamRef
+  Name: Note
+  StudioPath: 
+  Min: 0
+  Max: 127
+  Default: 0
+  ID:
+    data1: 1425377495
+    data2: 884273564
+  Type: 0
+  IsGlobal: 0
+  Labels: []
+  Exists: 1
 --- !u!114 &6551957612089296706
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2344,3 +2528,31 @@ MonoBehaviour:
   IsGlobal: 1
   Labels: []
   Exists: 1
+--- !u!114 &9121928765144397211
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ceb653cd98e289a4e8697a1af55201f2, type: 3}
+  m_Name: event:/Inst/MusicBed/SpikeClick
+  m_EditorClassIdentifier: FMODUnityEditor::FMODUnity.EditorEventRef
+  Path: event:/Inst/MusicBed/SpikeClick
+  Guid:
+    Data1: 990566057
+    Data2: 1077927397
+    Data3: 1287156384
+    Data4: 632302391
+  Banks:
+  - {fileID: -9072669451329646237}
+  IsStream: 0
+  Is3D: 0
+  IsOneShot: 1
+  Parameters:
+  - {fileID: 6542424570340545675}
+  MinDistance: 1
+  MaxDistance: 20
+  Length: 500
