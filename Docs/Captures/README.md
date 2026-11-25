@@ -23,6 +23,8 @@ Scenarios (all start `StartMusic()` with `sectionSeed = seed`, Intensity 0):
 - `spike`: no kills. The scheduling-accuracy test of Task 3 (section "Scheduling spike" below): sets the music's
   `SpikeRef` parameter to 1 (a 1 kHz timeline click on every beat) and schedules an `event:/Inst/SpikeClick` one-shot
   (3 kHz click) on beats 1..64 through `OneShotScheduler`. Record it with seed 33 and `beats` 68.
+  (Since unity-music-clock Task 8 the music event, its `Spike ref` track and `SpikeRef` no longer exist; the clicks are
+  measured against the clock, see "Clock-referenced accuracy" and "Task 8 (unity-music-clock)" below.)
 
 Beat times come from the music conductor's own FMOD-thread stamps, converted to capture frames through a line fitted to
 the mixer-block clock (`AudioCapture.FrameAt`), so they do not depend on Unity's frame rate. The beat clock starts about
@@ -2644,3 +2646,293 @@ Editor, baseline seed 7, 128 beats, `logOneShots`, full mix. Auto refresh was di
   scheduled minus started is 3 in `_r2` and 1 in `_s6c`. Not looked into note by note; no criterion covers it.
 - The take ran on the final banks: the later `mixer.js` run changed nothing, so the banks were not rebuilt after the
   take.
+
+## Task 8 (unity-music-clock): music event deleted, landing special case removed, final measurement
+
+What changed (commits on `main`):
+- `954ce41` **Landing special case removed.** `KillChordPlanner.PostBoundaryBeats` / `PostBoundaryDispatchBeats` are gone;
+  `DispatchWindow(beat)` returns `OneShotScheduler.DispatchWindowBeats` (0.5) on every beat. This was R15 of the old plan.
+- `0fe7bce` **`event:/Music/ChordPulseGame` deleted.** `FMOD/Tools/remove_music_event.py` -> `.js`:
+  - It counts the event's `SingleSound` notes per track and stops without deleting anything if a note sits outside
+    `Spike ref`.
+  - It deletes the event, then the presets `NextSection` and `SpikeRef` if no proxy, condition or curve uses them any more.
+  - A second run logs "nothing to do".
+  - `spike_click.py` no longer generates the `Spike ref` track (`spike_click.js` deleted); the `SpikeClick` instrument
+    stays.
+  - `instruments.js` / `kill_oneshots.js` no longer require the event; `mixer.js` no longer routes it.
+- `7eb0e3c` `analyze_capture.py spike --xcorr-window-ms W` (per-bus onset; see "Per-bus onset" below).
+
+Settings for every take: Editor unless stated, `logOneShots`, the scenario's own kills, full mix,
+`scheduleOffsetSamples` 0 (`DefaultScheduleOffsetSamples`, unchanged, ruling C-5).
+- Auto refresh was disallowed around each Editor take, with one `DisallowAutoRefresh` before Play mode and one
+  `AllowAutoRefresh` after it (17 / 17).
+- The standalone builds ran after the last take, before that take's `AllowAutoRefresh`.
+- No Editor query was made while a take was recording, with one exception: the arming call of the pause take (see Step 2).
+- Lengths: `styles` 256 beats (`stylesWithBed`, intensity 3), `features` 208, `fever` 144. These are Task 15a's settings,
+  so that the same landings are covered. Every other take is seed 7 / 128 beats or seed 33 / 68 beats, except the three
+  Danger / Hurt takes (seed 7, 64 beats, as in stages 3-8 Task 8).
+
+### Takes (every take recorded in this task)
+
+ONESHOTS = started / late / dropped / cancelled (`.cpu.txt`). RESYNCED and `CAPTURE dsp-to-frame mismatches` are 0 in
+every take. `.losses.csv` is empty in every take except `_pause3s_r2`.
+
+| take | when | unforced stalls | Studio avg / max % | Core dsp avg / max % | ONESHOTS | valid |
+|---|---|---:|---|---|---|---|
+| `heavy_seed33_s8c_step1` | Step 1 (old banks) | 0 | 1.29 / 1.72 | 4.83 / 6.34 | 2383 / 0 / 0 / 35 | yes |
+| `baseline_seed7_s8c_pause3s` | Step 2 (old banks) | 0 | 0.66 / 0.96 | 1.17 / 2.45 | 1413 / 0 / 0 / 10 | yes, but **no pause happened** (see Step 2) |
+| `baseline_seed7_s8c_pause3s_r2` | Step 2 (old banks) | **2** (3530 ms at beat 23.7, 3006 ms at 46.1 = the pause) | 0.77 / 1.16 | 0.84 / 1.63 | 1330 / 18 / 3 / 6 | **no** for the criteria; it is the pause check |
+| `baseline_seed7_s8c` | Step 4 | 0 | 0.69 / 1.02 | 1.21 / 2.65 | 1413 / 0 / 0 / 6 | yes |
+| `heavy_seed7_s8c` | Step 4 | 0 | 1.44 / 1.97 | 5.13 / 6.51 | 4683 / 0 / 0 / 12 | yes |
+| `heavy_seed33_s8c` | Step 4 | 0 | 1.25 / 1.75 | 4.73 / 6.14 | 2383 / 0 / 0 / 35 | yes |
+| `styles_seed7_s8c` | Step 4 | 0 | 1.11 / 1.54 | 3.36 / 4.84 | 5418 / 0 / 0 / 25 | yes |
+| `features_seed7_s8c` | Step 4 | 0 | 0.64 / 0.94 | 1.38 / 2.40 | 2104 / 0 / 0 / 6 | yes |
+| `fever_seed7_s8c` | Step 4 | 0 | 0.87 / 1.27 | 2.09 / 3.36 | 2747 / 0 / 0 / 19 | yes |
+| `spike_seed33_s8c` (Kill Chords) | Step 4 | 0 | 0.55 / 0.77 | 0.92 / 1.84 | 559 / 0 / 0 / 10 | yes |
+| `spike_seed33_s8c_bus_musicbed` | per-bus onset | 0 | 0.53 / 0.73 | 0.78 / 1.66 | 559 / 0 / 0 / 10 | yes |
+| `spike_seed33_s8c_bus_harmony` | per-bus onset | 0 | 0.58 / 0.80 | 0.84 / 1.89 | 559 / 0 / 0 / 10 | yes |
+| `spike_seed33_s8c_bus_combopad` | per-bus onset | 0 | 0.56 / 0.73 | 0.83 / 1.80 | 559 / 0 / 0 / 10 | yes |
+| `spike_seed33_s8c_bus_bass` | per-bus onset | 0 | 0.58 / 0.81 | 0.83 / 1.91 | 559 / 0 / 0 / 10 | yes |
+| `baseline_seed7_s8c_b64` | Danger / Hurt reference | 0 | 0.60 / 1.00 | 1.07 / 2.50 | 615 / 0 / 0 / 6 | yes |
+| `baseline_seed7_s8c_b64_danger` | `forceDanger` | 0 | 0.58 / 0.86 | 1.08 / 2.27 | 615 / 0 / 0 / 6 | yes |
+| `baseline_seed7_s8c_b64_hurt8` | `hurtEveryBeats` 8 | 0 | 0.58 / 0.84 | 1.07 / 2.28 | 615 / 0 / 0 / 6 | yes |
+| `baseline_seed7_s8c_standalone` | standalone, 60 fps | 0 | 0.51 / 0.94 | 1.11 / 2.38 | 1417 / 0 / 0 / 10 | yes |
+| `heavy_seed7_s8c_standalone` | standalone, 60 fps | 0 | 1.05 / 1.40 | 2.70 / 3.81 | 4678 / 0 / 0 / 7 | yes |
+
+The standalone takes are in `Builds/Capture/<scenario>_s8c/Docs/Captures/` (git-ignored). They were built the Task 15a way:
+- a temporary copy of `AudioCapture.unity` with the fields set in memory (`targetFps` 60, `logOneShots`);
+- `BuildPipeline.BuildPlayer` with `BuildOptions.Development`, StandaloneWindows64;
+- the two copies and their `.meta` deleted afterwards.
+
+The ProjectSettings MD5s were identical before and after. The players were closed after their `.cpu.txt` appeared.
+
+### Step 1: landing special case removed (heavy seed 33, kills on every beat)
+
+`heavy_seed33_s8c_step1`, recorded on the old banks right after the change:
+- ONESHOTS late 0, dropped 0 over the whole take, so also 0 in the 4 beats after each of the boundaries 16 / 32 / 48 / 64.
+- `.losses.csv` is empty.
+- `landings`: delay 0 at every boundary, no gaps.
+- **Met.** The special case stays deleted.
+
+EditMode (TestRunnerApi): 183 / 183 after the change.
+- `DispatchWindow_PhraseLanding` now expects 0.5 on beats 0, 1, 2, 15-18, 31-33, 64, 65 and 127.
+- `LandingBeats_UseWideDispatchWindow` was renamed `LandingBeats_UseDefaultDispatchWindow`. At now = 15.0 no beat-16 note
+  is handed over; at 15.6 they are.
+- `Invalidate_RestatesNotStartedEarlyOnsetNotes_Once` failed with the change, because it relied on the wide window to
+  have the beat-16 notes handed over at 15.0. It now dispatches them at 15.5 before invalidating.
+
+### Step 2: situations that must not break
+
+**Editor pause 3 s, then resume (automated).** Take `baseline_seed7_s8c_pause3s_r2`. An `EditorApplication.update`
+callback set `EditorApplication.isPaused = true` when the visual beat passed 40.3, and set it back to false 3.0 s later.
+- First attempt, `baseline_seed7_s8c_pause3s`: the callback was registered before Play mode and was lost with the domain
+  reload when Play mode started, so no pause happened. Otherwise it is an ordinary valid baseline take.
+- `_r2`: the callback was registered by one `execute_code` call after Play mode had started. The call ran at visual beat
+  17.38, Unity frame 2661.
+  - The take's unforced 3530 ms stall is that call's frame. `.frames.csv` logs it at its end, beat 23.73, and
+    23.73 - 3.53 s x 108 / 60 = 17.38. This is the same effect as in Task 7's invalid spike take.
+  - Its losses are on the first frame after it: 5 late, note beats 18.0-18.5; 2 dropped, 23.75 / 23.92.
+
+What the pause did, from the callback's own log (master DSP clock read at pause and at resume):
+- **The mixer kept running during the pause.** DSP clock 1,089,536 at pause and 1,233,920 at resume = 144,384 samples
+  = 3.008 s.
+- **No burst of delayed notes.**
+  - Late 18 and dropped 3. On the first frame after the resume (`.losses.csv`, beat_now 46.103) there were 14 losses:
+    - 9 kill notes, beat 41.0, late;
+    - 5 pattern notes, beats 40.75-41.5: 4 late, and 1 dropped by the backend because its start passed during the pause.
+
+    The other 7 are the losses of the earlier stall.
+  - Late notes are not started.
+  - The first frame after the resume started 13 notes. The take's busiest frames start 13-14. The smallest lead among
+    those 13 was 9792 samples. Over the whole take, 0 of 1330 starts were handed over at or after their start sample.
+  - `landings --at-beats 40.3,46.103`: after 40.3, silence 20+495 ms (nothing was handed over past 40.8). After the
+    resume point, no gap (only rests also present 4 beats earlier).
+- **Screen beat against the sound.**
+  - The visual beat was 40.3044 at the pause and 46.1148 on the first frame after the resume.
+  - The clock beat of the resume DSP sample is 46.103 (`.beats.csv`: beat 46 = DSP 1,231,352, 24,828 samples a beat).
+  - `frames`: backward 0, frames over 0.05 beat 0, max deviation 0.0066 beat. This includes the 3.006 s pause frame,
+    which advanced 5.81 beats as `dt * bpm / 60` predicts.
+- `Resynced`: 0.
+
+**Pending user check** (not done by me; each needs a person at the machine):
+
+| check | procedure | what to look for |
+|---|---|---|
+| focus loss 3 s, Run In Background off | Project Settings > Player > Resolution and Presentation > Run In Background off (do not commit the change). Play `ChordPulsePrototype`, wait for music, click another window for 3 s, click back. | No burst of notes at return. Screen pulse and kick agree within a beat. Console shows no exception. `Resynced` may or may not log. |
+| the same, Run In Background on | as above with the box on | as above |
+| Windows output-device switch while playing | Play, then change the default output device (Windows sound settings, or unplug headphones) | No exception, music continues within one bar from the next bar's first beat, console shows `Resynced` or a restart log |
+| game over, then immediate restart, 3 times | Play, lose all lives, restart at once; repeat 3 times | No leftover notes after game over, the first beat of the new run is normal (kick on beat 0/1, no doubled chords) |
+| Step 5 manual Play | Play `ChordPulsePrototype` for a few minutes: a tempo change, fever entry and exit, a breathing phrase, game over and restart | No dropouts, no leftover notes |
+
+No automated "game over -> restart" observation was made.
+
+### Step 3: FMOD
+
+Before the change, `Metadata`, `ChordPulse.fspro`, `Build`, both StreamingAssets banks and `FMODStudioCache.asset` were
+copied to the scratch folder.
+
+Run 1 of `remove_music_event.js`:
+- The event's 128 `SingleSound` notes were all on `Spike ref`. Counted in the pre-change event XML, the only track with
+  notes; the script would have thrown otherwise. The script's per-track log lines of run 1 were cut off in my terminal
+  output.
+- It deleted the event and both presets, then saved.
+- Metadata: 3 files deleted (the event XML, the `NextSection` and `SpikeRef` presets), no file modified.
+
+Reference check before deleting (`python -I remove_music_event.py`, every Metadata file searched for the preset and
+GameParameter ids): `NextSection` and `SpikeRef` were used by nothing outside the music event's XML. No Unity script
+reads either parameter.
+
+Afterwards:
+- Run 2: "not in the project ... nothing to do".
+- On the event-less project, `instruments.js`, `kill_oneshots.js` and `mixer.js` change nothing: "moved 0, updated 0,
+  added 0, removed 0", "nothing to do", "nothing to do", and Metadata is unchanged. `*.g.cs` and `click_3k.wav` are
+  unchanged.
+- `-build` was run as a separate command. Desktop `ChordPulse.bank` went from 2,748,320 to 2,708,160 B and
+  `strings.bank` from 4,354 to 4,214 B. The banks were copied to `Assets/StreamingAssets`.
+- The FMOD cache dropped the event. No "Events Renamed" dialog appeared. Compile errors: 0. EditMode: 183 / 183.
+
+`SoundManager` already had no `MusicPath` and no reference to the event (removed in Task 6). Only the comments in
+`SectionSelector.cs` that named the event were updated.
+
+The `spike` scenario still works without the event (`spike_seed33_s8c` below).
+
+### Step 4: final measurement (on the new banks)
+
+**Boundaries** (`landings`, and first half-beat RMS against the same place one phrase earlier, b-16). Two boundaries are
+not compared:
+- A boundary whose pattern notes in the first half beat differ from b-16's.
+- A boundary whose kill notes differ. Beat 0 has no kill chord in `heavy` / `fever`, while beat 16 has 24 / 9 kill notes.
+
+| take | boundary delay (ms) | silent runs > 20 ms within a beat of a boundary (`landings`) | first half-beat RMS vs b-16, compared boundaries |
+|---|---|---|---|
+| `baseline_seed7_s8c` | 0 at all 7 | 64: 320+95, 80: 320+95, 112: 475+40 | 16 / 32 / 48 / 80 / 112: -0.00 / +0.27 / -0.13 / -0.00 / +0.16 dB |
+| `heavy_seed7_s8c` | 0 at all | none | 32 / 48 / 80 / 112: +0.05 / -0.18 / +0.04 / -0.15 dB |
+| `heavy_seed33_s8c` | 0 at all | none | 32: -0.11 dB |
+| `styles_seed7_s8c` | 0 at all 15 | none | 96 / 144 / 160 / 208 / 224: -0.05 / +0.13 / -0.02 / -0.39 / +0.36 dB |
+| `features_seed7_s8c` | 0 at all 12 | 64: 320+95, 144: 510+40, 176: 335+80 | 144: **-1.71 dB** |
+| `fever_seed7_s8c` | 0 at all 8 | none | 80: +0.01 dB |
+| `spike_seed33_s8c` | 0 at all | 32: 510+40 | (no kills; not compared) |
+| `baseline_seed7_s8c_standalone` | 0 at all | 64: 320+95, 80: 320+95, 112: 475+40 | the same five values as the Editor take |
+| `heavy_seed7_s8c_standalone` | 0 at all | 16: 355+40, 32: 345+35, 48: 345+60, 64: 330+40 and 455+90, 80: 335+40 and 455+90, 96: 345+35, 112: 345+40 | 32 / 48 / 80 / 112: +0.62 / -0.19 / -0.45 / -0.62 dB |
+
+Notes on the table:
+- The beat-128 row that `landings` prints for 128-beat takes is past the take's last beat. The music is stopped there
+  (next half beat digital silence), so it is not counted.
+- **Silences.** The baseline 64 / 80 / 112 windows are the same as in Task 6 and Task 7. Task 7 showed each is a rest in
+  the arrangement: no audible note is scheduled there.
+  - `features` 64 / 144 / 176 have the same shape. The same windows are silent in Task 15a's `features_seed7_s15a_new`
+    (before the clock switch): 64: 335+90, 144: 515+40, 176: 345+75.
+  - `spike` 32 (510+40) is also in Task 7's `spike_seed33_s7c_d05_r2`.
+  - `.losses.csv` is empty in every Step 4 take.
+  - They are counted against the criterion below as the analyzer reports them.
+- **Standalone heavy.**
+  - Its silences are not in the Editor heavy take.
+  - The whole standalone heavy take is about 3 dB quieter than the Editor take: `rms --compare` against
+    `heavy_seed7_s8c`, max |diff| 4.00 dB over 31 windows.
+  - Task 15a's standalone heavy was quieter by the same kind of amount: max |diff| 4.53 dB against
+    `heavy_seed7_s15a_new`.
+  - Standalone baseline equals the Editor baseline (max |diff| 0.000 dB).
+  - Cause not investigated.
+- **`features` 144.** Same pattern notes in the first half beat as 128, no kills, -1.71 dB. Task 15a's take has the same
+  first-half level at 144 (-33.0 dB with the predicted boundary). Cause not investigated.
+
+**Beat 64 (Part A).** `baseline_seed7_s8c`:
+- Boundary delay 0 ms. In Part A it was +86 to +95 ms in the old takes and +9 / +3 / +1 / -4 ms in the later ones.
+- First half beat -32.6 dB, next half -39.7 dB.
+- b-16 (beat 48) -31.5 dB: -1.10 dB, but different pattern notes, so not compared.
+- Silent run 320+95 ms, the arrangement rest described in Task 7.
+
+**Attack** (`spike_seed33_s8c`, `analyze_capture.py spike --xcorr`; detector bias -39.0 samples = -0.812 ms as in Task 7):
+
+| clicks | n | raw mean \|e\| / max / signed ms | corrected mean \|e\| / max / signed ms |
+|---|---:|---|---|
+| all | 64 | 0.82 / 0.85 / -0.82 | 0.02 / 0.04 / -0.01 (-0.4 samples) |
+| 4 beats after a tempo change (16, 32, 48, 64) | 13 | 0.81 / 0.85 / -0.81 | 0.02 / 0.04 / -0.00 |
+
+- Missing 0, late 0, early 0, GATE PASS.
+- `--xcorr`: 64 of 64 clicks at lag 0 samples.
+
+**Frames** (`analyze_capture.py frames`): every Step 4 take (Editor and standalone) and Step 1 has backward 0, frames
+over 0.05 beat 0 and longest hold 0 ms. The max deviation is 0.0060-0.0099 beat; the largest is `heavy_seed7_s8c`,
+0.0099 at beat 16.04.
+
+**`styles` drop burst.** `styles_seed7_s8c`: ONESHOTS late 0, dropped 0, `.losses.csv` empty. Task 15a's 11 drops in the
+first beat after landings 32 and 128 are gone. Late / dropped is 0 / 0 in every Step 4 take, Editor and standalone.
+
+**Danger / Hurt** (on the one-shot buses; `bands` against `baseline_seed7_s8c_b64`):
+- Danger (`forceDanger`), median take minus reference:
+  - bed alone (beat k+2.5 .. k+4): <300 Hz 0.00, 300-2k -0.28, **>2k -41.80 dB**;
+  - kill chord ringing (k+1.0 .. 1.8): +0.03 / 0.00 / -0.25;
+  - chord attack (first 80 ms of 4k+1): +0.01 / -0.00 / -0.47.
+  - Stages 3-8 Task 8 had -42.05 above 2 kHz for the bed alone and -0.51 on the chord attack. Same behaviour.
+- Hurt (`hurtEveryBeats` 8, hits at 8..56; `.params.csv` Hurt 1 then 0 on each hit beat), median of the 7 hits, <300 Hz /
+  300-2k / >2k:
+  - +50 ms: **-22.9** / -5.1 / **-3.6**;
+  - +150 ms: -19.5 / -5.7 / -2.9;
+  - +350 ms: -12.4 / -2.7 / -1.4;
+  - +500 ms: -4.7 / -1.2 / -0.6;
+  - +550 ms: -0.2 / 0.0 / 0.0.
+  - Authored: lows -24 dB, gain -4 dB, recovery 0.625 s. Stages 3-8 Task 8 had -23.4 / -3.5 at +50 ms, complete at about
+    550 ms. Same behaviour.
+
+### Per-bus onset against the clock (carried item 1)
+
+`spike` seed 33 with `CaptureScenario.spikeTarget` on each bus that has a `SpikeClick` event. Lag by
+`spike --xcorr --xcorr-window-ms 40` (cross-correlation with the click waveform, 2-4 kHz).
+
+| bus (spikeTarget) | take | lag, samples (clicks) | ms | constant |
+|---|---|---|---:|---|
+| Kill Chords (`KillChords`) | `spike_seed33_s8c` | 0 (64 of 64) | 0.00 | yes |
+| Music Bed/Layers (`MusicBed`) | `_bus_musicbed` | **+6** (64 of 64) | 0.13 | yes |
+| Music Bed/Layers/Bass (`Bass`) | `_bus_bass` | **+6** (64 of 64) | 0.13 | yes |
+| Music Bed/Harmony (`Harmony`) | `_bus_harmony` | **+1030** (64 of 64) | **21.46** | yes |
+| Music Bed/Harmony/Combo Pad (`ComboPad`) | `_bus_combopad` | **+1029** (36) / **+1030** (27); 63 of 64 with peak > 0.9 | **21.44-21.46** | within 1 sample |
+| Feature | - | not measured: there is no `SpikeClick` event on `bus:/Feature` (`spike_click.BUSES`) | - | - |
+
+- On the Harmony buses, `spike`'s own gate (judged on corrected errors) FAILS: late 64 of 64, mean +21.54 ms. The Global
+  Constraints' attack figure is the Kill Chords spike, which passes.
+- Arithmetic, not an experiment: 1030 = 1024 + 6. `instruments.PATH_DELAY_BLOCKS` gives `Music Bed/Harmony` and
+  `Feature` one mixer block, applied through `InstrumentTable.PathDelayBlocks`. The 6 samples are what Music Bed/Layers
+  shows too. This was not tested by changing `PATH_DELAY_BLOCKS`.
+- The Layers kick at +72 / +73 samples (Task 7) is not reproduced from the repo: Task 7's kick-lag script was not
+  committed. The bus itself is at +6 samples, so about +66 samples of that figure come from somewhere other than the bus.
+  Not investigated.
+
+### A 300 ms stall (carried item 2; restated from Task 7, no new take)
+
+`heavy_seed7_s7c_stall300`: the stall at beat 30.5 lost the whole beat-31 kill chord (24 notes: 6 late in the scheduler,
+18 dropped by the backend) and one pattern note (Acid 31.0, TensionAcid). That is 25 notes. The stall at 47.7 lost
+nothing. No criterion covers it.
+
+### Global Constraints (plan)
+
+| constraint | value (takes above) | verdict |
+|---|---|---|
+| attack error mean ≤ 2 ms, max ≤ 5 ms, incl. 4 beats after tempo changes | `spike_seed33_s8c` corrected 0.02 / 0.04 ms; after changes 0.02 / 0.04; xcorr lag 0 for 64 / 64 | met |
+| the same bound applied to the Harmony buses (not a stated constraint; carried item 1) | +21.46 ms constant | **NOT met** (if applied) |
+| one-shots never late; never early | ONESHOTS late 0 in every valid take; spike early 0 (corrected and raw) | met |
+| boundaries: first half-beat RMS ±1 dB (same arrangement) | all compared boundaries within ±0.62 dB except `features` 144 | **NOT met**: `features_seed7_s8c` 144, -1.71 dB |
+| boundaries: no silence > 20 ms | `landings` lists 3 (baseline), 3 (features), 1 (spike), 3 (standalone baseline), 9 (standalone heavy) | **NOT met**: 19 runs by the analyzer's count. The 10 in the Editor takes and the standalone baseline are in windows that are also silent in earlier reference takes, with no losses. The 9 standalone heavy runs are not in the Editor take. |
+| screen beat: backward 0, ≤ 0.05 beat per frame, hold ≤ 30 ms | backward 0, max 0.0099 beat, hold 0 ms in every take | met |
+| CPU: Studio avg ≤ 11 %, Core dsp avg baseline ≤ 6 % / heavy ≤ 12 % | Studio max avg 1.44 % (`heavy_seed7_s8c`); Core baseline 1.21 %, heavy 5.13 % (seed 7) / 4.73 % (seed 33); standalone 1.11 / 2.70 % | met |
+| `Visual/*`, `ChordPulsePrototype.cs` untouched; `SoundManager` public members unchanged | not touched (`SoundManager.cs` not changed in this task) | met |
+| `SectionSelector`, fever alignment, arrangement rules unchanged | only two comments in `SectionSelector.cs` | met |
+| captures: Editor, seed 7 (128) / seed 33 (68), only stall-free takes valid | every Step 4 take has 0 unforced stalls. `styles` (256), `features` (208), `fever` (144) and the three Danger / Hurt takes (64) use other lengths, and two takes are standalone (both asked for by the brief) | **NOT met as written** (lengths); validity met |
+| FMOD CLI rules | script and `-build` separate, banks copied, Studio closed (no `fmodstudio.exe` process) | met |
+| commits: only each task's files, `git add <file>` | see the commit list | met |
+| EditMode tests | TestRunnerApi (controller ruling): 183 / 183 | met |
+
+### NOT met / open
+
+- First half-beat RMS ±1 dB: `features_seed7_s8c` boundary 144, -1.71 dB with the same notes as 128.
+- Silence > 20 ms at a boundary: 19 runs by `landings` (list above).
+  - 10 runs are in the Editor takes and the standalone baseline. The same windows are silent in earlier reference
+    takes, and nothing was lost. Task 7 showed the baseline ones are arrangement rests; the others were not checked
+    note by note.
+  - The 9 standalone heavy runs are not in the Editor. Cause not investigated.
+- Standalone heavy is about 3 dB quieter than the Editor take. Task 15a's standalone heavy shows the same. Cause not
+  investigated.
+- Harmony and Combo Pad one-shots sound +1030 samples (21.5 ms) after the clock. Kill Chords 0, Layers and Bass +6.
+  Not fixed (a separate decision).
+- Pending user checks (Step 2: focus loss off / on, output-device switch, game over -> restart x3; Step 5 manual Play).
+  None was done.
