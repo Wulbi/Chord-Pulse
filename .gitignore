@@ -126,3 +126,5 @@ InitTestScene*.unity*
 FMOD/Tools/__pycache__/
 /Docs/Captures/*.losses.csv
 /Docs/Captures/*.patterns.csv
+/Docs/Captures/*.studio.csv
+/Docs/Captures/*.anchors.csv

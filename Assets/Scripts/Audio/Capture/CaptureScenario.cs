@@ -128,6 +128,8 @@ public sealed class CaptureScenario : MonoBehaviour
     OneShotScheduler _subscribedShots;
     double _firstAnchorBeat = double.NaN;
     readonly List<string> _patternLog = new List<string>();
+    readonly List<string> _studioLog = new List<string>();   // per frame: Studio update and Core dsp CPU (.studio.csv)
+    readonly List<string> _anchorLog = new List<string>();   // per beat callback: lateness against the clock (.anchors.csv)
     static readonly float[] TensionStepValues = { 0f, 0.3f, 0.5f, 0.7f, 0.9f };
     readonly List<string> _oneShotLog = new List<string>();
     FieldInfo _pollCountField;
@@ -268,6 +270,9 @@ public sealed class CaptureScenario : MonoBehaviour
         {
             _studioSum += studio.update;
             _studioMax = Mathf.Max(_studioMax, studio.update);
+            bool okBeat = _conductor.Clock.BeatAt(MusicConductor.MasterDsp(), out double cpuBeat);
+            _studioLog.Add(string.Format(CultureInfo.InvariantCulture, "{0},{1:F3},{2:F4},{3:F2},{4:F2}",
+                Time.frameCount, okBeat ? cpuBeat : -1, Time.unscaledDeltaTime, studio.update, cpu.dsp));
             float total = cpu.dsp + cpu.stream + cpu.update;
             _cpuSamples++;
             _dspSum += cpu.dsp;
@@ -387,6 +392,12 @@ public sealed class CaptureScenario : MonoBehaviour
     void OnBeat(int beat)
     {
         _beats.Add((beat, (double)_anchorSeconds.GetValue(_conductor), _conductor.Tempo));
+        // Callback lateness: master DSP clock when the beat's callback is handled vs the clock's DSP time of that beat
+        // (anchored or, for a beat that got no anchor, extrapolated), and the clock's current anchor beat.
+        ulong nowDsp = MusicConductor.MasterDsp();
+        bool okDsp = _conductor.Clock.DspAt(beat, out ulong beatDsp);
+        _anchorLog.Add(string.Format(CultureInfo.InvariantCulture, "{0},{1},{2},{3},{4}",
+            Time.frameCount, beat, nowDsp, okDsp ? (long)beatDsp : -1, _conductor.Clock.HasAnchor ? _conductor.Clock.AnchorBeat : -1));
         if (scenario != Scenario.spike)
             return;
         _timelineMs[beat] = _conductor.BeatTimelineMs;
@@ -685,6 +696,8 @@ public sealed class CaptureScenario : MonoBehaviour
         _conductor.BeatChanged -= OnBeat2;
         sound.MusicParameterSet -= OnMusicParameter;
         File.WriteAllText(Path.ChangeExtension(path, ".frames.csv"), "dt,beat,bpm\n" + string.Join("\n", _frameLog) + "\n");
+        File.WriteAllText(Path.ChangeExtension(path, ".studio.csv"), "frame,beat_now,dt,studio_update,core_dsp\n" + string.Join("\n", _studioLog) + "\n");
+        File.WriteAllText(Path.ChangeExtension(path, ".anchors.csv"), "frame,beat,now_dsp,beat_dsp,anchor_beat\n" + string.Join("\n", _anchorLog) + "\n");
         File.WriteAllText(Path.ChangeExtension(path, ".params.csv"), "beat_now,name,value\n" + string.Join("\n", _paramLog) + "\n");
         var log = new StringBuilder("beat,frame,bpm\n");
         foreach (var (beat, seconds, tempo) in _beats)
