@@ -2909,10 +2909,10 @@ nothing. No criterion covers it.
 | constraint | value (takes above) | verdict |
 |---|---|---|
 | attack error mean ≤ 2 ms, max ≤ 5 ms, incl. 4 beats after tempo changes | `spike_seed33_s8c` corrected 0.02 / 0.04 ms; after changes 0.02 / 0.04; xcorr lag 0 for 64 / 64 | met |
-| the same bound applied to the Harmony buses (not a stated constraint; carried item 1) | +21.46 ms constant | **NOT met** (if applied) |
+| the same bound applied to the Harmony buses (not a stated constraint; carried item 1) | +21.46 ms constant | **NOT met** (if applied). Later: see "Final fix wave" (path delay removed) |
 | one-shots never late; never early | ONESHOTS late 0 in every valid take; spike early 0 (corrected and raw) | met |
 | boundaries: first half-beat RMS ±1 dB (same arrangement) | all compared boundaries within ±0.62 dB except `features` 144 | **NOT met**: `features_seed7_s8c` 144, -1.71 dB |
-| boundaries: no silence > 20 ms | `landings` lists 3 (baseline), 3 (features), 1 (spike), 3 (standalone baseline), 9 (standalone heavy) | **NOT met**: 19 runs by the analyzer's count. The 10 in the Editor takes and the standalone baseline are in windows that are also silent in earlier reference takes, with no losses. The 9 standalone heavy runs are not in the Editor take. |
+| boundaries: no silence > 20 ms | `landings` lists 3 (baseline), 3 (features), 1 (spike), 3 (standalone baseline), 9 (standalone heavy) | **NOT met**: 19 runs by the analyzer's count. The 10 in the Editor takes and the standalone baseline are in windows that are also silent in earlier reference takes, with no losses. The 9 standalone heavy runs are not in the Editor take. Later: see "Final fix wave" (channel counts) |
 | screen beat: backward 0, ≤ 0.05 beat per frame, hold ≤ 30 ms | backward 0, max 0.0099 beat, hold 0 ms in every take | met |
 | CPU: Studio avg ≤ 11 %, Core dsp avg baseline ≤ 6 % / heavy ≤ 12 % | Studio max avg 1.44 % (`heavy_seed7_s8c`); Core baseline 1.21 %, heavy 5.13 % (seed 7) / 4.73 % (seed 33); standalone 1.11 / 2.70 % | met |
 | `Visual/*`, `ChordPulsePrototype.cs` untouched; `SoundManager` public members unchanged | not touched (`SoundManager.cs` not changed in this task) | met |
@@ -2929,10 +2929,106 @@ nothing. No criterion covers it.
   - 10 runs are in the Editor takes and the standalone baseline. The same windows are silent in earlier reference
     takes, and nothing was lost. Task 7 showed the baseline ones are arrangement rests; the others were not checked
     note by note.
-  - The 9 standalone heavy runs are not in the Editor. Cause not investigated.
+  - The 9 standalone heavy runs are not in the Editor. Cause not investigated. (Later: see "Final fix wave".)
 - Standalone heavy is about 3 dB quieter than the Editor take. Task 15a's standalone heavy shows the same. Cause not
-  investigated.
+  investigated. (Later: see "Final fix wave".)
 - Harmony and Combo Pad one-shots sound +1030 samples (21.5 ms) after the clock. Kill Chords 0, Layers and Bass +6.
-  Not fixed (a separate decision).
+  Not fixed (a separate decision). (Later: fixed, see "Final fix wave".)
 - Pending user checks (Step 2: focus loss off / on, output-device switch, game over -> restart x3; Step 5 manual Play).
   None was done.
+
+## Final fix wave (unity-music-clock, after the final review)
+
+Commits on `main`:
+- `746d3a5` **Harmony / Feature path delay 0.** `instruments.PATH_DELAY_BLOCKS` is `{}` (was `Music Bed/Harmony` 1,
+  `Feature` 1). `InstrumentTable.PathDelayBlocks` returns 0 on every bus; `instruments.js` byte-identical (no CLI run, no
+  bank rebuild). The block matched the legacy timeline layers' send / return, which left with the music event.
+- `ddc456b` `.cpu.txt` ends with `CHANNELS playing peak N, real peak M` (Core `getChannelsPlaying`, sampled every frame
+  of the take). Capture code only.
+- `37e8532` `FmodClock.MasterDsp()` returns the last good value on a failed read while FMOD is initialised (0 only
+  before FMOD is initialised); `SoundManager.LoadAndStartMusic` reports a failure instead of starting the transport if
+  the clock reads 0. Not covered by a test (no seam without FMOD).
+- `1929ee1` `cleanup_music.py/.js`, `remove_music_event.py/.js`, `extract_fever.py` moved to `FMOD/Tools/retired/`; the
+  timeline reader (`legacy_notes`, `EVENT_XML`, `_sections`) removed from `patterns.py`.
+- `ef88230` stale comments, the dead `build()` of the bed data modules, test names.
+
+Settings: Editor unless stated, `logOneShots`, full mix, `scheduleOffsetSamples` 0, auto refresh disallowed around
+each Editor take, no Editor query while a take recorded. The standalone builds: the Task 8 recipe (temporary copy of
+`AudioCapture.unity` with `targetFps` 60, `BuildOptions.Development`, StandaloneWindows64, the copy and its `.meta`
+deleted afterwards), output in `Builds/Capture/heavy_s9f_before/` and `heavy_s9f_after/`. ProjectSettings MD5s were
+identical before and after.
+
+### Takes (every take recorded in this wave)
+
+ONESHOTS = started / late / dropped / cancelled. RESYNCED and `CAPTURE dsp-to-frame mismatches` are 0 in every take,
+`.losses.csv` is empty in every take. CHANNELS = playing peak / real peak (only takes after `ddc456b`).
+
+| take | item | unforced stalls | Studio avg / max % | Core dsp avg / max % | ONESHOTS | CHANNELS | valid |
+|---|---|---:|---|---|---|---|---|
+| `spike_seed33_s9f_bus_harmony` | M2 | 0 | 0.56 / 0.88 | 0.83 / 1.94 | 559 / 0 / 0 / 10 | - | yes |
+| `spike_seed33_s9f_bus_combopad` | M2 | 0 | 0.55 / 0.79 | 0.83 / 1.79 | 559 / 0 / 0 / 10 | - | yes |
+| `baseline_seed7_s9f` | M2 | 0 | 0.64 / 0.93 | 1.14 / 2.54 | 1413 / 0 / 0 / 6 | - | yes |
+| `heavy_seed7_s9f_standalone_before` | M1 (standalone, 60 fps) | 0 | 1.07 / 1.81 | 2.73 / 3.81 | 4683 / 0 / 0 / 12 | 91 / **32** | yes |
+| `heavy_seed7_s9f` | M1 (Editor) | 0 | 1.34 / 1.93 | 5.09 / 9.55 | 4678 / 0 / 0 / 7 | 91 / 91 | yes |
+| `heavy_seed7_s9f_standalone_after` | M1 (standalone, 256 / 1024 trial) | 0 | 1.05 / 1.81 | 2.82 / 3.83 | 4683 / 0 / 0 / 12 | 91 / **32** | yes |
+
+No take was invalid. The spike takes use seed 33 / 68 beats with `spikeTarget` `SpikeClick:Harmony:72` /
+`SpikeClick:ComboPad:72`.
+
+### M2: per-bus onset against the clock (`spike --xcorr --xcorr-window-ms 40`)
+
+| bus | before (Task 8) | after (this wave) | `spike` gate (corrected) |
+|---|---|---|---|
+| Kill Chords | 0 (`spike_seed33_s8c`) | not re-measured (path delay was already 0) | PASS (Task 8) |
+| Music Bed/Layers, Bass | +6 | not re-measured (path delay was already 0) | - |
+| Music Bed/Harmony | **+1030** (64 of 64) | **+6** (64 of 64) | before FAIL (late 64, mean +21.54 ms); after **PASS**: mean\|e\| 0.19, max 0.23, signed +0.19 ms; 4 beats after tempo changes 0.18 / 0.23 |
+| Music Bed/Harmony/Combo Pad | **+1029 / +1030** | **+6** (57) / +5 (6); 63 of 64 with peak > 0.9 | after **PASS**: mean\|e\| 0.20, max 0.23, signed +0.20 ms; after tempo changes 0.19 / 0.23 |
+| Feature | not measured | 0 by construction (`PathDelayBlocks` 0), **not measured**: no `SpikeClick` event on `bus:/Feature` | - |
+
+- Every take: missing 0, early 0, late 0. The spec attack bound (mean ≤ 2 ms, max ≤ 5 ms) is met on the Harmony and
+  Combo Pad buses.
+- `baseline_seed7_s9f` against `baseline_seed7_s8c` (`rms --compare`, 4-beat windows): max |diff| **0.033 dB** over
+  31 windows (windows 11, 12 and 27 at 0.03 dB, the rest 0.00). No window outside ±1 dB. Late 0, dropped 0. `landings`:
+  delay 0 at every boundary, silent runs 64: 320+95, 80: 320+95, 112: 475+40, the same arrangement rests as
+  `baseline_seed7_s8c`.
+
+### M1: standalone heavy quieter, boundary silences (voice-limit hypothesis)
+
+Channel counts (FMOD for Unity settings, read in the Editor through `Settings.FindPlatform`):
+
+| platform | real | virtual | codec counts |
+|---|---:|---:|---|
+| Default (`HasValue` 0 -> `Platform.cs` defaults) | 32 | 128 | FADPCM 32, Vorbis 0 |
+| Windows (inherits real / virtual from Default) | 32 | 128 | FADPCM 0, Vorbis **32** (platform default) |
+| Play In Editor | 256 | 1024 | FADPCM 0, Vorbis 256 |
+
+Measured peaks (`.cpu.txt` CHANNELS): the Editor heavy take plays up to 91 channels, all 91 real. The standalone
+heavy take plays the same 91, **real pinned at 32** (the after-take's `Player.log` shows `SystemI::updateChannels :
+Channel ... Stolen`; the before-take's log was overwritten by it). The hypothesis
+"over 32 voices the player virtualises the quietest" is shown by the peaks.
+
+Trial: the Default platform's real / virtual set to 256 / 1024 (`HasValue` 1), only those fields; the Editor read back
+256 / 1024 for Default and Windows. Rebuilt, take `heavy_seed7_s9f_standalone_after`:
+
+| criterion | before (`_standalone_before`) | after (`_standalone_after`) | verdict |
+|---|---|---|---|
+| real channel peak | 32 | **32** | not lifted |
+| `rms --compare` against `heavy_seed7_s9f` (Editor), within ±1 dB | max \|diff\| 3.911 dB, 31 of 31 windows outside, standalone 2.98 dB quieter on average | max \|diff\| **3.484 dB**, 31 of 31 outside, 2.75 dB quieter on average | **NOT met** |
+| boundary silences (`landings`) gone | 9 (16: 355+40, 32: 345+35, 48: 345+60, 64: 330+40 and 455+90, 80: 335+40 and 455+90, 96: 345+40, 112: 345+40) | **2** (64: 455+90, 80: 455+90) | **NOT met** |
+| Core dsp avg ≤ 12 % | 2.73 % | 2.82 % | met |
+
+The after-take did not meet the criteria, so the setting was put back (same fields, previous values; the asset is
+unchanged in git) and nothing was committed. Editor reference: `heavy_seed7_s9f` against `heavy_seed7_s8c` max |diff|
+0.245 dB, `landings` no gaps.
+
+Not shown, not tested: what still caps the player at 32 real channels after the change. The Windows platform's Vorbis
+codec count is 32 (the Editor's is 256) and the banks' encoding setting is format 3; whether a codec limit is the cap was
+not tried (this wave allowed only the channel-count fields). The standalone heavy level and the remaining silences:
+cause not shown.
+
+### NOT met / open after this wave
+
+- Standalone heavy: about 2.75-2.98 dB quieter than the Editor (31 of 31 windows outside ±1 dB) and 2-9 boundary
+  silences; real channels pinned at 32 in the player even with 256 / 1024 channel counts. Not fixed.
+- Feature bus onset: 0 by construction, not measured.
+- `FmodClock` last-good-value path: no test.
