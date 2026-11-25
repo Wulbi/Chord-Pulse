@@ -10,7 +10,7 @@
       Finds attack times in two frequency bands and pairs them: ref (e.g. a metronome click) vs test (e.g. a kill
       chord click). Prints the mean / max absolute and mean signed difference in ms.
 
-  python FMOD/Tools/analyze_capture.py spike <wav> [--allow-missing N] [--stall-beats 9.8,15.7] [--xcorr] [--verbose]
+  python FMOD/Tools/analyze_capture.py spike <wav> [--allow-missing N] [--stall-beats 9.8,15.7] [--xcorr [--xcorr-window-ms W]] [--verbose]
       Clock mode (the .beats.csv has a dsp column and there is no .timeline.csv: takes from unity-music-clock Task 6
       on): the reference is the beat's frame in .beats.csv, computed by the music clock. For every click of .spike.csv
       the error is attack frame - beat frame (ms; the test-band onset nearest the beat within half a beat). Prints mean
@@ -21,7 +21,8 @@
       and corrected (raw - bias); the gate is judged on the corrected values: exit 1 unless mean <= 2 ms, max <= 5 ms
       (after changes and stalls too), early 0, late 0 (+-5 ms), missing <= N. Also prints the corrected mean signed
       error against the +-0.5 ms calibration trigger. --xcorr: the exact lag of every click in samples, by cross-
-      correlation with the click waveform (both band-passed 2-4 kHz) within +-10 ms of its beat frame.
+      correlation with the click waveform (both band-passed 2-4 kHz) within +-10 ms of its beat frame (+-W ms with
+      --xcorr-window-ms; with CaptureScenario.spikeTarget on another bus this gives that bus's onset against the clock).
 
   python FMOD/Tools/analyze_capture.py spike <wav> [--offset-ms X]
       Timeline mode (older takes with a .timeline.csv): Task 3 scheduling spike. Pairs every scheduled SpikeClick (3 kHz, test band 2800-3200) with the Spike ref
@@ -374,12 +375,13 @@ def cmd_spike_clock(args):
         print("calibration check: corrected mean signed %+.2f ms (%+.1f samples); trigger +-0.5 ms: %s" % (
             signed, signed * rate / 1000.0, "beyond" if abs(signed) > 0.5 else "within"))
     if args.xcorr:
-        lags = click_xcorr_lags(mono, rate, [beats[b][0] for b, *_ in rows])
+        window = int(round(args.xcorr_window_ms / 1000.0 * rate))
+        lags = click_xcorr_lags(mono, rate, [beats[b][0] for b, *_ in rows], window)
         good = {f: v for f, v in lags.items() if v[1] > 0.9}
         vals, counts = np.unique([v[0] for v in good.values()], return_counts=True) if good else ([], [])
-        print("XCORR (SpikeClick waveform, 2-4 kHz, +-10 ms of each beat frame; lag + = late): %d of %d measured clicks "
+        print("XCORR (SpikeClick waveform, 2-4 kHz, +-%g ms of each beat frame; lag + = late): %d of %d measured clicks "
               "with normalised peak > 0.9; lag samples: %s" % (
-                  len(good), len(rows), ", ".join("%d: %d" % (v, n) for v, n in zip(vals, counts)) or "-"))
+                  args.xcorr_window_ms, len(good), len(rows), ", ".join("%d: %d" % (v, n) for v, n in zip(vals, counts)) or "-"))
     print("TIMING (corrected): early %d, late %d (+-5 ms), missing %d (allowed %d); raw: early %d, late %d" % (
         len(early), len(late), len(missing_all), args.allow_missing, early_raw, late_raw))
     if early:
@@ -968,6 +970,7 @@ def main():
     p.add_argument("--allow-missing", type=int, default=0, help="clock mode: clicks allowed to be missing")
     p.add_argument("--stall-beats", default="", help="clock mode: comma-separated forced-stall beats; the 4 beats after each are reported")
     p.add_argument("--xcorr", action="store_true", help="clock mode: also the exact click lag by cross-correlation with the SpikeClick waveform")
+    p.add_argument("--xcorr-window-ms", type=float, default=10.0, help="clock mode: --xcorr search window, +- ms around each beat frame (per-bus onset takes: a click one mixer block late needs > 21.3 ms)")
     p.set_defaults(func=cmd_spike)
     p = sub.add_parser("frames")
     p.add_argument("wav")
