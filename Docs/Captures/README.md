@@ -1019,10 +1019,68 @@ first half beat after a landing is louder on the new path (beat 112: -31.0 legac
   note from beat 0.5 on plays. Needs the clock switch of a later plan.
 - Notes within about 125 ms of now keep the state they were scheduled with when a decision changes.
 - `legacyLayers` is read in `StartMusic` only.
-- Open: funk keys +1.2-1.5 dB, two breath-phrase harmony windows (-1.2 / -1.5 dB).
+- Funk keys and the breath-phrase windows: resolved in the follow-up round below.
 
 ### Verdict
 
 Full-mix takes pass (every window within 1 dB except the first-beat window, 1.02), late 0, drops only at landings, CPU in
-budget. The harmony family does not (funk keys level, two breath-phrase windows). **`legacyLayers` stays true by default**;
+budget. The harmony family does not (funk keys level, two breath-phrase windows). **`legacyLayers` stayed true at this
+point** (superseded: the follow-up round below found both causes and flipped the default to false);
 `CaptureScenario.layers = oneShots` (or the inspector field) plays the new path.
+
+### Follow-up round: causes of the open differences, attack measured, final takes, default
+
+**Funk keys (+1.2..+1.46 dB): one-shot stops, not the mono sample.** Per note at sample level in the intensity-1 harmony
+solos (funk keys only in those phrases, notes separated by digital silence), the sustain level is identical
+(-45.60 legacy, -45.66 one-shot dBFS) and the note set is identical; the length is not: the timeline note sounds 79 ms
+(0.15 beat at 124 BPM = 72.6 ms, then a ~5 ms ramp), the one-shot 85-111 ms. The backend's per-note diagnostic shows why:
+(1) FMOD Studio clears the channel group's delay end a few frames after the unpause (in 3rd-6th checks most notes read
+delay end 0), so the note ran until `Update` stopped the instance after its stop time; (2) with the end restored, the note
+sounded 59 ms: the voice starts one mixer block (1024 samples) after its group's delay start (the channel position
+extrapolates to start + 1025 samples) while the delay end is exact, so a restored stop cuts one block early. Fixes
+(commit 0556876): pattern notes get their stop re-applied while it is still ahead (`OneShotArming.StopLost`, 885 re-applies
+in a 128-beat take) and the stop is placed one block later; the stop fade comes from the generator
+(`instruments.py` `PATTERN_STOP_FADE_MS = 5`, the timeline's region-end ramp, measured offline: -44 -> -90 dBFS in the last
+~5 ms) through `InstrumentTable.ReleaseSeconds` for every non-kill bus; the earlier 20 ms C# override is gone. Funk windows:
++1.2..+1.46 dB -> +0.16..+0.35 dB; note length 84 ms (79 legacy). The same cause shortened or lengthened every pattern note
+on every layer (not mono-related: an offline render of the gated timeline track and of the instrument event at the same
+pitch gives the same sustain level on both channels). Kill chords use the same backend and are left as they were (the brief
+forbids changing them): their delay end is also cleared, so they end when `Update` stops the instance after stop + release
+(about a frame late) - a separate item for the controller.
+
+**Breath-phrase harmony windows (beats 64-67, 72-75).** Window 64 is a jump landing (accepted). For 72-75 the decisive
+experiment was a temporary take with the combo pad's onset compensation forced to 0 (`..._s11z_i3_soloharmony_new_exp_padonset0`,
+not committed): window 72-75 went from -1.49 to +0.28 dB (64-67 from -1.45 to -0.33, 40-43 from -0.68 to -0.13, 100-103 from
+-0.83 to +0.32). The difference is the intended onset move of the combo pad (starts 36-65 ms earlier) interfering with the
+choir / dreamy bells notes on the same pitches (per-pitch levels move +-4-9 dB both ways): explained. Per-layer legacy solos
+were not possible in the Editor (the runtime gives no handle on single timeline tracks); the offline one-shot renderer I
+tried could not hold its delays (Studio clears them there before the first re-apply), so it was not used for numbers.
+
+**Attack measured** (`baseline_seed7_s11z_attack_pluck_new` / `_legacy`: intensity 1, `holdArrangement`, harmony solo,
+`patternLayers` Pluck, `spikeRefClicks`): every pluck attack (150-700 Hz envelope, 30 % crossing) against the timeline's
+1 kHz beat clicks of the same take, beat position interpolated between clicks, notes in the first beat after a phrase
+boundary excluded. The legacy take calibrates the detector (attack - click +24.64 ms, sd 0.29 ms; the timeline starts the
+pluck sample on the beat, so its attack is at beat + sample onset). One-shot attack vs beat, 98 notes: mean signed
+-1.19 ms, **mean |e| 1.33 ms, max |e| 2.60 ms**; beat 1.5 (the clock's second anchor after start) was +11.8 ms and is
+excluded like the first beat. Criterion met (mean <= 2, max <= 5) from beat 2 on.
+
+**Final takes** (same session, code c848087's parent 624fd01 + default flip; every take stalls 0):
+
+| scenario | legacy | new | max window diff | windows > 1 dB | late | drops |
+|---|---|---|---:|---|---:|---|
+| baseline seed 7 | `baseline_seed7_s11z_legacy` | `_s11z_new` | 1.03 | w0 (beat 0) | 0 | 0 |
+| heavy seed 7 | `heavy_seed7_s11z_legacy` | `_s11z_new` | 1.05 | w0 (beat 0) | 0 | 0 |
+| heavy seed 33 | `heavy_seed33_s11z_legacy` | `_s11z_new` | 0.94 | - | 0 | 0 |
+| styles (bed, i3) | `styles_seed7_s11z_bed_i3_legacy` | `_s11z_bed_i3_new_r2` | 0.54 | - | 0 | 7 pattern at 128.49-128.74 (landing) |
+| harmony i3 heavy 7 | `heavy_seed7_s11z_i3_soloharmony_legacy` | `_new` | 3.82 | w0, w16 (landing 64), w18 (-1.49, pad onset, shown above) | 0 | 1 Bass at 80.35 (landing) |
+| harmony i1 baseline 7 | `baseline_seed7_s11z_i1_soloharmony_legacy` | `_new` | 1.45 | w15 / w19 (phrase-end lead), w16 (landing 64) | 0 | 0 |
+
+The first styles take `_s11z_bed_i3_new` (max 0.90 dB) also dropped 8 pattern and 13 kill notes at beats 144.96-145.99
+after the jump landing at 144, with a Studio update spike (max 100.6 %); the repeat had only the landing drops at 128.
+
+CPU (Studio update / Core dsp avg %, legacy -> new): baseline 6.10 / 1.71 -> 6.77 / 1.81; heavy 7.26 / 5.29 -> 7.72 / 5.46;
+heavy seed 33 8.86 / 5.66 -> 8.44 / 5.79; styles 8.74 / 3.19 -> 9.85 / 3.55.
+
+**Default:** every window over 1 dB is beat 0, a landing, a phrase-end lead window or the pad-onset interference shown by
+experiment; late 0; drops only at landings; CPU in budget. **`SoundManager.legacyLayers` now defaults to false** (commit
+c848087); no scene or prefab serializes a SoundManager. The earlier verdict above is superseded.
