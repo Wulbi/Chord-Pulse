@@ -5,12 +5,9 @@ with the instrument library (instruments.py LAYERS calls register(lib)).
 
     python -I FMOD/Tools/instruments.py              # writes instruments.js, InstrumentTable.g.cs and PatternTable.g.cs
     python -I FMOD/Tools/patterns.py                 # PatternTable.g.cs only
-    python -I FMOD/Tools/patterns.py --compare-legacy
-        Compares the table with what the music event's timeline plays today on the migrated tracks (LEGACY_TRACKS): every
-        timeline note of all four tempo sections (both phrases of each 8-bar section) from the event XML, and checks the
-        old generators' build() notes are exactly those notes minus the hand-made ones (Bass A / Pluck A, the core kit,
-        open hats and clap layer). Differences are counted per rule of the Task 9 / Task 12 briefs; anything else is
-        printed as UNEXPLAINED (exit code 1).
+
+(The --compare-legacy check against the music event's timeline tracks was removed in stages 3-8 Task 15b together with
+those tracks; its results are in Docs/Captures/README.md, Tasks 9-14.)
 
 Data modules (PATTERN_LAYERS) define Inst / Layer / Clip / N; see pattern_bed.py, pattern_drums.py, pattern_feature.py and
 pattern_fever.py.
@@ -144,8 +141,7 @@ class Clip:
 
     @property
     def conditions(self):
-        """(styles, variation min, max, combo min, intensity min, fever phases, feature loop) - the part compare-legacy
-        checks."""
+        """(styles, variation min, max, combo min, intensity min, fever phases, feature loop)."""
         return (tuple(sorted(self.styles)), self.variation[0], self.variation[1], self.combo, self.intensity,
                 tuple(p for p in FEVER_PHASES if p in self.fever), self.feature_loop)
 
@@ -380,8 +376,8 @@ def write_table(bus_member):
 
 
 def __getattr__(name):
-    """LEGACY_TRACKS: the old timeline tracks the pattern layers replace, each once, in layer order (legacy_gate.py
-    reads it; Core hat and Open hat share Eighth-note hats)."""
+    """LEGACY_TRACKS: the old timeline tracks the pattern layers replaced, each once, in layer order (cleanup_music.py
+    reads it to delete them; Core hat and Open hat share Eighth-note hats)."""
     if name == "LEGACY_TRACKS":
         out = []
         for l in collect()[0]:
@@ -391,13 +387,11 @@ def __getattr__(name):
     raise AttributeError(name)
 
 
-# ===== --compare-legacy ===============================================================================================
+# ===== timeline reader (extract_fever.py, a one-time record tool) =====================================================
 EVENT_XML = os.path.join(HERE, "..", "ChordPulse", "Metadata", "Event", "{3d468f15-e95b-49c7-89e5-8b0245d9bf6d}.xml")
 METADATA = os.path.join(HERE, "..", "ChordPulse", "Metadata")
 SECTION_BPMS = (108, 116, 124, 132)
 SECTION_BEATS = 32
-TIME_EPS = 0.0005     # 0.5 ms
-VOLUME_EPS = 0.006
 
 
 def _load_objects(path):
@@ -461,280 +455,7 @@ def _sections():
     return out
 
 
-def _legacy_conditions(conds):
-    """XML trigger conditions -> (styles, variation min, max, combo min, intensity min, fever phases, feature loop), or a
-    string if one does not map. Every migrated note must carry the legacy_gate.py gate (LegacyLayers in GATE); it is not part of the
-    conditions. FeverBuild [0, 0.5] (the kick: silent while FeverBuild is 1) = every fever phase but Build. The fever
-    tracks' [0.5, 1] conditions: FeverBuild = Build, FeverImpact = Impact, FeverOutro = Outro, Fever = the whole fever
-    phrase (Impact, Fever, Outro)."""
-    import legacy_gate
-    styles, var, combo, inten, fever, feature = (0, 1, 2, 3), (0, 4), 0, 0.0, tuple(FEVER_PHASES), 0
-    if legacy_gate.PARAMETER not in conds:
-        return f"no {legacy_gate.PARAMETER} gate (run legacy_gate.js)"
-    for name, (lo, hi) in conds.items():
-        if name == legacy_gate.PARAMETER:
-            if abs(lo - legacy_gate.GATE[0]) > 1e-6 or abs(hi - legacy_gate.GATE[1]) > 1e-6:
-                return f"{name} gate [{lo}, {hi}] is not {list(legacy_gate.GATE)}"
-        elif name == "BedStyle":
-            styles = tuple(s for s in range(STYLE_COUNT) if lo <= s <= hi)
-        elif name == "Variation":
-            var = (round(lo + 0.4), round(hi - 0.4))
-        elif name == "Combo":
-            assert abs(hi - 3.4) < 1e-6, conds
-            combo = round(lo + 0.4)
-        elif name == "Intensity":
-            assert abs(hi - 3) < 1e-6, conds
-            inten = round(lo, 3)
-        elif name == "FeverBuild" and abs(lo) < 1e-6 and abs(hi - 0.5) < 1e-6:
-            fever = tuple(p for p in FEVER_PHASES if p != "Build")
-        elif name in FEVER_ON_CONDITIONS and abs(lo - 0.5) < 1e-6 and abs(hi - 1) < 1e-6:
-            fever = FEVER_ON_CONDITIONS[name]
-        elif name == "FeatureLoop" and abs(hi - lo - 0.8) < 1e-6 and abs(lo + 0.4 - round(lo + 0.4)) < 1e-6:
-            feature = round(lo + 0.4)
-        else:
-            return f"unmapped condition {name} [{lo}, {hi}]"
-    return (styles, var[0], var[1], combo, inten, fever, feature)
-
-
-FEVER_ON_CONDITIONS = {"FeverBuild": ("Build",), "FeverImpact": ("Impact",), "FeverOutro": ("Outro",),
-                       "Fever": ("Impact", "Fever", "Outro")}
-
-
-def _old_shift(clip, note, bar):
-    rule = clip.legacy_shift
-    if rule == "none":
-        return 0.0
-    if rule in ("onset", "onset_not_phrase_start", "onset_not_beat0"):
-        if rule == "onset_not_phrase_start" and bar % 4 == 0:
-            return 0.0
-        if rule == "onset_not_beat0" and note.beat == 0:
-            return 0.0
-        s, pitch = note.inst.sample(note.midi)
-        return s[3] / (2 ** (pitch / 12.0))
-    kind, seconds = rule
-    if kind == "fixed_not_phrase_start" and bar % 4 == 0:
-        return 0.0
-    return seconds
-
-
-def compare_legacy():
-    layers, clips, insts = collect()
-    track_of = {l.name: l.legacy_track for l in layers}
-    tracks = set(track_of.values())
-    legacy = legacy_notes(tracks)
-    secs = _sections()
-    rules = {"exact": 0, "volume split (NORMALIZE_DB - rms + GainDb)": 0, "onset rule": 0,
-             "ADSR as separate (instrument, bus) event": 0, "no ADSR -> event attack 0 / release 0": 0,
-             "track fader folded into GainDb": 0, "length 0: to the sample end": 0,
-             "length 0: event ADSR 0 / 0 (old attack <= 1 ms dropped)": 0,
-             "HoldSeconds: rings max(length, hold) like the old region": 0}
-    unexplained, onset_rows = [], {}
-    per_section = []
-    for si, (s0, bpm) in enumerate(secs):
-        spb = 60.0 / bpm
-        old = [n for n in legacy if s0 - 0.08 <= n["start"] < s0 + SECTION_BEATS * spb - 0.08]
-        new = []
-        for half in (0, 1):
-            for c in clips:
-                if c.section_phrase not in (0, half + 1):
-                    continue
-                for n in c.notes:
-                    bar = half * 4 + int(n.beat // 4)
-                    s, pitch = n.inst.sample(n.midi)
-                    t = s0 + (half * PHRASE_BEATS + n.beat) * spb
-                    new.append(dict(track=track_of[c.layer], time=t, file=s[0], pitch=pitch,
-                                    volume=round(n.inst.event_volume(n.midi) + n.gain_db, 2),
-                                    event_volume=n.inst.event_volume(n.midi), length=n.length * spb,
-                                    conds=c.conditions, env=(n.inst.attack_ms, n.inst.release_ms),
-                                    onset=n.inst.onset(n.midi), old_shift=_old_shift(c, n, bar), clip=c, note=n,
-                                    beat=half * PHRASE_BEATS + n.beat))
-        used = set()
-        counts = dict.fromkeys(rules, 0)
-        bad = []
-        for o in sorted(old, key=lambda x: x["start"]):
-            oc = _legacy_conditions(o["conds"])
-            if isinstance(oc, str):
-                bad.append(f"section {si} {o['track']} t={o['start']:.4f}: {oc}")
-                continue
-            best = None
-            for i, x in enumerate(new):
-                if i in used or x["track"] != o["track"] or x["file"] != o["file"] or abs(x["pitch"] - o["pitch"]) > 1e-6:
-                    continue
-                if x["conds"] != oc or abs(x["time"] - o["start"]) > 0.1:
-                    continue
-                d = abs(x["time"] - x["old_shift"] - o["start"])
-                if best is None or d < best[0]:
-                    best = (d, i)
-            if best is None:
-                bad.append(f"section {si} {o['track']} t={o['start']:.4f} {o['file']} pitch {o['pitch']} vol {o['volume']} "
-                           f"conds {o['conds']}: no new note")
-                continue
-            used.add(best[1])
-            x = new[best[1]]
-            what = []
-            heard = o["volume"] + o["track_db"]   # the one-shot path has no track fader
-            if abs(x["volume"] - heard) > VOLUME_EPS:
-                bad.append(f"section {si} {o['track']} beat {x['beat']}: volume {o['volume']} (track {o['track_db']}) -> "
-                           f"{x['volume']}")
-            elif abs(x["event_volume"] - heard) > VOLUME_EPS:
-                what.append("volume split (NORMALIZE_DB - rms + GainDb)")
-            if o["track_db"] != 0:
-                what.append("track fader folded into GainDb")
-            zero = x["note"].length == 0
-            if zero:
-                what.append("length 0: to the sample end")
-            elif x["note"].hold > x["length"] + TIME_EPS:
-                if abs(x["note"].hold - o["length"]) > TIME_EPS:
-                    bad.append(f"section {si} {o['track']} beat {x['beat']}: length {o['length']:.4f} s -> hold "
-                               f"{x['note'].hold:.4f} s")
-                else:
-                    what.append("HoldSeconds: rings max(length, hold) like the old region")
-            elif abs(x["length"] - o["length"]) > TIME_EPS:
-                bad.append(f"section {si} {o['track']} beat {x['beat']}: length {o['length']:.4f} s -> {x['length']:.4f} s")
-            old_env = o["env"] or (0.0, 0.0)
-            new_env = (float(x["env"][0]), float(x["env"][1]))
-            if zero and o["env"] is not None and new_env == (0.0, 0.0) and o["env"][0] <= 1.0:
-                what.append("length 0: event ADSR 0 / 0 (old attack <= 1 ms dropped)")
-            elif new_env != old_env:
-                bad.append(f"section {si} {o['track']} beat {x['beat']}: ADSR {o['env']} -> {x['env']}")
-            elif o["env"] is None:
-                what.append("no ADSR -> event attack 0 / release 0")
-            else:
-                what.append("ADSR as separate (instrument, bus) event")
-            new_start = x["time"] - x["onset"]
-            if abs(new_start - o["start"]) > TIME_EPS:
-                if abs(x["time"] - x["old_shift"] - o["start"]) <= TIME_EPS:
-                    what.append("onset rule")
-                else:
-                    bad.append(f"section {si} {o['track']} beat {x['beat']}: start {o['start']:.5f} -> {new_start:.5f} "
-                               f"(old shift {x['old_shift']:.4f} does not explain it)")
-            if si == 0:
-                key = (x["clip"].name, x["note"].inst.name, x["note"].midi, round(x["old_shift"], 4))
-                onset_rows[key] = x["onset"]
-            if not what or what == ["no ADSR -> event attack 0 / release 0"] or what == ["ADSR as separate (instrument, bus) event"]:
-                counts["exact"] += 1
-            for w in what:
-                counts[w] += 1
-        for i, x in enumerate(new):
-            if i not in used:
-                bad.append(f"section {si} {x['track']} beat {x['beat']} {x['file']} pitch {x['pitch']}: no timeline note")
-        per_section.append((si, bpm, len(old), len(new), counts, bad))
-        unexplained += bad
-        for k in rules:
-            rules[k] += counts[k]
-    return per_section, rules, unexplained, onset_rows, legacy
-
-
-def generator_check(legacy):
-    """The old generators' build() notes on the migrated tracks are exactly the timeline notes minus the hand-made ones
-    (Bass A / Pluck A, and the core kit, open hats and clap layer)."""
-    import bed_combo
-    import bed_style
-    import bed_tension
-    import bed_variation
-    tr = {"bass": "Bass - C Am F G", "pluck": "Offbeat pluck", "pad": "Combo pad", "bells": "Combo bells",
-          "strings": "Tension strings", "sub": "Tension sub", "acid": "Tension acid bass",
-          "snare": "Snare variations", "hats": "Combo hats"}
-    gen = []
-    for n in bed_variation.build():
-        if n["track"] in tr:
-            gen.append((tr[n["track"]], n["start"], n["file"], n["pitch"], n["volume"]))
-    for n in bed_combo.build() + bed_tension.build():
-        if n["track"] in tr:
-            gen.append((tr[n["track"]], n["start"], n["file"], n["pitch"], n["volume"]))
-    tracks = set(l.legacy_track for l in collect()[0])
-    # The feature tracks' generator (feature_loops.py build()) is retired: compare_legacy checks those notes directly.
-    legacy = [n for n in legacy if not n["track"].startswith("Feature ")]
-    for n in bed_style.build():
-        if n["track"] in tracks:
-            gen.append((n["track"], n["start"], n["file"], n["pitch"], n["volume"]))
-
-    def key(t, s, f, p, v):
-        return (t, round(s, 4), f, round(p, 3), round(v, 2))
-
-    from collections import Counter
-    g = Counter(key(*x) for x in gen)
-    x = Counter(key(n["track"], n["start"], n["file"], n["pitch"], n["volume"]) for n in legacy)
-    rest = x - g
-    missing = g - x
-    hand = Counter()
-    for k, c in rest.items():
-        hand[k[0]] += c
-    return sum(g.values()), sum(x.values()), sum(missing.values()), dict(hand)
-
-
-def section_check(legacy):
-    """Per migrated track: are the four sections the same apart from tempo, and do bars 1-4 and 5-8 differ?"""
-    from collections import Counter, defaultdict
-    secs = _sections()
-    per = defaultdict(Counter)
-    for n in legacy:
-        si = max(i for i, (s0, _) in enumerate(secs) if n["start"] >= s0 - 0.08)
-        s0, bpm = secs[si]
-        spb = 60.0 / bpm
-        b = (n["start"] - s0) / spb
-        g = round(b * 4) / 4
-        # notes moved early by a fixed time land between grid steps: snap with the residual in seconds
-        for cand in (g, g + 0.25):
-            r = n["start"] - (s0 + cand * spb)
-            if -0.08 <= r <= 0.0005:
-                g = cand
-                break
-        r = round((n["start"] - (s0 + g * spb)) * 1000, 1)
-        half = int(g // 16)
-        k = (g % 16, r, n["file"], n["pitch"], round(n["volume"], 2), round(n["length"] / spb, 4),
-             json.dumps(sorted(n["conds"].items())), str(n["env"]))
-        per[(n["track"], si, half)][k] += 1
-    out = {}
-    for track in sorted({k[0] for k in per}):
-        ref = per[(track, 0, 0)]
-        sections_same = all(per[(track, si, h)] == per[(track, 0, h)] for si in range(4) for h in (0, 1))
-        halves_same = all(per[(track, si, 0)] == per[(track, si, 1)] for si in range(4))
-        out[track] = (sum(ref.values()) * 2, sections_same, halves_same)
-    return out
-
-
-def main_compare():
-    per_section, rules, unexplained, onset_rows, legacy = compare_legacy()
-    print("Migrated tracks (LEGACY_TRACKS):", ", ".join(__getattr__("LEGACY_TRACKS")))
-    print("\nTracks per section (timeline notes per 8 bars; sections equal apart from tempo; bars 1-4 == bars 5-8):")
-    for track, (count, same, halves) in section_check(legacy).items():
-        print(f"  {track:20s} {count:4d}   sections same: {same}   phrases same: {halves}")
-    g, x, missing, hand = generator_check(legacy)
-    print(f"\nOld generators' build(): {g} notes, all on the timeline: {missing == 0} (missing {missing}); timeline notes {x}; "
-          f"not generated (hand-made): {hand}")
-    for si, bpm, n_old, n_new, counts, bad in per_section:
-        label = "both phrases, bars 1-8" if si == 0 else "bars 1-8"
-        print(f"\nSection {si} ({bpm} BPM, {label}): timeline {n_old}, table {n_new}, unexplained {len(bad)}")
-        for k, v in counts.items():
-            print(f"    {k:45s} {v}")
-    print("\nTotal over the four sections:")
-    for k, v in rules.items():
-        print(f"    {k:45s} {v}")
-    _, clips, insts = collect()
-    mx = max_instances(clips, insts, collect()[0])
-    print("\nMax Instances (rule: most simultaneous notes at 132 BPM incl. release + 4):")
-    for key in sorted(mx):
-        print(f"    {key[0]:10s} {key[1]:36s} {mx[key]}")
-    warns = clamp_warnings(clips)
-    print(f"\nClamped notes: {len(warns)}")
-    for w in warns:
-        print("    " + w)
-    print("\nOnset (108 BPM section): clip, instrument, MIDI, old shift s, new onset s, difference ms")
-    for (clip, inst, midi, old_shift), onset in sorted(onset_rows.items()):
-        d = (onset - old_shift) * 1000
-        flag = "  > 5 ms" if abs(d) > 5 else ""
-        if abs(d) > 0.05:
-            print(f"    {clip:15s} {inst:9s} {midi:3d}  {old_shift:.4f}  {onset:.4f}  {d:+6.1f}{flag}")
-    print(f"\nUNEXPLAINED: {len(unexplained)}")
-    for u in unexplained[:200]:
-        print("    " + u)
-    return 1 if unexplained else 0
-
-
 def main():
-    if sys.argv[1:] == ["--compare-legacy"]:
-        sys.exit(main_compare())
     import instruments
     changed = write_table(instruments.bus_folder)
     layers, clips, _ = collect()

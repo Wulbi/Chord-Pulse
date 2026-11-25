@@ -1,9 +1,9 @@
 """
-Global mixer: buses, returns, ducking and the global mix parameters, in one place (spec 4-2 / 4-3 of
+Global mixer: buses, ducking and the global mix parameters, in one place (spec 4-2 / 4-3 of
 Docs/superpowers/specs/2026-11-24-fmod-scheduled-layers-design.md).
 
-Writes mixer.js next to this file. Run order (Docs/AdaptiveAudioPlan.md 8-10): ... bed_* -> instruments.js -> mixer.js ->
-kill_oneshots.js, FMOD Studio closed, then build as a SEPARATE command (the CLI can crash after saving):
+Writes mixer.js next to this file. Run order (Docs/AdaptiveAudioPlan.md 8-10): instruments.js -> mixer.js ->
+cleanup_music.js, FMOD Studio closed, then build as a SEPARATE command (the CLI can crash after saving):
     python -I FMOD/Tools/mixer.py
     fmodstudiocl.exe -script FMOD/Tools/mixer.js FMOD/ChordPulse/ChordPulse.fspro
     fmodstudiocl.exe -build FMOD/ChordPulse/ChordPulse.fspro
@@ -12,28 +12,25 @@ Why global: instrument one-shots (event:/Inst/<BusFolder>/<Name>) bypass the mus
 processing that must reach them lives on global buses, automated by GLOBAL parameters (a bus can only be automated by
 global parameters). Structure (signal order, every effect before the bus fader):
 
-    bus:/Music Bed            [low-pass (Danger), 3-EQ low band (Hurt), gain (Hurt)]   <- the music event's output
+    bus:/Music Bed            [low-pass (Danger), 3-EQ low band (Hurt), gain (Hurt)]
+      bus:/Music Bed/Layers   [limiter], fader -8                                     <- bed / drum / fever one-shots
       bus:/Music Bed/Harmony  [compressor keyed by bus:/Feature, compressor keyed by bus:/Kill Chords], fader -8
-        <- return:/Harmony Duck (no effects, 0 dB) <- pre-fader send of the event's Harmony group
     bus:/Feature              [key, compressor keyed by bus:/Kill Chords, reverb, limiter], fader -8
-        <- return:/Feature Duck (no effects, 0 dB) <- pre-fader send of the event's Feature group
     bus:/Kill Chords          [key, compressor, limiter], fader -8                    <- kill-chord one-shots
 
-The -8 dB is the music event master's level (the groups used to go through it). The returns stay (the timeline Harmony /
-Feature tracks still reach the mixer through them) but only route; the compressors sit after them on the buses with the
-fader moved there too, so every compressor sees the same input level as before. Two Harmony compressors, not one: the
-Feature duck keeps its own values (-32 dB 4:1, was in the event's Harmony group) and the kill duck its own
+The -8 dB is the old music event master's level (the timeline groups used to go through it). Two Harmony compressors,
+not one: the Feature duck keeps its own values (-32 dB 4:1, was in the event's Harmony group) and the kill duck its own
 (-20 dB 2:1, was on return:/Harmony Duck).
 
-In the event: the output goes to bus:/Music Bed; the Music Bed group loses its Danger / Hurt effects (now on the bus);
-the Harmony group keeps only its MusicMix gain and the send (its copy of the Music Bed chain and its Feature-keyed
-compressor move to the buses); the Feature group keeps only its send. MusicMix stays an event parameter.
+Since stages 3-8 Task 15b every layer is an event:/Inst/* one-shot: the legacy timeline tracks, the event's Harmony /
+Feature groups, return:/Harmony Duck, return:/Feature Duck and the global LegacyLayers were deleted (cleanup_music.py),
+so this script no longer creates or touches any of them. While event:/Music/ChordPulseGame still exists (it only holds
+the Spike ref track), its output stays routed to bus:/Music Bed.
 
-Parameters: Tension, Danger, Hurt become global (same presets, same GUIDs, the event's automation keeps working);
-LegacyLayers (0/1, discrete, global) is new. Unity must set global parameters on the Studio system, not on the event.
+Parameters: Tension, Danger, Hurt are global (same presets, same GUIDs). Unity sets them on the Studio system.
 
-The buses and returns named here are owned by this script: it rebuilds their effect chains (effects, automation, sidechain
-keys, faders) to match the tables above, so a hand edit of those chains in FMOD Studio is discarded on the next run.
+The buses named here are owned by this script: it rebuilds their effect chains (effects, automation, sidechain keys,
+faders) to match the tables above, so a hand edit of those chains in FMOD Studio is discarded on the next run.
 
 Idempotent: every write is guarded by "only when different"; a second run logs created 0, updated 0, added 0, removed 0
 and leaves FMOD/ChordPulse/Metadata unchanged. Layer tasks add their own sub-buses to SUB_BUSES (rule: only tracks with
@@ -50,8 +47,7 @@ import bed_combo  # noqa: E402
 import bed_tension  # noqa: E402
 
 JS_PATH = os.path.join(HERE, "mixer.js")
-EVENT_MASTER_DB = -8.0   # music event master volume; the old in-event groups and returns went through it
-MUTED_DB = -80.0         # in-event group faders: they leave the event through their pre-fader send only
+EVENT_MASTER_DB = -8.0   # the old music event master volume; the timeline groups went through it
 
 # Global parameters: name -> (type, min, max, initial, seek up, seek down). Seek speeds are the values the bed scripts set
 # (bed_tension.py, bed_combo.py); 0 = no seek.
@@ -59,10 +55,6 @@ PARAMETERS = {
     "Tension": ("User", 0, 1, 0, 2.0, 0.5),
     "Danger": ("User", 0, 1, 0, 3.0, 1.0),
     "Hurt": ("User", 0, 1, 0, 20.0, 1.6),
-    # 0/1: old timeline layers vs. scheduled one-shots (later tasks). Studio's maximum of a discrete parameter is one past
-    # the last value: with maximum 1 the built bank reports maximum 0 and clamps a write of 1 to 0 (measured on a copy
-    # of the project, FMOD 2.02.35); maximum 2 gives the runtime values 0 and 1.
-    "LegacyLayers": ("UserDiscrete", 0, 2, 0, 0, 0),
 }
 
 
@@ -155,9 +147,6 @@ SUB_BUSES = [
     ("Feature/Guitar", "Feature", 0.0, [_hp(110)]),
 ]
 
-# return name -> bus path it feeds
-RETURNS = {"Harmony Duck": "Music Bed/Harmony", "Feature Duck": "Feature"}
-
 # C# OutputBus member -> bus path (instruments.py generates the enum and InstrumentTable.BusPath from this).
 # MusicBed is bus:/Music Bed/Layers (one-shots need the event master's limiter and -8 dB that timeline tracks get on their
 # way to bus:/Music Bed); the other sub-buses are named after their last path part without spaces.
@@ -166,20 +155,17 @@ OUTPUT_BUSES = [("KillChords", "Kill Chords"), ("MusicBed", "Music Bed/Layers"),
 OUTPUT_BUSES += [(p.split("/")[-1].replace(" ", ""), p) for p, _, _, _ in SUB_BUSES if p not in dict(map(reversed, OUTPUT_BUSES))]
 
 JS_TEMPLATE = r"""// Generated by FMOD/Tools/mixer.py - edit the Python file, not this one.
-// Global mixer: buses, returns, ducking and global parameters (see mixer.py for the structure).
+// Global mixer: buses, ducking and global parameters (see mixer.py for the structure).
 var PARAMETERS = __PARAMETERS__;
 var BUSES = __BUSES__;
-var RETURNS = __RETURNS__;
 var EVENT_BUS = "Music Bed";
-var MUTED_DB = __MUTED__;
 var EPS = 0.001;
 
 var counts = { created: 0, updated: 0, added: 0, removed: 0 };
 function log(m) { console.log("[mixer] " + m); }
 function differs(a, b) { return Math.abs(a - b) > EPS; }
 var project = studio.project;
-var ev = project.lookup("event:/Music/ChordPulseGame");
-if (!ev) throw "event:/Music/ChordPulseGame not found";
+var ev = project.lookup("event:/Music/ChordPulseGame");   // optional: only its output routing is set
 
 // --- 1. global parameters ---
 var params = {};
@@ -324,101 +310,17 @@ BUSES.forEach(function (spec) {
     });
 });
 
-// --- 3. returns: route only, 0 dB (the processing is on the buses they feed) ---
-var returns = {};
-Object.keys(RETURNS).forEach(function (name) {
-    var r = null;
-    project.model.MixerReturn.findInstances().forEach(function (x) { if (x.isValid && x.name === name) r = x; });
-    if (!r) {
-        r = project.create("MixerReturn");
-        r.name = name;
-        counts.created++;
-        log("created return " + name);
-    }
-    var out = buses[RETURNS[name]];
-    if (!r.output || r.output.id !== out.id) { r.output = out; counts.updated++; log("return:/" + name + " -> bus:/" + RETURNS[name]); }
-    if (differs(r.volume, 0)) { r.volume = 0; counts.updated++; }
-    effectsOf(r).forEach(function (e) { project.deleteObject(e); counts.removed++; });
-    returns[name] = r;
-});
-
-// --- 4. the music event ---
-if (!ev.mixerInput.output || ev.mixerInput.output.id !== buses[EVENT_BUS].id) {
+// --- 3. the music event (Spike ref only, while it exists): output to bus:/Music Bed ---
+if (ev && (!ev.mixerInput.output || ev.mixerInput.output.id !== buses[EVENT_BUS].id)) {
     ev.mixerInput.output = buses[EVENT_BUS];
     counts.updated++;
     log("event output -> bus:/" + EVENT_BUS);
 }
-function group(name) {
-    var found = null;
-    ev.groupTracks.forEach(function (t) { if (t.mixerGroup.name === name) found = t.mixerGroup; });
-    if (!found) throw "event group not found: " + name;
-    return found;
-}
-function automatedBy(e, names) {
-    var hit = false;
-    e.automators.forEach(function (a) {
-        a.automationCurves.forEach(function (c) {
-            if (c.parameter && c.parameter.presetOwner && names.indexOf(c.parameter.presetOwner.name) >= 0) hit = true;
-        });
-    });
-    return hit;
-}
-function moveBeforeFader(bus, e) {
-    var chain = bus.effectChain;
-    chain.relationships.effects.remove(e);
-    var at = -1, f = fader(bus);
-    chain.effects.forEach(function (x, i) { if (x.id === f.id) at = i; });
-    chain.relationships.effects.insert(at, e);
-}
-// Brings an in-event group to [keep..., send to `ret` at 0 dB, fader at MUTED_DB]; everything else is deleted.
-function sendOnly(g, keep, ret) {
-    var send = null;
-    effectsOf(g).forEach(function (e) {
-        if (e.entity === "MixerSend" && !send && e.mixerReturn && e.mixerReturn.id === ret.id) { send = e; return; }
-        if (keep(e)) return;
-        project.deleteObject(e);
-        counts.removed++;
-    });
-    if (!send) { send = addPreFader(g, "MixerSend"); send.mixerReturn = ret; counts.added++; }
-    if (differs(send.level, 0)) { send.level = 0; counts.updated++; }
-    var fx = effectsOf(g);
-    if (fx[fx.length - 1].id !== send.id || !faderIsLast(g)) { moveBeforeFader(g, send); counts.updated++; }
-    if (differs(g.volume, MUTED_DB)) { g.volume = MUTED_DB; counts.updated++; }
-    return send;
-}
-var musicBed = group("Music Bed");
-// Harmony's compressor goes first: it may be keyed by the Feature group's in-event Sidechain.
-var harmony = group("Harmony");
-effectsOf(harmony).forEach(function (e) {
-    if (e.entity === "CompressorEffect") { project.deleteObject(e); counts.removed++; }
-});
-effectsOf(musicBed).forEach(function (e) {
-    if (automatedBy(e, ["Danger", "Hurt"])) { project.deleteObject(e); counts.removed++; }
-});
-// Harmony: MusicMix gain (Harmony leaves the event before Music Bed's MusicMix fader) + send
-function isMusicMixGain(e) { return e.entity === "GainEffect" && automatedBy(e, ["MusicMix"]) && !automatedBy(e, ["Danger", "Hurt"]); }
-var mixGain = effectsOf(harmony).filter(isMusicMixGain)[0];
-sendOnly(harmony, function (e) { return mixGain && e.id === mixGain.id; }, returns["Harmony Duck"]);
-if (!mixGain) {
-    var src = null;
-    musicBed.automators.forEach(function (a) { if (a.nameOfPropertyBeingAutomated === "volume") src = a.automationCurves[0]; });
-    if (!src) throw "Music Bed has no MusicMix volume automation";
-    mixGain = harmony.effectChain.addEffect("GainEffect");
-    harmony.effectChain.relationships.effects.remove(mixGain);
-    harmony.effectChain.relationships.effects.insert(0, mixGain);
-    var c = mixGain.addAutomator("gain").addAutomationCurve(src.parameter);
-    src.automationPoints.forEach(function (p) { c.addAutomationPoint(p.position, p.value); });
-    counts.added++;
-    log("Harmony: MusicMix gain added");
-}
-sendOnly(group("Feature"), function () { return false; }, returns["Feature Duck"]);
 
 function describe(b) { return b.effectChain.effects.map(function (e) { return e.entity; }).join(", ") + " @ " + b.volume + " dB"; }
 Object.keys(buses).forEach(function (p) { log("bus:/" + p + ": " + describe(buses[p])); });
-log("event groups: Music Bed " + describe(musicBed) + "; Harmony " + describe(harmony) + "; Feature " + describe(group("Feature")));
 log("created " + counts.created + ", updated " + counts.updated + ", added " + counts.added + ", removed " + counts.removed);
-project.save();
-log("saved");
+if (counts.created || counts.updated || counts.added || counts.removed) { project.save(); log("saved"); } else log("nothing to do");
 """
 
 
@@ -426,9 +328,7 @@ def js_text():
     params = {k: list(v) for k, v in PARAMETERS.items()}
     buses = [[p, parent, vol, fx] for p, parent, vol, fx in BUSES + SUB_BUSES]
     return (JS_TEMPLATE.replace("__PARAMETERS__", json.dumps(params))
-            .replace("__BUSES__", json.dumps(buses, indent=1))
-            .replace("__RETURNS__", json.dumps(RETURNS))
-            .replace("__MUTED__", json.dumps(MUTED_DB)))
+            .replace("__BUSES__", json.dumps(buses, indent=1)))
 
 
 def write_if_different(path, text):

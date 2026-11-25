@@ -6,8 +6,8 @@ FeatureSelector and the visuals) from the loop data in pattern_feature.py, the o
 
 Since Task 13 the loops play as scheduled one-shots (pattern_feature.py -> PatternTable.g.cs and the instrument events,
 python -I FMOD/Tools/instruments.py). This script no longer writes an FMOD script: the six old "Feature *" timeline tracks
-stay in the music event, gated by LegacyLayers (legacy_gate.py), until the legacy layers are deleted; the FeatureLoop
-parameter they use stays on the event. The Feature bus and its ducking are mixer.py's.
+and the FeatureLoop parameter were deleted from the music event in stages 3-8 Task 15b (cleanup_music.py). The Feature
+bus and its ducking are mixer.py's.
 """
 import os
 import sys
