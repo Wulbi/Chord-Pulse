@@ -592,14 +592,12 @@ var BUSES = [
   ]
  ]
 ];
-var EVENT_BUS = "Music Bed";
 var EPS = 0.001;
 
 var counts = { created: 0, updated: 0, added: 0, removed: 0 };
 function log(m) { console.log("[mixer] " + m); }
 function differs(a, b) { return Math.abs(a - b) > EPS; }
 var project = studio.project;
-var ev = project.lookup("event:/Music/ChordPulseGame");   // optional: only its output routing is set
 
 // --- 1. global parameters ---
 var params = {};
@@ -743,13 +741,6 @@ BUSES.forEach(function (spec) {
         log(spec[0] + ": compressor " + i + " keys relinked");
     });
 });
-
-// --- 3. the music event (Spike ref only, while it exists): output to bus:/Music Bed ---
-if (ev && (!ev.mixerInput.output || ev.mixerInput.output.id !== buses[EVENT_BUS].id)) {
-    ev.mixerInput.output = buses[EVENT_BUS];
-    counts.updated++;
-    log("event output -> bus:/" + EVENT_BUS);
-}
 
 function describe(b) { return b.effectChain.effects.map(function (e) { return e.entity; }).join(", ") + " @ " + b.volume + " dB"; }
 Object.keys(buses).forEach(function (p) { log("bus:/" + p + ": " + describe(buses[p])); });

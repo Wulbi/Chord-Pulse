@@ -169,8 +169,9 @@ var OLD_PARAMETERS = __OLD_PARAMETERS__;
 
 function log(m) { console.log("[kill-oneshots] " + m); }
 var project = studio.project;
+// The music event is gone since unity-music-clock Task 8 (remove_music_event.js); then only the parameters are checked.
 var ev = project.lookup("event:/Music/ChordPulseGame");
-if (!ev) throw "event:/Music/ChordPulseGame not found";
+if (!ev) ev = { groupTracks: [], parameters: [] };
 
 function countNotes() { var n = 0; ev.groupTracks.forEach(function (t) { n += t.modules.length; }); return n; }
 var notesBefore = countNotes();

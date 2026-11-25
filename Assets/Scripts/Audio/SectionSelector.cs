@@ -1,8 +1,8 @@
 using System;
 
 /// <summary>
-/// Picks which music section plays in each 4-bar phrase. Unity decides one phrase ahead (FMOD performs the jump
-/// at the phrase boundary via the NextSection parameter), so gameplay always knows what is coming.
+/// Picks which music section plays in each 4-bar phrase. Unity decides one phrase ahead (MusicTransport changes the
+/// tempo at the phrase boundary), so gameplay always knows what is coming.
 /// Sections are ordered by energy: 0 = slowest/calmest ... SectionCount-1 = fastest.
 /// </summary>
 public sealed class SectionSelector
@@ -10,7 +10,7 @@ public sealed class SectionSelector
     public const int SectionCount = 4;
     public const int BarsPerPhrase = 4;
 
-    // Tempo of each section: the FMOD tempo markers of event:/Music/ChordPulseGame (Docs/AdaptiveAudioPlan.md).
+    // Tempo of each section (were the tempo markers of the deleted event:/Music/ChordPulseGame; Docs/AdaptiveAudioPlan.md).
     static readonly double[] SectionBpm = { 108, 116, 124, 132 };
 
     /// <summary>BPM of a section (clamped to the known sections).</summary>

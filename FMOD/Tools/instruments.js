@@ -3526,8 +3526,6 @@ var assetsRoot = project.filePath.replace(/[^\/\\]+$/, "") + "Assets/";
 
 var bank = project.lookup("bank:/ChordPulse");
 if (!bank) throw "bank ChordPulse not found";
-var music = project.lookup("event:/Music/ChordPulseGame");
-if (!music) throw "event:/Music/ChordPulseGame not found";
 
 function childFolder(parent, name) {
     var found = null;
@@ -3543,13 +3541,13 @@ function childFolder(parent, name) {
     return found;
 }
 
-// --- folder event:/Inst (next to event:/Music) ---
+// --- folder event:/Inst (top level, next to event:/Music) ---
 var folder = null;
 project.model.EventFolder.findInstances().forEach(function (f) { if (f.isValid && f.name === FOLDER) folder = f; });
 if (!folder) {
     folder = project.create("EventFolder");
     folder.name = FOLDER;
-    folder.folder = music.folder.folder;
+    folder.folder = project.workspace.masterEventFolder;
     log("created folder " + FOLDER);
 }
 

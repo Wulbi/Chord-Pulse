@@ -43,12 +43,12 @@ MonoBehaviour:
   Path: FMOD/ChordPulse/Build/Desktop/ChordPulse.bank
   Name: ChordPulse
   StudioPath: bank:/ChordPulse
-  lastModified: 639312665528993402
+  lastModified: 639312698162067077
   FileSizes:
   - Name: Desktop
-    Value: 2748320
+    Value: 2708160
   - Name: HTML5
-    Value: 2748192
+    Value: 2708064
   Exists: 1
 --- !u!114 &-8899148703420884499
 MonoBehaviour:
@@ -206,35 +206,6 @@ MonoBehaviour:
   IsGlobal: 0
   Labels: []
   Exists: 1
---- !u!114 &-7248762725815871656
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: ceb653cd98e289a4e8697a1af55201f2, type: 3}
-  m_Name: event:/Music/ChordPulseGame
-  m_EditorClassIdentifier: FMODUnityEditor::FMODUnity.EditorEventRef
-  Path: event:/Music/ChordPulseGame
-  Guid:
-    Data1: 1028034325
-    Data2: 1237838171
-    Data3: 42722697
-    Data4: 1841289541
-  Banks:
-  - {fileID: -9072669451329646237}
-  IsStream: 0
-  Is3D: 0
-  IsOneShot: 0
-  Parameters:
-  - {fileID: 4053508439555920453}
-  - {fileID: 443583806692751854}
-  MinDistance: 1
-  MaxDistance: 20
-  Length: 64358
 --- !u!114 &-7217780234388986884
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1400,7 +1371,6 @@ MonoBehaviour:
   - {fileID: -9072669451329646237}
   EditorEvents:
   - {fileID: -657503318195734969}
-  - {fileID: -7248762725815871656}
   - {fileID: -3761523632858594842}
   - {fileID: -420677660931435073}
   - {fileID: -2131903320431416024}
@@ -1458,7 +1428,7 @@ MonoBehaviour:
   - {fileID: -9072669451329646237}
   StringsBanks:
   - {fileID: 4610869450805227881}
-  cacheTime: 639312665529077109
+  cacheTime: 639312698162133130
   cacheVersion: 131637
 --- !u!114 &417851344225667453
 MonoBehaviour:
@@ -1488,30 +1458,6 @@ MonoBehaviour:
   MinDistance: 1
   MaxDistance: 20
   Length: 1133
---- !u!114 &443583806692751854
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: fecb8ef7f94ca804a8ab72049b86782e, type: 3}
-  m_Name: parameter:/ChordPulseGame/SpikeRef
-  m_EditorClassIdentifier: FMODUnityEditor::FMODUnity.EditorParamRef
-  Name: SpikeRef
-  StudioPath: 
-  Min: 0
-  Max: 1
-  Default: 0
-  ID:
-    data1: 2037231409
-    data2: 1839521191
-  Type: 0
-  IsGlobal: 0
-  Labels: []
-  Exists: 1
 --- !u!114 &467239014022834995
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1960,30 +1906,6 @@ MonoBehaviour:
   IsGlobal: 0
   Labels: []
   Exists: 1
---- !u!114 &4053508439555920453
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: fecb8ef7f94ca804a8ab72049b86782e, type: 3}
-  m_Name: parameter:/ChordPulseGame/NextSection
-  m_EditorClassIdentifier: FMODUnityEditor::FMODUnity.EditorParamRef
-  Name: NextSection
-  StudioPath: 
-  Min: 0
-  Max: 3
-  Default: 0
-  ID:
-    data1: 351118289
-    data2: 3543178851
-  Type: 0
-  IsGlobal: 0
-  Labels: []
-  Exists: 1
 --- !u!114 &4164304999065433145
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2075,12 +1997,12 @@ MonoBehaviour:
   Path: FMOD/ChordPulse/Build/Desktop/ChordPulse.strings.bank
   Name: ChordPulse.strings
   StudioPath: bank:/ChordPulse.strings
-  lastModified: 639312665529077109
+  lastModified: 639312698162133130
   FileSizes:
   - Name: Desktop
-    Value: 4354
+    Value: 4214
   - Name: HTML5
-    Value: 4354
+    Value: 4214
   Exists: 1
 --- !u!114 &4833843474174468983
 MonoBehaviour:
