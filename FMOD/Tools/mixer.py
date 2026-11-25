@@ -2,8 +2,8 @@
 Global mixer: buses, ducking and the global mix parameters, in one place (spec 4-2 / 4-3 of
 Docs/superpowers/specs/2026-11-24-fmod-scheduled-layers-design.md).
 
-Writes mixer.js next to this file. Run order (Docs/AdaptiveAudioPlan.md 8-10): instruments.js -> mixer.js ->
-cleanup_music.js, FMOD Studio closed, then build as a SEPARATE command (the CLI can crash after saving):
+Writes mixer.js next to this file. Run order (Docs/AdaptiveAudioPlan.md 8-10): instruments.js -> mixer.js, FMOD Studio
+closed, then build as a SEPARATE command (the CLI can crash after saving):
     python -I FMOD/Tools/mixer.py
     fmodstudiocl.exe -script FMOD/Tools/mixer.js FMOD/ChordPulse/ChordPulse.fspro
     fmodstudiocl.exe -build FMOD/ChordPulse/ChordPulse.fspro
@@ -23,9 +23,9 @@ not one: the Feature duck keeps its own values (-32 dB 4:1, was in the event's H
 (-20 dB 2:1, was on return:/Harmony Duck).
 
 Since stages 3-8 Task 15b every layer is an event:/Inst/* one-shot: the legacy timeline tracks, the event's Harmony /
-Feature groups, return:/Harmony Duck, return:/Feature Duck and the global LegacyLayers were deleted (cleanup_music.py),
-so this script no longer creates or touches any of them. event:/Music/ChordPulseGame itself was deleted in
-unity-music-clock Task 8 (remove_music_event.py), so no event's output is routed here any more.
+Feature groups, return:/Harmony Duck, return:/Feature Duck and the global LegacyLayers were deleted
+(retired/cleanup_music.py), so this script no longer creates or touches any of them. event:/Music/ChordPulseGame itself
+was deleted in unity-music-clock Task 8 (retired/remove_music_event.py), so no event's output is routed here any more.
 
 Parameters: Tension, Danger, Hurt are global (same presets, same GUIDs). Unity sets them on the Studio system.
 

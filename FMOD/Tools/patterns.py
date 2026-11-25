@@ -32,7 +32,6 @@ Rules (same sound as the old generators):
   only the sounding time let the Drums event steal its oldest instances, the pending core kicks (Task 12: in funk every
   hat instance lived 1.3 s, the claves region, and the kick never sounded).
 """
-import json
 import os
 import sys
 
@@ -376,8 +375,8 @@ def write_table(bus_member):
 
 
 def __getattr__(name):
-    """LEGACY_TRACKS: the old timeline tracks the pattern layers replaced, each once, in layer order (cleanup_music.py
-    reads it to delete them; Core hat and Open hat share Eighth-note hats)."""
+    """LEGACY_TRACKS: the old timeline tracks the pattern layers replaced, each once, in layer order (read by the
+    one-time retired/cleanup_music.py that deleted them; Core hat and Open hat share Eighth-note hats)."""
     if name == "LEGACY_TRACKS":
         out = []
         for l in collect()[0]:
@@ -385,74 +384,6 @@ def __getattr__(name):
                 out.append(l.legacy_track)
         return out
     raise AttributeError(name)
-
-
-# ===== timeline reader (extract_fever.py, a one-time record tool) =====================================================
-EVENT_XML = os.path.join(HERE, "..", "ChordPulse", "Metadata", "Event", "{3d468f15-e95b-49c7-89e5-8b0245d9bf6d}.xml")
-METADATA = os.path.join(HERE, "..", "ChordPulse", "Metadata")
-SECTION_BPMS = (108, 116, 124, 132)
-SECTION_BEATS = 32
-
-
-def _load_objects(path):
-    import xml.etree.ElementTree as ET
-    objs = {}
-    for o in ET.parse(path).getroot().iter("object"):
-        props = {p.get("name"): p.find("value").text for p in o.findall("property") if p.find("value") is not None}
-        rels = {r.get("name"): [d.text for d in r.findall("destination")] for r in o.findall("relationship")}
-        objs[o.get("id")] = (o.get("class"), props, rels)
-    return objs
-
-
-def legacy_notes(tracks):
-    """Every SingleSound of the music event on the given tracks: start / length s, file, pitch, volume, conditions, ADSR,
-    and the track's fader (track_db). Studio leaves properties at their default out of the XML (start 0, length 1 s,
-    volume 0, pitch 0)."""
-    import glob
-    objs = _load_objects(EVENT_XML)
-    files, params = {}, {}
-    for f in glob.glob(os.path.join(METADATA, "AudioFile", "*.xml")):
-        for k, v in _load_objects(f).items():
-            files[k] = v[1].get("assetPath")
-    for f in glob.glob(os.path.join(METADATA, "ParameterPreset", "*.xml")):
-        for k, v in _load_objects(f).items():
-            if v[0] == "ParameterPreset":
-                params[v[2]["parameter"][0]] = v[1]["name"]
-    out = []
-    for cls, props, rels in objs.values():
-        if cls != "GroupTrack":
-            continue
-        group = objs[rels["mixerGroup"][0]][1]
-        name = group.get("name")
-        if name not in tracks:
-            continue
-        track_db = float(group.get("volume", 0))
-        for sid in rels.get("modules", []):
-            c, p, r = objs[sid]
-            assert c == "SingleSound", (name, c)
-            conds = {}
-            for cid in r.get("triggerConditions", []):
-                cc = objs[cid]
-                pname = params.get(cc[2]["parameter"][0], cc[2]["parameter"][0])
-                conds[pname] = (float(cc[1].get("minimum", 0)), float(cc[1].get("maximum", 0)))
-            env = None
-            for mid in r.get("modulators", []):
-                m = objs[mid]
-                if m[0] == "ADSRModulator" and m[1].get("nameOfPropertyBeingModulated") == "volume":
-                    env = (float(m[1].get("attackTime", 0)), float(m[1].get("releaseTime", 0)))
-            out.append(dict(track=name, start=float(p.get("start", 0)), length=float(p.get("length", 1)),
-                            volume=float(p.get("volume", 0)), pitch=float(p.get("pitch", 0)),
-                            file=files.get((r.get("audioFile") or [None])[0]), conds=conds, env=env,
-                            track_db=track_db))
-    return out
-
-
-def _sections():
-    out, t = [], 0.0
-    for bpm in SECTION_BPMS:
-        out.append((t, bpm))
-        t += SECTION_BEATS * 60.0 / bpm
-    return out
 
 
 def main():
