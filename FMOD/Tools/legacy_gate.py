@@ -5,7 +5,7 @@ one-shots (SoundManager.legacyLayers false) and 1 to hear the old timeline path.
 
 Writes legacy_gate.js next to this file. Run order (Docs/AdaptiveAudioPlan.md 8-10): ... bed_* -> instruments.js ->
 mixer.js (creates LegacyLayers) -> kill_oneshots.js -> legacy_gate.js, FMOD Studio closed, then build as a SEPARATE
-command (the CLI can crash after saving a big script; this one touches about 6,300 notes):
+command (the CLI can crash after saving a big script; this one touches about 10,300 notes):
     python -I FMOD/Tools/legacy_gate.py
     fmodstudiocl.exe -script FMOD/Tools/legacy_gate.js FMOD/ChordPulse/ChordPulse.fspro
     fmodstudiocl.exe -script FMOD/Tools/legacy_gate.js FMOD/ChordPulse/ChordPulse.fspro   # check: all counters 0
@@ -13,7 +13,7 @@ command (the CLI can crash after saving a big script; this one touches about 6,3
 Any bed_* script that re-creates the migrated notes drops their gate: run legacy_gate.js again after it.
 
 The gate is ADDED to each note's conditions (style / variation / combo / intensity stay); only the tracks in
-LEGACY_TRACKS are touched (fever, Spike ref and everything else are left alone). Idempotent: a note that
+LEGACY_TRACKS are touched (Spike ref and everything else are left alone). Idempotent: a note that
 already has exactly GATE is unchanged; one with another LegacyLayers range gets it replaced. A second run logs
 added 0, replaced 0 and does not save.
 
@@ -37,14 +37,16 @@ JS_PATH = os.path.join(HERE, "legacy_gate.js")
 PARAMETER = "LegacyLayers"
 GATE = (0.5, 1.0)
 # The 13 tracks of the Task 11 brief, the 10 drum tracks of Task 12 (the three core tracks included; Eighth-note hats
-# holds both Core hat and Open hat) and the 6 feature-loop tracks of Task 13; LEGACY_TRACKS (each migrated track once)
-# must name exactly these.
+# holds both Core hat and Open hat), the 6 feature-loop tracks of Task 13 and the 8 fever tracks of Task 14;
+# LEGACY_TRACKS (each migrated track once) must name exactly these.
 EXPECTED_TRACKS = {
     "Bass - C Am F G", "Offbeat pluck", "Combo pad", "Combo bells", "Tension strings", "Tension sub",
     "Tension acid bass", "Latin marimba", "Funk keys", "Funk guitar", "Dreamy choir", "Dreamy bells", "Dreamy sub",
     "Kick - beats 1 and 3", "Snare - beats 2 and 4", "Eighth-note hats", "Clap layer", "Snare variations", "Combo hats",
     "Latin perc", "Latin shaker", "Funk drums", "Dreamy perc",
     "Feature trumpet", "Feature whistle", "Feature mallets", "Feature perc", "Feature synth", "Feature guitar",
+    "Fever lead", "Fever shaker", "Fever bass fifths", "Fever build roll", "Fever build riser", "Fever impact",
+    "Fever outro fall", "Fever outro snare",
 }
 
 

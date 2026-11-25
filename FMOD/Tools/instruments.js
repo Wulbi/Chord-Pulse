@@ -106,6 +106,44 @@ var INSTRUMENTS = [
  },
  {
   "name": "Bass",
+  "bus": "Music Bed/Layers",
+  "busFolder": "MusicBed",
+  "max": 5,
+  "attack": 0,
+  "release": 0,
+  "notes": [
+   {
+    "midi": 36,
+    "file": "AT101V_101Bass_C2_v100.wav",
+    "pitch": 0,
+    "volume": -11.4,
+    "onset": 0.001
+   },
+   {
+    "midi": 38,
+    "file": "AT101V_101Bass_C2_v100.wav",
+    "pitch": 2,
+    "volume": -11.4,
+    "onset": 0.000891
+   },
+   {
+    "midi": 40,
+    "file": "AT101V_101Bass_C2_v100.wav",
+    "pitch": 4,
+    "volume": -11.4,
+    "onset": 0.000794
+   },
+   {
+    "midi": 43,
+    "file": "AT101V_101Bass_C2_v100.wav",
+    "pitch": 7,
+    "volume": -11.4,
+    "onset": 0.000667
+   }
+  ]
+ },
+ {
+  "name": "Bass",
   "bus": "Music Bed/Layers/Bass",
   "busFolder": "Bass",
   "max": 7,
@@ -1071,6 +1109,379 @@ var INSTRUMENTS = [
     "pitch": 0,
     "volume": 10.0,
     "onset": 0.009
+   }
+  ]
+ },
+ {
+  "name": "FeverDrums",
+  "bus": "Music Bed/Layers",
+  "busFolder": "MusicBed",
+  "max": 15,
+  "attack": 0,
+  "release": 0,
+  "notes": [
+   {
+    "midi": 36,
+    "file": "Pallor_Kick_Synthpop_v115.wav",
+    "pitch": 0,
+    "volume": -15.2,
+    "onset": 0.0
+   },
+   {
+    "midi": 38,
+    "file": "Pallor_Snare_Synthpop_v115.wav",
+    "pitch": 0,
+    "volume": -12.2,
+    "onset": 0.0
+   },
+   {
+    "midi": 39,
+    "file": "Pallor_Clap_Synthpop_v110.wav",
+    "pitch": 0,
+    "volume": -11.1,
+    "onset": 0.0
+   },
+   {
+    "midi": 46,
+    "file": "Pallor_OpenHat_Synthpop_v110.wav",
+    "pitch": 0,
+    "volume": -8.0,
+    "onset": 0.0
+   },
+   {
+    "midi": 82,
+    "file": "Pallor_Shaker_Synthpop_v110.wav",
+    "pitch": 0,
+    "volume": -5.4,
+    "onset": 0.0
+   },
+   {
+    "midi": 100,
+    "file": "Pallor_Snare_Synthpop_v115.wav",
+    "pitch": -4.0,
+    "volume": -12.2,
+    "onset": 0.0
+   },
+   {
+    "midi": 101,
+    "file": "Pallor_Snare_Synthpop_v115.wav",
+    "pitch": -3.42857146,
+    "volume": -12.2,
+    "onset": 0.0
+   },
+   {
+    "midi": 102,
+    "file": "Pallor_Snare_Synthpop_v115.wav",
+    "pitch": -2.85714293,
+    "volume": -12.2,
+    "onset": 0.0
+   },
+   {
+    "midi": 103,
+    "file": "Pallor_Snare_Synthpop_v115.wav",
+    "pitch": -2.28571439,
+    "volume": -12.2,
+    "onset": 0.0
+   },
+   {
+    "midi": 104,
+    "file": "Pallor_Snare_Synthpop_v115.wav",
+    "pitch": -1.71428573,
+    "volume": -12.2,
+    "onset": 0.0
+   },
+   {
+    "midi": 105,
+    "file": "Pallor_Snare_Synthpop_v115.wav",
+    "pitch": -1.14285719,
+    "volume": -12.2,
+    "onset": 0.0
+   },
+   {
+    "midi": 106,
+    "file": "Pallor_Snare_Synthpop_v115.wav",
+    "pitch": -0.571428597,
+    "volume": -12.2,
+    "onset": 0.0
+   },
+   {
+    "midi": 107,
+    "file": "Pallor_Snare_Synthpop_v115.wav",
+    "pitch": 0.363636374,
+    "volume": -12.2,
+    "onset": 0.0
+   },
+   {
+    "midi": 108,
+    "file": "Pallor_Snare_Synthpop_v115.wav",
+    "pitch": 0.727272749,
+    "volume": -12.2,
+    "onset": 0.0
+   },
+   {
+    "midi": 109,
+    "file": "Pallor_Snare_Synthpop_v115.wav",
+    "pitch": 1.09090912,
+    "volume": -12.2,
+    "onset": 0.0
+   },
+   {
+    "midi": 110,
+    "file": "Pallor_Snare_Synthpop_v115.wav",
+    "pitch": 1.4545455,
+    "volume": -12.2,
+    "onset": 0.0
+   },
+   {
+    "midi": 111,
+    "file": "Pallor_Snare_Synthpop_v115.wav",
+    "pitch": 1.81818187,
+    "volume": -12.2,
+    "onset": 0.0
+   },
+   {
+    "midi": 112,
+    "file": "Pallor_Snare_Synthpop_v115.wav",
+    "pitch": 2.18181825,
+    "volume": -12.2,
+    "onset": 0.0
+   },
+   {
+    "midi": 113,
+    "file": "Pallor_Snare_Synthpop_v115.wav",
+    "pitch": 2.5454545,
+    "volume": -12.2,
+    "onset": 0.0
+   },
+   {
+    "midi": 114,
+    "file": "Pallor_Snare_Synthpop_v115.wav",
+    "pitch": 2.909091,
+    "volume": -12.2,
+    "onset": 0.0
+   },
+   {
+    "midi": 115,
+    "file": "Pallor_Snare_Synthpop_v115.wav",
+    "pitch": 3.27272725,
+    "volume": -12.2,
+    "onset": 0.0
+   },
+   {
+    "midi": 116,
+    "file": "Pallor_Snare_Synthpop_v115.wav",
+    "pitch": 3.63636374,
+    "volume": -12.2,
+    "onset": 0.0
+   },
+   {
+    "midi": 117,
+    "file": "Pallor_Snare_Synthpop_v115.wav",
+    "pitch": 4.0,
+    "volume": -12.2,
+    "onset": 0.0
+   }
+  ]
+ },
+ {
+  "name": "FeverLead",
+  "bus": "Music Bed/Harmony",
+  "busFolder": "Harmony",
+  "max": 6,
+  "attack": 0,
+  "release": 0,
+  "notes": [
+   {
+    "midi": 65,
+    "file": "AT101V_ClassicLead_C4_v100.wav",
+    "pitch": 5,
+    "volume": -15.2,
+    "onset": 0.0
+   },
+   {
+    "midi": 67,
+    "file": "AT101V_ClassicLead_C4_v100.wav",
+    "pitch": 7,
+    "volume": -15.2,
+    "onset": 0.0
+   },
+   {
+    "midi": 69,
+    "file": "AT101V_ClassicLead_C4_v100.wav",
+    "pitch": 9,
+    "volume": -15.2,
+    "onset": 0.0
+   },
+   {
+    "midi": 71,
+    "file": "AT101V_ClassicLead_C4_v100.wav",
+    "pitch": 11,
+    "volume": -15.2,
+    "onset": 0.0
+   },
+   {
+    "midi": 72,
+    "file": "AT101V_ClassicLead_C4_v100.wav",
+    "pitch": 12,
+    "volume": -15.2,
+    "onset": 0.0
+   },
+   {
+    "midi": 74,
+    "file": "AT101V_ClassicLead_C4_v100.wav",
+    "pitch": 14,
+    "volume": -15.2,
+    "onset": 0.0
+   },
+   {
+    "midi": 76,
+    "file": "AT101V_ClassicLead_C4_v100.wav",
+    "pitch": 16,
+    "volume": -15.2,
+    "onset": 0.0
+   },
+   {
+    "midi": 79,
+    "file": "AT101V_ClassicLead_C4_v100.wav",
+    "pitch": 19,
+    "volume": -15.2,
+    "onset": 0.0
+   }
+  ]
+ },
+ {
+  "name": "FeverPluck",
+  "bus": "Music Bed/Harmony",
+  "busFolder": "Harmony",
+  "max": 12,
+  "attack": 0,
+  "release": 0,
+  "notes": [
+   {
+    "midi": 55,
+    "file": "AT101V_PolyPluck_C4_v100.wav",
+    "pitch": -5,
+    "volume": -11.4,
+    "onset": 0.001335
+   },
+   {
+    "midi": 57,
+    "file": "AT101V_PolyPluck_C4_v100.wav",
+    "pitch": -3,
+    "volume": -11.4,
+    "onset": 0.001189
+   },
+   {
+    "midi": 59,
+    "file": "AT101V_PolyPluck_C4_v100.wav",
+    "pitch": -1,
+    "volume": -11.4,
+    "onset": 0.001059
+   },
+   {
+    "midi": 60,
+    "file": "AT101V_PolyPluck_C4_v100.wav",
+    "pitch": 0,
+    "volume": -11.4,
+    "onset": 0.001
+   },
+   {
+    "midi": 62,
+    "file": "AT101V_PolyPluck_C4_v100.wav",
+    "pitch": 2,
+    "volume": -11.4,
+    "onset": 0.000891
+   },
+   {
+    "midi": 64,
+    "file": "AT101V_PolyPluck_C4_v100.wav",
+    "pitch": 4,
+    "volume": -11.4,
+    "onset": 0.000794
+   },
+   {
+    "midi": 65,
+    "file": "AT101V_PolyPluck_C4_v100.wav",
+    "pitch": 5,
+    "volume": -11.4,
+    "onset": 0.000749
+   },
+   {
+    "midi": 67,
+    "file": "AT101V_PolyPluck_C4_v100.wav",
+    "pitch": 7,
+    "volume": -11.4,
+    "onset": 0.000667
+   },
+   {
+    "midi": 69,
+    "file": "AT101V_PolyPluck_C4_v100.wav",
+    "pitch": 9,
+    "volume": -11.4,
+    "onset": 0.000595
+   },
+   {
+    "midi": 71,
+    "file": "AT101V_PolyPluck_C4_v100.wav",
+    "pitch": 11,
+    "volume": -11.4,
+    "onset": 0.00053
+   },
+   {
+    "midi": 72,
+    "file": "AT101V_PolyPluck_C4_v100.wav",
+    "pitch": 12,
+    "volume": -11.4,
+    "onset": 0.0005
+   },
+   {
+    "midi": 74,
+    "file": "AT101V_PolyPluck_C4_v100.wav",
+    "pitch": 14,
+    "volume": -11.4,
+    "onset": 0.000445
+   },
+   {
+    "midi": 76,
+    "file": "AT101V_PolyPluck_C4_v100.wav",
+    "pitch": 16,
+    "volume": -11.4,
+    "onset": 0.000397
+   },
+   {
+    "midi": 77,
+    "file": "AT101V_PolyPluck_C4_v100.wav",
+    "pitch": 17,
+    "volume": -11.4,
+    "onset": 0.000375
+   },
+   {
+    "midi": 79,
+    "file": "AT101V_PolyPluck_C4_v100.wav",
+    "pitch": 19,
+    "volume": -11.4,
+    "onset": 0.000334
+   },
+   {
+    "midi": 81,
+    "file": "AT101V_PolyPluck_C4_v100.wav",
+    "pitch": 21,
+    "volume": -11.4,
+    "onset": 0.000297
+   },
+   {
+    "midi": 83,
+    "file": "AT101V_PolyPluck_C4_v100.wav",
+    "pitch": 23,
+    "volume": -11.4,
+    "onset": 0.000265
+   },
+   {
+    "midi": 84,
+    "file": "AT101V_PolyPluck_C4_v100.wav",
+    "pitch": 24,
+    "volume": -11.4,
+    "onset": 0.00025
    }
   ]
  },

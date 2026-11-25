@@ -123,6 +123,12 @@ FEATURE_PERC = [("WorldPerc/Cowbell2_Normal_v3_rr1_Mid.wav", 56, -21.8, 0.010, 0
 
 
 def pick(table, midi, max_pitch=15):
+    """(sample entry, pitch in semitones) for a note. A list table picks the nearest root; a dict table maps each note
+    number to its (entry, pitch) directly (pattern_fever.py: snare hits pitched by fractions of a semitone)."""
+    if isinstance(table, dict):
+        s, pitch = table[midi]
+        assert -max_pitch <= pitch <= max_pitch, (s[0], midi, pitch)
+        return s, pitch
     s = min(table, key=lambda x: (abs(midi - x[1]), -x[1]))
     pitch = midi - s[1]
     assert -max_pitch <= pitch <= max_pitch, (s[0], midi, pitch)
