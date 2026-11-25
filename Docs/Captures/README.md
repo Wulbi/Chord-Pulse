@@ -2095,3 +2095,44 @@ lost.
 - Standalone ±16-18 ms readings against the anchors: cause not shown.
 - Stacked-note spread: carried item 4, see C.
 - New vs legacy lead -0.64 ms mean (fever, full mix): carried item 3.
+
+### Scalability check (spec 5-2; trial in the working tree only, fully reverted, nothing committed)
+
+**What I added.** A style 4 (`TRIAL`), using existing samples only:
+- `patterns.py`: `STYLE_COUNT` 5 and a fifth `STYLE_USES_CORE_BACKBEAT` entry (`True`). The style constant has to change
+  too, because `pattern_bed.py` / `pattern_drums.py` assert `STYLE_COUNT == 4` and `Clip` checks its styles against it.
+- `pattern_bed.py`: one harmony clip, `TrialMarimba` (the latin marimba pattern on the existing `Marimba` instrument,
+  layer "Latin marimba").
+- `pattern_drums.py`: one drum clip, `TrialClaves` (the dreamy claves on `Drums`, layer "Dreamy perc").
+- No new pitch and no new instrument, so no new `event:/Inst/*` was needed.
+
+**Runs:**
+- `instruments.py` wrote 49 instruments / 432 notes. Of the generated files, only `PatternTable.g.cs` changed
+  (+89 / -47: `StyleCount = 5`, `StyleUsesCoreBackbeat`, two clip names, two clip rows, and the note offsets of the
+  following clips). `InstrumentTable.g.cs` and `instruments.js` did not change, `mixer.js` was not regenerated, and
+  `bed_notes.py` left `BedNotes.g.cs` unchanged.
+- `instruments.js` (CLI): "moved 0, updated 0, added 0, removed 0", saved.
+- `-build` as a separate run: "Build completed successfully"; the bank timestamps did not move (nothing to build).
+
+**Result:**
+- `git status --short FMOD/ChordPulse/Metadata` was empty, and an MD5 of all 217 Metadata files was identical before
+  and after. **No existing event XML changed**, the music event `{3d468f15…}.xml` included; `ChordPulse.fspro`, banks
+  and the FMOD cache asset were unchanged too.
+- EditMode with the trial in place: **173 / 173 passed**.
+
+**Things a real fifth style would still need** (findings, not patched):
+- `Clip`'s default `styles=(0, 1, 2, 3)` hard-codes four styles. The core kick, tension and combo layers and the feature
+  loops would not play in style 4 until that default follows `STYLE_COUNT`.
+- The kill-chord tables and their tests (`KillChordTable.g.cs`, `KillChordVoicerTests` / `InstrumentCoverageTests`
+  loop `s < 4`) and `BedStyleVisuals.StyleCount = 4` are separate from the pattern generators.
+- `SoundManager` never selects a style 4.
+
+**Revert:**
+- `patterns.py`, `pattern_bed.py`, `pattern_drums.py` and `PatternTable.g.cs` were copied back from the backup taken
+  before the trial (`scratchpad/t15a/backup`). Nothing else differed, so nothing else needed restoring; the trial
+  created no new file.
+- Afterwards the MD5 of every file under Metadata, Build, StreamingAssets, Generated, FMOD/Tools and the FMOD cache
+  equals the pre-trial list. The only exception is three git-ignored `__pycache__` files, recompiled from the restored
+  sources.
+- `git status --short` and `git diff --stat` are identical to before the trial and to the start of the task.
+- `PatternTable.StyleCount` is 4 again, and EditMode passed **173 / 173**.
