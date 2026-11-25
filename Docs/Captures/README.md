@@ -1516,8 +1516,8 @@ Per-note cross-correlation of each new take against the legacy take, both on the
 first-beat notes get the intended onset move added back, since the timeline did not start them early). Inside = beats
 [L, L + 2) of a jump landing. *(Correction, follow-up below: these first figures were computed with the Spike ref click
 still in the mix. The click is as loud as the notes in every band used, so notes on whole beats were partly matched on the
-click. The follow-up subtracts the click first; its figures replace these: path 0 -22.36 ms, final -1.14 ms mean, every
-note within 4.5 ms except two octave-doubled stabs, which match legacy on their own trumpet band.)*
+click. The follow-up subtracts the click first; its figures replace these: path 0 -22.36 ms, final -1.14 / -1.30 ms
+mean; max NOT met by correlation (beat 110: 5.26 / 16.79 ms; fix round 1).)*
 
 | new take (vs `features_seed7_s13_attack_legacy`), click not removed (superseded) | notes | n | mean | mean abs | max abs |
 |---|---|---:|---:|---:|---:|
@@ -1536,7 +1536,7 @@ note within 4.5 ms except two octave-doubled stabs, which match legacy on their 
 - *(Superseded by the follow-up.)* Criterion (match legacy: mean <= 2, max <= 5 ms): first read as mean met, max NOT met:
   one note over 5 ms at peak >= 0.8, beat 110 (loop 6, trumpet G5 + whistle G6, +6.54 ms, peak 0.89). Six more notes over
   5 ms at peak 0.6-0.8 (up to 13.7 ms: trumpet beats 17, 85, 105, 111, whistle 53). The follow-up shows the whole-beat ones
-  (17, 53, 85, 105) were the click and beats 110 / 111 the detector.
+  (17, 53, 85, 105) were the click. Beats 110 / 111 stay over 5 ms by correlation: **max NOT met** (fix round 1).
 - Drift of the scheduled feature notes against their anchored beat: median +1.02 ms, p5 -0.35, p95 +2.37 (288 notes).
 
 ### Level per loop (ruling 2: Feature solo, legacy vs new)
@@ -1626,7 +1626,8 @@ In these takes it is heard at the boundaries 32, 64, 128, 160 and 176 (`_solo_le
 32 and 64). Boundaries 80 and 96 (jump landings) show nothing of it, and their legacy window is quieter than the new one;
 not explained. All of these windows are the accepted phrase-end lead windows; the per-loop figures above leave them out.
 
-**B. Beat 110 (and 111): detector, not timing (met against legacy).**
+**B. Beats 110 / 111: max NOT met by correlation (5.26 / 16.79 ms at 110); trumpet onset within 1.5 ms on a band
+detector** (fix round 1 below replaces the earlier "met" reading).
 - **Click.** The first correlation figures had the Spike ref click in the mix. The click is as loud as the notes in every
   band used (-50 dBFS in 1.5-8 kHz, like a synth note), so notes on whole beats were partly matched on the click.
   `featxcorr.py` now subtracts it: template from beats 2-14, window -20..+150 ms, least squares per click. Clicks on
@@ -1651,17 +1652,77 @@ not explained. All of these windows are the accepted phrase-end lead windows; th
 
 - **Beats 110 and 111 are octave doublings.** Beat 110 is trumpet G5 + whistle G6; beat 111 is a trumpet stab with F5 +
   whistle F6. The trumpet's second harmonic is the whistle's fundamental, so the summed waveform depends on the
-  sub-millisecond phase between the two one-shots. That phase differs from take to take on the new path (new vs new
-  10.3 ms at 110); the legacy timeline is identical every time.
-- **Measured on the trumpet's own band.** On the fundamental band alone (whistle-free, -20 dB onset crossing):
+  sub-millisecond offset between the two one-shots; fix round 1 shows that offset per take.
+- **Trumpet band** (-20 dB onset crossing, fix round 1 gives the detector and its control set):
   - beat 110 (700-900 Hz): legacy 14.5 / 14.5 ms, new 13.0 / 14.0 / 13.5 (path 0, block removed);
   - beat 111 (450-750 Hz): legacy 13.5 / 13.5, new 13.5 / 12.0;
-  - both within 1.5 ms of legacy.
+  - the trumpet is within 1.5 ms of legacy on this detector.
 - **Peak 0.6-0.8 outliers.** With the click removed, beats 17, 53, 85 and 105 are within 2 ms. Beat 192 (-6.75 / -7.15 ms,
   peak 0.67) is a phrase's first beat with xylo (onset 3 ms) and muted cowbell (onset 9 ms) together. The add-back uses
   the xylo's onset, so the cowbell's intended move (about -6 ms) remains. New vs new at 192 is -0.4 ms (peak 1.0).
-- **Criterion against legacy.** Mean <= 2 ms is met (-1.14 / -1.30). Max <= 5 ms is met for every note by correlation
-  except beats 110 and 111. Those two are met on the trumpet band.
+- **Criterion against legacy, by the task's method** (per-note correlation, click removed, peak >= 0.8): mean <= 2 ms
+  met (-1.14 / -1.30); **max <= 5 ms NOT met**: beat 110 5.26 ms (first pair) and 16.79 ms (second pair). Beat 111 is
+  below peak 0.8 in both pairs (-13.71 ms at peak 0.71, +3.31 ms at 0.77). Every other note is within 4.52 ms.
 - **Still open.** The new path's take-to-take spread has one more note over 5 ms, glock 148.75 (+8.40 ms path 0 vs final,
   peak 0.91). It is +1.06 ms in new vs new and +0.03 ms vs legacy (second pair), so the outlier is in the path-0 take only.
   Not explained. The absolute latency on bus:/Feature is still inferred, not measured.
+
+### Task 13 fix round 1: beats 110 / 111 (start offsets, whistle band, detector control)
+
+**Verdict.** By the task's method the max-attack criterion against legacy is **NOT met**: beat 110 is 5.26 ms (first
+pair) and 16.79 ms (second pair); beat 111 stays under peak 0.8. A band onset detector puts the trumpet within 1.5 ms of
+legacy at both beats and the whistle within 1.5 ms except beat 111 in the first pair (+5.5 ms). That detector disagrees
+with the correlation by up to 4.4 ms (and once 18 ms) on ordinary notes, so it cannot show <= 5 ms by itself.
+
+**1. Start offsets of the stacked one-shots** (`stackstarts.py`, `dispatchstarts.py`)
+
+- Both events have voice delay 1 block and path delay 1 block (`bus:/Feature/*`). So the intended start offset between
+  two notes of one beat is their onset difference alone. At beat 110: trumpet G5 2.67 ms, whistle G6 20.20 ms, intended
+  841 samples.
+- At scheduling (`.patterns.csv` `start_dsp`), every pair is on its intended offset within 1 sample in all three new takes
+  (beat 110: 842 samples in each).
+- The backend start, however, is recomputed from the clock in the frame each note is dispatched
+  (`OneShotScheduler.Times`, `.oneshots.csv` `start`). The whistle, with the larger onset, is dispatched some frames before
+  the trumpet (`_attack_new` beat 110: frames 15922 and 15928). The clock moves between those frames.
+
+Trumpet - whistle start at dispatch, minus the intended offset (samples):
+
+| take | 108 (G4 + G5) | 109 (B4 + B5) | 110 (G5 + G6) | 111 (stab + F6) | 136 (marimba + xylo) | 192 (xylo + cowbell) |
+|---|---:|---:|---:|---:|---:|---:|
+| `_attack_new` | -3 | 0 | -6 | +14 | +1 | 0 |
+| `_solo_new_b` | -4 | 0 | +7 | +12 | +1 | 0 |
+| `_s13f_attack_new` | +14 | 0 | +13 | +9 | +1 | 0 |
+
+- **Scheduling finding.** Stacked one-shots of one beat that are dispatched in different frames get starts from
+  different clock states. Their relative offset then deviates from the intended one by up to 14 samples (0.29 ms) here,
+  differently in each take. Each note's scheduled beat is +0.4..+1.8 ms from its anchored beat, the usual range.
+- This is the per-take phase difference behind beats 110 / 111. At G6 (period 30.6 samples), a 6-13 sample change is a
+  70-150 degree phase change of the doubled partial, so the summed waveform changes per take. The legacy timeline does
+  not change (legacy vs legacy 0.00 ms).
+- Not changed in code (no re-timing; reported for the clock-switch work).
+
+**2. Whistle on its own band** (`bandonset.py ... notes`)
+
+- Detector: click removed, 4th-order band-pass, 2 ms RMS envelope, sampled every 0.5 ms, onset = first step >= max -
+  20 dB. Resolution: 0.5 ms steps, 2 ms window.
+- The whistle bands also hold the trumpet's second harmonic, which starts 15-18 ms after the whistle sample.
+
+| beat, sound, band | first pair new - legacy | second pair new - legacy |
+|---|---:|---:|
+| 110 trumpet G5, 700-900 Hz | -1.5 ms | -0.5 ms |
+| 110 whistle G6, 1500-1650 Hz | -1.5 | +1.5 |
+| 111 trumpet B4 / D5 / F5, 450-750 Hz | 0.0 | -1.5 |
+| 111 whistle F6, 1330-1470 Hz | **+5.5** | +1.5 |
+
+**3. Control set: the band detector against the correlation** (`bandonset.py ... control`)
+
+- Set: 16 notes per pair, alone on their beat and not percussion. Each has correlation peak >= 0.95 and correlation lag
+  within 2 ms. The band is the fundamental +-12 %.
+- Band detector minus correlation, first pair: mean +1.34, mean |.| 1.77, max 17.98 ms (trumpet beat 46.5; next largest
+  1.73).
+- Second pair: mean +0.24, mean |.| 0.78, max 4.38 ms (synth 165.5).
+- So the band detector agrees with the correlation to about 1-2 ms on typical notes, with single errors of 4-18 ms.
+
+**Result.** The trumpet and whistle onsets at 110 / 111 are within 1.5 ms of legacy on the band detector in seven of
+eight readings; the first pair's 111 whistle reads +5.5 ms. Given the detector's own control errors, these readings do not
+establish max <= 5 ms. The correlation says **NOT met**.
