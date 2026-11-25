@@ -320,6 +320,14 @@ public static class OneShotArming
     /// </summary>
     public static bool StopLost(ulong delayEnd, ulong stop, ulong releaseSamples, ulong now) =>
         stop > 0 && now < stop && delayEnd != stop + releaseSamples;
+
+    /// <summary>
+    /// Stop point in the group's delay clock. The voice starts one mixer block after its group's delay start (the start
+    /// times are computed so the attack still lands on the beat), while the delay end is exact: without this block a
+    /// note sounded one block (21 ms) shorter than its length (Task 11, funk keys 59 instead of 80 ms). The same on every
+    /// bus, kill chords included (Task 12). 0 = no stop.
+    /// </summary>
+    public static ulong StopAt(ulong stop, ulong blockSamples) => stop == 0 ? 0 : stop + blockSamples;
 }
 
 /// <summary>
@@ -389,7 +397,7 @@ public sealed class FmodOneShotBackend : IOneShotBackend
     public int StartedCount { get; private set; }
     /// <summary>Notes cancelled (Stop at or before their start) before they sounded.</summary>
     public int CancelledCount { get; private set; }
-    /// <summary>Times a pattern note's stop (delay end and fade) was put back after FMOD Studio cleared it.</summary>
+    /// <summary>Times a note's stop (delay end and fade) was put back after FMOD Studio cleared it.</summary>
     public int StopReappliedCount { get; private set; }
 
     static ulong DelayEnd(FMOD.ChannelGroup g) => g.getDelay(out _, out ulong end, out _) == FMOD.RESULT.OK ? end : 0;
@@ -545,11 +553,7 @@ public sealed class FmodOneShotBackend : IOneShotBackend
         return true;
     }
 
-    // Stop point in the group's delay clock. The voice starts one mixer block after its group's delay start (the start
-    // times are computed so the attack still lands on the beat), while the delay end is exact: without this block a
-    // pattern note sounded one block (21 ms) shorter than its length (Task 11, funk keys 59 instead of 80 ms). Kill
-    // chords keep their timing (Task 11 must not change them).
-    ulong StopAt(in Note n) => n.Stop == 0 ? 0 : n.Stop + (n.Bus == OutputBus.KillChords ? 0UL : _blockSamples);
+    ulong StopAt(in Note n) => OneShotArming.StopAt(n.Stop, _blockSamples);
 
     /// <summary>
     /// Applies start / stop times once each instance's channel group exists, then unpauses it. A note keeps waiting
@@ -576,9 +580,8 @@ public sealed class FmodOneShotBackend : IOneShotBackend
                 }
                 // FMOD Studio clears the group's delay end (and its fade points) on one of its updates after the unpause
                 // (Task 11: in most notes' 3rd-6th check the delay end read 0), so the note ran until Update stopped the
-                // instance a frame after its stop time. Put the stop back while it is still ahead. Pattern layers only:
-                // kill chords keep their current behaviour (Task 11 must not change them; see the Task 11 report).
-                if (n.Bus != OutputBus.KillChords && OneShotArming.StopLost(DelayEnd(n.Group), StopAt(n), n.ReleaseSamples, now))
+                // instance a frame after its stop time. Put the stop back while it is still ahead (every bus).
+                if (OneShotArming.StopLost(DelayEnd(n.Group), StopAt(n), n.ReleaseSamples, now))
                 {
                     if (ApplyTimes(n.Group, n))
                         StopReappliedCount++;
