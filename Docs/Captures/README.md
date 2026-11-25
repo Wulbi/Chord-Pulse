@@ -1849,7 +1849,8 @@ meters show signal only on those 8, in their fever phases). New: `patternLayers`
 | legacy vs legacy, bed | 167 | +0.00 | 0.00 | 0.02 |
 | new vs new, bed | 134 | -0.12 | 0.57 | 2.02 |
 
-- [L+1, L+2) (beats 33-33.75 after the landing 32), included above: fever only 4 notes, mean -0.46, max 0.97 ms; bed
+- [L+1, L+2) (beats 33-33.75 after the landing 32): fever only 5 notes, 4 of them among the 125 measured (mean -0.46,
+  max 0.97 ms) and the shaker at 33.25 not (peak 0.79, -0.30 ms); bed
   pairs 4 / 4 notes, max 1.22 / 1.04 ms.
 - No control pair exists for the fever-only scenario (one pair was recorded); the controls are the bed takes.
 - **Criterion (mean <= 2 ms, max <= 5 ms): met over the 125 measured notes of 170 in the fever-only pair** (and over
@@ -1857,7 +1858,7 @@ meters show signal only on those 8, in their fever phases). New: `patternLayers`
   - 5 have no legacy note: 47.75 (fall, outro snare, shaker) and 111.75 (roll, riser) - the legacy path switches
     `Fever` / `FeverBuild` off 0.25 s before the boundary (`.params.csv` 47.54, 111.53); peak 0.00 / 0.05.
   - 40 correlate below 0.8 (peak 0.24-0.80): 22 shaker, 8 roll / riser (beats 28, 30, 30.25, 108, 110, 110.25), 10 outro /
-    lead at 46.5-46.75 and 126.5-126.75. Six of these read more than 5 ms at their low peak: 46.5 lead / fall / snare
+    lead at 46.5-46.75 and 126.5-126.75. Eight of these read more than 5 ms at their low peak: 46.5 lead / fall / snare
     +7.6 ms (peak 0.73-0.79), 126.5 lead / fall / snare +5.8 ms (0.73-0.79), 126.75 fall -6.4 ms (0.76), 118.75 shaker
     -5.6 ms (0.55). Their scheduled starts are -0.4 / -0.9 ms (46.5), -2.2 / -2.7 ms (126.5), -3.3 ms (126.75) and
     -2.6 ms (118.75) from their anchored beats (`.patterns.csv` against `.anchors.csv`; backend starts within 1.4 ms of
