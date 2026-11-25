@@ -1481,3 +1481,114 @@ notes survived** (no loss at or after 255). (The earlier lists of this section w
 that mapped some drops of the first beat after a landing to L+1 notes; the lists above and in fix round 1 are from the
 corrected script.)
 
+
+## Task 13: feature loops as scheduled one-shots (one pattern source)
+
+The 12 feature loops are pattern clips (`FMOD/Tools/pattern_feature.py`, 6 layers = the 6 old `Feature *` tracks, one
+clip per (loop, layer), condition `FeatureLoop` = loop id) on 9 new instrument events (`Trumpet`, `TrumpetSustain`,
+`Whistle`, `FeatureMarimba`, `Xylo`, `Glock`, `FeaturePerc`, `ScreamLead`, `PowerChord`) that play through
+`bus:/Feature/<Trumpet|Whistle|Mallets|Perc|Synth|Guitar>` (`mixer.py`: the tracks' high / low-pass filters) into
+`bus:/Feature`. The whistle track's -1 dB fader is folded into its notes; the old [-30, 10] note clamp is kept (13 notes
+clamped at +10, the same as on the timeline); struck / staccato notes ring `HoldSeconds` = min(audible time at that pitch,
+0.6 s; glockenspiel 1.2 s), gated synth / guitar / held trumpet notes stop at the written length. `feature_loops.py` now
+only writes `FeatureLoopNotes.g.cs` from that data (`git diff` empty); `feature_loops.js` is deleted (the 6 timeline
+tracks stay, gated). `legacy_gate.js`: notes 8600, added 2280 (the feature tracks), second run "unchanged 8600, nothing to
+do", Metadata byte-identical; the event XML gained 2280 `ParameterCondition` objects and nothing else. `instruments.js`
+run 1 "added 76" (9 events, 67 sounds; no audio file imported), run 2 all 0; `mixer.js` run 1 "updated 8, added 8", run 2
+all 0; both byte-identical on the second run. `patterns.py --compare-legacy`: unexplained 0 (new rules: the FeatureLoop
+condition, the old placement's "no onset shift on a phrase's first beat", HoldSeconds 1644 notes). Max Instances (Task 12
+rule, with HoldSeconds): Trumpet 12, TrumpetSustain 5, Whistle 8, FeatureMarimba 10, Xylo 8, Glock 14, FeaturePerc 13,
+ScreamLead 8, PowerChord 6. `ArrangementState.FeatureLoop` = `ArrangementTimeline.FeatureLoopAt` (the loop of the step's
+phrase, 0 over fever and its build-up bar); the legacy `FeatureLoop` parameter rule is
+`ArrangementTimeline.FeatureLoopParameter` (same behaviour as before). **`legacyLayers` stays true.**
+
+New `CaptureScenario` options: scenario `features` (phrase k plays loop k for k = 1..12, phrase 0 none, no kills; 208
+beats), `soloLayers` `feature` (bus:/Feature alone), `meterFeatureDuck` (input / output RMS of the Feature-keyed Harmony
+compressor per mixer block -> `.duck.csv`). All takes: Editor, seed 7, `logOneShots`, legacy and new in the same session
+on the same code. In the first takes (`_attack_*`, `_solo_legacy`, `_solo_new`) the scenario let SoundManager's first
+`Advance` promote loop 1 into phrase 0 for one frame (legacy: loop 1's beat-0 note at beat 0; new: three notes scheduled
+and cancelled); fixed before the `_b` and `_duck` takes; phrase 0 is in no measurement.
+
+### Timing (ruling 1: the legacy Feature path is one block late)
+
+Per-note cross-correlation of each new take against the legacy take, both on their own 1 kHz beat-click grid
+(`spikeRefClicks`, Feature solo; band 1.5-8 kHz, guitar 150-600 Hz; correlation peak >= 0.8 unless stated; a phrase's
+first-beat notes get the intended onset move added back, since the timeline did not start them early). Inside = beats
+[L, L + 2) of a jump landing.
+
+| new take (vs `features_seed7_s13_attack_legacy`) | notes | n | mean | mean abs | max abs |
+|---|---|---:|---:|---:|---:|
+| `_attack_new_path0` (no path delay, peak >= 0.6) | outside | 184 | **-20.82 ms** | 20.82 | 34.24 |
+| `_attack_new` (Feature path delay 1 block) | all | 160 | -0.94 | 1.19 | 6.54 |
+| same | outside | 156 | -0.97 | 1.21 | **6.54** |
+| same | inside | 4 | +0.07 | 0.35 | 0.69 |
+| same, peak >= 0.6 | outside | 190 | -0.74 | 1.44 | 13.71 |
+
+- The legacy Feature tracks sound one mixer block late, like the legacy Harmony layers (the event's Feature group reaches
+  the mixer through its send to `return:/Feature Duck`): one-shots without a path delay came 20.8 ms (mean, 184 notes)
+  before them. `instruments.PATH_DELAY_BLOCKS` now has `Feature: 1` (every `bus:/Feature/*`). **Absolute latency**: both
+  paths about one block (21.3 ms) after the beat, if the path-0 one-shots are on the beat as the Task 12 spike clicks showed
+  on five other buses; bus:/Feature itself was not spike-measured, and an absolute envelope detector on this music is
+  unusable (mean |e| 14.6 ms on the legacy take): not measured directly.
+- **Criterion (match legacy: mean <= 2, max <= 5 ms): mean met, max NOT met**: one note over 5 ms at peak >= 0.8, beat 110
+  (loop 6, trumpet G5 + whistle G6, +6.54 ms, peak 0.89); its scheduled start is +0.98 ms from the anchored beat
+  (`.patterns.csv` vs `.anchors.csv`); cause not found. Six more notes over 5 ms at peak 0.6-0.8 (up to 13.7 ms: trumpet
+  beats 17, 85, 105, 111, whistle 53) have weak correlation peaks; not separated from detector error.
+- Drift of the scheduled feature notes against their anchored beat: median +1.02 ms, p5 -0.35, p95 +2.37 (288 notes).
+
+### Level per loop (ruling 2: Feature solo, legacy vs new)
+
+Loop span = its bars plus one beat; "without" leaves out [L, L + 1) of a landing and the beat before a phrase boundary
+(the legacy parameter's 0.25 s lead).
+
+| loop | pair a (`_solo_legacy` / `_solo_new`) all / without | pair b (`_solo_legacy_b` / `_solo_new_b`) all / without |
+|---|---|---|
+| 1 Trumpet Fanfare | +0.02 / +0.02 | +0.07 / +0.07 |
+| 2 Trumpet Rise | +0.37 / -0.01 | +0.85 / -0.00 |
+| 3 Whistle Hook | -0.06 / -0.00 | +0.03 / +0.00 |
+| 4 Whistle Skip | +0.18 / +0.00 | +0.45 / +0.00 |
+| 5 Brass Solo | +0.04 / -0.00 | +0.17 / -0.05 |
+| 6 Call and Response | -0.10 / -0.08 | -0.14 / -0.11 |
+| 7 Latin Groove | -0.21 / +0.04 | -0.18 / +0.03 |
+| 8 Marimba Run | +0.12 / +0.00 | +0.15 / +0.03 |
+| 9 Glock Sparkle | +0.00 / +0.00 | +0.01 / +0.01 |
+| 10 Synth Hook | -0.40 / +0.06 | -0.51 / +0.07 |
+| 11 Power Chord Hits | +0.05 / +0.06 | +0.06 / +0.07 |
+| 12 Mallet Hook | +0.00 / +0.00 | -0.00 / -0.00 |
+
+Every loop within 1 dB over all its beats (worst +0.85, loop 2 pair b, whose span ends at the landing 48); without the
+accepted windows worst 0.11 dB. The 4-beat windows over 1 dB are reverb tails at -60 dBFS and below next to a landing
+(windows 64, 128, 176; in pair b also 144, 156, 172); their loud beat is the logged beat L-1, which holds the landing gap
+(beats 63 / 127 / 143 / 175, pair b: legacy -47.8 / -40.8 / -39.1 / -38.1 dBFS, new silent / -42.5 / -37.8 / -42.9). At
+beat 63 the legacy take has a note at about 1.4 kHz (F6, a whistle pitch) that the new take does not; `.params.csv` has
+`FeatureLoop` 4 written at beat 63.54; which timeline note it is was not established. All inside accepted windows
+(landing / phrase-end lead).
+
+### Harmony duck by the Feature key (`features`, intensity 3, full mix, `meterFeatureDuck`)
+
+Mean gain reduction of the Feature-keyed compressor on bus:/Music Bed/Harmony per loop span, legacy (`_duck_i3_legacy`)
+vs new (`_duck_i3_new`): within 0.33 dB for 11 loops over all their beats; loop 2 -1.07 dB over all beats (its span ends
+at the landing 48), 0.00 without the accepted windows; worst without accepted windows 0.60 dB (loop 3). Means -5.5 ..
+-10.4 dB per loop on both paths. No earlier Feature-duck reference exists (Task 8 measured the kill duck with bus:/Feature
+muted), so this is legacy vs new only.
+
+### Takes (all 0 stalls)
+
+| take | path | Studio avg / max % | Core dsp avg % | pattern sched / started / late / dropped |
+|---|---|---|---:|---|
+| `features_seed7_s13_attack_legacy` | legacy | 8.79 / 87.43 | 1.22 | - |
+| `features_seed7_s13_attack_new_path0` (superseded) | new | 8.15 / 87.91 | 1.30 | 2124 / 2116 / 0 / 2 |
+| `features_seed7_s13_attack_new` | new | 7.61 / 85.03 | 1.30 | 2124 / 2116 / 0 / 0 |
+| `features_seed7_s13_solo_legacy` | legacy | 7.04 / 82.92 | 1.12 | - |
+| `features_seed7_s13_solo_new` | new | 7.62 / 84.59 | 1.25 | 2124 / 2116 / 0 / 0 |
+| `features_seed7_s13_solo_legacy_b` | legacy | 9.10 / 94.80 | 1.13 | - |
+| `features_seed7_s13_solo_new_b` | new | 7.84 / 90.17 | 1.37 | 2108 / 2103 / 0 / 0 |
+| `features_seed7_s13_duck_i3_legacy` | legacy | 9.57 / 88.59 | 1.68 | - |
+| `features_seed7_s13_duck_i3_new` | new | 9.24 / 86.10 | 2.08 | 2724 / 2722 / 0 / 5 |
+
+Drops (ruling 3), every one: `_attack_new_path0` beat 0.31 x2 (Tension sub, Tension acid: bed layers, muted in that
+solo), "group never appeared", in the first beat after the music start (not a jump landing: **NOT met** in that superseded
+take; first-anchor condition, carried); `_duck_i3_new` beat 80.56 x5 (Tension sub, two notes on bus:/Music Bed/Layers, Tension acid,
+Bass; 1 "group never appeared", 4 "start reached before the delay"), the first beat after the landing 80 (allowed). No
+feature note was late or dropped in any take; late 0 everywhere. Landing callbacks came 126-827 ms late (`_solo_legacy_b`
+the slowest, 500-830 ms, Studio max 94.8 %).
