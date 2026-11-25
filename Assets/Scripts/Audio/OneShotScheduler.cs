@@ -414,7 +414,7 @@ public sealed class FmodOneShotBackend : IOneShotBackend
 
     static ulong DelayEnd(FMOD.ChannelGroup g) => g.getDelay(out _, out ulong end, out _) == FMOD.RESULT.OK ? end : 0;
 
-    public ulong NowDsp => MusicConductor.MasterDsp();
+    public ulong NowDsp => FmodClock.MasterDsp();
 
     /// <summary>
     /// Capture diagnosis only (set by CaptureScenario's logOneShots): CSV lines start / apply / check / drop per note

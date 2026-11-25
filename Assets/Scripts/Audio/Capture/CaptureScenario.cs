@@ -311,7 +311,7 @@ public sealed class CaptureScenario : MonoBehaviour
         {
             _studioSum += studio.update;
             _studioMax = Mathf.Max(_studioMax, studio.update);
-            bool okBeat = _conductor.Clock.BeatAt(MusicConductor.MasterDsp(), out double cpuBeat);
+            bool okBeat = _conductor.Clock.BeatAt(FmodClock.MasterDsp(), out double cpuBeat);
             _studioLog.Add(string.Format(CultureInfo.InvariantCulture, "{0},{1:F3},{2:F4},{3:F2},{4:F2}",
                 Time.frameCount, okBeat ? cpuBeat : -1, Time.unscaledDeltaTime, studio.update, cpu.dsp));
             float total = cpu.dsp + cpu.stream + cpu.update;
@@ -331,7 +331,7 @@ public sealed class CaptureScenario : MonoBehaviour
             // Beat clock anchor as the conductor's per-frame polls refine it (pollCount from MusicConductor, read only).
             int anchor = _conductor.Clock.AnchorBeat;
             _conductor.Clock.DspAt(anchor, out ulong anchorDsp);
-            _oneShotLog.Add(Time.frameCount + ",clock,anchor," + anchor + "," + MusicConductor.MasterDsp() + "," + anchorDsp + "," +
+            _oneShotLog.Add(Time.frameCount + ",clock,anchor," + anchor + "," + FmodClock.MasterDsp() + "," + anchorDsp + "," +
                             _pollCountField.GetValue(_conductor));
         }
         if (scenario == Scenario.spike)
@@ -344,7 +344,7 @@ public sealed class CaptureScenario : MonoBehaviour
             ForceFeatures(sound);
         SubscribeShots(sound);
         if (double.IsNaN(_firstAnchorBeat) && _conductor.Clock.HasAnchor &&
-            _conductor.Clock.BeatAt(MusicConductor.MasterDsp(), out double anchorNow))
+            _conductor.Clock.BeatAt(FmodClock.MasterDsp(), out double anchorNow))
             _firstAnchorBeat = anchorNow;
         if (tensionSteps && beats > 0)
             sound.Tension = TensionStepValues[Math.Min(TensionStepValues.Length - 1, Math.Max(0, sound.CurrentBeat) * TensionStepValues.Length / beats)];
@@ -428,7 +428,7 @@ public sealed class CaptureScenario : MonoBehaviour
 
     void OnMusicParameter(string name, float value)
     {
-        if (!AudioCapture.IsCapturing || !_conductor.Clock.BeatAt(MusicConductor.MasterDsp(), out double now))
+        if (!AudioCapture.IsCapturing || !_conductor.Clock.BeatAt(FmodClock.MasterDsp(), out double now))
             return;
         _paramLog.Add(string.Format(CultureInfo.InvariantCulture, "{0:F4},{1},{2:G9}", now, name, value));
     }
@@ -438,7 +438,7 @@ public sealed class CaptureScenario : MonoBehaviour
         _beats.Add((beat, (double)_anchorSeconds.GetValue(_conductor), _conductor.Tempo));
         // Callback lateness: master DSP clock when the beat's callback is handled vs the clock's DSP time of that beat
         // (anchored or, for a beat that got no anchor, extrapolated), and the clock's current anchor beat.
-        ulong nowDsp = MusicConductor.MasterDsp();
+        ulong nowDsp = FmodClock.MasterDsp();
         bool okDsp = _conductor.Clock.DspAt(beat, out ulong beatDsp);
         _anchorLog.Add(string.Format(CultureInfo.InvariantCulture, "{0},{1},{2},{3},{4}",
             Time.frameCount, beat, nowDsp, okDsp ? (long)beatDsp : -1, _conductor.Clock.HasAnchor ? _conductor.Clock.AnchorBeat : -1));
@@ -594,7 +594,7 @@ public sealed class CaptureScenario : MonoBehaviour
             return; // same mixer block as last frame
         _duckLastIn = rmsIn;
         _duckLastSamples = input.numsamples;
-        if (!_conductor.Clock.BeatAt(MusicConductor.MasterDsp(), out double now))
+        if (!_conductor.Clock.BeatAt(FmodClock.MasterDsp(), out double now))
             return;
         _duckLog.Add(string.Format(CultureInfo.InvariantCulture, "{0:F4},{1:E4},{2:E4}", now, rmsIn, rmsOut));
     }
@@ -704,7 +704,7 @@ public sealed class CaptureScenario : MonoBehaviour
 
     void LogLeafMeters()
     {
-        if (_leafMeters.Count == 0 || !_conductor.Clock.BeatAt(MusicConductor.MasterDsp(), out double now))
+        if (_leafMeters.Count == 0 || !_conductor.Clock.BeatAt(FmodClock.MasterDsp(), out double now))
             return;
         if (_leafPeak == null)
         {
@@ -838,7 +838,7 @@ public sealed class CaptureScenario : MonoBehaviour
     {
         bool kill = !(owner is PatternScheduler);
         if (kill) _killLate++; else _patternLate++;
-        bool okNow = _conductor.Clock.BeatAt(MusicConductor.MasterDsp(), out double now);
+        bool okNow = _conductor.Clock.BeatAt(FmodClock.MasterDsp(), out double now);
         _lossLog.Add(string.Format(CultureInfo.InvariantCulture, "{0:F3},{1:F3},{2},late", okNow ? now : -1, beat, kill ? "kill" : "pattern"));
         if (kill)
             _killLossLog.Add(string.Format(CultureInfo.InvariantCulture, "{0:F2},1,0", okNow ? now : -1));
@@ -847,7 +847,7 @@ public sealed class CaptureScenario : MonoBehaviour
     void OnNoteDropped(OutputBus bus, ulong start)
     {
         bool kill = bus == OutputBus.KillChords;
-        bool okNow = _conductor.Clock.BeatAt(MusicConductor.MasterDsp(), out double now);
+        bool okNow = _conductor.Clock.BeatAt(FmodClock.MasterDsp(), out double now);
         double beat = _conductor.Clock.BeatAt(start, out double b) ? b : -1;
         _lossLog.Add(string.Format(CultureInfo.InvariantCulture, "{0:F3},{1:F3},{2},drop,{3}", okNow ? now : -1, beat, kill ? "kill" : "pattern", bus));
         if (kill)

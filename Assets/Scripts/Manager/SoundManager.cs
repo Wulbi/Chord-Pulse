@@ -448,7 +448,7 @@ public sealed class SoundManager : SingletonBehaviour<SoundManager>, IKillBedSta
         _feverStart = feverStart;
 
         // Kill beats already queued from the build-up bar on were voiced for the old bed; re-voice them as fever's sound.
-        if (_conductor.Clock.BeatAt(MusicConductor.MasterDsp(), out double nowBeat))
+        if (_conductor.Clock.BeatAt(FmodClock.MasterDsp(), out double nowBeat))
         {
             int buildBeat = (feverStart - FeverBuildSteps) / StepsPerBeat;
             _killNotes.Clear();
@@ -471,7 +471,7 @@ public sealed class SoundManager : SingletonBehaviour<SoundManager>, IKillBedSta
         // Pattern notes already scheduled from the build-up bar on change too (style / variation / combo 0 there, fever
         // layers, no core kick): RefreshArrangement invalidates both schedulers from the first changed step, the build-up
         // bar's first step (the core one may already have handed that bar's kicks to FMOD; they are cancelled unstarted).
-        if (_conductor.Clock.BeatAt(MusicConductor.MasterDsp(), out double now))
+        if (_conductor.Clock.BeatAt(FmodClock.MasterDsp(), out double now))
             RefreshArrangement(now);
     }
 
@@ -489,7 +489,7 @@ public sealed class SoundManager : SingletonBehaviour<SoundManager>, IKillBedSta
         if (!Running || colorIndex < 0 || colorIndex >= KillChordPlanner.ColorCount)
             return -1;
         // "Now" from the mixer clock: BeatPosition is capped while a jump landing's beat callback is late.
-        if (!_conductor.Clock.BeatAt(MusicConductor.MasterDsp(), out double now))
+        if (!_conductor.Clock.BeatAt(FmodClock.MasterDsp(), out double now))
             return -1;
         _killNotes.Clear();
         int target = _killPlanner.Queue(now, colorIndex, chordStep, this, _killNotes);
@@ -630,7 +630,7 @@ public sealed class SoundManager : SingletonBehaviour<SoundManager>, IKillBedSta
         // The screen reads the mixer clock (it keeps running while beat callbacks are late, e.g. after a timeline jump);
         // before the first anchor it falls back to the callback-based position.
         if (_conductor.Clock.HasAnchor && _conductor.Clock.BeatAt(
-                _dspSmoother.Sample(MusicConductor.MasterDsp(), System.Diagnostics.Stopwatch.GetTimestamp() / (double)System.Diagnostics.Stopwatch.Frequency),
+                _dspSmoother.Sample(FmodClock.MasterDsp(), System.Diagnostics.Stopwatch.GetTimestamp() / (double)System.Diagnostics.Stopwatch.Frequency),
                 out double clockBeat))
             visual = clockBeat - latencyBeats;
         else
@@ -851,7 +851,7 @@ public sealed class SoundManager : SingletonBehaviour<SoundManager>, IKillBedSta
     // one-shot path (PatternScheduler starts with (now, ...]; Docs/Captures/README.md Task 11, known limitation).
     void UpdateOneShots()
     {
-        bool hasNow = _conductor.Clock.BeatAt(MusicConductor.MasterDsp(), out double now);
+        bool hasNow = _conductor.Clock.BeatAt(FmodClock.MasterDsp(), out double now);
         if (hasNow)
         {
             RefreshArrangement(now);

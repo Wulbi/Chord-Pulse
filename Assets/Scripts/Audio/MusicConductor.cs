@@ -35,7 +35,6 @@ public sealed class MusicConductor
 
     static readonly FMOD.Studio.EVENT_CALLBACK s_callback = OnEventCallback;
     static readonly double s_tickSeconds = 1.0 / Stopwatch.Frequency;
-    static FMOD.ChannelGroup s_master;
 
     readonly ConcurrentQueue<Signal> _signals = new ConcurrentQueue<Signal>();
     GCHandle _handle;
@@ -67,15 +66,6 @@ public sealed class MusicConductor
     /// <summary>Timeline position (ms) FMOD reported for the current beat; a jump shows as a discontinuity.</summary>
     public int BeatTimelineMs => _anchorPositionMs;
 
-    /// <summary>Current DSP clock of the master channel group (the clock <see cref="Clock"/> and ChannelGroup.setDelay use).</summary>
-    public static ulong MasterDsp()
-    {
-        if (!s_master.hasHandle())
-            return 0;
-        s_master.getDSPClock(out ulong dsp, out _);
-        return dsp;
-    }
-
     public event Action<int> BeatChanged;
     public event Action<string> SectionChanged;
 
@@ -90,9 +80,7 @@ public sealed class MusicConductor
         Section = string.Empty;
         BeatsPerBar = 4;
         _instance = instance;
-        FMODUnity.RuntimeManager.CoreSystem.getMasterChannelGroup(out s_master);
-        FMODUnity.RuntimeManager.CoreSystem.getSoftwareFormat(out int sampleRate, out _, out _);
-        Clock.Reset(sampleRate);
+        Clock.Reset(FmodClock.SampleRate());
         _pollSum = 0;
         _pollCount = 0;
 
@@ -187,7 +175,7 @@ public sealed class MusicConductor
     {
         if (!_instance.isValid() || _instance.getTimelinePosition(out int timelineMs) != FMOD.RESULT.OK)
             return;
-        ulong now = MasterDsp();
+        ulong now = FmodClock.MasterDsp();
         double sinceBeat = (timelineMs - _anchorPositionMs) / 1000.0;
         double beatSeconds = 60.0 / _tempo;
         // Before the timeline reached this beat, or after a jump that has not been reported yet: no estimate.
