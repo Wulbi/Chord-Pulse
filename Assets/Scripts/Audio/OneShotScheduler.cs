@@ -121,6 +121,13 @@ public sealed class OneShotScheduler
     /// </summary>
     public const long RetimeThresholdSamples = 240;
 
+    /// <summary>
+    /// The largest move a re-time follows: one mixer block (1024 samples, the project's DSP buffer). The drift it exists for
+    /// is 12-16 ms (600-750 samples); a larger move is a clock discontinuity (a wrong anchor, a step back after a landing)
+    /// and the note keeps its time (fix round 1: a held wrong anchor moved notes by +102 ms and back).
+    /// </summary>
+    public const long RetimeMaxSamples = 1024;
+
     /// <summary>A handed-over note is checked once the clock has this many newer anchors than the one it was handed over with.</summary>
     public const int RetimeAfterAnchors = 2;
 
@@ -212,11 +219,8 @@ public sealed class OneShotScheduler
                     _notes.RemoveAt(i);
                     continue;
                 }
-                if (!NeedsRetime(note, now, out long moved))
-                    continue;
-                RetimedCount++;
-                NoteRetimed?.Invoke(note.Owner, note.Beat, moved);
-                Cancel(note, now); // handed over again below with the clock as it is now
+                TryRetime(note, now);
+                continue;
             }
             var result = Dispatch(note, now);
             if (result == DispatchResult.Late || result == DispatchResult.Failed)
@@ -307,16 +311,32 @@ public sealed class OneShotScheduler
 
     // A handed-over note that has not started yet, ahead of the clock's newest anchor, whose start the clock now puts more
     // than RetimeThresholdSamples away.
-    bool NeedsRetime(Note note, ulong now, out long moved)
+    // Re-times a handed-over note: only a drift between RetimeThresholdSamples and RetimeMaxSamples, both times far enough
+    // ahead to arm, and only once the new instance exists (the original is stopped after that; if the backend cannot start
+    // the new one, the original stands).
+    void TryRetime(Note note, ulong now)
     {
-        moved = 0;
         if (!_clock.HasAnchor || _clock.AnchorBeat < note.DispatchAnchor + RetimeAfterAnchors ||
             note.Beat < _clock.AnchorBeat || (long)note.Start - (long)now <= RetimeMinLeadSamples ||
             !_clock.BeatAt(now, out double nowBeat) || nowBeat < _clock.AnchorBeat + AnchorSettleBeats ||
-            !Times(note, out long start, out _, out _))
-            return false;
-        moved = start - (long)note.Start;
-        return Math.Abs(moved) > RetimeThresholdSamples;
+            !Times(note, out long start, out long stop, out _))
+            return;
+        long moved = start - (long)note.Start;
+        if (Math.Abs(moved) <= RetimeThresholdSamples || Math.Abs(moved) > RetimeMaxSamples ||
+            start - (long)now <= RetimeMinLeadSamples)
+            return;
+        int handle = _backend.Start(note.Inst, note.Bus, note.Midi, note.GainDb, (ulong)start);
+        if (handle < 0)
+            return;
+        Cancel(note, now); // the original, not yet sounding
+        note.Handle = handle;
+        note.DispatchAnchor = _clock.AnchorBeat;
+        note.Start = (ulong)start;
+        note.Stop = (ulong)Math.Max(stop, start);
+        if (note.LengthBeats > 0)
+            _backend.Stop(handle, note.Stop);
+        RetimedCount++;
+        NoteRetimed?.Invoke(note.Owner, note.Beat, moved);
     }
 
     void Cancel(Note note, ulong now)
