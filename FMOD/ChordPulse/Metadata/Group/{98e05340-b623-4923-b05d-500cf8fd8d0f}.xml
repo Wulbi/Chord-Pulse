@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<objects serializationModel="Studio.02.02.00">
+	<object class="MixerGroup" id="{98e05340-b623-4923-b05d-500cf8fd8d0f}">
+		<property name="name">
+			<value>Guitar</value>
+		</property>
+		<relationship name="effectChain">
+			<destination>{8257e463-5233-4d1d-bb3b-e286481c667a}</destination>
+		</relationship>
+		<relationship name="panner">
+			<destination>{85b15ea4-8c1c-4a7e-ae35-ad9eec887953}</destination>
+		</relationship>
+		<relationship name="output">
+			<destination>{30982b85-be67-48d4-8ef0-2e7cbc43914f}</destination>
+		</relationship>
+	</object>
+	<object class="MixerBusEffectChain" id="{8257e463-5233-4d1d-bb3b-e286481c667a}">
+		<relationship name="effects">
+			<destination>{b1d9c688-fb4a-4ed4-83db-14bbd0ab0f36}</destination>
+			<destination>{a2b8b4ba-ec01-4fe8-b623-ad6f6aa82098}</destination>
+		</relationship>
+	</object>
+	<object class="MixerBusPanner" id="{85b15ea4-8c1c-4a7e-ae35-ad9eec887953}" />
+	<object class="HighpassEffect" id="{b1d9c688-fb4a-4ed4-83db-14bbd0ab0f36}">
+		<property name="cutoff">
+			<value>110</value>
+		</property>
+	</object>
+	<object class="MixerBusFader" id="{a2b8b4ba-ec01-4fe8-b623-ad6f6aa82098}" />
+</objects>

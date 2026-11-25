@@ -11,6 +11,8 @@ public enum Instrument
     Clav,
     ClavHigh,
     Drums,
+    FeatureMarimba,
+    FeaturePerc,
     Glass,
     GlassPad,
     Glock,
@@ -21,12 +23,18 @@ public enum Instrument
     OrigRed,
     OrigYellow,
     Pluck,
+    PowerChord,
     Rubber,
+    ScreamLead,
     SineSub,
     SpikeClick,
     Strings,
     Sub,
+    Trumpet,
+    TrumpetSustain,
     Vibes,
+    Whistle,
+    Xylo,
 }
 
 /// <summary>Global mixer bus an instrument event plays through (path: InstrumentTable.BusPath).</summary>
@@ -47,6 +55,12 @@ public enum OutputBus
     FunkGuitar,
     DreamyChoir,
     DreamyBells,
+    Trumpet,
+    Whistle,
+    Mallets,
+    Perc,
+    Synth,
+    Guitar,
 }
 
 public static class InstrumentTable
@@ -71,6 +85,12 @@ public static class InstrumentTable
             case OutputBus.FunkGuitar: return "bus:/Music Bed/Harmony/Funk Guitar";
             case OutputBus.DreamyChoir: return "bus:/Music Bed/Harmony/Dreamy Choir";
             case OutputBus.DreamyBells: return "bus:/Music Bed/Harmony/Dreamy Bells";
+            case OutputBus.Trumpet: return "bus:/Feature/Trumpet";
+            case OutputBus.Whistle: return "bus:/Feature/Whistle";
+            case OutputBus.Mallets: return "bus:/Feature/Mallets";
+            case OutputBus.Perc: return "bus:/Feature/Perc";
+            case OutputBus.Synth: return "bus:/Feature/Synth";
+            case OutputBus.Guitar: return "bus:/Feature/Guitar";
         }
         return null;
     }
@@ -91,8 +111,11 @@ public static class InstrumentTable
         if (instrument == Instrument.ClavHigh && bus == OutputBus.FunkKeys) return "event:/Inst/FunkKeys/ClavHigh";
         if (instrument == Instrument.Drums && bus == OutputBus.MusicBed) return "event:/Inst/MusicBed/Drums";
         if (instrument == Instrument.Drums && bus == OutputBus.LatinPerc) return "event:/Inst/LatinPerc/Drums";
+        if (instrument == Instrument.FeatureMarimba && bus == OutputBus.Mallets) return "event:/Inst/Mallets/FeatureMarimba";
+        if (instrument == Instrument.FeaturePerc && bus == OutputBus.Perc) return "event:/Inst/Perc/FeaturePerc";
         if (instrument == Instrument.Glass && bus == OutputBus.KillChords) return "event:/Inst/KillChords/Glass";
         if (instrument == Instrument.GlassPad && bus == OutputBus.ComboPad) return "event:/Inst/ComboPad/GlassPad";
+        if (instrument == Instrument.Glock && bus == OutputBus.Mallets) return "event:/Inst/Mallets/Glock";
         if (instrument == Instrument.Glock && bus == OutputBus.KillChords) return "event:/Inst/KillChords/Glock";
         if (instrument == Instrument.Guitar && bus == OutputBus.KillChords) return "event:/Inst/KillChords/Guitar";
         if (instrument == Instrument.Guitar && bus == OutputBus.FunkGuitar) return "event:/Inst/FunkGuitar/Guitar";
@@ -103,7 +126,9 @@ public static class InstrumentTable
         if (instrument == Instrument.OrigRed && bus == OutputBus.KillChords) return "event:/Inst/KillChords/OrigRed";
         if (instrument == Instrument.OrigYellow && bus == OutputBus.KillChords) return "event:/Inst/KillChords/OrigYellow";
         if (instrument == Instrument.Pluck && bus == OutputBus.Harmony) return "event:/Inst/Harmony/Pluck";
+        if (instrument == Instrument.PowerChord && bus == OutputBus.Guitar) return "event:/Inst/Guitar/PowerChord";
         if (instrument == Instrument.Rubber && bus == OutputBus.Bass) return "event:/Inst/Bass/Rubber";
+        if (instrument == Instrument.ScreamLead && bus == OutputBus.Synth) return "event:/Inst/Synth/ScreamLead";
         if (instrument == Instrument.SineSub && bus == OutputBus.MusicBed) return "event:/Inst/MusicBed/SineSub";
         if (instrument == Instrument.SineSub && bus == OutputBus.TensionSub) return "event:/Inst/TensionSub/SineSub";
         if (instrument == Instrument.SpikeClick && bus == OutputBus.KillChords) return "event:/Inst/KillChords/SpikeClick";
@@ -113,7 +138,11 @@ public static class InstrumentTable
         if (instrument == Instrument.SpikeClick && bus == OutputBus.Bass) return "event:/Inst/Bass/SpikeClick";
         if (instrument == Instrument.Strings && bus == OutputBus.TensionStrings) return "event:/Inst/TensionStrings/Strings";
         if (instrument == Instrument.Sub && bus == OutputBus.KillChords) return "event:/Inst/KillChords/Sub";
+        if (instrument == Instrument.Trumpet && bus == OutputBus.Trumpet) return "event:/Inst/Trumpet/Trumpet";
+        if (instrument == Instrument.TrumpetSustain && bus == OutputBus.Trumpet) return "event:/Inst/Trumpet/TrumpetSustain";
         if (instrument == Instrument.Vibes && bus == OutputBus.KillChords) return "event:/Inst/KillChords/Vibes";
+        if (instrument == Instrument.Whistle && bus == OutputBus.Whistle) return "event:/Inst/Whistle/Whistle";
+        if (instrument == Instrument.Xylo && bus == OutputBus.Mallets) return "event:/Inst/Mallets/Xylo";
         return null;
     }
 
@@ -322,6 +351,41 @@ public static class InstrumentTable
             }
             return false;
         }
+        if (instrument == Instrument.FeatureMarimba && bus == OutputBus.Mallets)
+        {
+            switch (midi)
+            {
+                case 77: return true;
+                case 79: return true;
+                case 81: return true;
+                case 83: return true;
+                case 84: return true;
+                case 86: return true;
+                case 89: return true;
+                case 91: return true;
+                case 93: return true;
+                case 95: return true;
+            }
+            return false;
+        }
+        if (instrument == Instrument.FeaturePerc && bus == OutputBus.Perc)
+        {
+            switch (midi)
+            {
+                case 55: return true;
+                case 56: return true;
+                case 60: return true;
+                case 61: return true;
+                case 62: return true;
+                case 63: return true;
+                case 64: return true;
+                case 67: return true;
+                case 68: return true;
+                case 73: return true;
+                case 75: return true;
+            }
+            return false;
+        }
         if (instrument == Instrument.Glass && bus == OutputBus.KillChords)
         {
             switch (midi)
@@ -355,6 +419,19 @@ public static class InstrumentTable
                 case 74: return true;
                 case 76: return true;
                 case 77: return true;
+            }
+            return false;
+        }
+        if (instrument == Instrument.Glock && bus == OutputBus.Mallets)
+        {
+            switch (midi)
+            {
+                case 81: return true;
+                case 84: return true;
+                case 88: return true;
+                case 93: return true;
+                case 96: return true;
+                case 100: return true;
             }
             return false;
         }
@@ -558,6 +635,14 @@ public static class InstrumentTable
             }
             return false;
         }
+        if (instrument == Instrument.PowerChord && bus == OutputBus.Guitar)
+        {
+            switch (midi)
+            {
+                case 43: return true;
+            }
+            return false;
+        }
         if (instrument == Instrument.Rubber && bus == OutputBus.Bass)
         {
             switch (midi)
@@ -572,6 +657,23 @@ public static class InstrumentTable
                 case 43: return true;
                 case 45: return true;
                 case 48: return true;
+            }
+            return false;
+        }
+        if (instrument == Instrument.ScreamLead && bus == OutputBus.Synth)
+        {
+            switch (midi)
+            {
+                case 64: return true;
+                case 67: return true;
+                case 69: return true;
+                case 71: return true;
+                case 72: return true;
+                case 74: return true;
+                case 76: return true;
+                case 77: return true;
+                case 79: return true;
+                case 81: return true;
             }
             return false;
         }
@@ -662,6 +764,30 @@ public static class InstrumentTable
             }
             return false;
         }
+        if (instrument == Instrument.Trumpet && bus == OutputBus.Trumpet)
+        {
+            switch (midi)
+            {
+                case 67: return true;
+                case 69: return true;
+                case 71: return true;
+                case 72: return true;
+                case 74: return true;
+                case 76: return true;
+                case 77: return true;
+                case 79: return true;
+                case 81: return true;
+            }
+            return false;
+        }
+        if (instrument == Instrument.TrumpetSustain && bus == OutputBus.Trumpet)
+        {
+            switch (midi)
+            {
+                case 72: return true;
+            }
+            return false;
+        }
         if (instrument == Instrument.Vibes && bus == OutputBus.KillChords)
         {
             switch (midi)
@@ -681,6 +807,39 @@ public static class InstrumentTable
                 case 74: return true;
                 case 76: return true;
                 case 79: return true;
+            }
+            return false;
+        }
+        if (instrument == Instrument.Whistle && bus == OutputBus.Whistle)
+        {
+            switch (midi)
+            {
+                case 79: return true;
+                case 81: return true;
+                case 83: return true;
+                case 84: return true;
+                case 86: return true;
+                case 88: return true;
+                case 89: return true;
+                case 91: return true;
+                case 93: return true;
+                case 95: return true;
+                case 96: return true;
+            }
+            return false;
+        }
+        if (instrument == Instrument.Xylo && bus == OutputBus.Mallets)
+        {
+            switch (midi)
+            {
+                case 84: return true;
+                case 86: return true;
+                case 88: return true;
+                case 89: return true;
+                case 91: return true;
+                case 93: return true;
+                case 96: return true;
+                case 98: return true;
             }
             return false;
         }
@@ -706,8 +865,11 @@ public static class InstrumentTable
         if (instrument == Instrument.ClavHigh && bus == OutputBus.FunkKeys) return 0.005;
         if (instrument == Instrument.Drums && bus == OutputBus.MusicBed) return 0.005;
         if (instrument == Instrument.Drums && bus == OutputBus.LatinPerc) return 0.005;
+        if (instrument == Instrument.FeatureMarimba && bus == OutputBus.Mallets) return 0.005;
+        if (instrument == Instrument.FeaturePerc && bus == OutputBus.Perc) return 0.005;
         if (instrument == Instrument.Glass && bus == OutputBus.KillChords) return 0.12;
         if (instrument == Instrument.GlassPad && bus == OutputBus.ComboPad) return 0.005;
+        if (instrument == Instrument.Glock && bus == OutputBus.Mallets) return 0.005;
         if (instrument == Instrument.Glock && bus == OutputBus.KillChords) return 0.12;
         if (instrument == Instrument.Guitar && bus == OutputBus.KillChords) return 0.12;
         if (instrument == Instrument.Guitar && bus == OutputBus.FunkGuitar) return 0.005;
@@ -718,7 +880,9 @@ public static class InstrumentTable
         if (instrument == Instrument.OrigRed && bus == OutputBus.KillChords) return 0.12;
         if (instrument == Instrument.OrigYellow && bus == OutputBus.KillChords) return 0.12;
         if (instrument == Instrument.Pluck && bus == OutputBus.Harmony) return 0.005;
+        if (instrument == Instrument.PowerChord && bus == OutputBus.Guitar) return 0.005;
         if (instrument == Instrument.Rubber && bus == OutputBus.Bass) return 0.005;
+        if (instrument == Instrument.ScreamLead && bus == OutputBus.Synth) return 0.005;
         if (instrument == Instrument.SineSub && bus == OutputBus.MusicBed) return 0.005;
         if (instrument == Instrument.SineSub && bus == OutputBus.TensionSub) return 0.005;
         if (instrument == Instrument.SpikeClick && bus == OutputBus.KillChords) return 0.12;
@@ -728,7 +892,11 @@ public static class InstrumentTable
         if (instrument == Instrument.SpikeClick && bus == OutputBus.Bass) return 0.005;
         if (instrument == Instrument.Strings && bus == OutputBus.TensionStrings) return 0.005;
         if (instrument == Instrument.Sub && bus == OutputBus.KillChords) return 0.12;
+        if (instrument == Instrument.Trumpet && bus == OutputBus.Trumpet) return 0.005;
+        if (instrument == Instrument.TrumpetSustain && bus == OutputBus.Trumpet) return 0.005;
         if (instrument == Instrument.Vibes && bus == OutputBus.KillChords) return 0.12;
+        if (instrument == Instrument.Whistle && bus == OutputBus.Whistle) return 0.005;
+        if (instrument == Instrument.Xylo && bus == OutputBus.Mallets) return 0.005;
         return 0.0;
     }
 
@@ -751,8 +919,11 @@ public static class InstrumentTable
         if (instrument == Instrument.ClavHigh && bus == OutputBus.FunkKeys) return 1;
         if (instrument == Instrument.Drums && bus == OutputBus.MusicBed) return 1;
         if (instrument == Instrument.Drums && bus == OutputBus.LatinPerc) return 1;
+        if (instrument == Instrument.FeatureMarimba && bus == OutputBus.Mallets) return 1;
+        if (instrument == Instrument.FeaturePerc && bus == OutputBus.Perc) return 1;
         if (instrument == Instrument.Glass && bus == OutputBus.KillChords) return 1;
         if (instrument == Instrument.GlassPad && bus == OutputBus.ComboPad) return 1;
+        if (instrument == Instrument.Glock && bus == OutputBus.Mallets) return 1;
         if (instrument == Instrument.Glock && bus == OutputBus.KillChords) return 1;
         if (instrument == Instrument.Guitar && bus == OutputBus.KillChords) return 1;
         if (instrument == Instrument.Guitar && bus == OutputBus.FunkGuitar) return 1;
@@ -764,11 +935,15 @@ public static class InstrumentTable
         if (instrument == Instrument.OrigYellow && bus == OutputBus.KillChords) return 1;
         if (instrument == Instrument.Pluck && bus == OutputBus.Harmony) return 1;
         if (instrument == Instrument.Rubber && bus == OutputBus.Bass) return 1;
+        if (instrument == Instrument.ScreamLead && bus == OutputBus.Synth) return 1;
         if (instrument == Instrument.SineSub && bus == OutputBus.MusicBed) return 1;
         if (instrument == Instrument.SineSub && bus == OutputBus.TensionSub) return 1;
         if (instrument == Instrument.Strings && bus == OutputBus.TensionStrings) return 1;
         if (instrument == Instrument.Sub && bus == OutputBus.KillChords) return 1;
+        if (instrument == Instrument.Trumpet && bus == OutputBus.Trumpet) return 1;
         if (instrument == Instrument.Vibes && bus == OutputBus.KillChords) return 1;
+        if (instrument == Instrument.Whistle && bus == OutputBus.Whistle) return 1;
+        if (instrument == Instrument.Xylo && bus == OutputBus.Mallets) return 1;
         return 0;
     }
 
@@ -779,12 +954,19 @@ public static class InstrumentTable
         switch (bus)
         {
             case OutputBus.Harmony: return 1;
+            case OutputBus.Feature: return 1;
             case OutputBus.ComboPad: return 1;
             case OutputBus.LatinMarimba: return 1;
             case OutputBus.FunkKeys: return 1;
             case OutputBus.FunkGuitar: return 1;
             case OutputBus.DreamyChoir: return 1;
             case OutputBus.DreamyBells: return 1;
+            case OutputBus.Trumpet: return 1;
+            case OutputBus.Whistle: return 1;
+            case OutputBus.Mallets: return 1;
+            case OutputBus.Perc: return 1;
+            case OutputBus.Synth: return 1;
+            case OutputBus.Guitar: return 1;
         }
         return 0;
     }
@@ -931,6 +1113,37 @@ public static class InstrumentTable
                     case 63: return 0.001;
                     case 75: return 0.009;
                     case 82: return 0.0;
+                }
+                break;
+            case Instrument.FeatureMarimba:
+                switch (midi)
+                {
+                    case 77: return 0.005612;
+                    case 79: return 0.005;
+                    case 81: return 0.004454;
+                    case 83: return 0.003969;
+                    case 84: return 0.005339;
+                    case 86: return 0.004757;
+                    case 89: return 0.004;
+                    case 91: return 0.003564;
+                    case 93: return 0.003568;
+                    case 95: return 0.003178;
+                }
+                break;
+            case Instrument.FeaturePerc:
+                switch (midi)
+                {
+                    case 55: return 0.009;
+                    case 56: return 0.01;
+                    case 60: return 0.009;
+                    case 61: return 0.011;
+                    case 62: return 0.001;
+                    case 63: return 0.001;
+                    case 64: return 0.001;
+                    case 67: return 0.009;
+                    case 68: return 0.009;
+                    case 73: return 0.009;
+                    case 75: return 0.009;
                 }
                 break;
             case Instrument.Glass:
@@ -1125,6 +1338,12 @@ public static class InstrumentTable
                     case 72: return 0.0005;
                 }
                 break;
+            case Instrument.PowerChord:
+                switch (midi)
+                {
+                    case 43: return 0.000841;
+                }
+                break;
             case Instrument.Rubber:
                 switch (midi)
                 {
@@ -1138,6 +1357,21 @@ public static class InstrumentTable
                     case 43: return 0.000841;
                     case 45: return 0.000749;
                     case 48: return 0.00063;
+                }
+                break;
+            case Instrument.ScreamLead:
+                switch (midi)
+                {
+                    case 64: return 0.001;
+                    case 67: return 0.001122;
+                    case 69: return 0.001;
+                    case 71: return 0.000891;
+                    case 72: return 0.000841;
+                    case 74: return 0.000749;
+                    case 76: return 0.000667;
+                    case 77: return 0.00063;
+                    case 79: return 0.000561;
+                    case 81: return 0.0005;
                 }
                 break;
             case Instrument.SineSub:
@@ -1176,6 +1410,26 @@ public static class InstrumentTable
                     case 48: return 0.0;
                 }
                 break;
+            case Instrument.Trumpet:
+                switch (midi)
+                {
+                    case 67: return 0.003564;
+                    case 69: return 0.005297;
+                    case 71: return 0.004719;
+                    case 72: return 0.005612;
+                    case 74: return 0.005;
+                    case 76: return 0.003178;
+                    case 77: return 0.003;
+                    case 79: return 0.002673;
+                    case 81: return 0.002381;
+                }
+                break;
+            case Instrument.TrumpetSustain:
+                switch (midi)
+                {
+                    case 72: return 0.005;
+                }
+                break;
             case Instrument.Vibes:
                 switch (midi)
                 {
@@ -1194,6 +1448,35 @@ public static class InstrumentTable
                     case 74: return 0.007;
                     case 76: return 0.006236;
                     case 79: return 0.007857;
+                }
+                break;
+            case Instrument.Whistle:
+                switch (midi)
+                {
+                    case 79: return 0.020023;
+                    case 81: return 0.017838;
+                    case 83: return 0.015892;
+                    case 84: return 0.015;
+                    case 86: return 0.022449;
+                    case 88: return 0.02;
+                    case 89: return 0.018877;
+                    case 91: return 0.020204;
+                    case 93: return 0.018;
+                    case 95: return 0.016036;
+                    case 96: return 0.015136;
+                }
+                break;
+            case Instrument.Xylo:
+                switch (midi)
+                {
+                    case 84: return 0.003;
+                    case 86: return 0.002673;
+                    case 88: return 0.003568;
+                    case 89: return 0.003367;
+                    case 91: return 0.003;
+                    case 93: return 0.002673;
+                    case 96: return 0.002;
+                    case 98: return 0.001782;
                 }
                 break;
         }

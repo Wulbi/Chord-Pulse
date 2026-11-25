@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<objects serializationModel="Studio.02.02.00">
+	<object class="MixerGroup" id="{b04a6b37-285a-4696-832a-5c9b5fdd3701}">
+		<property name="name">
+			<value>Whistle</value>
+		</property>
+		<relationship name="effectChain">
+			<destination>{aeafe0b0-9b03-43e6-9bcc-b7f18a80e4d6}</destination>
+		</relationship>
+		<relationship name="panner">
+			<destination>{e24cd9b8-d630-4c7c-ae12-8bac7d2f9f59}</destination>
+		</relationship>
+		<relationship name="output">
+			<destination>{30982b85-be67-48d4-8ef0-2e7cbc43914f}</destination>
+		</relationship>
+	</object>
+	<object class="MixerBusEffectChain" id="{aeafe0b0-9b03-43e6-9bcc-b7f18a80e4d6}">
+		<relationship name="effects">
+			<destination>{ee2f90b6-3a90-46b2-ad33-c14c2a9f10ec}</destination>
+			<destination>{5cf3356e-90e4-43a6-97cc-2db3dc63b7e2}</destination>
+			<destination>{63e1f64c-90ec-46f9-9ef1-ab963e2b272e}</destination>
+		</relationship>
+	</object>
+	<object class="MixerBusPanner" id="{e24cd9b8-d630-4c7c-ae12-8bac7d2f9f59}" />
+	<object class="HighpassEffect" id="{ee2f90b6-3a90-46b2-ad33-c14c2a9f10ec}">
+		<property name="cutoff">
+			<value>700</value>
+		</property>
+	</object>
+	<object class="LowpassEffect" id="{5cf3356e-90e4-43a6-97cc-2db3dc63b7e2}">
+		<property name="cutoff">
+			<value>5500</value>
+		</property>
+	</object>
+	<object class="MixerBusFader" id="{63e1f64c-90ec-46f9-9ef1-ab963e2b272e}" />
+</objects>

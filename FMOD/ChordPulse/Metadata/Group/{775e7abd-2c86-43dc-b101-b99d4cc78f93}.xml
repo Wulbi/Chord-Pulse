@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<objects serializationModel="Studio.02.02.00">
+	<object class="MixerGroup" id="{775e7abd-2c86-43dc-b101-b99d4cc78f93}">
+		<property name="name">
+			<value>Mallets</value>
+		</property>
+		<relationship name="effectChain">
+			<destination>{62c1f14e-5846-4906-b424-aeed1302d5e7}</destination>
+		</relationship>
+		<relationship name="panner">
+			<destination>{37699ebe-8fe3-41ad-a4a4-00ecd56f8a16}</destination>
+		</relationship>
+		<relationship name="output">
+			<destination>{30982b85-be67-48d4-8ef0-2e7cbc43914f}</destination>
+		</relationship>
+	</object>
+	<object class="MixerBusEffectChain" id="{62c1f14e-5846-4906-b424-aeed1302d5e7}">
+		<relationship name="effects">
+			<destination>{00bf36a6-51b0-4972-91af-a4e81fb463db}</destination>
+			<destination>{c152e338-ce71-449f-adb0-065b31f84fae}</destination>
+		</relationship>
+	</object>
+	<object class="MixerBusPanner" id="{37699ebe-8fe3-41ad-a4a4-00ecd56f8a16}" />
+	<object class="HighpassEffect" id="{00bf36a6-51b0-4972-91af-a4e81fb463db}">
+		<property name="cutoff">
+			<value>150</value>
+		</property>
+	</object>
+	<object class="MixerBusFader" id="{c152e338-ce71-449f-adb0-065b31f84fae}" />
+</objects>

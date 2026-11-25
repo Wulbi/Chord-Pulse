@@ -145,6 +145,14 @@ SUB_BUSES = [
     ("Music Bed/Harmony/Funk Guitar", "Music Bed/Harmony", 0.0, [_hp(180)]),
     ("Music Bed/Harmony/Dreamy Choir", "Music Bed/Harmony", 0.0, [_hp(150)]),
     ("Music Bed/Harmony/Dreamy Bells", "Music Bed/Harmony", 0.0, [_hp(300)]),
+    # Task 13 (feature loops, pattern_feature.py): the six old Feature tracks' filters, before bus:/Feature (its key,
+    # kill-keyed compressor, reverb, limiter and -8 dB). The whistle track's -1 dB fader is folded into the notes' dB.
+    ("Feature/Trumpet", "Feature", 0.0, [_hp(180)]),
+    ("Feature/Whistle", "Feature", 0.0, [_hp(700), _lp(5500)]),
+    ("Feature/Mallets", "Feature", 0.0, [_hp(150)]),
+    ("Feature/Perc", "Feature", 0.0, [_hp(120)]),
+    ("Feature/Synth", "Feature", 0.0, [_hp(200), _lp(6500)]),
+    ("Feature/Guitar", "Feature", 0.0, [_hp(110)]),
 ]
 
 # return name -> bus path it feeds

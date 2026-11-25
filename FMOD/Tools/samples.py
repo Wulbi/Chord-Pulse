@@ -78,6 +78,50 @@ PERC = [("Pallor_Kick_Synthpop_v115.wav", KICK, -11.8, 0.0),
         ("Pallor_Shaker_Synthpop_v110.wav", SHAKER, -21.6, 0.0)]
 
 
+# --- feature loops (pattern_feature.py; the tables of the old feature_loops.py). VSCO 2 CE / VCSL (CC0) and AT / Thrum packs
+# (FMOD/ChordPulse/SOURCES_AND_LICENSES.txt); no new files. VSCO trumpet, flute, marimba, xylophone and glockenspiel
+# file names are one octave below the measured pitch, so the roots are measured notes. A fifth column, audible seconds
+# (at the sample's own pitch), sets how long a struck / staccato note rings (pattern_feature.py: HoldSeconds).
+# (file, measured root MIDI, peak short-term RMS dB, attack onset s, audible s)
+TRUMPET = [("Brass/Sum_SHTrumpet_stac_C3_v3_rr1.wav", 60, -33.0, 0.004, 0.50),
+           ("Brass/Sum_SHTrumpet_stac_F3_v3_rr1.wav", 65, -36.1, 0.004, 0.40),
+           ("Brass/Sum_SHTrumpet_stac_A#3_v3_rr1.wav", 70, -26.8, 0.005, 0.41),
+           ("Brass/Sum_SHTrumpet_stac_D4_v3_rr1.wav", 74, -21.5, 0.005, 0.40),
+           ("Brass/Sum_SHTrumpet_stac_F4_v3_rr1.wav", 77, -20.6, 0.003, 0.38)]
+TRUMPET_SUSTAIN = [("Brass/Sum_SHTrumpet_sus_C3_v3_rr1.wav", 60, -21.9, 0.010, 6.0)]
+# Whistle = flute played high with the air filtered off (the Feature/Whistle sub-bus EQ).
+WHISTLE = [("Woodwinds/LDFlute_stac_C5_v3_rr1.wav", 84, -27.9, 0.015, 0.24),
+           ("Woodwinds/LDFlute_stac_E5_v3_rr1.wav", 88, -26.9, 0.020, 0.24),
+           ("Woodwinds/LDFlute_stac_A5_v3_rr1.wav", 93, -22.6, 0.018, 0.26)]
+FEATURE_MARIMBA = [("Mallets/Marimba_hit_Outrigger_F3_loud_01.wav", 65, -30.7, 0.006, 1.69),
+                   ("Mallets/Marimba_hit_Outrigger_C4_loud_01.wav", 72, -33.2, 0.005, 1.02),
+                   ("Mallets/Marimba_hit_Outrigger_G4_loud_01.wav", 79, -32.2, 0.005, 0.65),
+                   ("Mallets/Marimba_hit_Outrigger_F5_loud_01.wav", 89, -37.7, 0.004, 0.46),
+                   ("Mallets/Marimba_hit_Outrigger_C6_loud_01.wav", 96, -36.3, 0.003, 0.31)]
+XYLO = [("Mallets/Xylo_Medium_G4_ff_01_far.wav", 79, -18.0, 0.003, 0.83),
+        ("Mallets/Xylo_Medium_C5_ff_01_far.wav", 84, -18.3, 0.003, 0.59),
+        ("Mallets/Xylo_Medium_G5_ff_01_far.wav", 91, -20.7, 0.003, 0.34),
+        ("Mallets/Xylo_Medium_C6_ff_01_far.wav", 96, -21.7, 0.002, 0.30)]
+FEATURE_GLOCK = [s + (a,) for s, a in zip(GLOCK, (3.03, 3.60, 1.94, 1.81))]
+SCREAM_LEAD = [("Synth/AT20V_ScreamLead_A3_v105.wav", 57, -8.4, 0.001, 1.44),
+               ("Synth/AT20V_ScreamLead_E4_v105.wav", 64, -8.2, 0.001, 1.44),
+               ("Synth/AT20V_ScreamLead_A4_v105.wav", 69, -8.1, 0.001, 1.41)]
+POWER_CHORD = [("Guitar/Thrum_PowerChordE5_E2B2E3_v100.wav", 40, -13.1, 0.001, 2.22)]
+# Feature percussion: one instrument, Note = General MIDI percussion number (the muted cowbell, which GM lacks, takes
+# 55), every sound at pitch 0. The old loops named the sounds; pattern_feature.PERC maps the names to these numbers.
+FEATURE_PERC = [("WorldPerc/Cowbell2_Normal_v3_rr1_Mid.wav", 56, -21.8, 0.010, 0.24),
+                ("WorldPerc/Cowbell1_Muted_v3_rr1_Mid.wav", 55, -29.2, 0.009, 0.25),
+                ("WorldPerc/Agogo_High_v3_rr1_Mid.wav", 67, -40.5, 0.009, 0.25),
+                ("WorldPerc/Agogo_Low_v2_rr1_Mid.wav", 68, -44.6, 0.009, 0.76),
+                ("WorldPerc/Claves1_Hit_v3_rr1_Mid.wav", 75, -38.8, 0.009, 0.26),
+                ("WorldPerc/BongoH_Hit1_v3_rr1_Mid.wav", 60, -27.5, 0.009, 0.32),
+                ("WorldPerc/BongoL_Hit1_v3_rr1_Mid.wav", 61, -26.2, 0.011, 0.35),
+                ("WorldPerc/Conga_HitN_v3_rr1_Sum.wav", 63, -28.5, 0.001, 0.48),
+                ("WorldPerc/Quinto_HitN_v3_rr1_Sum.wav", 62, -26.0, 0.001, 0.33),
+                ("WorldPerc/Tumba_HitFM_v3_rr1_Sum.wav", 64, -32.6, 0.001, 0.32),
+                ("WorldPerc/Guiro_Fast_rr1_Mid.wav", 73, -50.6, 0.009, 0.39)]
+
+
 def pick(table, midi, max_pitch=15):
     s = min(table, key=lambda x: (abs(midi - x[1]), -x[1]))
     pitch = midi - s[1]

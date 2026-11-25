@@ -908,6 +908,173 @@ var INSTRUMENTS = [
   ]
  },
  {
+  "name": "FeatureMarimba",
+  "bus": "Feature/Mallets",
+  "busFolder": "Mallets",
+  "max": 10,
+  "attack": 2,
+  "release": 70,
+  "notes": [
+   {
+    "midi": 77,
+    "file": "Mallets/Marimba_hit_Outrigger_G4_loud_01.wav",
+    "pitch": -2,
+    "volume": 5.2,
+    "onset": 0.005612
+   },
+   {
+    "midi": 79,
+    "file": "Mallets/Marimba_hit_Outrigger_G4_loud_01.wav",
+    "pitch": 0,
+    "volume": 5.2,
+    "onset": 0.005
+   },
+   {
+    "midi": 81,
+    "file": "Mallets/Marimba_hit_Outrigger_G4_loud_01.wav",
+    "pitch": 2,
+    "volume": 5.2,
+    "onset": 0.004454
+   },
+   {
+    "midi": 83,
+    "file": "Mallets/Marimba_hit_Outrigger_G4_loud_01.wav",
+    "pitch": 4,
+    "volume": 5.2,
+    "onset": 0.003969
+   },
+   {
+    "midi": 84,
+    "file": "Mallets/Marimba_hit_Outrigger_F5_loud_01.wav",
+    "pitch": -5,
+    "volume": 10.0,
+    "onset": 0.005339
+   },
+   {
+    "midi": 86,
+    "file": "Mallets/Marimba_hit_Outrigger_F5_loud_01.wav",
+    "pitch": -3,
+    "volume": 10.0,
+    "onset": 0.004757
+   },
+   {
+    "midi": 89,
+    "file": "Mallets/Marimba_hit_Outrigger_F5_loud_01.wav",
+    "pitch": 0,
+    "volume": 10.0,
+    "onset": 0.004
+   },
+   {
+    "midi": 91,
+    "file": "Mallets/Marimba_hit_Outrigger_F5_loud_01.wav",
+    "pitch": 2,
+    "volume": 10.0,
+    "onset": 0.003564
+   },
+   {
+    "midi": 93,
+    "file": "Mallets/Marimba_hit_Outrigger_C6_loud_01.wav",
+    "pitch": -3,
+    "volume": 9.3,
+    "onset": 0.003568
+   },
+   {
+    "midi": 95,
+    "file": "Mallets/Marimba_hit_Outrigger_C6_loud_01.wav",
+    "pitch": -1,
+    "volume": 9.3,
+    "onset": 0.003178
+   }
+  ]
+ },
+ {
+  "name": "FeaturePerc",
+  "bus": "Feature/Perc",
+  "busFolder": "Perc",
+  "max": 13,
+  "attack": 2,
+  "release": 70,
+  "notes": [
+   {
+    "midi": 55,
+    "file": "WorldPerc/Cowbell1_Muted_v3_rr1_Mid.wav",
+    "pitch": 0,
+    "volume": 2.2,
+    "onset": 0.009
+   },
+   {
+    "midi": 56,
+    "file": "WorldPerc/Cowbell2_Normal_v3_rr1_Mid.wav",
+    "pitch": 0,
+    "volume": -5.2,
+    "onset": 0.01
+   },
+   {
+    "midi": 60,
+    "file": "WorldPerc/BongoH_Hit1_v3_rr1_Mid.wav",
+    "pitch": 0,
+    "volume": 0.5,
+    "onset": 0.009
+   },
+   {
+    "midi": 61,
+    "file": "WorldPerc/BongoL_Hit1_v3_rr1_Mid.wav",
+    "pitch": 0,
+    "volume": -0.8,
+    "onset": 0.011
+   },
+   {
+    "midi": 62,
+    "file": "WorldPerc/Quinto_HitN_v3_rr1_Sum.wav",
+    "pitch": 0,
+    "volume": -1.0,
+    "onset": 0.001
+   },
+   {
+    "midi": 63,
+    "file": "WorldPerc/Conga_HitN_v3_rr1_Sum.wav",
+    "pitch": 0,
+    "volume": 1.5,
+    "onset": 0.001
+   },
+   {
+    "midi": 64,
+    "file": "WorldPerc/Tumba_HitFM_v3_rr1_Sum.wav",
+    "pitch": 0,
+    "volume": 5.6,
+    "onset": 0.001
+   },
+   {
+    "midi": 67,
+    "file": "WorldPerc/Agogo_High_v3_rr1_Mid.wav",
+    "pitch": 0,
+    "volume": 10.0,
+    "onset": 0.009
+   },
+   {
+    "midi": 68,
+    "file": "WorldPerc/Agogo_Low_v2_rr1_Mid.wav",
+    "pitch": 0,
+    "volume": 10.0,
+    "onset": 0.009
+   },
+   {
+    "midi": 73,
+    "file": "WorldPerc/Guiro_Fast_rr1_Mid.wav",
+    "pitch": 0,
+    "volume": 10.0,
+    "onset": 0.009
+   },
+   {
+    "midi": 75,
+    "file": "WorldPerc/Claves1_Hit_v3_rr1_Mid.wav",
+    "pitch": 0,
+    "volume": 10.0,
+    "onset": 0.009
+   }
+  ]
+ },
+ {
   "name": "Glass",
   "bus": "Kill Chords",
   "busFolder": "KillChords",
@@ -1078,6 +1245,58 @@ var INSTRUMENTS = [
     "pitch": 20,
     "volume": -15.8,
     "onset": 0.036538
+   }
+  ]
+ },
+ {
+  "name": "Glock",
+  "bus": "Feature/Mallets",
+  "busFolder": "Mallets",
+  "max": 14,
+  "attack": 2,
+  "release": 70,
+  "notes": [
+   {
+    "midi": 81,
+    "file": "Mallets/glock_medium_G4.wav",
+    "pitch": 2,
+    "volume": 10.0,
+    "onset": 0.006236
+   },
+   {
+    "midi": 84,
+    "file": "Mallets/glock_medium_C5.wav",
+    "pitch": 0,
+    "volume": 10.0,
+    "onset": 0.007
+   },
+   {
+    "midi": 88,
+    "file": "Mallets/glock_medium_G5.wav",
+    "pitch": -3,
+    "volume": 10.0,
+    "onset": 0.008324
+   },
+   {
+    "midi": 93,
+    "file": "Mallets/glock_medium_G5.wav",
+    "pitch": 2,
+    "volume": 10.0,
+    "onset": 0.006236
+   },
+   {
+    "midi": 96,
+    "file": "Mallets/glock_medium_C6.wav",
+    "pitch": 0,
+    "volume": 10.0,
+    "onset": 0.007
+   },
+   {
+    "midi": 100,
+    "file": "Mallets/glock_medium_C6.wav",
+    "pitch": 4,
+    "volume": 10.0,
+    "onset": 0.005556
    }
   ]
  },
@@ -2092,6 +2311,23 @@ var INSTRUMENTS = [
   ]
  },
  {
+  "name": "PowerChord",
+  "bus": "Feature/Guitar",
+  "busFolder": "Guitar",
+  "max": 6,
+  "attack": 2,
+  "release": 70,
+  "notes": [
+   {
+    "midi": 43,
+    "file": "Guitar/Thrum_PowerChordE5_E2B2E3_v100.wav",
+    "pitch": 3,
+    "volume": -13.9,
+    "onset": 0.000841
+   }
+  ]
+ },
+ {
   "name": "Rubber",
   "bus": "Music Bed/Layers/Bass",
   "busFolder": "Bass",
@@ -2168,6 +2404,86 @@ var INSTRUMENTS = [
     "pitch": 8,
     "volume": -11.2,
     "onset": 0.00063
+   }
+  ]
+ },
+ {
+  "name": "ScreamLead",
+  "bus": "Feature/Synth",
+  "busFolder": "Synth",
+  "max": 8,
+  "attack": 2,
+  "release": 70,
+  "notes": [
+   {
+    "midi": 64,
+    "file": "Synth/AT20V_ScreamLead_E4_v105.wav",
+    "pitch": 0,
+    "volume": -18.8,
+    "onset": 0.001
+   },
+   {
+    "midi": 67,
+    "file": "Synth/AT20V_ScreamLead_A4_v105.wav",
+    "pitch": -2,
+    "volume": -18.9,
+    "onset": 0.001122
+   },
+   {
+    "midi": 69,
+    "file": "Synth/AT20V_ScreamLead_A4_v105.wav",
+    "pitch": 0,
+    "volume": -18.9,
+    "onset": 0.001
+   },
+   {
+    "midi": 71,
+    "file": "Synth/AT20V_ScreamLead_A4_v105.wav",
+    "pitch": 2,
+    "volume": -18.9,
+    "onset": 0.000891
+   },
+   {
+    "midi": 72,
+    "file": "Synth/AT20V_ScreamLead_A4_v105.wav",
+    "pitch": 3,
+    "volume": -18.9,
+    "onset": 0.000841
+   },
+   {
+    "midi": 74,
+    "file": "Synth/AT20V_ScreamLead_A4_v105.wav",
+    "pitch": 5,
+    "volume": -18.9,
+    "onset": 0.000749
+   },
+   {
+    "midi": 76,
+    "file": "Synth/AT20V_ScreamLead_A4_v105.wav",
+    "pitch": 7,
+    "volume": -18.9,
+    "onset": 0.000667
+   },
+   {
+    "midi": 77,
+    "file": "Synth/AT20V_ScreamLead_A4_v105.wav",
+    "pitch": 8,
+    "volume": -18.9,
+    "onset": 0.00063
+   },
+   {
+    "midi": 79,
+    "file": "Synth/AT20V_ScreamLead_A4_v105.wav",
+    "pitch": 10,
+    "volume": -18.9,
+    "onset": 0.000561
+   },
+   {
+    "midi": 81,
+    "file": "Synth/AT20V_ScreamLead_A4_v105.wav",
+    "pitch": 12,
+    "volume": -18.9,
+    "onset": 0.0005
    }
   ]
  },
@@ -2430,6 +2746,96 @@ var INSTRUMENTS = [
   ]
  },
  {
+  "name": "Trumpet",
+  "bus": "Feature/Trumpet",
+  "busFolder": "Trumpet",
+  "max": 12,
+  "attack": 2,
+  "release": 70,
+  "notes": [
+   {
+    "midi": 67,
+    "file": "Brass/Sum_SHTrumpet_stac_F3_v3_rr1.wav",
+    "pitch": 2,
+    "volume": 9.1,
+    "onset": 0.003564
+   },
+   {
+    "midi": 69,
+    "file": "Brass/Sum_SHTrumpet_stac_A#3_v3_rr1.wav",
+    "pitch": -1,
+    "volume": -0.2,
+    "onset": 0.005297
+   },
+   {
+    "midi": 71,
+    "file": "Brass/Sum_SHTrumpet_stac_A#3_v3_rr1.wav",
+    "pitch": 1,
+    "volume": -0.2,
+    "onset": 0.004719
+   },
+   {
+    "midi": 72,
+    "file": "Brass/Sum_SHTrumpet_stac_D4_v3_rr1.wav",
+    "pitch": -2,
+    "volume": -5.5,
+    "onset": 0.005612
+   },
+   {
+    "midi": 74,
+    "file": "Brass/Sum_SHTrumpet_stac_D4_v3_rr1.wav",
+    "pitch": 0,
+    "volume": -5.5,
+    "onset": 0.005
+   },
+   {
+    "midi": 76,
+    "file": "Brass/Sum_SHTrumpet_stac_F4_v3_rr1.wav",
+    "pitch": -1,
+    "volume": -6.4,
+    "onset": 0.003178
+   },
+   {
+    "midi": 77,
+    "file": "Brass/Sum_SHTrumpet_stac_F4_v3_rr1.wav",
+    "pitch": 0,
+    "volume": -6.4,
+    "onset": 0.003
+   },
+   {
+    "midi": 79,
+    "file": "Brass/Sum_SHTrumpet_stac_F4_v3_rr1.wav",
+    "pitch": 2,
+    "volume": -6.4,
+    "onset": 0.002673
+   },
+   {
+    "midi": 81,
+    "file": "Brass/Sum_SHTrumpet_stac_F4_v3_rr1.wav",
+    "pitch": 4,
+    "volume": -6.4,
+    "onset": 0.002381
+   }
+  ]
+ },
+ {
+  "name": "TrumpetSustain",
+  "bus": "Feature/Trumpet",
+  "busFolder": "Trumpet",
+  "max": 5,
+  "attack": 2,
+  "release": 70,
+  "notes": [
+   {
+    "midi": 72,
+    "file": "Brass/Sum_SHTrumpet_sus_C3_v3_rr1.wav",
+    "pitch": 12,
+    "volume": -5.1,
+    "onset": 0.005
+   }
+  ]
+ },
+ {
   "name": "Vibes",
   "bus": "Kill Chords",
   "busFolder": "KillChords",
@@ -2541,6 +2947,159 @@ var INSTRUMENTS = [
     "pitch": -2,
     "volume": -6.0,
     "onset": 0.007857
+   }
+  ]
+ },
+ {
+  "name": "Whistle",
+  "bus": "Feature/Whistle",
+  "busFolder": "Whistle",
+  "max": 8,
+  "attack": 2,
+  "release": 70,
+  "notes": [
+   {
+    "midi": 79,
+    "file": "Woodwinds/LDFlute_stac_C5_v3_rr1.wav",
+    "pitch": -5,
+    "volume": 0.9,
+    "onset": 0.020023
+   },
+   {
+    "midi": 81,
+    "file": "Woodwinds/LDFlute_stac_C5_v3_rr1.wav",
+    "pitch": -3,
+    "volume": 0.9,
+    "onset": 0.017838
+   },
+   {
+    "midi": 83,
+    "file": "Woodwinds/LDFlute_stac_C5_v3_rr1.wav",
+    "pitch": -1,
+    "volume": 0.9,
+    "onset": 0.015892
+   },
+   {
+    "midi": 84,
+    "file": "Woodwinds/LDFlute_stac_C5_v3_rr1.wav",
+    "pitch": 0,
+    "volume": 0.9,
+    "onset": 0.015
+   },
+   {
+    "midi": 86,
+    "file": "Woodwinds/LDFlute_stac_E5_v3_rr1.wav",
+    "pitch": -2,
+    "volume": -0.1,
+    "onset": 0.022449
+   },
+   {
+    "midi": 88,
+    "file": "Woodwinds/LDFlute_stac_E5_v3_rr1.wav",
+    "pitch": 0,
+    "volume": -0.1,
+    "onset": 0.02
+   },
+   {
+    "midi": 89,
+    "file": "Woodwinds/LDFlute_stac_E5_v3_rr1.wav",
+    "pitch": 1,
+    "volume": -0.1,
+    "onset": 0.018877
+   },
+   {
+    "midi": 91,
+    "file": "Woodwinds/LDFlute_stac_A5_v3_rr1.wav",
+    "pitch": -2,
+    "volume": -4.4,
+    "onset": 0.020204
+   },
+   {
+    "midi": 93,
+    "file": "Woodwinds/LDFlute_stac_A5_v3_rr1.wav",
+    "pitch": 0,
+    "volume": -4.4,
+    "onset": 0.018
+   },
+   {
+    "midi": 95,
+    "file": "Woodwinds/LDFlute_stac_A5_v3_rr1.wav",
+    "pitch": 2,
+    "volume": -4.4,
+    "onset": 0.016036
+   },
+   {
+    "midi": 96,
+    "file": "Woodwinds/LDFlute_stac_A5_v3_rr1.wav",
+    "pitch": 3,
+    "volume": -4.4,
+    "onset": 0.015136
+   }
+  ]
+ },
+ {
+  "name": "Xylo",
+  "bus": "Feature/Mallets",
+  "busFolder": "Mallets",
+  "max": 8,
+  "attack": 2,
+  "release": 70,
+  "notes": [
+   {
+    "midi": 84,
+    "file": "Mallets/Xylo_Medium_C5_ff_01_far.wav",
+    "pitch": 0,
+    "volume": -8.7,
+    "onset": 0.003
+   },
+   {
+    "midi": 86,
+    "file": "Mallets/Xylo_Medium_C5_ff_01_far.wav",
+    "pitch": 2,
+    "volume": -8.7,
+    "onset": 0.002673
+   },
+   {
+    "midi": 88,
+    "file": "Mallets/Xylo_Medium_G5_ff_01_far.wav",
+    "pitch": -3,
+    "volume": -6.3,
+    "onset": 0.003568
+   },
+   {
+    "midi": 89,
+    "file": "Mallets/Xylo_Medium_G5_ff_01_far.wav",
+    "pitch": -2,
+    "volume": -6.3,
+    "onset": 0.003367
+   },
+   {
+    "midi": 91,
+    "file": "Mallets/Xylo_Medium_G5_ff_01_far.wav",
+    "pitch": 0,
+    "volume": -6.3,
+    "onset": 0.003
+   },
+   {
+    "midi": 93,
+    "file": "Mallets/Xylo_Medium_G5_ff_01_far.wav",
+    "pitch": 2,
+    "volume": -6.3,
+    "onset": 0.002673
+   },
+   {
+    "midi": 96,
+    "file": "Mallets/Xylo_Medium_C6_ff_01_far.wav",
+    "pitch": 0,
+    "volume": -5.3,
+    "onset": 0.002
+   },
+   {
+    "midi": 98,
+    "file": "Mallets/Xylo_Medium_C6_ff_01_far.wav",
+    "pitch": 2,
+    "volume": -5.3,
+    "onset": 0.001782
    }
   ]
  }

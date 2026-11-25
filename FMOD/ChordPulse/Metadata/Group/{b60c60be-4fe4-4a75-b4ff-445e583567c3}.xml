@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<objects serializationModel="Studio.02.02.00">
+	<object class="MixerGroup" id="{b60c60be-4fe4-4a75-b4ff-445e583567c3}">
+		<property name="name">
+			<value>Trumpet</value>
+		</property>
+		<relationship name="effectChain">
+			<destination>{230042ff-d53d-4be9-b137-b056d2cdcc1c}</destination>
+		</relationship>
+		<relationship name="panner">
+			<destination>{02c87d45-dce2-4e89-b8ce-d4cde6c5e313}</destination>
+		</relationship>
+		<relationship name="output">
+			<destination>{30982b85-be67-48d4-8ef0-2e7cbc43914f}</destination>
+		</relationship>
+	</object>
+	<object class="MixerBusEffectChain" id="{230042ff-d53d-4be9-b137-b056d2cdcc1c}">
+		<relationship name="effects">
+			<destination>{5f6de4ce-8e3a-42b1-814f-f452a3d31a0e}</destination>
+			<destination>{0780a0c0-46b2-4b48-bb55-d33eb8f720ca}</destination>
+		</relationship>
+	</object>
+	<object class="MixerBusPanner" id="{02c87d45-dce2-4e89-b8ce-d4cde6c5e313}" />
+	<object class="HighpassEffect" id="{5f6de4ce-8e3a-42b1-814f-f452a3d31a0e}">
+		<property name="cutoff">
+			<value>180</value>
+		</property>
+	</object>
+	<object class="MixerBusFader" id="{0780a0c0-46b2-4b48-bb55-d33eb8f720ca}" />
+</objects>

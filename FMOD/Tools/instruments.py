@@ -55,7 +55,10 @@ MULTI_SOUND_VOICE_DELAY_BLOCKS = 1
 # The legacy Harmony layers reach the mixer one block late (their in-event group goes through a send to
 # return:/Harmony Duck; legacy pluck +21.77 ms after the beat click, legacy drums -0.41 ms). Harmony one-shots keep that
 # timing (legacy equivalence): bus path prefix -> blocks. -> InstrumentTable.PathDelayBlocks
-PATH_DELAY_BLOCKS = {"Music Bed/Harmony": 1}
+# The legacy Feature tracks go the same way (the event's Feature group sends to return:/Feature Duck): Task 13, features
+# takes against the beat clicks, feature one-shots without a path delay sounded 20.8 ms (mean, 184 notes) before the
+# timeline's notes; Feature one-shots keep the legacy timing as well.
+PATH_DELAY_BLOCKS = {"Music Bed/Harmony": 1, "Feature": 1}
 
 
 def voice_delay_blocks(inst):

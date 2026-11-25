@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<objects serializationModel="Studio.02.02.00">
+	<object class="EventFolder" id="{f9f1e3e4-03fb-4922-8a73-cd003a1840b4}">
+		<property name="name">
+			<value>Synth</value>
+		</property>
+		<relationship name="folder">
+			<destination>{616f4359-2f60-4e6b-be21-19f9dcde38bf}</destination>
+		</relationship>
+	</object>
+</objects>

@@ -492,6 +492,104 @@ var BUSES = [
     }
    }
   ]
+ ],
+ [
+  "Feature/Trumpet",
+  "Feature",
+  0.0,
+  [
+   {
+    "entity": "HighpassEffect",
+    "props": {
+     "cutoff": 180,
+     "resonance": 1
+    }
+   }
+  ]
+ ],
+ [
+  "Feature/Whistle",
+  "Feature",
+  0.0,
+  [
+   {
+    "entity": "HighpassEffect",
+    "props": {
+     "cutoff": 700,
+     "resonance": 1
+    }
+   },
+   {
+    "entity": "LowpassEffect",
+    "props": {
+     "cutoff": 5500,
+     "resonance": 1
+    }
+   }
+  ]
+ ],
+ [
+  "Feature/Mallets",
+  "Feature",
+  0.0,
+  [
+   {
+    "entity": "HighpassEffect",
+    "props": {
+     "cutoff": 150,
+     "resonance": 1
+    }
+   }
+  ]
+ ],
+ [
+  "Feature/Perc",
+  "Feature",
+  0.0,
+  [
+   {
+    "entity": "HighpassEffect",
+    "props": {
+     "cutoff": 120,
+     "resonance": 1
+    }
+   }
+  ]
+ ],
+ [
+  "Feature/Synth",
+  "Feature",
+  0.0,
+  [
+   {
+    "entity": "HighpassEffect",
+    "props": {
+     "cutoff": 200,
+     "resonance": 1
+    }
+   },
+   {
+    "entity": "LowpassEffect",
+    "props": {
+     "cutoff": 6500,
+     "resonance": 1
+    }
+   }
+  ]
+ ],
+ [
+  "Feature/Guitar",
+  "Feature",
+  0.0,
+  [
+   {
+    "entity": "HighpassEffect",
+    "props": {
+     "cutoff": 110,
+     "resonance": 1
+    }
+   }
+  ]
  ]
 ];
 var RETURNS = {"Harmony Duck": "Music Bed/Harmony", "Feature Duck": "Feature"};
