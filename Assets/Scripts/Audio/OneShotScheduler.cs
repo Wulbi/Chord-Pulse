@@ -366,7 +366,13 @@ public sealed class FmodOneShotBackend : IOneShotBackend
 
     readonly Dictionary<int, Note> _notes = new Dictionary<int, Note>();
     readonly List<int> _keys = new List<int>();
-    readonly OneShotRelease _release = new OneShotRelease(InstrumentTable.ReleaseSeconds);
+    readonly OneShotRelease _release;
+
+    /// <param name="releaseSeconds">Fade after a note's stop time per (instrument, bus); default InstrumentTable.ReleaseSeconds.</param>
+    public FmodOneShotBackend(Func<Instrument, OutputBus, double> releaseSeconds = null)
+    {
+        _release = new OneShotRelease(releaseSeconds ?? InstrumentTable.ReleaseSeconds);
+    }
     readonly Dictionary<(Instrument, OutputBus), FMOD.Studio.EventDescription> _descriptions = new Dictionary<(Instrument, OutputBus), FMOD.Studio.EventDescription>();
     int _next;
     int _sampleRate;
