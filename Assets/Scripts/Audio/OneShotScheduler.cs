@@ -326,15 +326,16 @@ public static class OneShotArming
     /// <summary>
     /// Delay start of a note's channel group for an audible start at <paramref name="start"/>: a multi-sound instrument
     /// event starts its voice <paramref name="voiceBlocks"/> mixer blocks after the group's delay start, so the group starts
-    /// that much earlier; <paramref name="pathBlocks"/> keeps the whole note as late as the legacy layers of its bus family
-    /// (InstrumentTable.VoiceDelayBlocks / PathDelayBlocks; Task 12 follow-up).
+    /// that much earlier; <paramref name="pathBlocks"/> delays the whole note by its bus family's path delay
+    /// (InstrumentTable.VoiceDelayBlocks / PathDelayBlocks; Task 12 follow-up). The path delay is 0 on every bus since the
+    /// music event was deleted (it matched the legacy timeline layers' send / return), so every one-shot starts on the clock.
     /// </summary>
     public static ulong DelayStart(ulong start, int voiceBlocks, int pathBlocks, ulong blockSamples) =>
         (ulong)Math.Max(0L, (long)start + ((long)pathBlocks - voiceBlocks) * (long)blockSamples);
 
     /// <summary>
     /// Stop point in the group's delay clock (the delay end is exact, it does not wait for the voice): the stop plus the
-    /// bus family's path delay, so the note keeps its length. 0 = no stop. (Task 11 added one block to every stop because
+    /// bus family's path delay (0 on every bus now), so the note keeps its length. 0 = no stop. (Task 11 added one block to every stop because
     /// the voice started a block late; that block now comes off the start instead.)
     /// </summary>
     public static ulong StopAt(ulong stop, int pathBlocks, ulong blockSamples) =>

@@ -1043,26 +1043,12 @@ public static class InstrumentTable
         return 0;
     }
 
-    /// <summary>Mixer blocks a note on this bus sounds after its beat, like the legacy layers of its family
-    /// (instruments.PATH_DELAY_BLOCKS: the Harmony send / return).</summary>
+    /// <summary>Extra mixer blocks a note on this bus sounds after its beat (instruments.PATH_DELAY_BLOCKS;
+    /// empty since the music event was deleted, so 0 on every bus).</summary>
     public static int PathDelayBlocks(OutputBus bus)
     {
         switch (bus)
         {
-            case OutputBus.Harmony: return 1;
-            case OutputBus.Feature: return 1;
-            case OutputBus.ComboPad: return 1;
-            case OutputBus.LatinMarimba: return 1;
-            case OutputBus.FunkKeys: return 1;
-            case OutputBus.FunkGuitar: return 1;
-            case OutputBus.DreamyChoir: return 1;
-            case OutputBus.DreamyBells: return 1;
-            case OutputBus.Trumpet: return 1;
-            case OutputBus.Whistle: return 1;
-            case OutputBus.Mallets: return 1;
-            case OutputBus.Perc: return 1;
-            case OutputBus.Synth: return 1;
-            case OutputBus.Guitar: return 1;
         }
         return 0;
     }

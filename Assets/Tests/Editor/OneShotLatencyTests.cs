@@ -2,9 +2,9 @@ using NUnit.Framework;
 
 /// <summary>
 /// Task 12 follow-up: a multi-sound instrument event starts its voice one mixer block after its channel group's delay
-/// start (single-sound events start on it), and the legacy Harmony layers reach the mixer one block late (send / return).
-/// The backend starts each note's group early by its voice delay and keeps its bus family's path delay
-/// (Docs/Captures/README.md Task 12, follow-up round).
+/// start (single-sound events start on it). The backend starts each note's group early by its voice delay and adds its
+/// bus family's path delay (Docs/Captures/README.md Task 12, follow-up round), which is 0 on every bus since the music
+/// event was deleted (final fix wave: the Harmony / Feature delay only matched the legacy send / return).
 /// </summary>
 public class OneShotLatencyTests
 {
@@ -20,10 +20,11 @@ public class OneShotLatencyTests
     }
 
     [Test]
-    public void HarmonyFamily_KeepsTheLegacyPathDelay_OtherBusesNone()
+    public void EveryBus_HasNoPathDelay()
     {
-        Assert.AreEqual(1, InstrumentTable.PathDelayBlocks(OutputBus.Harmony));
-        Assert.AreEqual(1, InstrumentTable.PathDelayBlocks(OutputBus.ComboPad));
+        Assert.AreEqual(0, InstrumentTable.PathDelayBlocks(OutputBus.Harmony));
+        Assert.AreEqual(0, InstrumentTable.PathDelayBlocks(OutputBus.ComboPad));
+        Assert.AreEqual(0, InstrumentTable.PathDelayBlocks(OutputBus.Feature));
         Assert.AreEqual(0, InstrumentTable.PathDelayBlocks(OutputBus.MusicBed));
         Assert.AreEqual(0, InstrumentTable.PathDelayBlocks(OutputBus.Bass));
         Assert.AreEqual(0, InstrumentTable.PathDelayBlocks(OutputBus.KillChords));
@@ -37,7 +38,7 @@ public class OneShotLatencyTests
     }
 
     [Test]
-    public void HarmonyNote_StaysOnTheLegacyPath_WholeNoteOneBlockLate()
+    public void PathDelayedNote_WholeNoteOneBlockLate()
     {
         Assert.AreEqual(100000UL, OneShotArming.DelayStart(100000, 1, 1, Block));
         Assert.AreEqual(120000UL + Block, OneShotArming.StopAt(120000, 1, Block));

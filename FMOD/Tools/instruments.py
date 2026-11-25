@@ -52,13 +52,12 @@ PATTERN_STOP_FADE_MS = 5
 # channel group's delay start; with one sound it starts on it (3 kHz click, same file / bus / ADSR: 1 sound +0.22 ms,
 # 8 sounds +21.71 ms). -> InstrumentTable.VoiceDelayBlocks; the backend starts the group that much earlier.
 MULTI_SOUND_VOICE_DELAY_BLOCKS = 1
-# The legacy Harmony layers reach the mixer one block late (their in-event group goes through a send to
-# return:/Harmony Duck; legacy pluck +21.77 ms after the beat click, legacy drums -0.41 ms). Harmony one-shots keep that
-# timing (legacy equivalence): bus path prefix -> blocks. -> InstrumentTable.PathDelayBlocks
-# The legacy Feature tracks go the same way (the event's Feature group sends to return:/Feature Duck): Task 13, features
-# takes against the beat clicks, feature one-shots without a path delay sounded 20.8 ms (mean, 184 notes) before the
-# timeline's notes; Feature one-shots keep the legacy timing as well.
-PATH_DELAY_BLOCKS = {"Music Bed/Harmony": 1, "Feature": 1}
+# Extra mixer blocks a bus family's one-shots sound after their beat: bus path prefix -> blocks.
+# -> InstrumentTable.PathDelayBlocks. Empty since the music event was deleted (unity-music-clock final fix wave): the
+# Harmony and Feature one-shots used to wait one block to match the legacy timeline layers, which reached the mixer one
+# block late through the event's sends to return:/Harmony Duck / return:/Feature Duck. With the event gone every bus
+# starts on the clock (Harmony / Combo Pad spike clicks measured +1030 samples with the delay, Kill Chords 0).
+PATH_DELAY_BLOCKS = {}
 
 
 def voice_delay_blocks(inst):
@@ -408,8 +407,8 @@ def cs_text(insts):
         if voice_delay_blocks(i):
             lines.append(f"        if (instrument == Instrument.{i['name']} && bus == OutputBus.{i['busFolder']}) return {voice_delay_blocks(i)};")
     lines += ["        return 0;", "    }", "",
-              "    /// <summary>Mixer blocks a note on this bus sounds after its beat, like the legacy layers of its family",
-              "    /// (instruments.PATH_DELAY_BLOCKS: the Harmony send / return).</summary>",
+              "    /// <summary>Extra mixer blocks a note on this bus sounds after its beat (instruments.PATH_DELAY_BLOCKS;",
+              "    /// empty since the music event was deleted, so 0 on every bus).</summary>",
               "    public static int PathDelayBlocks(OutputBus bus)", "    {", "        switch (bus)", "        {"]
     for member, path in mixer.OUTPUT_BUSES:
         if path_delay_blocks(path):
