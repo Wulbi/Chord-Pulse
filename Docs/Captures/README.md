@@ -2266,19 +2266,26 @@ shows a refresh only at Play mode entry, before the capture started; there was n
 |---|---|---|
 | every boundary delay ≤ 5 ms (`landings`) | 16 / 32 / 48 / 64 / 80 / 96 / 112: +0 / +0 / -0 / +0 / +0 / +0 / -0 ms | met |
 | first half-beat RMS ±1 dB against the previous phrase, boundaries with the same arrangement | 16 / 32 / 48 / 80 / 112 (same pattern notes in the first half beat as b-16): -0.00 / +0.27 / -0.13 / -0.00 / +0.16 dB. 64 and 96 have different notes than b-16 (-1.10 / -0.30) and are not compared | met |
-| no silence > 20 ms at a boundary | `landings` lists 64: 320+95 ms, 80: 320+95 ms, 112: 475+40 ms | see below |
+| no silence > 20 ms at a boundary | `landings` lists 64: 320+95 ms, 80: 320+95 ms, 112: 475+40 ms | **NOT met** (3 by `landings`: 64, 80, 112) |
 | `frames`: backward 0, over 0.05 beat 0 | 17295 frames, backward 0, over 0, max deviation 0.0066 beat, longest hold 0 ms | met |
 | ONESHOTS late / dropped 0 | 0 / 0 | met |
 
-The three silences listed by `landings` are rests of the arrangement, not gaps at the boundary:
+What was measured about the three silences listed by `landings` (an explanation; whether they count as rests is not
+decided here):
 - The same windows are silent in both reference takes of this seed. `baseline_seed7_s15a_new` has 64: 335+90, 80: 330+90
   and 112: 480+35. `baseline_seed7_s15a_legacy_d`, whose notes came from the timeline, has 112: 480+35.
 - At 64 and 80 the window is also silent one phrase away (80 after 64, 64 after 80). The phrase's only notes there are
   the tension bus's Acid and SineSub, which are at -80 dB at Tension 0 (`bed_tension.CURVES`), and drum hits that start
   up to 0.3 beat before the window.
 - At 112 no pattern note starts in the window.
-- So no silence is caused by the clock switch. The analyzer's rest test (same offset after b-4) does not classify them as
-  rests. Read literally, its count is 3.
+- The analyzer's rest test (same offset after b-4) does not classify any of the three as a rest.
+- These takes show that the same windows were already silent before the clock switch: all three in
+  `baseline_seed7_s15a_new`, and 112 also in `baseline_seed7_s15a_legacy_d`. They do not establish a cause beyond that.
+
+### NOT met
+
+- Step 3, no silence > 20 ms at a boundary: 3 by `landings` (64: 320+95, 80: 320+95, 112: 475+40 ms in
+  `baseline_seed7_s6c`).
 
 ### Step 4: fever seed 33
 
