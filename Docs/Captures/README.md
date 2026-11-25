@@ -1916,3 +1916,182 @@ onset over the notes that sound in the layer's phase (riser / fall: bar 4).
 still keeps a residual of about -1.1 to -2.2 ms (-0.5 / -0.8 on the outro, which has few notes), including the four
 layers with onset 0 (lead, shaker, roll, outro snare). This holds on both buses (Harmony: lead / riser / fall; Music
 Bed/Layers: the rest). No log here shows where the residual comes from.
+
+
+## Task 15a: every layer as a one-shot (reference takes before the clock switch, CPU budget, scalability)
+
+First takes with every migrated layer on the new path at once: kill chords, bed, style and core drums, feature loops,
+fever. They are the "before" reference for the clock switch (unity-music-clock Task 7). No code changed;
+**`legacyLayers` stays true** (each take chooses its path with `CaptureScenario.layers`).
+
+Settings for every take: Editor, `logOneShots` on, the scenario's own kills, full mix (no solo), nothing else changed
+unless listed. `styles`: 256 beats, `stylesWithBed`, intensity 3. `features`: 208 beats. `fever`: 144 beats,
+`spikeRefClicks` (as in Task 14). `heavy` / `baseline` / `duck`: 128 beats. Standalone = Windows Development player built
+the Task 5 way: a temporary copy of `AudioCapture.unity` with `layers` oneShots, `logOneShots` and `targetFps` 60,
+`BuildPipeline.BuildPlayer`, the copies deleted afterwards. Output goes to `Builds/Capture/<scenario>_s15a/Docs/Captures/`.
+The build changed no tracked file (`ProjectSettings` hashes were identical before and after).
+
+**Auto refresh off during each take.** The first three baseline legacy attempts had main-thread stalls of 1.3-4 s.
+`baseline_seed7_s15a_legacy` ran while a game was using the machine. In `_legacy_b` and `_legacy_c` the stalls at beats
+83 and 4 come right after `Asset Pipeline Refresh ... RefreshV2(NoUpdateAssetOptions)` lines in Editor.log. Those
+refreshes found nothing to import (they took 3-36 ms), no file under `Assets` had changed in the 3 hours before, and
+Editor.log does not say what started them (focus regain, an `AssetDatabase.Refresh` call or an MCP `refresh_unity` call
+all look alike there). The stalls at beats 1 and 20 of `_legacy_b` have no refresh next to them; their cause is not shown.
+So every take from `_legacy_d` on ran with `AssetDatabase.DisallowAutoRefresh()` called just before Play mode, and a
+matching `AllowAutoRefresh()` once Play mode had ended: 10 calls each, logged one by one. This was done only from the
+take launcher. No preference, EditorPrefs value or project file was changed. Editor.log shows no refresh during any of
+these takes, and every one of them has 0 stalls. The mitigation does not prevent a refresh that another client forces
+explicitly; none happened.
+
+### Takes
+
+Every take is listed, invalid ones included. Counters come from `.cpu.txt`:
+- sched = `PatternScheduler.NoteScheduled` events
+- handed = pattern instances started in FMOD
+- late = scheduler late
+- dropped = backend drops
+
+No take had a frame with Studio update ≥ 95 %.
+
+| take | path | stalls | Studio update avg / max % | Core dsp avg / max % | pattern sched / handed / late / dropped | kill started / late / dropped |
+|---|---|---:|---|---|---|---|
+| `baseline_seed7_s15a_legacy` (**invalid**: external load, a game running) | legacy | 7 | 11.61 / 137.01 | 2.01 / 3.33 | - | 273 / 9 / 9 |
+| `baseline_seed7_s15a_legacy_b` (**invalid**: stalls) | legacy | 3 | 7.02 / 88.45 | 1.81 / 2.98 | - | 282 / 0 / 0 |
+| `baseline_seed7_s15a_legacy_c` (**invalid**: stall after a refresh) | legacy | 1 | 6.93 / 86.49 | 1.66 / 2.68 | - | 279 / 9 / 0 |
+| `baseline_seed7_s15a_legacy_d` | legacy | 0 | 7.21 / 88.79 | 1.67 / 2.94 | - | 288 / 0 / 0 |
+| `baseline_seed7_s15a_new` | new | 0 | 4.85 / 72.69 | 1.79 / 2.73 | 1122 / 1121 / 0 / 0 | 288 / 0 / 0 |
+| `heavy_seed7_s15a_legacy` | legacy | 0 | 7.15 / 84.07 | 5.33 / 6.54 | - | 3069 / 0 / 0 |
+| `heavy_seed7_s15a_new` | new | 0 | 7.31 / 84.74 | 5.56 / 11.03 | 1606 / 1605 / 0 / 0 | 3069 / 0 / 0 |
+| `heavy_seed33_s15a_new` | new | 0 | 8.12 / 79.37 | 5.75 / 7.06 | 1471 / 1467 / 0 / 0 | 3069 / 0 / 0 |
+| `styles_seed7_s15a_bed_i3_new` | new | 0 | 9.70 / 84.20 | 3.73 / 9.88 | 3143 / 3133 / 0 / 11 | 2304 / 0 / 0 |
+| `features_seed7_s15a_new` | new | 0 | 7.14 / 79.40 | 1.62 / 2.94 | 2108 / 2103 / 0 / 0 | 0 / 0 / 0 |
+| `fever_seed7_s15a_new` | new | 0 | 6.85 / 80.59 | 2.71 / 3.59 | 1449 / 1447 / 0 / 0 | 1290 / 0 / 0 |
+| `fever_seed7_s15a_legacy` | legacy | 0 | 6.05 / 78.66 | 2.53 / 3.37 | - | 1296 / 0 / 0 |
+| `duck_seed7_s15a_new` | new | 0 | 8.18 / 80.70 | 2.29 / 3.34 | 1547 / 1544 / 0 / 0 | 288 / 0 / 0 |
+| `baseline_seed7_s15a_standalone_new` (standalone, 60 fps) | new | 0 | 4.13 / 64.13 | 1.68 / 2.74 | 1127 / 1124 / 0 / 0 | 288 / 0 / 0 |
+| `heavy_seed7_s15a_standalone_new` (standalone, 60 fps) | new | 0 | 4.59 / 64.49 | 2.86 / 3.93 | 1612 / 1607 / 0 / 0 | 3069 / 0 / 0 |
+
+- **Dropped notes.** Only `styles` dropped any: 11 pattern notes, all in the first beat after a landing.
+  - One at 32.745, "start reached first".
+  - Ten at 128.5 / 128.75, "group never appeared": core hat (Drums 42), snare (38), SineSub, Acid, Rubber bass and the
+    FunkKeys clav 76 / 79.
+  - Landing 128's callback was 54 ms late. Every drop is inside the accepted window.
+- **Late notes:** 0 in every take, pattern and kill alike.
+- **Scheduled vs handed over**, accounted with Task 14's `unstarted.py`:
+  - Most of the difference is notes pending at the end of the take (1-5 per take).
+  - `styles` also has 16 notes cancelled before dispatch and stated again.
+  - Notes handed over with a start more than 25 ms from their scheduling-time estimate:
+    baseline 4 (49.5 / 50, after landing 48), heavy 7 8 (113.25-114.25), styles 63 (after landings), duck 19 (after
+    landings 32 / 64 / 112), standalone 4 / 7. These are the landing-anchor item below.
+- **Kill chords in `fever_seed7_s15a_new`:** 1290 voices started against 1296 on legacy, with no late, drop or cancel.
+  - Around landing 96 the anchors of 96 and 97 are only 5424 samples apart, because the landing callback was late
+    (`.anchors.csv`).
+  - The kills of two capture beats ended up on one target beat: voicing 2, which adds one MIDI-72 voice per colour.
+    The neighbouring beat got none. Net: 6 voices fewer.
+  - This is the late-landing-anchor item, carried. No kill was lost by the scheduler.
+- **Standalone:** both standalone takes have exactly the same landing figures (callbacks 208 / 202 / 273 ms late at
+  48 / 80 / 96) and the same anchor frames. The files differ elsewhere. A frame-locked 60 fps player plausibly repeats
+  itself; this was not looked into.
+
+### CPU against the budget (plan Global Constraints)
+
+| budget | take | value | verdict |
+|---|---|---:|---|
+| Studio update avg, baseline ≤ 11 % | `baseline_seed7_s15a_new` | 4.85 % (same-day legacy 7.21) | met |
+| Core dsp avg, baseline ≤ 6 % | `baseline_seed7_s15a_new` | 1.79 % (legacy 1.67; first-plan Task 6 3.17) | met |
+| Core dsp avg, heavy ≤ 12 % | `heavy_seed7_s15a_new` / `heavy_seed33_s15a_new` | 5.56 / 5.75 % (legacy 5.33; Task 6 7.12) | met |
+
+- Standalone: baseline 1.68 %, heavy 2.86 %.
+- The highest Core dsp maximum is 11.03 % (heavy 7, beat 123.5; all readings above 9 % are within beats 123-124). The highest Studio maximum is 88.79 % (a legacy take).
+- The scenarios outside the budget's scope stay below 4 % Core avg and 10 % Studio avg.
+
+### Level (full mix, 4-beat windows, `rms --compare`; value = new - reference, dB)
+
+| pair | windows | mean of windows 1.. | outside ±1 dB |
+|---|---:|---:|---|
+| `baseline_seed7_s15a_new` vs same-day `_legacy_d` | 31 | +0.10 | w0 -1.43 (accepted), w19 beats 76-79 +1.24 (ends at landing 80, accepted) |
+| `heavy_seed7_s15a_new` vs same-day `heavy_seed7_s15a_legacy` | 31 | -0.01 | w0 -1.31 (accepted) |
+| `fever_seed7_s15a_new` vs `fever_seed7_s15a_legacy` (with the click) | 35 | -0.02 | w7 beats 28-31 +1.77 (ends at landing 32), w8 beat 32 -1.83 (landing); both accepted |
+| Task 5 starting point: `baseline_seed7_s15a_new` vs `baseline_seed7_s5_fps60` | 31 | +0.13 | w0 -1.45 (accepted), w19 +1.03 (ends at landing 80, accepted) |
+| Task 5 starting point: `baseline_seed7_s15a_legacy_d` vs `baseline_seed7_s5_fps60` | 31 | +0.03 | none (max 0.57) |
+| Task 5 starting point: `heavy_seed33_s15a_new` vs `heavy_seed33_s5_fps60c` (68-beat take, 60 fps cap; 16 windows) | 16 | +0.05 | w0 -1.34 (accepted) |
+
+- Every window outside ±1 dB is window 0 or a landing window. **Level criterion: met** for baseline 7 and heavy 7
+  against the same-day legacy takes, and against the Task 5 starting point.
+- The kill-chord length changed on purpose in the first plan (Task 6). The Task 5 starting point was recorded after that
+  change, so it does not affect these comparisons. No other difference was explained away with it.
+
+### Landings (`analyze_capture.py landings`; recorded, no judgement)
+
+| take | landing: delay ms (first / next half-beat dB, one phrase earlier dB); no gaps in either take |
+|---|---|
+| `heavy_seed33_s15a_new` | 16: +285 (-28.8 / -30.6, -28.8); 32: +389; 48: +283; 64: +296; 80: -3; 96: +264; 112: +349 |
+| `styles_seed7_s15a_bed_i3_new` | 16: +306; 32: +341; 48: +347; 64: +511; 80: +328; 96: -1; 112: +344; 128: +443 (next half -35.3 vs -32 elsewhere); 144: +367; 160: +4; 176: +332; 192: +514; 208: +350; 224: +369; 240: +1 |
+
+### Timing (as measured; the carried items reported with numbers, none of them fixed)
+
+**A. Dispatched start against the anchored beat grid** (log-based, `scratchpad/t15a/disp.py`).
+- Method:
+  1. Take every pattern start the backend got (`.oneshots.csv`).
+  2. Turn it back into the beat it aims at: start + 110 samples + the note's onset.
+  3. Place that on the take's anchor grid (`.anchors.csv`, linear between anchored beats).
+  4. Error = distance to the nearest 1/12 or 1/16 step.
+- Windows left out because the reference is unreliable there: beats [0, 2), and [L-1, L+1) around each landing (the
+  landing beat's anchor is its late callback).
+- This measures the scheduling clock, not the audio.
+
+| take | n | mean | mean abs | p95 | max abs | notes > 5 ms (beats) |
+|---|---:|---:|---:|---:|---:|---|
+| baseline 7 | 1030 | +0.77 | 0.86 | +2.03 | **12.37** | 5: core kick / snare 117 +12.4 (4 beats ahead from anchor 113); 113.5 bass / sub / acid +11.4 |
+| heavy 7 | 1471 | +1.04 | 1.09 | +2.24 | **8.19** | 2: core 5.0 +8.2 (from the first anchor) |
+| heavy 33 | 1298 | +1.17 | 1.33 | +2.33 | **25.52** | 11: 111.17-111.92 (the beat before the jump at 112: +25.5 .. -9.7), core 5.0 +5.4 |
+| styles | 2761 | +1.26 | 1.50 | +3.08 | **14.34** | 68: largest 65.19 +14.3 (L+1 of 64), core 68.19 +14.2, 200.5 / 200.94 -10.6 / +12.7, 97.0 +9.4, 145.x +8.3 (L+1 of 144) |
+| features | 1894 | +0.99 | 1.05 | +2.10 | 3.10 | 0 |
+| fever | 1312 | +0.96 | 0.99 | +2.21 | 3.35 | 0 |
+| duck | 1352 | +1.06 | 1.19 | +2.42 | **15.42** | 22: core 5.0 +15.4, 96.75 / 97 +8.7 / +9.0, 49 / 49.5 +7.3 / +7.1, core 52 +6.6 |
+| baseline standalone | 1030 | +0.70 | 1.84 | +3.89 | **17.83** | 84, ±16-18 ms (e.g. 13.94, 55.94, 94.0) |
+| heavy standalone | 1471 | +0.53 | 1.35 | +3.22 | **17.92** | 83, ±16-18 ms |
+
+- **Criterion (mean ≤ 2 ms, max ≤ 5 ms):**
+  - The mean is met in every take.
+  - **Max NOT met** in baseline 7, heavy 7, heavy 33, styles, duck and both standalone takes.
+  - Met in features and fever.
+- **Carried item 2 (core notes 4 beats ahead follow a late anchor):** core notes scheduled from the first anchor (5.0:
+  +8.2 / +5.4 / +15.4) and from the anchor after a phrase boundary (117 +12.4, 68.19 +14.2), up to 15.4 ms
+  (Task 12: 14.62).
+- **Carried item 1 (anchors after the music start and after landings):**
+  - Notes in L+1 .. L+2: up to +14.3 ms (styles).
+  - The beat before a jump (heavy 33, 111.x): up to 25.5 ms.
+- **Standalone:** the ±16-18 ms readings are in both directions and sit about a third of a 16th apart. Whether the
+  anchors (the reference) or the notes are off in the 60 fps player is not shown by the logs. Task 5's audio spike
+  measurement in the standalone player was within 3.3 ms.
+
+**B. New vs legacy, per note in the audio** (`fever` pair with the click; Task 14's `fevxcorr.py`, Spike ref click
+subtracted, full mix with kill chords).
+- 63 of 170 fever notes correlate ≥ 0.8.
+- mean -0.64 ms, mean abs 0.90, max abs 2.17 (shaker 116.25).
+- Per layer: shaker -1.38, impact -1.54, the others -0.5 .. +0.1 ms.
+- This is carried item 3 (one-shots about 1.1-2.2 ms ahead of the timeline), measured smaller here and over fewer
+  notes: the kill chords lower the correlation.
+
+**C. Stacked notes dispatched in different frames** (carried item 4; `scratchpad/t15a/timing.py`).
+- For beats whose notes on several instruments were handed over in different frames: the spread of (backend start -
+  scheduling-time start).
+- Spread over 24 samples on 51-110 beats per take. The largest spreads (172-1086 samples at beats 2.0 / 114.0) are
+  beats where the anchor changed between the dispatch frames (after the start, after a boundary).
+- This includes the anchor movement itself, so it is not the 14-sample figure of Task 13, which compared onset
+  differences of the feature loops.
+
+**D. Harmony / Feature path:** one block after the click on both paths (carried item 5, not re-measured).
+**E. Drops in Studio's landing gap:** carried item 6. Here only the styles drops at 128 (see above); no kill chord was
+lost.
+
+### NOT met / carried to the clock switch
+
+- Attack max ≤ 5 ms: NOT met. Max 8.2-25.5 ms in the Editor and up to 17.9 ms in the standalone player (table A).
+  Causes: carried items 1 and 2.
+- Late-landing anchor: kill chords of two beats merged onto one beat after landing 96 (`fever` new, 6 voices fewer).
+  Notes handed over about 25-40 ms off their scheduling-time estimate after landings (the larger styles values were not checked note by note). Carried item 1.
+- Standalone ±16-18 ms readings against the anchors: cause not shown.
+- Stacked-note spread: carried item 4, see C.
+- New vs legacy lead -0.64 ms mean (fever, full mix): carried item 3.
