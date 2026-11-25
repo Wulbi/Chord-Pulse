@@ -1061,9 +1061,13 @@ tried could not hold its delays (Studio clears them there before the first re-ap
 `patternLayers` Pluck, `spikeRefClicks`): every pluck attack (150-700 Hz envelope, 30 % crossing) against the timeline's
 1 kHz beat clicks of the same take, beat position interpolated between clicks, notes in the first beat after a phrase
 boundary excluded. The legacy take calibrates the detector (attack - click +24.64 ms, sd 0.29 ms; the timeline starts the
-pluck sample on the beat, so its attack is at beat + sample onset). One-shot attack vs beat: 98 notes from beat 2 on
-(no landing notes in this take's detectable set): mean signed -1.19 ms, mean |e| 1.33 ms, max |e| 2.60 ms; beat 1.5 was
-+11.8 ms. **The criterion is not met at beat 1.5** (see fix round 1: it is the first anchor's error, carried to the clock
+pluck sample on the beat, so its attack is at beat + sample onset). One-shot attack vs the legacy pluck's timing: 98
+notes from beat 2 on (no landing notes in this take's detectable set): mean signed -1.19 ms, mean |e| 1.33 ms, max |e|
+2.60 ms; beat 1.5 was +11.8 ms. *(Correction, Task 12 follow-up: this is the one-shot pluck against the legacy pluck, not
+against the beat. The calibration assumed the legacy pluck sits on the beat, but the legacy Harmony layers reach the mixer
+one mixer block late (send to return:/Harmony Duck): the legacy pluck's attack is +22.8 ms after the beat click, and the
+one-shot pluck, one block late for its own reason (a multi-sound instrument event), matched it. See "Task 12, follow-up
+round".)* **The criterion is not met at beat 1.5** (see fix round 1: it is the first anchor's error, carried to the clock
 switch); fix round 1 also measures the notes after jump landings.
 
 **Final takes** (same session, code c848087's parent 624fd01 + default flip; every take stalls 0):
@@ -1116,6 +1120,9 @@ same at beat 1.5: +11.8 ms). **Criterion (mean <= 2, max <= 5 ms): met outside t
 post-landing notes measured: -1.65 / -0.96 ms); NOT met at beat 1.5**, the second beat after start, because of the beat
 clock's first anchor (`MusicConductor.PollAnchor` averages polls whose timeline position lags during the first beat). This
 is the clock's limitation, carried to the clock switch; this task does not change the clock.
+*(Correction, Task 12 follow-up: "met" here means "matches the legacy pluck", not "on the beat": the detector was calibrated
+on the legacy pluck, which is itself one mixer block (+22.8 ms) after the beat click. Measured against the click, both the
+legacy and the one-shot pluck were about one block late; see "Task 12, follow-up round".)*
 
 **Styles drop burst.** The valid take `styles_seed7_s11z_bed_i3_new` (not logged with `logOneShots`, so the per-note drop
 reason is not available for it) dropped 16 notes 1-2 beats after the landing at 144, 9 of them kill chords (same code on both
@@ -1167,7 +1174,8 @@ lead `PatternScheduler` documents). `UpdatePatterns` / `InvalidatePatterns` / `R
 ### Kill-chord stop (carried from Task 11, commit 7237b9f)
 
 Kill chords now stop like the pattern layers: stop one mixer block later (`OneShotArming.StopAt`, no bus fork) and a stop
-that FMOD Studio cleared is re-applied (every bus). RED: `StopPoint_IsOneBlockLater_OnEveryBus` / `LostStop_IsReapplied_
+that FMOD Studio cleared is re-applied (every bus). (The one-block stop offset was replaced in the follow-up round: the
+block now comes off the start, see below; the re-apply stays.) RED: `StopPoint_IsOneBlockLater_OnEveryBus` / `LostStop_IsReapplied_
 OnEveryBus` failed on `KillChords` (10000 instead of 11024; false). `killsOnly` pair (`styles` seed 7, kill chords only):
 
 | takes | windows | per-window diff (median / mean / max) | style RMS vs style 0 (latin / funk / dreamy) |
@@ -1194,7 +1202,7 @@ claves 1.3 s), so each funk 16th hat lived 1.3 s and the oldest instances, the p
 now counts dispatch -> timeline end (length 0) or stop + release; Drums / Music Bed 43, Latin Perc 23, the other pattern
 events +1..+4. Same scenario after the fix (`_s12b_bed_i3_new_a..d`): funk kick -0.4..-0.5 dB median.
 
-### Acceptance (Editor, Music Bed solo = Kill Chords and Feature buses muted, `logOneShots`; legacy then new, same session)
+### Acceptance before the follow-up round (superseded: every one-shot was one block late; final pairs below)
 
 Legacy references: `_s12a_bed_legacy` takes. New: `_s12b_` takes (final banks; the legacy path plays no `event:/Inst`
 pattern event, so the max-instances rebuild does not change it).
@@ -1217,7 +1225,7 @@ pattern event, so the max-instances rebuild does not change it).
 - The styles criterion has no valid take on the final code (four takes, each with one main-thread stall); the three
   valid takes on the earlier banks show the same window set.
 
-### Attack (core drums solo against the timeline's beat clicks)
+### Attack before the follow-up round (superseded; core drums solo against the timeline's beat clicks)
 
 `baseline_seed33_s12_attack_core_new` / `_legacy` (seed 33, intensity 0, `holdArrangement`, Music Bed solo,
 `patternLayers` Core kick,Core hat, `spikeRefClicks`, `logOneShots`, both 0 stalls). Detector: band envelope (hat > 6 kHz,
@@ -1234,17 +1242,13 @@ the beat): hat -0.40 ms (sd 0.00, 56 even beats), kick +0.90 ms (sd 0.05).
 **Criterion (mean <= 2, max <= 5 ms) NOT met**: the one-shot core drums sound about 20.7 ms (close to one 1024-sample
 mixer block, 21.3 ms) after the beat click, steadily (no drift across the take or across the landings), while the
 timeline drums sit on the click. Inside notes (landing beats, where the music is silent and the reference is the
-extrapolated grid) are not meaningful. Cause not established. Candidate: Task 11's observation that a pattern one-shot's
-voice starts one mixer block after its group's delay start; if that holds for every pattern bus, Task 11's pluck result
-was calibrated against a legacy path that is itself one block late (the timeline pluck goes through the Harmony send /
-return; its calibration offset was +24.64 ms), while the Task 10 spike click on bus:/Kill Chords was on time. Not
-measured here; needs a spike-click take on a pattern bus.
+extrapolated grid) are not meaningful. Cause found and fixed in the follow-up round below.
 
 Drift of core notes (scheduled up to 4 beats ahead from an older anchor): each note's DSP start at scheduling vs the beat's
 anchored DSP time: core median +1.25..+1.58 ms, other pattern notes +1.42..+1.48 ms (p5..p95 within -0.4..+4.4 ms) in
-heavy 7 / heavy 33 / styles takes; the outliers are beats next to a landing, where the reference itself is the late
-callback. Tempo changes at a phrase boundary re-time dispatched notes (`RescheduleFrom`); a later anchor does not, and
-`Invalidate` is not involved (it re-states arrangement decisions only).
+heavy 7 / heavy 33 / styles takes; the outliers are beats next to a landing. Tempo changes at a phrase boundary re-time
+dispatched notes (`RescheduleFrom`); `Invalidate` is not involved (it re-states arrangement decisions only). The follow-up
+round found that core notes handed over before a landing do drift (L+4: +12.6 / +15.6 ms) and fixed it.
 
 ### Losses and Studio bursts (ruling 5)
 
@@ -1291,3 +1295,84 @@ Heavy seed 7 full mix: Studio update 9.67 legacy -> 9.52 new, Core dsp 5.51 -> 5
 full mix new: 10.82 / 6.14. Baseline seed 7 (Music Bed solo): Studio 9.07 -> 8.18, Core dsp 1.00 -> 1.21 (no full-mix
 baseline take; budget 11 / 6). Styles (solo): Studio 10.55-13.21, Core dsp 1.94-2.22. Within the budgets; no fallback
 needed.
+
+### Follow-up round: the one-block start delay (cause, fix, re-measure)
+
+**Cause, by experiment.** `spike` scenario (seed 33, 68 beats, 60 fps, `shortLeadOnDsp`; new option
+`CaptureScenario.spikeTarget` = instrument:bus:MIDI, the timeline's own beat clicks as reference; SpikeClick events now
+exist on five buses as a latency probe, `spike_click.BUSES`). One thing varied per take:
+
+| take `spike_seed33_s12f_*` | what plays on the beat | test - click, mean signed (sd) |
+|---|---|---:|
+| `killchords` | 3 kHz click event (1 sound), bus:/Kill Chords | +0.06 ms (0.63) |
+| `layers` | same event on bus:/Music Bed/Layers | +0.45 ms (0.62) |
+| `click_adsr00` | same, bus:/Music Bed/Layers/Bass (a pattern sub-bus), ADSR 0 / 0 like the pattern events | +0.22 ms (0.55) |
+| `drumshat` | the Drums event, Note 42 (closed hat), its real bus | +19.92 ms (0.53) * |
+| `drumsevent_click` | the 3 kHz click added to the Drums event as one more Note (temporary) | +21.73 ms (0.55) |
+| `click_8sounds` | the Bass-bus click event with 7 more sounds (temporary) | +21.71 ms (0.63) |
+| `click_8sounds_first` | same, the first of the 8 sounds | +18.8 ms (5.2) * |
+
+(\* own band detector, which reads the on-time click event at -1.43 ms; the others `analyze_capture.py spike`.) Bus, sub-bus,
+ADSR and sample file change nothing; **an instrument event with more than one sound (one picked by the Note condition)
+starts its voice one mixer block (1024 samples, 21.3 ms) after its channel group's delay start; with one sound it starts
+on it.** Every pattern and kill-chord event has several sounds, so every one-shot sounded one block late (this is also
+what Task 11 saw as "the voice starts one block after the delay start"; its one-block stop offset fixed only the length).
+Harmony: the legacy Harmony layers reach the mixer one block late as well (their group sends to return:/Harmony Duck):
+legacy pluck attack +22.77 ms after the beat click (sd 0.38), legacy drums -0.41 / +1.01 ms (hat / kick).
+
+**What Task 11's pluck figure was.** The "1.33 / 2.60 ms" (and fix round 1's 1.27 / 2.48 ms) was the one-shot pluck
+measured against the legacy pluck (the detector was calibrated on it), i.e. against a reference one block late; against
+the beat click both were about one block late. Corrected in place above.
+
+**Fix** (commit 11e3b7d): `instruments.py` `MULTI_SOUND_VOICE_DELAY_BLOCKS = 1` and `PATH_DELAY_BLOCKS = {Music Bed/Harmony:
+1}` -> `InstrumentTable.VoiceDelayBlocks(inst, bus)` / `PathDelayBlocks(bus)`. The backend sets the group's delay start to
+start + (path - voice) blocks and its delay end to stop + path blocks (`OneShotArming.DelayStart` / `StopAt`): drums, bass,
+tension, kill chords start a block earlier and stop exactly; Harmony keeps the legacy one-block path delay. Tests:
+`OneShotLatencyTests` (RED: compile errors, the API did not exist). Spike check after the fix: Drums hat -1.38 ms, kill
+chord Marimba -1.53 ms (with its 5 ms onset) against the click event's -1.43 ms on the same detector: on the beat.
+
+**Core notes and landings** (commits 11e3b7d, 510b1f3). Core notes handed over 4 beats ahead from the anchor before a jump
+landing (which drifts while the timeline stalls ahead of the jump) sounded +12.6 / +15.6 ms late at L+4. `OneShotScheduler`
+now re-times a handed-over note when the clock's newest anchor is >= 2 beats newer than its dispatch anchor and settled
+(half a beat old) and moves its start by > 5 ms. Two simpler rules were measured and rejected: re-timing on any move
+> 2 / 5 ms followed the anchor refining itself (+-5..8 ms around boundaries; 289 re-times per take, kill chords handed over
+twice), and re-timing once from the first anchor after a landing put L+3 notes 11 ms late. `.retimes.csv` / "retimed" in
+`.cpu.txt` count them (2-76 per take now).
+
+**Attack after the fix** (seed 33, `spikeRefClicks`, against the beat clicks; inside = beats 0-2 after start and L, L+1 after
+the landings 16 / 48 / 64 / 112; every take 0 stalls; final code 510b1f3):
+
+| sound (take) | notes | n | mean signed | mean abs | max abs |
+|---|---|---:|---:|---:|---:|
+| core hat (`_s12l_attack_drums_new`) | all / outside | 119 / 107 | -1.37 / -1.49 ms | - / 1.50 | 4.46 / 2.71 |
+| core kick (same) | all / outside | 60 / 56 | -0.14 / -0.15 | - / 0.35 | 1.06 / 1.06 |
+| open hat, a style layer (same) | all / outside | 91 / 86 | -1.05 / -1.22 | - / 1.24 | 16.59 / 2.47 |
+| bass (`_s12l_attack_bass_new`) | all / outside | 60 / 56 | +0.15 / +0.03 | - / 0.80 | 5.92 / 5.92 |
+| pluck, Harmony (`_s12l_attack_pluck_new`) | outside | 86 | +20.76 | 20.76 | 22.79 |
+| legacy pluck (`_s12h_attack_pluck_legacy`) | outside | 86 | +22.77 | 22.77 | 23.59 |
+| before the fix: core hat / kick (`_s12_attack_core_new`) | outside | 113 / 56 | +20.69 / +20.79 | | 22.69 / 22.92 |
+
+- Inside notes: hat 49 / 113 +4.2 / +4.5 ms (L+1 after landings whose callbacks came 359 / 308 ms late); open hat 1.5
+  +16.6 ms (the second beat after start: the clock's first anchor, as Task 11's beat 1.5; carried to the clock switch).
+- Bass: one note over 5 ms outside, beat 82 +5.92 ms (scheduled on the grid like its neighbours, +1.50 ms against the
+  anchored beat; the same note was +0.1 ms in `_s12h_`); cause not found. So the bass line is **not met** in this take
+  (mean met, max 5.92).
+- Harmony: one-shot vs legacy pluck, paired per note: mean -2.01, mean |d| 2.02, max |d| 3.62 ms (1.0 ms of it is the
+  pluck's intended onset move). Just over the 2 ms mean. **Absolute Harmony latency for the clock-switch plan: the legacy
+  Harmony layers sound +22.8 ms (about one block + 1.4 ms) after the beat click; the Harmony one-shots +20.8 ms.**
+
+**Legacy vs new after the fix** (Music Bed solo, 4-beat windows, same session, final code; every take 0 stalls, no Editor
+refresh during the takes):
+
+| scenario | legacy | new | windows > 1 dB | late / drops outside the first beat after a landing |
+|---|---|---|---|---|
+| baseline seed 7 | `baseline_seed7_s12l_bed_legacy` | `_s12l_bed_new` | w0 -2.46; landing 48 -1.44; windows ending at the landings 48 / 80 / 96 +1.25 / +1.14 / +1.02 | 0 / 0 |
+| heavy seed 7 | `heavy_seed7_s12l_bed_legacy_run2` | `_s12l_bed_new` | w0 -3.91 | 0 / 0 |
+| heavy seed 33 | `heavy_seed33_s12l_bed_legacy` | `_s12l_bed_new` | w0 -3.89 | 0 / 0 |
+| styles (bed, i3) | `styles_seed7_s12l_bed_i3_legacy` | `_s12l_bed_i3_new` (first attempt, valid) | w0 -1.88; windows ending at a landing +1.02..+1.27 (7); landing windows 64 -2.41, 192 -2.43, 208 -1.23, 224 -1.80 | 4 pattern late at 65.5 (clock after a landing); 5 pattern dropped at 63.90 / 111.89 / 127.89 / 255.91 (inside the Studio gap that starts ~0.2 beat before a landing) |
+
+Every window over 1 dB is window 0 or a jump-landing window (including the windows that end at a landing, explained above).
+Inside the dreamy landing windows the beats L+1..L+3 are still -1.4..-3.4 dB (192, 208, 224); not explained further.
+Kick beats now match legacy exactly in every style (low band median 0.0 dB; -0.3..-0.4 before the fix). Losses outside
+the first beat after a landing remain in `styles` (9 of 3032 pattern notes; causes above). CPU, heavy seed 7 full mix
+(`heavy_seed7_s12l_full_new`): Studio update 9.03 %, Core dsp 5.72 % (budget 12).
