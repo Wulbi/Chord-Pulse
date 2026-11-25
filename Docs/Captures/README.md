@@ -1726,3 +1726,110 @@ Trumpet - whistle start at dispatch, minus the intended offset (samples):
 **Result.** The trumpet and whistle onsets at 110 / 111 are within 1.5 ms of legacy on the band detector in seven of
 eight readings; the first pair's 111 whistle reads +5.5 ms. Given the detector's own control errors, these readings do not
 establish max <= 5 ms. The correlation says **NOT met**.
+
+## Task 14: fever layers as scheduled one-shots (data extracted from the hand-made tracks)
+
+The eight fever tracks (`Fever lead`, `shaker`, `bass fifths`, `build roll`, `build riser`, `impact`, `outro fall`,
+`outro snare`) were hand-made on the timeline, so no generator held them. `FMOD/Tools/extract_fever.py` (one-time, reads
+the event XML) compared every copy (4 sections x 8 bars, in beats: start, length, sample, pitch, volume, condition,
+ADSR): all equal. Notes per track = per pattern x copies: lead 20 x 8 = 160, shaker 8 x 32 = 256, bass fifths 8 x 8 = 64,
+roll 12 x 32 = 384, riser 32 x 8 = 256, impact 3 x 32 = 96, fall 32 x 8 = 256, outro snare 8 x 32 = 256 (= the inventory).
+`pattern_fever.py` holds the printed data and is the source from now on: 8 layers (= the tracks), one clip each,
+condition by fever phase (`FeverBuild` = Build, `FeverImpact` = Impact, `Fever` = Impact + Fever + Outro, `FeverOutro` =
+Outro). No track had effects or ADSR: lead / riser / fall play on `bus:/Music Bed/Harmony` (the event's Harmony group;
+path delay 1 block like every Harmony layer), the rest on `bus:/Music Bed/Layers`. Timeline lengths kept (5 ms stop
+fade), track faders folded into the notes. The snare rolls pitch the snare by 4/11 and 4/7 semitone steps: the fever
+percussion is one event (`FeverDrums`) whose table maps each Note to (sample, pitch) directly (`samples.pick` with a dict).
+New events `FeverLead`, `FeverPluck` (Harmony), `FeverDrums`, `Bass` (Music Bed/Layers); no audio file imported. Max
+Instances (Task 12 rule): FeverDrums 15, FeverLead 6, FeverPluck 12, Bass on Music Bed/Layers 5.
+`instruments.js` run 1 "added 57", run 2 all 0; `legacy_gate.js` run 1 "notes 10328, added 1728", run 2 "nothing to do";
+Metadata byte-identical on both second runs; the event XML gained 1728 conditions and nothing else (patience diff:
+additions only). `patterns.py --compare-legacy`: unexplained 0. `ArrangementState.Fever` was already a step function
+(`ArrangementTimeline`, pinned by a new test); `QueueFever` already invalidates both schedulers from the build-up bar's
+first step (`RefreshArrangement`). **`legacyLayers` stays true.**
+
+New `CaptureScenario` scenario `fever`: `QueueFever()` at `feverAtBeat` (24) and every `feverEveryBeats` (64) after it,
+one kill chord per colour on every beat unless `feverWithoutKills`. All takes: Editor, seed 7, 144 beats (the first 128),
+`spikeRefClicks`, `logOneShots`; legacy and new in the same session. Levels are energy per beat on each take's own
+1 kHz click grid (the beat log is stamped late at jump landings).
+
+### Takes
+
+| take | path | kills / solo | stalls | Studio avg / max % | Core dsp avg % | pattern sched / started / late / dropped |
+|---|---|---|---:|---|---:|---|
+| `fever_seed7_s14_legacy` (128 beats, **invalid**) | legacy | kills | 2 | 6.79 / 87.34 | 2.53 | - |
+| `fever_seed7_s14_legacy_b` | legacy | kills | 0 | 6.80 / 83.19 | 2.55 | - |
+| `fever_seed7_s14_new` | new | kills | 0 | 7.66 / 88.34 | 2.80 | 1449 / 1447 / 0 / 0 |
+| `fever_seed7_s14_bed_legacy` | legacy | no kills, Music Bed solo | 0 | 6.90 / 86.29 | 0.92 | - |
+| `fever_seed7_s14_bed_new` | new | no kills, Music Bed solo | 0 | 7.29 / 83.19 | 1.15 | 1449 / 1447 / 0 / 0 |
+| `fever_seed7_s14_bed_legacy_b` | legacy | no kills, Music Bed solo | 0 | 6.61 / 83.85 | 0.90 | - |
+| `fever_seed7_s14_bed_new_b` | new | no kills, Music Bed solo | 0 | 6.39 / 82.15 | 1.15 | 1449 / 1447 / 0 / 0 |
+| `fever_seed7_s14_kills48_new` (fever every 48) | new | kills | 0 | 8.33 / 79.06 | 2.85 | 1482 / 1480 / 0 / 0 |
+| `fever_seed7_s14_kills48_legacy` (fever every 48) | legacy | kills | 0 | 7.37 / 75.48 | 2.62 | - |
+| `fever_seed7_s14_late25_new` (QueueFever at 25, 73, 121) | new | kills | 0 | 7.61 / 75.29 | 2.81 | 1492 / 1489 / 0 / 0 |
+
+Fevers: 32 and 112 (the QueueFever at 88 landed one phrase later, at 112, by SoundManager's own rule); `kills48` /
+`late25`: 32, 80, 128. No note late or dropped in any new take (`.losses.csv` empty). Scheduled minus started (2-3 per
+take) not investigated. Core dsp at most 2.85 % (heavy budget 12 %). The first legacy take had two frame stalls (833 /
+384 ms at beats 88-89) and is not used.
+
+### Level per phase (legacy vs new, dB)
+
+Phases of fever F: build [F-4, F), impact [F, F+1), fever [F+1, F+12), outro [F+12, F+16). "Without" leaves out the
+accepted windows: the landing beat [L, L+1) and the beat before a phrase boundary (the legacy parameters' 0.25 s lead).
+
+| pair | F | build all / without | impact | fever | outro all / without |
+|---|---:|---|---|---|---|
+| full mix `_legacy_b` / `_new` | 32 | +2.34 / -0.08 | -8.62 (landing, accepted) | -0.20 | -0.26 / -0.23 |
+| | 112 | +0.31 / -0.04 | -0.01 | -0.12 | -0.05 / -0.05 |
+| bed `_bed_legacy` / `_bed_new` | 32 | +4.84 / +0.03 | -10.83 (landing, accepted) | +0.16 | +0.12 / +0.12 |
+| | 112 | +0.90 / +0.07 | -0.10 | +0.17 | +0.22 / +0.22 |
+| bed `_bed_legacy_b` / `_bed_new_b` | 32 | +4.82 / +0.02 | -10.92 (landing, accepted) | +0.16 | +0.17 / +0.11 |
+| | 112 | +0.78 / +0.05 | +0.01 | +0.16 | -0.13 / +0.21 |
+| full mix `_kills48_legacy` / `_kills48_new` | 32 | +2.20 / -0.11 | -8.59 (landing, accepted) | -0.14 | -0.23 / -0.23 |
+| | 80 | +0.23 / -0.15 | -0.05 | -0.00 | -0.04 / -0.04 |
+| | 128 | +0.28 / -0.00 | -0.03 | +0.00 | -0.11 / -0.11 |
+
+- Without the accepted windows every phase is within 0.27 dB (criterion +-1 dB: **met**). Controls with the same
+  script: legacy vs legacy 0.01 dB, new vs new 0.10 dB.
+- **Impact at the landing 32** (accepted window): the first fever starts at a jump landing. On the click grid the legacy
+  impact is heard about 350 ms after the beat (25 ms RMS blocks: -19 / -17 dBFS 14 blocks after the beat), the new one on
+  the beat (-16 dBFS in the beat's first block). The landing click itself comes late on both paths (the timeline jump),
+  so the new impact falls at the end of beat 31's window. The impact at 80, 112 and 128 (no landing) matches within
+  0.10 dB.
+- **Build bar, beat F-1** (accepted window): the legacy path writes `FeverBuild` = 0 0.25 s before the boundary
+  (`.params.csv`: 31.56, 111.53), and its roll / riser band (2-8 kHz) over [111.75, 112) is -48.1 dBFS against -41.8 on
+  the new path, which plays the notes of 111.75 on their step (`_bed_*`).
+
+### Core kick in the build-up bar; kill chords in fever
+
+- Kick band (40-90 Hz), `_kills48_*`: the bar before each build-up bar -37.7 .. -40.5 dBFS, the build-up bars
+  -45.0 .. -45.9 dBFS on both paths (beats 28 / 76 / 124).
+- In the takes above QueueFever came before the core scheduler reached the build-up bar. `_late25_new` queues at beat 25,
+  after the core scheduler (4 beats ahead) had handed the kicks of 28, 76 and 124 to FMOD (`.patterns.csv`;
+  `.oneshots.csv` handles 384, 1317, 2270: started paused, start time applied, released about 4 beats before their
+  start, no check after that). The build-up bars' kick band equals the takes where no kick was scheduled (-45.1 / -45.9
+  / -45.3 vs -45.2 / -45.9 / -45.3 dBFS): cancelled before they sounded.
+- Kill chords (`_kills48_new`; the backend's start lines in `.oneshots.csv` now carry instrument / bus / MIDI): every
+  bar of the three fever zones (build-up bar included) uses OrigRed / OrigBlue / OrigYellow (style 0); the funk bars
+  64-75 right before the fever zone 76-95 use Brass / Clav / Guitar. Same in `_kills48_legacy`.
+
+### Timing (per-note cross-correlation, Spike ref click subtracted; Task 13's `featxcorr.py` method)
+
+`fevxcorr.py` (scratch, uses `featxcorr.py`'s declick / load / ref unchanged): every fever-layer note in its phase, one
+measurement per (beat, layer) in the layer's band (lead 1.5-6 kHz, shaker 6-16 kHz, bass fifths 80-250 Hz, roll / snare
+2-8 kHz, riser / fall 1.5-8 kHz, impact 40-120 Hz), window [-10, +70] ms, peak >= 0.8, outside = not in [L, L+2) of a
+landing. The bed takes (no kills) are used: with a kill chord on every beat the windows hold the kills (60 of 170 notes
+reach peak 0.8 in `_legacy_b` / `_new`).
+
+| pair (outside, peak >= 0.8) | n (of 170) | mean | mean abs | max abs |
+|---|---:|---:|---:|---:|
+| new vs legacy `_bed_legacy` / `_bed_new` | 106 | -1.47 ms | 1.53 | 2.80 (bass fifths 45) |
+| new vs legacy `_bed_legacy_b` / `_bed_new_b` | 107 | -1.60 | 1.60 | 3.31 (roll / riser 30.75) |
+| legacy vs legacy `_bed_legacy` / `_bed_legacy_b` | 162 | +0.00 | 0.00 | 0.02 |
+| new vs new `_bed_new` / `_bed_new_b` | 129 | -0.13 | 0.59 | 2.02 |
+
+Criterion against legacy (mean <= 2 ms, max <= 5 ms): **met** in both pairs. Every layer's new notes are 0.5-2.5 ms
+earlier than legacy (bass fifths -2.0 / -2.2: their 1 ms sample onset is also started early); not explained further. About
+60 of 170 notes per new-vs-legacy pair stay below peak 0.8 (the window also holds the other bed layers, which differ
+between paths), against 3 / 36 for the controls; they are not counted.
