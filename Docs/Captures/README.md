@@ -1768,9 +1768,14 @@ one kill chord per colour on every beat unless `feverWithoutKills`. All takes: E
 | `fever_seed7_s14_kills48_legacy` (fever every 48) | legacy | kills | 0 | 7.37 / 75.48 | 2.62 | - |
 | `fever_seed7_s14_late25_new` (QueueFever at 25, 73, 121) | new | kills | 0 | 7.61 / 75.29 | 2.81 | 1492 / 1489 / 0 / 0 |
 
+Columns (from `.cpu.txt`): sched = `PatternScheduler.NoteScheduled` events (a note re-stated after an `Invalidate` counts
+again); started = pattern instances created in FMOD (`FmodOneShotBackend` starts minus Kill Chords starts), including notes
+cancelled afterwards before they sounded; late = scheduler late; dropped = backend drops. Per take, sched = started +
+notes never handed over (follow-up A).
+
 Fevers: 32 and 112 (the QueueFever at 88 landed one phrase later, at 112, by SoundManager's own rule); `kills48` /
 `late25`: 32, 80, 128. No note late or dropped in any new take (`.losses.csv` empty). Scheduled minus started (2-3 per
-take) not investigated. Core dsp at most 2.85 % (heavy budget 12 %). The first legacy take had two frame stalls (833 /
+take) are notes still waiting when the take ended (follow-up A). Core dsp at most 2.85 % (heavy budget 12 %). The first legacy take had two frame stalls (833 /
 384 ms at beats 88-89) and is not used.
 
 ### Level per phase (legacy vs new, dB)
@@ -1830,6 +1835,54 @@ reach peak 0.8 in `_legacy_b` / `_new`).
 | new vs new `_bed_new` / `_bed_new_b` | 129 | -0.13 | 0.59 | 2.02 |
 
 Criterion against legacy (mean <= 2 ms, max <= 5 ms): **met** in both pairs. Every layer's new notes are 0.5-2.5 ms
-earlier than legacy (bass fifths -2.0 / -2.2: their 1 ms sample onset is also started early); not explained further. About
+earlier than legacy; the sample onsets explain at most 0.8 ms of it (follow-up B: not explained). About
 60 of 170 notes per new-vs-legacy pair stay below peak 0.8 (the window also holds the other bed layers, which differ
 between paths), against 3 / 36 for the controls; they are not counted.
+
+### Task 14 follow-up: unstarted notes accounted; the onset lead
+
+**A. Scheduled but never started** (`unstarted.py`, scratch). Each `.patterns.csv` row is matched to a backend start line
+of `.oneshots.csv` from its own frame on: same instrument / bus / MIDI (the start lines carry them since the bed takes;
+`fever_seed7_s14_new` predates that and is matched by start DSP alone, its 1296 unmatched start lines being exactly its
+1296 kill one-shots), start DSP within 1200 samples (5000 where keyed; four notes at 98.5 in `_bed_new` were scheduled
+in frame 14589 with the beat-97 anchor and dispatched in frame 14700 with the beat-98 anchor, 85 ms earlier, after the
+landing 96: the carried anchor issue).
+
+| take | scheduled | = handed to FMOD (started) | + cancelled before dispatch | + pending at end | + dropped | unaccounted |
+|---|---:|---:|---:|---:|---:|---:|
+| `fever_seed7_s14_new` | 1449 | 1447 | 0 | 2 | 0 | 0 |
+| `fever_seed7_s14_bed_new` | 1449 | 1447 | 0 | 2 | 0 | 0 |
+| `fever_seed7_s14_bed_new_b` | 1449 | 1447 | 0 | 2 | 0 | 0 |
+| `fever_seed7_s14_kills48_new` | 1482 | 1480 | 0 | 2 | 0 | 0 |
+| `fever_seed7_s14_late25_new` | 1492 | 1489 | 0 | 3 | 0 | 0 |
+
+- Pending at end: Bass 36 and Acid 48 at beat 145 (`late25`: Bass 48, SineSub 36, Acid 36 at 145.5), scheduled at now
+  143.5 / 144.0, after the last beat callback (143); the take stopped before their dispatch window.
+- No note was cancelled before dispatch: no row is followed by a re-stated copy, and no start line is a second
+  dispatch of one note (no `RescheduleFrom` re-dispatch in these takes). The fever queue's invalidations found nothing
+  undispatched to cancel. What it cancelled were dispatched notes, which count as started: the build-up bar kicks of
+  `late25` (handles 384 / 1317 / 2270, see above).
+- Started also includes the notes for beats >= 144 that the core scheduler (4 beats ahead) had already handed over when
+  the take ended: 16 per take (20 in `late25`). `StopMusic` stops them; the backend's "cancelled" count (13 in the bed
+  takes; kill takes add the 9 kill re-voicings that the legacy takes show too) counts those that had not started
+  sounding yet. Not checked note by note.
+
+**B. The ~1.5 ms lead against legacy, per layer, against the samples' `OnsetSeconds`** (one-shots start that much before
+the beat; the timeline notes start at the file start). Mean lead = new - legacy, both bed pairs (`fevxcorr.py`); mean
+onset over the notes that sound in the layer's phase (riser / fall: bar 4).
+
+| layer | lead pair 1 / pair 2 (ms) | mean `OnsetSeconds` (ms) | residual (lead + onset) |
+|---|---|---:|---|
+| lead | -1.50 / -1.35 | 0.00 | -1.50 / -1.35 |
+| shaker | -1.44 / -1.41 | 0.00 | -1.44 / -1.41 |
+| bass fifths | -2.17 / -1.96 | 0.84 | -1.33 / -1.12 |
+| build roll | -1.79 / -2.15 | 0.00 | -1.79 / -2.15 |
+| build riser | -2.04 / -2.53 | 0.69 | -1.35 / -1.84 |
+| impact (n 1) | -1.88 / -1.19 | 0.00 | -1.88 / -1.19 |
+| outro fall | -0.46 / -1.50 | 0.69 | +0.23 / -0.81 |
+| outro snare | -0.46 / -1.50 | 0.00 | -0.46 / -1.50 |
+
+**Not explained.** The onsets account for the extra lead of the bass fifths and the riser (about 0.7-0.8 ms). Every layer
+still keeps a residual of about -1.1 to -2.2 ms (-0.5 / -0.8 on the outro, which has few notes), including the four
+layers with onset 0 (lead, shaker, roll, outro snare). This holds on both buses (Harmony: lead / riser / fall; Music
+Bed/Layers: the rest). No log here shows where the residual comes from.
