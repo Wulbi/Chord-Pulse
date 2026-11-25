@@ -82,6 +82,7 @@ public sealed class OneShotScheduler
         public double OnsetSeconds;
         public double WindowBeats;
         public int Handle = -1; // >= 0 once handed to the backend
+        public int DispatchAnchor; // the clock's anchor beat when it was handed over
         public ulong Start;
         public ulong Stop;
     }
@@ -110,16 +111,33 @@ public sealed class OneShotScheduler
 
     /// <summary>
     /// A note already handed to the backend is re-timed (cancelled and handed over again) when the clock now puts its start
-    /// more than this many samples (2 ms at 48 kHz) from the start it was handed over with. Task 12 follow-up: core drums
-    /// handed over 4 beats ahead from a pre-landing anchor sounded 12-16 ms late four beats after a jump landing.
+    /// more than this many samples (5 ms at 48 kHz, the attack criterion's maximum) from the start it was handed over with.
+    /// Task 12 follow-up: core drums handed over 4 beats ahead from a pre-landing anchor sounded 12-16 ms late four beats
+    /// after a jump landing. Only notes handed over from an anchor at least <see cref="RetimeAfterAnchors"/> beats older
+    /// than the clock's newest one are checked, and only once that anchor has settled (<see cref="AnchorSettleBeats"/>):
+    /// a new anchor refines itself by up to +-8 ms around a phrase boundary, and following it re-created a third of all
+    /// notes (baseline_seed33_s12j_attack_drums_new: 289 re-times of +-5..8 ms) or, re-timing once from an unsettled anchor
+    /// right after a landing, put the notes 11 ms late (_s12k_).
     /// </summary>
-    public const long RetimeThresholdSamples = 96;
+    public const long RetimeThresholdSamples = 240;
+
+    /// <summary>A handed-over note is checked once the clock has this many newer anchors than the one it was handed over with.</summary>
+    public const int RetimeAfterAnchors = 2;
+
+    /// <summary>The beat anchor is final half a beat after its beat (MusicConductor.PollAnchor averages the polls up to then).</summary>
+    public const double AnchorSettleBeats = 0.5;
 
     /// <summary>Notes starting sooner than this (4 mixer blocks) keep their time: a new instance needs that long to arm.</summary>
     public const long RetimeMinLeadSamples = 4096;
 
     /// <summary>Notes that were never started because their start time had already passed (never played late).</summary>
     public int LateCount { get; private set; }
+
+    /// <summary>Handed-over notes re-timed because the clock moved them (<see cref="RetimeThresholdSamples"/>).</summary>
+    public int RetimedCount { get; private set; }
+
+    /// <summary>Diagnostics: a note was re-timed (its owner, beat and the move of its start in samples).</summary>
+    public event Action<object, double, long> NoteRetimed;
 
     /// <summary>Diagnostics: a note was counted in <see cref="LateCount"/> (its owner and beat).</summary>
     public event Action<object, double> NoteLate;
@@ -194,8 +212,10 @@ public sealed class OneShotScheduler
                     _notes.RemoveAt(i);
                     continue;
                 }
-                if (!NeedsRetime(note, now))
+                if (!NeedsRetime(note, now, out long moved))
                     continue;
+                RetimedCount++;
+                NoteRetimed?.Invoke(note.Owner, note.Beat, moved);
                 Cancel(note, now); // handed over again below with the clock as it is now
             }
             var result = Dispatch(note, now);
@@ -277,6 +297,7 @@ public sealed class OneShotScheduler
         if (handle < 0)
             return DispatchResult.Failed;
         note.Handle = handle;
+        note.DispatchAnchor = _clock.AnchorBeat;
         note.Start = (ulong)start;
         note.Stop = (ulong)Math.Max(stop, start);
         if (note.LengthBeats > 0)
@@ -286,12 +307,16 @@ public sealed class OneShotScheduler
 
     // A handed-over note that has not started yet, ahead of the clock's newest anchor, whose start the clock now puts more
     // than RetimeThresholdSamples away.
-    bool NeedsRetime(Note note, ulong now)
+    bool NeedsRetime(Note note, ulong now, out long moved)
     {
-        if (!_clock.HasAnchor || note.Beat < _clock.AnchorBeat || (long)note.Start - (long)now <= RetimeMinLeadSamples ||
+        moved = 0;
+        if (!_clock.HasAnchor || _clock.AnchorBeat < note.DispatchAnchor + RetimeAfterAnchors ||
+            note.Beat < _clock.AnchorBeat || (long)note.Start - (long)now <= RetimeMinLeadSamples ||
+            !_clock.BeatAt(now, out double nowBeat) || nowBeat < _clock.AnchorBeat + AnchorSettleBeats ||
             !Times(note, out long start, out _, out _))
             return false;
-        return Math.Abs(start - (long)note.Start) > RetimeThresholdSamples;
+        moved = start - (long)note.Start;
+        return Math.Abs(moved) > RetimeThresholdSamples;
     }
 
     void Cancel(Note note, ulong now)
