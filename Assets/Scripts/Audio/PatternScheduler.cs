@@ -114,7 +114,7 @@ public sealed class PatternScheduler
                     if (beat > hi)
                         break; // the clip's notes are sorted by beat
                     int stateIndex = (int)Math.Floor(beat * StepsPerBeat) - loStep;
-                    if (_states[stateIndex].Legacy || !PatternMatch.Matches(in clips[c], in _states[stateIndex]))
+                    if (!PatternMatch.Matches(in clips[c], in _states[stateIndex]))
                         continue;
                     ScheduleNote(notes[i], beat);
                 }

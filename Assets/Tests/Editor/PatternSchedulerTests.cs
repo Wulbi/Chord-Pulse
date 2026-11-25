@@ -356,29 +356,6 @@ public class PatternSchedulerTests
     }
 
     [Test]
-    public void Legacy_SchedulesNothing()
-    {
-        _state.Legacy = true;
-        var p = Make(lookahead: 16.0);
-        At(0.5);
-        p.Update(0.5);
-        Assert.AreEqual(0, _events.Count);
-        Assert.AreEqual(0, p.ScheduledCount);
-    }
-
-    [Test]
-    public void Legacy_IsPerStep()
-    {
-        _arr.F = step => { var s = _state; s.Legacy = step < 4; return s; }; // beats < 2 legacy
-        var p = Make(lookahead: 4.0);
-        At(0);
-        p.Update(0);
-        Assert.Greater(_events.Count, 0);
-        foreach (var e in _events)
-            Assert.GreaterOrEqual(e.beat, 2.0);
-    }
-
-    [Test]
     public void Reset_ClearsScheduledUntil()
     {
         var p = Make();

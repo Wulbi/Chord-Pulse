@@ -20,7 +20,6 @@ public struct ArrangementInputs
     public int AppliedCombo, ComboBar;
     /// <summary>First step of fever (-1: none queued); its build-up bar is the bar before.</summary>
     public int FeverStart;
-    public bool Legacy;
 }
 
 /// <summary>
@@ -78,19 +77,6 @@ public static class ArrangementTimeline
         return step >= x.PhraseStartStep + StepsPerPhrase ? x.FeatureNext : x.FeatureCurrent;
     }
 
-    /// <summary>
-    /// The music event's FeatureLoop parameter for the timeline loops (legacy path), from a step that already includes
-    /// SoundManager's parameter lead: a next loop is switched on as soon as the lead step reaches the phrase boundary, but
-    /// without a next loop the current one stays on until the phrase has really ended (the inputs advance), so the lead
-    /// does not cut its last notes. 0 while the lead step is in fever or its build-up bar.
-    /// </summary>
-    public static int FeatureLoopParameter(double leadStep, in ArrangementInputs x)
-    {
-        if (x.FeverStart >= 0 && leadStep >= x.FeverStart - FeverBuildSteps && leadStep < x.FeverStart + FeverSteps)
-            return 0;
-        return leadStep >= x.PhraseStartStep + StepsPerPhrase && x.FeatureNext != 0 ? x.FeatureNext : x.FeatureCurrent;
-    }
-
     public static ArrangementState At(int step, in ArrangementInputs x)
     {
         bool next = step >= x.PhraseStartStep + StepsPerPhrase;
@@ -108,13 +94,12 @@ public static class ArrangementTimeline
             Fever = phase,
             FeatureLoop = FeatureLoopAt(step, in x),
             SectionPhrase = next ? x.SectionPhraseNext : x.SectionPhraseCurrent,
-            Legacy = x.Legacy,
         };
     }
 
     static bool Same(in ArrangementState a, in ArrangementState b) =>
         a.Style == b.Style && a.Variation == b.Variation && a.Combo == b.Combo && a.Intensity == b.Intensity &&
-        a.Fever == b.Fever && a.FeatureLoop == b.FeatureLoop && a.SectionPhrase == b.SectionPhrase && a.Legacy == b.Legacy;
+        a.Fever == b.Fever && a.FeatureLoop == b.FeatureLoop && a.SectionPhrase == b.SectionPhrase;
 
     /// <summary>First step in [fromStep, toStep] whose state differs between the two decision sets, or -1.</summary>
     public static int FirstDifferentStep(in ArrangementInputs before, in ArrangementInputs after, int fromStep, int toStep)

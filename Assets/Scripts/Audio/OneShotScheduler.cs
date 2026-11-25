@@ -97,14 +97,14 @@ public sealed class OneShotScheduler
     }
 
     /// <summary>
-    /// Measured with the Task 3 spike capture (Docs/Captures/README.md, take spike_seed33_B2): uncorrected one-shots
-    /// landed 2.29 ms (110 samples at 48 kHz) after the timeline beat on average.
+    /// 0 since the music runs on MusicTransport (unity-music-clock Task 6): the -110 measured with the Task 3 spike capture
+    /// (Docs/Captures/README.md, take spike_seed33_B2) was the lag behind the timeline's beat, and there is no timeline any
+    /// more. Calibrated against the new clock in the following task.
     /// </summary>
-    public const long DefaultScheduleOffsetSamples = -110;
+    public const long DefaultScheduleOffsetSamples = 0;
 
     /// <summary>
-    /// Constant correction added to every start (samples): the mean lag between the beat anchor and the audible
-    /// timeline beat. Negative = start earlier.
+    /// Constant correction added to every start (samples) against the clock's beat. Negative = start earlier.
     /// </summary>
     public long ScheduleOffsetSamples { get; set; } = DefaultScheduleOffsetSamples;
 

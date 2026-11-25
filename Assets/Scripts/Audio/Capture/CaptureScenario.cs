@@ -11,7 +11,7 @@ using UnityEngine;
 /// <summary>
 /// Plays the music with a fixed scripted set of kills and records Unity's output with <see cref="AudioCapture"/>.
 /// Put it in a scene without gameplay (Assets/Scenes/AudioCapture.unity) and press Play; the WAV, a beat log
-/// (frame index of every beat in the capture's own clock) and CPU numbers land in Docs/Captures/.
+/// (capture frame of every beat as the music clock computes it) and CPU numbers land in Docs/Captures/.
 /// </summary>
 public sealed class CaptureScenario : MonoBehaviour
 {
@@ -52,26 +52,24 @@ public sealed class CaptureScenario : MonoBehaviour
     [Tooltip("What spike schedules on its beats: Instrument:OutputBus:MIDI (InstrumentTable). Default the 3 kHz click on " +
              "Kill Chords; e.g. SpikeClick:MusicBed:72 or Drums:MusicBed:42 measures that routing's latency.")]
     [SerializeField] string spikeTarget = "SpikeClick:KillChords:72";
-    [Tooltip("Trigger the 0.3-beat-lead clicks from the beat clock's DSP time instead of SoundManager.BeatPosition, which " +
-             "stalls at anchor + 0.999 beat while a jump landing's beat callback is late (Task 5 take spike_seed33_task5).")]
+    [Tooltip("Trigger the 0.3-beat-lead clicks from the beat clock's DSP time instead of SoundManager.BeatPosition (the " +
+             "heard beat, behind the mixer by the output latency).")]
     [SerializeField] bool shortLeadOnDsp;
+    [Tooltip("Dispatch window (beats) of the spike clicks: how far ahead of its beat a click is handed to FMOD. 0.5 = the " +
+             "scheduler default; 4.0 = a bar ahead, like the core drums.")]
+    [SerializeField] double spikeDispatchBeats = OneShotScheduler.DispatchWindowBeats;
     [Tooltip("Write <take>.oneshots.csv: FmodOneShotBackend.DiagnosticLog of the spike and kill-chord backends (frame, " +
              "event, handle, DSP clock, ...). Off = the backends compute nothing for it.")]
     [SerializeField] bool logOneShots;
 
-    public enum Layers { asSoundManager, legacy, oneShots }
     public enum Solo { none, musicBed, harmony, bedWithoutHarmony, feature }
 
     [Header("Task 11: bed pitched layers")]
-    [Tooltip("SoundManager.legacyLayers for the take: legacy = the timeline tracks (LegacyLayers 1), oneShots = the " +
-             "PatternScheduler (LegacyLayers 0), asSoundManager = leave the inspector value.")]
-    [SerializeField] Layers layers = Layers.asSoundManager;
-    [Tooltip("Mute global buses to hear one family. musicBed: bus:/Kill Chords and bus:/Feature muted (the whole bed, " +
-             "timeline drums included). harmony: also the event's non-Harmony Music Bed tracks (drums, timeline bass/tension...) " +
-             "and bus:/Music Bed/Layers (one-shot bass/tension/dreamy sub) muted. bedWithoutHarmony: Kill Chords, Feature and " +
-             "bus:/Music Bed/Harmony muted (drums + bass/tension/dreamy sub). feature: bus:/Kill Chords, bus:/Music Bed/Layers, " +
-             "bus:/Music Bed/Harmony and the event's non-Harmony Music Bed tracks muted (bus:/Feature alone: timeline loops and " +
-             "one-shot loops). The kill-keyed duck is off in every solo (muted key).")]
+    [Tooltip("Mute global buses to hear one family. musicBed: bus:/Kill Chords and bus:/Feature muted (the whole bed). " +
+             "harmony: also bus:/Music Bed/Layers (drums, bass, tension, dreamy sub) muted. bedWithoutHarmony: Kill Chords, " +
+             "Feature and bus:/Music Bed/Harmony muted (drums + bass/tension/dreamy sub). feature: bus:/Kill Chords, " +
+             "bus:/Music Bed/Layers and bus:/Music Bed/Harmony muted (bus:/Feature alone). The kill-keyed duck is off in " +
+             "every solo (muted key).")]
     [SerializeField] Solo soloLayers = Solo.none;
     [Tooltip("Steps SoundManager.Tension 0 -> 0.3 -> 0.5 -> 0.7 -> 0.9 over the take (fifths of the beats); overrides heavy's 0.8.")]
     [SerializeField] bool tensionSteps;
@@ -83,8 +81,6 @@ public sealed class CaptureScenario : MonoBehaviour
     [Tooltip("Comma-separated PatternTable.LayerNames: only these pattern layers are scheduled (one-shot path; sets the " +
              "layer masks of both PatternSchedulers, core and the rest). Empty = all.")]
     [SerializeField] string patternLayers = "";
-    [Tooltip("Music parameter SpikeRef = 1 in any scenario: the timeline's 1 kHz click on every beat (attack reference).")]
-    [SerializeField] bool spikeRefClicks;
 
     [Header("duck (kill-chord ducking of the Harmony group)")]
     [Tooltip("Off = the same take without kills, the reference the ducked take is compared with.")]
@@ -105,16 +101,6 @@ public sealed class CaptureScenario : MonoBehaviour
     [SerializeField] int feverEveryBeats = 64;
     [Tooltip("fever: no kills (timing / level takes of the bed alone).")]
     [SerializeField] bool feverWithoutKills;
-    [Tooltip("Legacy fever-only takes: runtime child indices of the event's Music Bed / Harmony groups that stay audible, " +
-             "e.g. bed:4,5,7,8,10;harmony:1,2,3; every other leaf of both is muted (Spike ref is not under them). Empty = off.")]
-    [SerializeField] string keepLegacyLeaves = "";
-    [Tooltip("With keepLegacyLeaves: also meter every Music Bed / Harmony leaf (peak RMS per beat -> <take>.leaves.csv) to " +
-             "find which runtime index is which track (list every index in keepLegacyLeaves to meter without muting).")]
-    [SerializeField] bool meterLegacyLeaves;
-    readonly List<(string label, FMOD.DSP dsp)> _leafMeters = new List<(string, FMOD.DSP)>();
-    readonly List<string> _leafLog = new List<string>();
-    float[] _leafPeak;
-    int _leafBeat = -1;
 
     const int Colors = 3;
 
@@ -122,11 +108,12 @@ public sealed class CaptureScenario : MonoBehaviour
     // targetFps: the previous settings, put back in OnDestroy so a capped take does not leak into the next Editor play session.
     int _savedFrameRate, _savedVSync;
     bool _frameCapApplied;
-    // Beat times come from the conductor's own stamps (taken on the FMOD thread), read through reflection so the
-    // game code stays untouched; polling CurrentBeat in Update would smear them by every frame hitch.
-    readonly List<(int beat, double seconds, double tempo)> _beats = new List<(int, double, double)>();
-    MusicConductor _conductor;
-    FieldInfo _anchorSeconds;
+    // Beat times are the music clock's own: the DSP sample of every beat of a phrase, taken when MusicTransport starts that
+    // phrase (SoundManager's _clock / _transport, read through reflection so the game code stays untouched); a resync
+    // re-takes the rest of its phrase. Converted to capture frames with AudioCapture.FrameAtDsp.
+    readonly SortedDictionary<int, (ulong dsp, double bpm)> _beats = new SortedDictionary<int, (ulong, double)>();
+    BeatClock _clock;
+    MusicTransport _transport;
     int _lastBeat = -1;
     int _cpuSamples;
     double _dspSum, _totalSum, _studioSum;
@@ -138,15 +125,13 @@ public sealed class CaptureScenario : MonoBehaviour
     long _stopFrame = -1, _restartFrame = -1;
     int _restartQueued = -1;
     float _stopAt, _restartBeatsStartTime;
-    readonly List<(int beat, double seconds, double tempo)> _beats2 = new List<(int, double, double)>();
+    readonly SortedDictionary<int, (ulong dsp, double bpm)> _beats2 = new SortedDictionary<int, (ulong, double)>();
     const int RestartBeats = 8;
     // spike
     const double LongLead = 1.0, ShortLead = 0.3;
     FmodOneShotBackend _backend;
     OneShotScheduler _scheduler;
-    bool _spikeRefSet;
-    int _nextShort = 1;
-    readonly Dictionary<int, int> _timelineMs = new Dictionary<int, int>();
+    int _nextShort = 1, _nextLong = 2;
     readonly List<string> _spikeLog = new List<string>();
     int _stalls;
     float _longestFrame;
@@ -160,10 +145,8 @@ public sealed class CaptureScenario : MonoBehaviour
     double _firstAnchorBeat = double.NaN;
     readonly List<string> _patternLog = new List<string>();
     readonly List<string> _studioLog = new List<string>();   // per frame: Studio update and Core dsp CPU (.studio.csv)
-    readonly List<string> _anchorLog = new List<string>();   // per beat callback: lateness against the clock (.anchors.csv)
     static readonly float[] TensionStepValues = { 0f, 0.3f, 0.5f, 0.7f, 0.9f };
     readonly List<string> _oneShotLog = new List<string>();
-    FieldInfo _pollCountField;
     // styles: 4 phrases (64 beats) per bed style 0..3
     const int StyleBlockBeats = 64;
     FieldInfo _styleCurrent, _styleNext;
@@ -197,10 +180,10 @@ public sealed class CaptureScenario : MonoBehaviour
         // Never overwrite a recording (the references are the point): take the next free _runN instead.
         for (int run = 2; File.Exists(_wavPath); run++)
             _wavPath = Path.GetFullPath(Path.Combine(folder, scenario + "_seed" + seed + suffix + "_run" + run + ".wav"));
-        _conductor = (MusicConductor)typeof(SoundManager).GetField("_conductor", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(sound);
-        _anchorSeconds = typeof(MusicConductor).GetField("_anchorSeconds", BindingFlags.Instance | BindingFlags.NonPublic);
-        _pollCountField = typeof(MusicConductor).GetField("_pollCount", BindingFlags.Instance | BindingFlags.NonPublic);
-        _conductor.BeatChanged += OnBeat;
+        _clock = (BeatClock)typeof(SoundManager).GetField("_clock", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(sound);
+        _transport = (MusicTransport)typeof(SoundManager).GetField("_transport", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(sound);
+        _transport.PhraseStarted += OnPhrase;
+        _transport.Resynced += OnResync;
         sound.MusicParameterSet += OnMusicParameter;
         _variationNextField = typeof(SoundManager).GetField("_variationNext", BindingFlags.Instance | BindingFlags.NonPublic);
         _featuresField = typeof(SoundManager).GetField("_features", BindingFlags.Instance | BindingFlags.NonPublic);
@@ -210,15 +193,13 @@ public sealed class CaptureScenario : MonoBehaviour
         _killSchedulerField = typeof(SoundManager).GetField("_shots", BindingFlags.Instance | BindingFlags.NonPublic);
         _patternsField = typeof(SoundManager).GetField("_patterns", BindingFlags.Instance | BindingFlags.NonPublic);
         _corePatternsField = typeof(SoundManager).GetField("_corePatterns", BindingFlags.Instance | BindingFlags.NonPublic);
-        if (layers != Layers.asSoundManager)
-            typeof(SoundManager).GetField("legacyLayers", BindingFlags.Instance | BindingFlags.NonPublic).SetValue(sound, layers == Layers.legacy);
         _killBackend.NoteDropped += OnNoteDropped;
         _styleCurrent = typeof(SoundManager).GetField("_styleCurrent", BindingFlags.Instance | BindingFlags.NonPublic);
         _styleNext = typeof(SoundManager).GetField("_styleNext", BindingFlags.Instance | BindingFlags.NonPublic);
         if (scenario == Scenario.spike)
         {
             _backend = new FmodOneShotBackend();
-            _scheduler = new OneShotScheduler(_conductor.Clock, _backend) { ScheduleOffsetSamples = scheduleOffsetSamples };
+            _scheduler = new OneShotScheduler(_clock, _backend) { ScheduleOffsetSamples = scheduleOffsetSamples };
         }
         if (logOneShots)
         {
@@ -265,19 +246,17 @@ public sealed class CaptureScenario : MonoBehaviour
         }
         SubscribeShots(sound);
         ApplySolo(sound);
-        if (!string.IsNullOrWhiteSpace(keepLegacyLeaves))
-            StartCoroutine(KeepLegacyLeaves(sound));
         sound.Danger = forceDanger; // applied after StartMusic, which resets it
         if (scenario == Scenario.duck)
         {
             // Only the Harmony group is heard: kill chords at -60 dB (their bus key sits before the fader, so they
             // still duck; at volume 0 FMOD would virtualise their voices and the key would go silent too), bus:/Feature
-            // muted (it carries the Feature group and also the Feature sidechain key, so the Feature duck is off too),
-            // the other Music Bed tracks muted once the event has built them.
+            // muted (it carries the feature loops and also the Feature sidechain key, so the Feature duck is off too),
+            // the other Music Bed layers muted (bus:/Music Bed/Layers).
             sound.Intensity = SoundManager.MaxIntensity; // the offbeat pluck plays from intensity 1
             StartCoroutine(QuietKillBus());
             RuntimeManager.GetBus("bus:/Feature").setMute(true);
-            StartCoroutine(MuteMusicBed(sound));
+            MuteMusicBedLayers();
             StartCoroutine(MeterDuckCompressor(featureKeyed: false));
         }
         else if (meterFeatureDuck)
@@ -311,7 +290,7 @@ public sealed class CaptureScenario : MonoBehaviour
         {
             _studioSum += studio.update;
             _studioMax = Mathf.Max(_studioMax, studio.update);
-            bool okBeat = _conductor.Clock.BeatAt(FmodClock.MasterDsp(), out double cpuBeat);
+            bool okBeat = _clock.BeatAt(FmodClock.MasterDsp(), out double cpuBeat);
             _studioLog.Add(string.Format(CultureInfo.InvariantCulture, "{0},{1:F3},{2:F4},{3:F2},{4:F2}",
                 Time.frameCount, okBeat ? cpuBeat : -1, Time.unscaledDeltaTime, studio.update, cpu.dsp));
             float total = cpu.dsp + cpu.stream + cpu.update;
@@ -326,30 +305,26 @@ public sealed class CaptureScenario : MonoBehaviour
             HoldArrangement(sound);
         _frameLog.Add(string.Format(CultureInfo.InvariantCulture, "{0:F6},{1:F5},{2}", dt, sound.BeatPosition, sound.CurrentBpm));
 
-        if (logOneShots && _conductor.Clock.HasAnchor)
+        if (logOneShots && _clock.HasAnchor)
         {
-            // Beat clock anchor as the conductor's per-frame polls refine it (pollCount from MusicConductor, read only).
-            int anchor = _conductor.Clock.AnchorBeat;
-            _conductor.Clock.DspAt(anchor, out ulong anchorDsp);
-            _oneShotLog.Add(Time.frameCount + ",clock,anchor," + anchor + "," + FmodClock.MasterDsp() + "," + anchorDsp + "," +
-                            _pollCountField.GetValue(_conductor));
+            // Beat clock anchor (MusicTransport moves it on every phrase boundary, and on a resync).
+            int anchor = _clock.AnchorBeat;
+            _clock.DspAt(anchor, out ulong anchorDsp);
+            _oneShotLog.Add(Time.frameCount + ",clock,anchor," + anchor + "," + FmodClock.MasterDsp() + "," + anchorDsp);
         }
         if (scenario == Scenario.spike)
             UpdateSpike(sound);
-        else if (spikeRefClicks)
-            SetSpikeRef(sound);
         if (scenario == Scenario.styles)
             ForceStyle(sound);
         if (scenario == Scenario.features)
             ForceFeatures(sound);
         SubscribeShots(sound);
-        if (double.IsNaN(_firstAnchorBeat) && _conductor.Clock.HasAnchor &&
-            _conductor.Clock.BeatAt(FmodClock.MasterDsp(), out double anchorNow))
+        if (double.IsNaN(_firstAnchorBeat) && _clock.HasAnchor &&
+            _clock.BeatAt(FmodClock.MasterDsp(), out double anchorNow))
             _firstAnchorBeat = anchorNow;
         if (tensionSteps && beats > 0)
             sound.Tension = TensionStepValues[Math.Min(TensionStepValues.Length - 1, Math.Max(0, sound.CurrentBeat) * TensionStepValues.Length / beats)];
         LogDuckMeter();
-        LogLeafMeters();
 
         int beat = sound.CurrentBeat;
         while (beat > _lastBeat && _lastBeat < beats)
@@ -387,10 +362,8 @@ public sealed class CaptureScenario : MonoBehaviour
                 Finish(sound);
                 return;
             }
-            // Beats restart from 0 and go to the second log.
+            // Beats restart from 0 and go to the second log (OnPhrase).
             _restarted = true;
-            _conductor.BeatChanged -= OnBeat;
-            _conductor.BeatChanged += OnBeat2;
             _restartFrame = AudioCapture.FramesCaptured;
             sound.StartMusic();
             if (scenario == Scenario.heavy)
@@ -412,9 +385,27 @@ public sealed class CaptureScenario : MonoBehaviour
             Finish(sound);
     }
 
-    void OnBeat2(int beat)
+    // MusicTransport.PhraseStarted (after SoundManager's own handler): the clock is anchored on this phrase's boundary, so
+    // every beat of the phrase is exact now (a later SetNextTempo only moves beats from the next boundary on).
+    void OnPhrase(int phrase)
     {
-        _beats2.Add((beat, (double)_anchorSeconds.GetValue(_conductor), _conductor.Tempo));
+        LogBeats(phrase * MusicTransport.BeatsPerPhrase);
+    }
+
+    // A resync re-anchors the clock at a bar: the rest of the phrase is taken again.
+    void OnResync()
+    {
+        if (_clock.HasAnchor)
+            LogBeats(_clock.AnchorBeat);
+    }
+
+    void LogBeats(int fromBeat)
+    {
+        var log = _restarted ? _beats2 : _beats;
+        int to = _transport.NextPhraseBeat;
+        for (int beat = fromBeat; beat < to; beat++)
+            if (_clock.DspAt(beat, out ulong dsp))
+                log[beat] = (dsp, _transport.Bpm);
     }
 
     void HoldArrangement(SoundManager sound)
@@ -428,50 +419,28 @@ public sealed class CaptureScenario : MonoBehaviour
 
     void OnMusicParameter(string name, float value)
     {
-        if (!AudioCapture.IsCapturing || !_conductor.Clock.BeatAt(FmodClock.MasterDsp(), out double now))
+        if (!AudioCapture.IsCapturing || !_clock.BeatAt(FmodClock.MasterDsp(), out double now))
             return;
         _paramLog.Add(string.Format(CultureInfo.InvariantCulture, "{0:F4},{1},{2:G9}", now, name, value));
     }
 
-    void OnBeat(int beat)
-    {
-        _beats.Add((beat, (double)_anchorSeconds.GetValue(_conductor), _conductor.Tempo));
-        // Callback lateness: master DSP clock when the beat's callback is handled vs the clock's DSP time of that beat
-        // (anchored or, for a beat that got no anchor, extrapolated), and the clock's current anchor beat.
-        ulong nowDsp = FmodClock.MasterDsp();
-        bool okDsp = _conductor.Clock.DspAt(beat, out ulong beatDsp);
-        _anchorLog.Add(string.Format(CultureInfo.InvariantCulture, "{0},{1},{2},{3},{4}",
-            Time.frameCount, beat, nowDsp, okDsp ? (long)beatDsp : -1, _conductor.Clock.HasAnchor ? _conductor.Clock.AnchorBeat : -1));
-        if (scenario != Scenario.spike)
-            return;
-        _timelineMs[beat] = _conductor.BeatTimelineMs;
-        // Long lead: schedule the next beat right as this beat's anchor arrives (even beats only).
-        int target = beat + 1;
-        if (target % 2 == 0 && target <= spikeBeats)
-            ScheduleClick(target, LongLead);
-    }
-
-    void SetSpikeRef(SoundManager sound)
-    {
-        if (_spikeRefSet)
-            return;
-        var music = (FMOD.Studio.EventInstance)typeof(SoundManager)
-            .GetField("_music", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(sound);
-        if (music.isValid() && music.setParameterByName("SpikeRef", 1f, true) == FMOD.RESULT.OK)
-            _spikeRefSet = true;
-    }
-
     void UpdateSpike(SoundManager sound)
     {
-        SetSpikeRef(sound);
-        // R11 (SetTempoFrom with the next section's BPM) is fed by SoundManager.Update every frame.
+        // The next phrase's BPM reaches the clock through SoundManager (MusicTransport.SetNextTempo).
         _scheduler.Update();
         _backend.Update();
+        // Long lead: even beats, scheduled once the mixer is a beat before them.
+        while (_nextLong <= spikeBeats && _clock.HasAnchor && _clock.BeatAt(_backend.NowDsp, out double now) &&
+               now >= _nextLong - LongLead)
+        {
+            ScheduleClick(_nextLong, LongLead);
+            _nextLong += 2;
+        }
         // Short lead: odd beats, 0.3 beat ahead of the (visual) beat position.
         double position = sound.BeatPosition;
         while (_nextShort <= spikeBeats && ShortLeadDue(position))
         {
-            if (_conductor.Clock.HasAnchor)
+            if (_clock.HasAnchor)
                 ScheduleClick(_nextShort, ShortLead);
             else
                 _spikeLog.Add(_nextShort + "," + ShortLead.ToString(CultureInfo.InvariantCulture) + ",0,0,-1,0");
@@ -483,20 +452,20 @@ public sealed class CaptureScenario : MonoBehaviour
     {
         if (!shortLeadOnDsp)
             return position >= _nextShort - ShortLead;
-        bool okDue = _conductor.Clock.DspAt(_nextShort - ShortLead, out ulong due);
+        bool okDue = _clock.DspAt(_nextShort - ShortLead, out ulong due);
         return okDue && _backend.NowDsp >= due;
     }
 
     void ScheduleClick(int beat, double lead)
     {
-        var clock = _conductor.Clock;
+        var clock = _clock;
         clock.DspAt(beat, out ulong target);
         ulong now = _backend.NowDsp;
         var t = spikeTarget.Split(':');
         var inst = (Instrument)Enum.Parse(typeof(Instrument), t[0].Trim());
         int midi = int.Parse(t[2].Trim(), CultureInfo.InvariantCulture);
         bool ok = _scheduler.Schedule(new OneShotNote(inst, (OutputBus)Enum.Parse(typeof(OutputBus), t[1].Trim()), midi, beat,
-            inst == Instrument.SpikeClick ? 0.25 : 0.0, 0.0, 0f, InstrumentTable.OnsetSeconds(inst, midi)), this);
+            inst == Instrument.SpikeClick ? 0.25 : 0.0, 0.0, 0f, InstrumentTable.OnsetSeconds(inst, midi)), this, spikeDispatchBeats);
         _spikeLog.Add(string.Format(CultureInfo.InvariantCulture, "{0},{1},{2},{3},{4},{5}",
             beat, lead, ok ? 1 : 0, target, clock.AnchorBeat, (long)target - (long)now));
     }
@@ -509,8 +478,7 @@ public sealed class CaptureScenario : MonoBehaviour
         return id >= 1 && id <= FeatureLoopNotes.Loops.Length ? FeatureLoopNotes.Loops[id - 1] : null;
     }
 
-    // features: the current and the next phrase get their loop; SoundManager reads both every frame (the legacy FeatureLoop
-    // parameter and ArrangementInputs). Its own Advance at a boundary picks nothing new (Current is set by then). Next is
+    // features: the current and the next phrase get their loop; SoundManager reads both every frame (ArrangementInputs). Its own Advance at a boundary picks nothing new (Current is set by then). Next is
     // only set once SoundManager has advanced to the phrase before it: the first Advance (phrase 0) would otherwise
     // promote the next phrase's loop into phrase 0 for a frame (seen in the first takes: loop 1's beat-0 note at beat 0).
     void ForceFeatures(SoundManager sound)
@@ -532,25 +500,12 @@ public sealed class CaptureScenario : MonoBehaviour
         _styleNext.SetValue(sound, StyleFor(sound.NextPhraseStep / SoundManager.StepsPerBeat));
     }
 
-    // Studio names every event group "Group Bus" at runtime, so the tree is matched by shape: the event master's
-    // child with the most subgroups is Music Bed, and Music Bed's only child with subgroups is Harmony. Every other
-    // child of Music Bed (the bed's leaf tracks) is muted; Harmony itself is left alone (it reaches the output through
-    // its send to return:/Harmony Duck).
-    IEnumerator MuteMusicBed(SoundManager sound)
+    // Every Music Bed layer but Harmony: the one-shots of the drums, bass, tension and dreamy sub play through
+    // bus:/Music Bed/Layers and its sub-buses (InstrumentTable.BusPath).
+    static void MuteMusicBedLayers()
     {
-        var field = typeof(SoundManager).GetField("_music", BindingFlags.Instance | BindingFlags.NonPublic);
-        for (int frame = 0; frame < 20000; frame++)
-        {
-            var music = (FMOD.Studio.EventInstance)field.GetValue(sound);
-            if (music.isValid() && music.getChannelGroup(out FMOD.ChannelGroup root) == FMOD.RESULT.OK && root.hasHandle() &&
-                MuteBedLeaves(root, out int muted))
-            {
-                Debug.Log("[CaptureScenario] duck: muted " + muted + " Music Bed tracks at frame " + frame);
-                yield break;
-            }
-            yield return null;
-        }
-        Debug.LogError("[CaptureScenario] duck: Music Bed channel group not found");
+        RuntimeManager.GetBus("bus:/Music Bed/Layers").setMute(true);
+        Debug.Log("[CaptureScenario] bus:/Music Bed/Layers muted");
     }
 
     // Metering on the kill-keyed compressor of bus:/Music Bed/Harmony (FMOD/Tools/mixer.py; until Task 7 it was on
@@ -594,7 +549,7 @@ public sealed class CaptureScenario : MonoBehaviour
             return; // same mixer block as last frame
         _duckLastIn = rmsIn;
         _duckLastSamples = input.numsamples;
-        if (!_conductor.Clock.BeatAt(FmodClock.MasterDsp(), out double now))
+        if (!_clock.BeatAt(FmodClock.MasterDsp(), out double now))
             return;
         _duckLog.Add(string.Format(CultureInfo.InvariantCulture, "{0:F4},{1:E4},{2:E4}", now, rmsIn, rmsOut));
     }
@@ -615,155 +570,6 @@ public sealed class CaptureScenario : MonoBehaviour
             yield return null;
         RuntimeManager.GetBus("bus:/Kill Chords").setVolume(0.001f);
         Debug.Log("[CaptureScenario] duck: bus:/Kill Chords at -60 dB");
-    }
-
-    // keepLegacyLeaves: Music Bed = the event master's child with the most subgroups, Harmony = its only child with
-    // subgroups (as MuteMusicBed); leaves not listed are muted.
-    IEnumerator KeepLegacyLeaves(SoundManager sound)
-    {
-        var keepBed = new HashSet<int>();
-        var keepHarmony = new HashSet<int>();
-        foreach (var part in keepLegacyLeaves.Split(';'))
-        {
-            var kv = part.Split(':');
-            if (kv.Length != 2)
-                continue;
-            var set = kv[0].Trim() == "harmony" ? keepHarmony : keepBed;
-            foreach (var i in kv[1].Split(','))
-                set.Add(int.Parse(i.Trim(), CultureInfo.InvariantCulture));
-        }
-        var field = typeof(SoundManager).GetField("_music", BindingFlags.Instance | BindingFlags.NonPublic);
-        for (int frame = 0; frame < 20000; frame++)
-        {
-            var music = (FMOD.Studio.EventInstance)field.GetValue(sound);
-            if (music.isValid() && music.getChannelGroup(out FMOD.ChannelGroup root) == FMOD.RESULT.OK && root.hasHandle())
-            {
-                root.getNumGroups(out int count);
-                FMOD.ChannelGroup bed = default;
-                int most = 0;
-                for (int i = 0; i < count; i++)
-                {
-                    root.getGroup(i, out FMOD.ChannelGroup child);
-                    child.getNumGroups(out int n);
-                    if (n > most)
-                    {
-                        most = n;
-                        bed = child;
-                    }
-                }
-                int harmonyCount = 0;
-                for (int i = 0; i < most; i++)
-                {
-                    bed.getGroup(i, out FMOD.ChannelGroup track);
-                    track.getNumGroups(out int n);
-                    harmonyCount = Math.Max(harmonyCount, n);
-                }
-                if (most >= 21 && harmonyCount >= 11) // Music Bed: 20 tracks + Harmony; Harmony: 11 tracks
-                {
-                    int muted = 0, kept = 0;
-                    for (int i = 0; i < most; i++)
-                    {
-                        bed.getGroup(i, out FMOD.ChannelGroup track);
-                        track.getNumGroups(out int n);
-                        if (n > 0)
-                        {
-                            for (int j = 0; j < n; j++)
-                            {
-                                track.getGroup(j, out FMOD.ChannelGroup leaf);
-                                if (meterLegacyLeaves)
-                                    AddLeafMeter("harmony" + j, leaf);
-                                bool keep = keepHarmony.Contains(j);
-                                leaf.setMute(!keep);
-                                if (keep) kept++; else muted++;
-                            }
-                            continue;
-                        }
-                        if (meterLegacyLeaves)
-                            AddLeafMeter("bed" + i, track);
-                        bool keepLeaf = keepBed.Contains(i);
-                        track.setMute(!keepLeaf);
-                        if (keepLeaf) kept++; else muted++;
-                    }
-                    Debug.Log("[CaptureScenario] keepLegacyLeaves: kept " + kept + ", muted " + muted + " of Music Bed (" + most + " children) and Harmony");
-                    yield break;
-                }
-            }
-            yield return null;
-        }
-        Debug.LogError("[CaptureScenario] keepLegacyLeaves: Music Bed channel group not found");
-    }
-
-    void AddLeafMeter(string label, FMOD.ChannelGroup group)
-    {
-        // the track group's head DSP (its fader): what the track plays
-        if (group.getDSP(FMOD.CHANNELCONTROL_DSP_INDEX.HEAD, out FMOD.DSP dsp) != FMOD.RESULT.OK)
-            return;
-        dsp.setMeteringEnabled(true, true);
-        _leafMeters.Add((label, dsp));
-    }
-
-    void LogLeafMeters()
-    {
-        if (_leafMeters.Count == 0 || !_conductor.Clock.BeatAt(FmodClock.MasterDsp(), out double now))
-            return;
-        if (_leafPeak == null)
-        {
-            _leafPeak = new float[_leafMeters.Count];
-            var head = new StringBuilder("beat");
-            foreach (var (label, _) in _leafMeters)
-                head.Append(',').Append(label);
-            _leafLog.Add(head.ToString());
-        }
-        int beat = (int)Math.Floor(now);
-        if (beat != _leafBeat)
-        {
-            if (_leafBeat >= 0)
-            {
-                var line = new StringBuilder(_leafBeat.ToString(CultureInfo.InvariantCulture));
-                foreach (float v in _leafPeak)
-                    line.Append(',').Append((20 * Math.Log10(v + 1e-9)).ToString("F1", CultureInfo.InvariantCulture));
-                _leafLog.Add(line.ToString());
-            }
-            _leafBeat = beat;
-            Array.Clear(_leafPeak, 0, _leafPeak.Length);
-        }
-        for (int i = 0; i < _leafMeters.Count; i++)
-            if (_leafMeters[i].dsp.getMeteringInfo(out FMOD.DSP_METERING_INFO _, out FMOD.DSP_METERING_INFO output) == FMOD.RESULT.OK)
-                _leafPeak[i] = Math.Max(_leafPeak[i], Rms(output));
-    }
-
-    static bool MuteBedLeaves(FMOD.ChannelGroup root, out int muted)
-    {
-        muted = 0;
-        root.getNumGroups(out int count);
-        FMOD.ChannelGroup bed = default;
-        int most = 0;
-        for (int i = 0; i < count; i++)
-        {
-            root.getGroup(i, out FMOD.ChannelGroup child);
-            child.getNumGroups(out int n);
-            if (n > most)
-            {
-                most = n;
-                bed = child;
-            }
-        }
-        if (most < 21) // Music Bed has 21 tracks (incl. Harmony) once the event has built them
-            return false;
-        int withChildren = 0;
-        for (int i = 0; i < most; i++)
-        {
-            bed.getGroup(i, out FMOD.ChannelGroup track);
-            track.getNumGroups(out int n);
-            if (n > 0)
-            {
-                withChildren++;
-                continue;
-            }
-            track.setMute(true);
-            muted++;
-        }
-        return withChildren == 1;
     }
 
     // The shared scheduler exists once StartMusic ran (SoundManager creates it lazily); subscribe once.
@@ -805,9 +611,10 @@ public sealed class CaptureScenario : MonoBehaviour
         _patternScheduled++;
         if (!logOneShots)
             return;
-        _conductor.Clock.DspAt(beat, out ulong onBeat);
+        _clock.DspAt(beat, out ulong onBeat);
         double onset = InstrumentTable.OnsetSeconds(n.Instrument, n.Midi);
-        long start = (long)onBeat + scheduleOffsetSamples - (long)Math.Round(onset * _conductor.Clock.SampleRate);
+        long offset = _subscribedShots != null ? _subscribedShots.ScheduleOffsetSamples : OneShotScheduler.DefaultScheduleOffsetSamples;
+        long start = (long)onBeat + offset - (long)Math.Round(onset * _clock.SampleRate);
         _patternLog.Add(string.Format(CultureInfo.InvariantCulture, "{0},{1:F4},{2},{3},{4},{5:F6},{6},{7}",
             Time.frameCount, beat, n.Instrument, n.Bus, n.Midi, onset, onBeat, start));
     }
@@ -819,10 +626,7 @@ public sealed class CaptureScenario : MonoBehaviour
         RuntimeManager.GetBus("bus:/Kill Chords").setMute(true);
         RuntimeManager.GetBus("bus:/Feature").setMute(true);
         if (soloLayers == Solo.harmony)
-        {
-            RuntimeManager.GetBus("bus:/Music Bed/Layers").setMute(true);
-            StartCoroutine(MuteMusicBed(sound));
-        }
+            MuteMusicBedLayers();
         else if (soloLayers == Solo.bedWithoutHarmony)
             RuntimeManager.GetBus("bus:/Music Bed/Harmony").setMute(true);
         else if (soloLayers == Solo.feature)
@@ -830,7 +634,6 @@ public sealed class CaptureScenario : MonoBehaviour
             RuntimeManager.GetBus("bus:/Feature").setMute(false);
             RuntimeManager.GetBus("bus:/Music Bed/Layers").setMute(true);
             RuntimeManager.GetBus("bus:/Music Bed/Harmony").setMute(true);
-            StartCoroutine(MuteMusicBed(sound));
         }
     }
 
@@ -838,7 +641,7 @@ public sealed class CaptureScenario : MonoBehaviour
     {
         bool kill = !(owner is PatternScheduler);
         if (kill) _killLate++; else _patternLate++;
-        bool okNow = _conductor.Clock.BeatAt(FmodClock.MasterDsp(), out double now);
+        bool okNow = _clock.BeatAt(FmodClock.MasterDsp(), out double now);
         _lossLog.Add(string.Format(CultureInfo.InvariantCulture, "{0:F3},{1:F3},{2},late", okNow ? now : -1, beat, kill ? "kill" : "pattern"));
         if (kill)
             _killLossLog.Add(string.Format(CultureInfo.InvariantCulture, "{0:F2},1,0", okNow ? now : -1));
@@ -847,8 +650,8 @@ public sealed class CaptureScenario : MonoBehaviour
     void OnNoteDropped(OutputBus bus, ulong start)
     {
         bool kill = bus == OutputBus.KillChords;
-        bool okNow = _conductor.Clock.BeatAt(FmodClock.MasterDsp(), out double now);
-        double beat = _conductor.Clock.BeatAt(start, out double b) ? b : -1;
+        bool okNow = _clock.BeatAt(FmodClock.MasterDsp(), out double now);
+        double beat = _clock.BeatAt(start, out double b) ? b : -1;
         _lossLog.Add(string.Format(CultureInfo.InvariantCulture, "{0:F3},{1:F3},{2},drop,{3}", okNow ? now : -1, beat, kill ? "kill" : "pattern", bus));
         if (kill)
             _killLossLog.Add(string.Format(CultureInfo.InvariantCulture, "{0:F2},0,1", okNow ? now : -1));
@@ -871,7 +674,7 @@ public sealed class CaptureScenario : MonoBehaviour
                         sound.QueueKillChord(color);
                 break;
             case Scenario.spike:
-                // No kills: SpikeClick one-shots are scheduled on the beat clock instead (UpdateSpike / OnBeat).
+                // No kills: SpikeClick one-shots are scheduled on the beat clock instead (UpdateSpike).
                 break;
             case Scenario.styles:
                 for (int color = 0; color < Colors; color++)
@@ -899,26 +702,15 @@ public sealed class CaptureScenario : MonoBehaviour
         _finished = true;
         string path = AudioCapture.End();
         sound.StopMusic();
-        _conductor.BeatChanged -= OnBeat;
-        _conductor.BeatChanged -= OnBeat2;
+        _transport.PhraseStarted -= OnPhrase;
+        _transport.Resynced -= OnResync;
         sound.MusicParameterSet -= OnMusicParameter;
         File.WriteAllText(Path.ChangeExtension(path, ".frames.csv"), "dt,beat,bpm\n" + string.Join("\n", _frameLog) + "\n");
         File.WriteAllText(Path.ChangeExtension(path, ".studio.csv"), "frame,beat_now,dt,studio_update,core_dsp\n" + string.Join("\n", _studioLog) + "\n");
-        File.WriteAllText(Path.ChangeExtension(path, ".anchors.csv"), "frame,beat,now_dsp,beat_dsp,anchor_beat\n" + string.Join("\n", _anchorLog) + "\n");
         File.WriteAllText(Path.ChangeExtension(path, ".params.csv"), "beat_now,name,value\n" + string.Join("\n", _paramLog) + "\n");
-        var log = new StringBuilder("beat,frame,bpm\n");
-        foreach (var (beat, seconds, tempo) in _beats)
-            log.Append(beat).Append(',').Append(Math.Round(AudioCapture.FrameAt(seconds)).ToString("F0", CultureInfo.InvariantCulture))
-                .Append(',').Append(tempo.ToString("F2", CultureInfo.InvariantCulture)).Append('\n');
-        File.WriteAllText(Path.ChangeExtension(path, ".beats.csv"), log.ToString());
+        File.WriteAllText(Path.ChangeExtension(path, ".beats.csv"), BeatLog(_beats));
         if (_beats2.Count > 0)
-        {
-            var log2 = new StringBuilder("beat,frame,bpm\n");
-            foreach (var (beat, seconds, tempo) in _beats2)
-                log2.Append(beat).Append(',').Append(Math.Round(AudioCapture.FrameAt(seconds)).ToString("F0", CultureInfo.InvariantCulture))
-                    .Append(',').Append(tempo.ToString("F2", CultureInfo.InvariantCulture)).Append('\n');
-            File.WriteAllText(Path.ChangeExtension(path, ".beats2.csv"), log2.ToString());
-        }
+            File.WriteAllText(Path.ChangeExtension(path, ".beats2.csv"), BeatLog(_beats2));
         string spikeSummary = "";
         if (scenario == Scenario.spike)
         {
@@ -926,13 +718,10 @@ public sealed class CaptureScenario : MonoBehaviour
             foreach (var line in _spikeLog)
                 spike.Append(line).Append('\n');
             File.WriteAllText(Path.ChangeExtension(path, ".spike.csv"), spike.ToString());
-            var timeline = new StringBuilder("beat,timeline_ms\n");
-            foreach (var pair in _timelineMs)
-                timeline.Append(pair.Key).Append(',').Append(pair.Value).Append('\n');
-            File.WriteAllText(Path.ChangeExtension(path, ".timeline.csv"), timeline.ToString());
             spikeSummary = string.Format(CultureInfo.InvariantCulture,
-                "; SPIKE offset {0} samples, scheduled {1}, started {2}, late (scheduler, not started) {3}, dropped (backend, group too late) {4}, cancelled {5}",
-                scheduleOffsetSamples, _spikeLog.Count, _backend.StartedCount, _scheduler.LateCount, _backend.DroppedCount, _backend.CancelledCount);
+                "; SPIKE offset {0} samples, dispatch window {6} beats, scheduled {1}, started {2}, late (scheduler, not started) {3}, dropped (backend, group too late) {4}, cancelled {5}",
+                scheduleOffsetSamples, _spikeLog.Count, _backend.StartedCount, _scheduler.LateCount, _backend.DroppedCount, _backend.CancelledCount,
+                spikeDispatchBeats);
         }
 
         var scheduler = (OneShotScheduler)_killSchedulerField.GetValue(sound);
@@ -941,9 +730,10 @@ public sealed class CaptureScenario : MonoBehaviour
             "; KILLS one-shots started {0}, late (scheduler) {1}, dropped (backend) {2}",
             killStarted, _killLate, killDropped) +
             string.Format(CultureInfo.InvariantCulture,
-            "; PATTERNS layers {0}, scheduled {1}, started {2}, late (scheduler) {3}, dropped (backend) {4}; FIRSTANCHOR now beat {5:F5}",
-            layers == Layers.asSoundManager ? "inspector" : layers.ToString(), _patternScheduled,
-            _killBackend.StartedCount - killStarted, _patternLate, _killBackend.DroppedCount - killDropped, _firstAnchorBeat);
+            "; PATTERNS scheduled {0}, started {1}, late (scheduler) {2}, dropped (backend) {3}; FIRSTANCHOR now beat {4:F5}; " +
+            "CAPTURE dsp-to-frame mismatches {5}",
+            _patternScheduled, _killBackend.StartedCount - killStarted, _patternLate, _killBackend.DroppedCount - killDropped,
+            _firstAnchorBeat, AudioCapture.DspOffsetMismatches);
         // Total across every one-shot user of this take: the kill chords plus, in spike takes, the SpikeClick scheduler.
         string oneShotSummary = string.Format(CultureInfo.InvariantCulture,
             "; ONESHOTS started {0}, late {1}, dropped {2}, cancelled {3}",
@@ -966,8 +756,6 @@ public sealed class CaptureScenario : MonoBehaviour
             File.WriteAllText(Path.ChangeExtension(path, ".oneshots.csv"),
                 "frame,backend,event,handle,now_dsp,start_dsp,...\n" + string.Join("\n", _oneShotLog) + "\n");
         }
-        if (_leafLog.Count > 0)
-            File.WriteAllText(Path.ChangeExtension(path, ".leaves.csv"), string.Join("\n", _leafLog) + "\n");
         if (scenario == Scenario.duck || meterFeatureDuck)
         {
             var duck = new StringBuilder("beat,rms_in,rms_out\n");
@@ -993,8 +781,25 @@ public sealed class CaptureScenario : MonoBehaviour
 #endif
     }
 
+    // beat, capture frame of the beat's DSP sample, BPM of its phrase, and the DSP sample itself.
+    static string BeatLog(SortedDictionary<int, (ulong dsp, double bpm)> beats)
+    {
+        var log = new StringBuilder("beat,frame,bpm,dsp\n");
+        foreach (var pair in beats)
+            log.Append(pair.Key).Append(',')
+                .Append(Math.Round(AudioCapture.FrameAtDsp(pair.Value.dsp)).ToString("F0", CultureInfo.InvariantCulture)).Append(',')
+                .Append(pair.Value.bpm.ToString("F2", CultureInfo.InvariantCulture)).Append(',')
+                .Append(pair.Value.dsp.ToString(CultureInfo.InvariantCulture)).Append('\n');
+        return log.ToString();
+    }
+
     void OnDestroy()
     {
+        if (_transport != null)
+        {
+            _transport.PhraseStarted -= OnPhrase;
+            _transport.Resynced -= OnResync;
+        }
         if (soloLayers != Solo.none)
             UnmuteSoloBuses();
         if (_killBackend != null)

@@ -10,8 +10,6 @@ public struct ArrangementState
     public int FeatureLoop;
     /// <summary>1 = the first phrase of a section's 8 bars, 2 = the second (see <see cref="PatternClip.SectionPhrase"/>).</summary>
     public int SectionPhrase;
-    /// <summary>True while the old timeline path plays the pitched layers: the pattern scheduler schedules nothing then.</summary>
-    public bool Legacy;
 }
 
 /// <summary>The state that should sound at a step, without lookahead. Implemented by SoundManager.</summary>

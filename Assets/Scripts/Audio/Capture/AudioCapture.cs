@@ -39,6 +39,12 @@ public static class AudioCapture
     static long[] s_blockFrame;
     static int s_blockCount;
     static double s_fitSlope, s_fitIntercept, s_fitT0;
+    // Mixer DSP clock: (clock at a block's start) - (capture frame of that block), from the DSP's own getclock on the mixer
+    // thread, so FrameAtDsp is exact. Blocks whose difference differs from the first one are counted (expected 0).
+    static FMOD.DSP_GETCLOCK_FUNC s_getClock;
+    static long s_dspOffset;
+    static volatile bool s_hasDspOffset;
+    static long s_dspOffsetMismatches;
     static volatile bool s_active;
     static FileStream s_file;
     static byte[] s_chunk;
@@ -50,6 +56,8 @@ public static class AudioCapture
     /// <summary>Frames the mixer has delivered since <see cref="Begin"/> (the capture's own clock).</summary>
     public static long FramesCaptured => Interlocked.Read(ref s_written);
     public static long FramesDropped => Interlocked.Read(ref s_dropped);
+    /// <summary>Mixer blocks whose DSP clock did not continue the first block's clock-to-frame pairing (expected 0).</summary>
+    public static long DspOffsetMismatches => Interlocked.Read(ref s_dspOffsetMismatches);
 
     public static bool Begin(string wavPath)
     {
@@ -67,6 +75,10 @@ public static class AudioCapture
         s_blockSeconds = new double[MaxBlocks];
         s_blockFrame = new long[MaxBlocks];
         s_blockCount = 0;
+        s_hasDspOffset = false;
+        s_getClock = null; // taken again from this session's DSP state (no domain reload between Play sessions)
+        s_dspOffset = 0;
+        s_dspOffsetMismatches = 0;
         s_chunk = new byte[16384 * Channels * sizeof(float)];
         s_written = s_read = s_dropped = 0;
 
@@ -153,6 +165,12 @@ public static class AudioCapture
     /// <summary>Capture frame (fractional) of a Stopwatch time in seconds. Valid after <see cref="End"/>.</summary>
     public static double FrameAt(double stopwatchSeconds) => s_fitIntercept + s_fitSlope * (stopwatchSeconds - s_fitT0);
 
+    /// <summary>
+    /// Capture frame of a master DSP clock sample (the clock BeatClock and the one-shots use): the capture pairs the two
+    /// on its first mixer block. NaN before that block. Valid during and after the capture.
+    /// </summary>
+    public static double FrameAtDsp(ulong dsp) => s_hasDspOffset ? (double)((long)dsp - Interlocked.Read(ref s_dspOffset)) : double.NaN;
+
     sealed class Driver : MonoBehaviour
     {
         void Update() => Drain();
@@ -202,6 +220,26 @@ public static class AudioCapture
         {
             Interlocked.Add(ref s_dropped, frames);
             return FMOD.RESULT.OK;
+        }
+
+        // The capture DSP sits at the tail of the master channel group: its clock is the master DSP clock of this block.
+        if (s_getClock == null && state.functions != IntPtr.Zero)
+        {
+            // DSP_STATE_FUNCTIONS: alloc, realloc, free, getsamplerate, getblocksize, dft, pan, getspeakermode, getclock, ...
+            IntPtr fn = Marshal.ReadIntPtr(state.functions, 8 * IntPtr.Size);
+            if (fn != IntPtr.Zero)
+                s_getClock = Marshal.GetDelegateForFunctionPointer<FMOD.DSP_GETCLOCK_FUNC>(fn); // once per session
+        }
+        if (s_getClock != null && s_getClock(ref state, out ulong clock, out _, out _) == FMOD.RESULT.OK)
+        {
+            long offset = (long)clock - written;
+            if (!s_hasDspOffset)
+            {
+                Interlocked.Exchange(ref s_dspOffset, offset);
+                s_hasDspOffset = true;
+            }
+            else if (offset != Interlocked.Read(ref s_dspOffset))
+                Interlocked.Increment(ref s_dspOffsetMismatches);
         }
 
         if (s_blockCount < MaxBlocks)

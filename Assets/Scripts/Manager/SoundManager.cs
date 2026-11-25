@@ -12,19 +12,17 @@ public sealed class SoundManager : SingletonBehaviour<SoundManager>, IKillBedSta
     public const int StepsPerBar = BeatsPerBar * StepsPerBeat;
 
     const string BankName = "ChordPulse";
-    const string MusicPath = "event:/Music/ChordPulseGame";
     const int FeverSteps = 4 * StepsPerBar;
     const int FeverBuildSteps = StepsPerBar;
 
     public const int MaxIntensity = 3;
 
-    enum FeverPhase { Fever, Build, Impact, Outro }
-    static readonly string[] FeverParameters = { "Fever", "FeverBuild", "FeverImpact", "FeverOutro" };
-    // Arrangement parameters (fever, intensity, style, variation, feature loop...) switch this far before the bar
-    // they affect. At 0.15 s FMOD started the newly enabled notes late at every phrase boundary ("Loading delay
-    // exceeded": ~30 per 40 beats); 0.25 s brought that to ~0-7 (10-5). Longer leads let more of the old bar's tail
-    // follow the new state.
-    const double RhythmLookahead = 0.25;
+    // Beat 0 sounds this long after the samples are loaded (MusicTransport.Start), so the schedulers can hand beat 0's
+    // notes to FMOD before it.
+    const double StartLeadSeconds = 0.25;
+    // QueueFever: the fever's build-up bar must still be at least this far ahead of the mixer's position, otherwise fever
+    // waits one more phrase (the value of the old parameter lead it was measured with).
+    const double FeverMinNoticeSeconds = 0.25;
 
     // Kill chords are one-shots of the instrument events (event:/Inst/*, FMOD/Tools/instruments.py) scheduled on the
     // music's beat clock; they play through bus:/Kill Chords, which ducks the Harmony and Feature groups
@@ -37,8 +35,7 @@ public sealed class SoundManager : SingletonBehaviour<SoundManager>, IKillBedSta
     // ~5 ms region-end ramp (FMOD/Tools/instruments.py PATTERN_STOP_FADE_MS).
     readonly FmodOneShotBackend _shotBackend = new FmodOneShotBackend();
     OneShotScheduler _shots;
-    // The pattern layers (PatternTable: the bed's pitched layers, the drums, the feature loops and the fever layers) as one-shots, unless
-    // legacyLayers keeps them on the timeline.
+    // The pattern layers (PatternTable: the bed's pitched layers, the drums, the feature loops and the fever layers) as one-shots.
     // Two schedulers: _patterns takes every layer but the core kick / snare / hat. Lookahead: one beat of dispatch window
     // after a phrase boundary plus the largest sample onset, with margin. _corePatterns takes the core layers
     // (PatternTable.CoreLayerMask) a bar ahead and hands them to FMOD at once: they depend only on decisions made a phrase
@@ -50,14 +47,12 @@ public sealed class SoundManager : SingletonBehaviour<SoundManager>, IKillBedSta
     PatternScheduler _corePatterns;
     ArrangementInputs _arrangement;
     bool _arrangementValid;
-    bool _legacyActive = true;
     FMOD.Studio.Bus _killBus;
-    // MusicMix: the music event's output (Music Bed group + Harmony, which sits below it) and the Feature bus.
+    // MusicMix: bus:/Music Bed (with Harmony below it) and the Feature bus.
     const string MusicBedBusPath = "bus:/Music Bed";
     const string FeatureBusPath = "bus:/Feature";
     FMOD.Studio.Bus _musicBedBus;
     FMOD.Studio.Bus _featureBus;
-    bool _legacyLayersWarned;
 
     [Tooltip("Shifts visuals later to match audible output latency (measure per device).")]
     [SerializeField] float visualLatencyMs;
@@ -67,12 +62,6 @@ public sealed class SoundManager : SingletonBehaviour<SoundManager>, IKillBedSta
     [SerializeField, Range(0f, 1f)] float killChordMix = 1f;
     [Tooltip("Seed for the per-phrase section choice. 0 = different every round.")]
     [SerializeField] int sectionSeed;
-    [Tooltip("Pattern layers (bed pitched layers: bass, pluck, combo, tension, style layers; style drums and the core kit; " +
-             "the feature loops; the fever layers): true = the old timeline tracks play them " +
-             "(global FMOD parameter LegacyLayers 1, PatternScheduler silent); false = Unity schedules them as one-shots " +
-             "(LegacyLayers 0). Read when the music starts. Default true until the drop burst of one styles take " +
-             "(Docs/Captures/README.md Task 11, fix round 1) is resolved.")]
-    [SerializeField] bool legacyLayers = true;
 
     SectionSelector _sections = new SectionSelector(0);
     FeatureSelector _features = new FeatureSelector(0);
@@ -80,21 +69,20 @@ public sealed class SoundManager : SingletonBehaviour<SoundManager>, IKillBedSta
     bool _danger;
     float _appliedTension = -1f;
     float _appliedDanger = -1f;
-    bool _tensionAvailable;
-    // Pattern variation per phrase (FMOD "Variation" 0..4, see FMOD/Tools/bed_variation.py), chosen one phrase ahead.
+    // The global parameters Tension, Danger and Hurt exist in the loaded bank (they drive bus effects; FMOD/Tools/mixer.py).
+    bool _globalsAvailable;
+    // Pattern variation per phrase (0..4, see FMOD/Tools/pattern_bed.py), chosen one phrase ahead.
     const int VariationCount = 5;
     System.Random _variationRandom = new System.Random();
     int _variationCurrent;
     int _variationNext;
     int _appliedVariation = -1;
-    bool _variationAvailable;
-    // Combo layers (FMOD "Combo" 0..3, changed on bar lines) and the hurt dip ("Hurt", snapped to 1, seeks back to 0).
+    // Combo layers (0..3, latched on bar lines) and the hurt dip (global "Hurt", snapped to 1, seeks back to 0).
     int _combo;
     int _appliedCombo = -1;
     int _comboBar = -1;
     bool _hurtPending;
-    bool _comboAvailable;
-    // Bed style per phrase (FMOD "BedStyle": 0 synthpop, 1 latin, 2 funk, 3 dreamy; see FMOD/Tools/bed_style.py),
+    // Bed style per phrase (0 synthpop, 1 latin, 2 funk, 3 dreamy),
     // chosen one phrase ahead and held for a few phrases so the arrangement does not flip-flop.
     public const int StyleSynthpop = 0, StyleLatin = 1, StyleFunk = 2, StyleDreamy = 3;
     const int RotatingStyles = 3;   // synthpop, latin, funk; dreamy is only for breath phrases
@@ -107,12 +95,9 @@ public sealed class SoundManager : SingletonBehaviour<SoundManager>, IKillBedSta
     int _styleDwell;
     int _styleBeforeBreath;
     int _phraseCount;
-    bool _styleAvailable;
-    int _appliedFeature = -1;
-    bool _featuresAvailable;
     int _lastPhrase = -1;
     int _phraseStartStep;
-    // Where the timeline is in its section's 8 bars (1 = bars 1-4, 2 = bars 5-8; ArrangementTimeline.NextSectionPhrase).
+    // Which half of its section's 8 bars a phrase plays (1 = bars 1-4, 2 = bars 5-8; ArrangementTimeline.NextSectionPhrase).
     int _sectionPhraseCurrent = 1;
     int _sectionPhraseNext = 2;
 
@@ -132,12 +117,13 @@ public sealed class SoundManager : SingletonBehaviour<SoundManager>, IKillBedSta
     public float MusicMix { get => musicMix; set => musicMix = Mathf.Clamp01(value); }
     public float KillChordMix { get => killChordMix; set => killChordMix = Mathf.Clamp01(value); }
 
-    readonly MusicConductor _conductor = new MusicConductor();
-    FMOD.Studio.EventInstance _music;
+    // The music clock: beat <-> FMOD master DSP sample (MusicTransport anchors it on every phrase boundary). One instance
+    // each for the component's lifetime; the one-shot scheduler holds the clock.
+    readonly BeatClock _clock;
+    readonly MusicTransport _transport;
     Coroutine _startRoutine;
     bool _ownsBank;
     bool _musicPlaying;
-    readonly bool[] _appliedFever = new bool[FeverParameters.Length];
     int _feverStart = -1;
     // Beat position as FMOD is mixing it (drives audio scheduling) and as the player hears it (drives visuals).
     double _audioBeat = -1;
@@ -145,15 +131,23 @@ public sealed class SoundManager : SingletonBehaviour<SoundManager>, IKillBedSta
     readonly DspClockSmoother _dspSmoother = new DspClockSmoother(48000);
     double _roundSeconds;
 
-    bool Running => _musicPlaying && _conductor.HasStarted;
+    SoundManager()
+    {
+        _clock = new BeatClock(48000);
+        _transport = new MusicTransport(_clock);
+        _transport.PhraseStarted += OnPhraseStarted;
+        _transport.Resynced += OnResynced;
+    }
+
+    // From beat 0 as heard on screen; -1 / false during the start lead.
+    bool Running => _transport.Running && _visualBeat >= 0;
 
     /// <summary>Play time since the first beat (stops while paused); use for difficulty, not for rhythm.</summary>
     public double RoundSeconds => Running ? _roundSeconds : 0;
     public double BeatPosition => Running ? _visualBeat : -1;
     public int CurrentBeat => Running ? (int)Math.Floor(_visualBeat) : -1;
     public int CurrentStep => Running ? (int)Math.Floor(_visualBeat * StepsPerBeat) : -1;
-    public int CurrentBpm => Running ? (int)Math.Round(_conductor.Tempo) : 0;
-    public string CurrentSection => _conductor.Section;
+    public int CurrentBpm => Running ? (int)Math.Round(_transport.Bpm) : 0;
     public const int StepsPerPhrase = SectionSelector.BarsPerPhrase * StepsPerBar;
     /// <summary>Section (0 = slowest ... 3 = fastest) of the phrase being heard.</summary>
     public int SectionIndex => _sections.Current.Section;
@@ -166,10 +160,10 @@ public sealed class SoundManager : SingletonBehaviour<SoundManager>, IKillBedSta
     /// It only sounds in <see cref="FeatureSelector.Loop.PlaysInBar"/> bars of the phrase; see <see cref="FeatureSounding"/>.
     /// </summary>
     public FeatureSelector.Loop CurrentFeature =>
-        Running && _featuresAvailable && !FeverActive && !FeverBuilding ? _features.Current : null;
+        Running && !FeverActive && !FeverBuilding ? _features.Current : null;
     /// <summary>Loop already chosen for the phrase starting at <see cref="NextPhraseStep"/> (null = none or fever).</summary>
     public FeatureSelector.Loop UpcomingFeature =>
-        Running && _featuresAvailable && !FeverOverlaps(NextPhraseStep, NextPhraseStep + StepsPerPhrase) ? _features.Next : null;
+        Running && !FeverOverlaps(NextPhraseStep, NextPhraseStep + StepsPerPhrase) ? _features.Next : null;
     /// <summary>True while the current feature loop is actually playing notes in this bar.</summary>
     /// <summary>
     /// Threat 0..1 from the game (nearest enemy, low health). FMOD fades in a string pad (0.25+), an off-beat
@@ -198,30 +192,32 @@ public sealed class SoundManager : SingletonBehaviour<SoundManager>, IKillBedSta
     public int UpcomingStyle => _styleNext;
     public int CurrentVariation => Running ? _appliedVariation : 0;
 
-    // --- Values for visuals. FMOD gets parameters slightly ahead (lookahead); these follow what is being heard. ---
+    // --- Values for visuals: these follow what is being heard. ---
 
     /// <summary>Bed style of the phrase being heard (changes on the heard phrase downbeat, not ahead of it).</summary>
-    public int HeardStyle => !Running || !_styleAvailable || FeverBuilding || FeverActive ? StyleSynthpop : _styleCurrent;
+    public int HeardStyle => !Running || FeverBuilding || FeverActive ? StyleSynthpop : _styleCurrent;
     /// <summary>Pattern variation of the phrase being heard (0 in build-up and fever, like the music).</summary>
-    public int HeardVariation => !Running || !_variationAvailable || FeverBuilding || FeverActive ? 0 : _variationCurrent;
+    public int HeardVariation => !Running || FeverBuilding || FeverActive ? 0 : _variationCurrent;
     /// <summary>Pattern variation already chosen for the phrase starting at <see cref="NextPhraseStep"/>.</summary>
-    public int UpcomingVariation => _variationAvailable ? _variationNext : 0;
+    public int UpcomingVariation => _variationNext;
     /// <summary>Tension as FMOD is actually playing it (after its seek-speed smoothing), 0 when unavailable.</summary>
-    public float HeardTension => ReadFinal("Tension", _tensionAvailable);
+    public float HeardTension => ReadFinal("Tension");
     /// <summary>Danger (last-life low-pass) as FMOD is actually playing it.</summary>
-    public float HeardDanger => ReadFinal("Danger", _tensionAvailable);
+    public float HeardDanger => ReadFinal("Danger");
     /// <summary>Hurt dip as FMOD is playing it: 1 right after a hit, back to 0 over about 0.6 s.</summary>
-    public float HeardHurt => ReadFinal("Hurt", _comboAvailable);
+    public float HeardHurt => ReadFinal("Hurt");
 
-    float ReadFinal(string parameter, bool available)
+    // Final (seek-smoothed) value of a global parameter.
+    float ReadFinal(string parameter)
     {
-        if (!Running || !available)
+        if (!Running || !_globalsAvailable)
             return 0f;
-        return _music.getParameterByName(parameter, out _, out float final) == FMOD.RESULT.OK ? final : 0f;
+        return RuntimeManager.StudioSystem.getParameterByName(parameter, out _, out float final) == FMOD.RESULT.OK ? final : 0f;
     }
     public bool FeatureSounding =>
         CurrentFeature != null && CurrentFeature.PlaysInBar(CurrentBar % SectionSelector.BarsPerPhrase);
-    public int NextPhraseStep => _phraseStartStep + StepsPerPhrase;
+    /// <summary>First step of the phrase after the one being mixed (from the music clock; 32 before the music starts).</summary>
+    public int NextPhraseStep => (Math.Max(0, _transport.Phrase) + 1) * StepsPerPhrase;
     /// <summary>Bar being heard, counted from the first beat (-1 before the music starts).</summary>
     public int CurrentBar => Running ? CurrentBeat / BeatsPerBar : -1;
     /// <summary>Chord of the bar being heard: 0 C, 1 Am, 2 F, 3 G (every section starts on C, phrases are 4 bars).</summary>
@@ -237,18 +233,16 @@ public sealed class SoundManager : SingletonBehaviour<SoundManager>, IKillBedSta
 
     public static bool IsKickBeat(int beat) => beat % 2 == 0;
 
-    int AudioStep => (int)Math.Floor(_audioBeat * StepsPerBeat);
     double AudioStepPosition => _audioBeat * StepsPerBeat;
-    double LookaheadSteps(double seconds) => _conductor.SecondsToBeats(seconds) * StepsPerBeat;
+    double LookaheadSteps(double seconds) => seconds * _transport.Bpm / 60.0 * StepsPerBeat;
 
     bool IsFeverStep(int step) =>
         _feverStart >= 0 && step >= _feverStart && step < _feverStart + FeverSteps;
 
-    // Buses that keep ringing (reverb tails) after the music event is stopped; muted by StopMusic, unmuted before the next
-    // start. Since FMOD/Tools/mixer.py the feature reverb is on bus:/Feature (return:/Feature Duck only routes into it);
-    // Harmony is listed because its tracks reach the mixer only through return:/Harmony Duck: the bus is where anything the
-    // event leaves in flight there would ring out. Its effects (two compressors) have no tail of their own, so this is
-    // belt and braces; the Task 8 stop-tail take shows the tail is silent with both buses muted.
+    // Buses that keep ringing (reverb tails) after the music is stopped; muted by StopMusic, unmuted before the next
+    // start. Since FMOD/Tools/mixer.py the feature reverb is on bus:/Feature. Harmony's effects (two compressors) have no
+    // tail of their own, so listing it is belt and braces; the Task 8 stop-tail take shows the tail is silent with both
+    // buses muted.
     static readonly string[] TailBuses = { "bus:/Feature", "bus:/Music Bed/Harmony" };
 
     // A bus the loaded banks do not have, or FMOD shutting down, is not an error: the lookup throws and is ignored.
@@ -271,10 +265,8 @@ public sealed class SoundManager : SingletonBehaviour<SoundManager>, IKillBedSta
         StopMusic();
         MuteTailBuses(false);
         _audioBeat = _visualBeat = -1;
-        _dspSmoother.Reset(_conductor.Clock.SampleRate);
         _roundSeconds = 0;
         _feverStart = -1;
-        Array.Clear(_appliedFever, 0, _appliedFever.Length);
         _intensity = 0;
         _appliedIntensity = -1;
         _sections = new SectionSelector(sectionSeed);
@@ -289,22 +281,16 @@ public sealed class SoundManager : SingletonBehaviour<SoundManager>, IKillBedSta
         _phrasesInStyle = _phraseCount = 0;
         _styleDwell = 4;
         _styleBeforeBreath = StyleSynthpop;
-        _styleAvailable = false;
         _hurtPending = false;
-        _comboAvailable = false;
         _appliedVariation = -1;
-        _variationAvailable = false;
         _tension = 0f;
         _danger = false;
         _appliedTension = _appliedDanger = -1f;
-        _tensionAvailable = false;
-        _appliedFeature = -1;
-        _featuresAvailable = false;
+        _globalsAvailable = false;
         _lastPhrase = -1;
         _phraseStartStep = 0;
         _sectionPhraseCurrent = 1;
         _sectionPhraseNext = ArrangementTimeline.NextSectionPhrase(_sections.Current.Section, 1, _sections.Next.Section);
-        _legacyActive = legacyLayers;
         _arrangementValid = false;
         _killPlanner.Clear();
         _startRoutine = StartCoroutine(LoadAndStartMusic());
@@ -349,17 +335,6 @@ public sealed class SoundManager : SingletonBehaviour<SoundManager>, IKillBedSta
 
         try
         {
-            _music = RuntimeManager.CreateInstance(MusicPath);
-        }
-        catch (Exception exception)
-        {
-            ReportFailure(exception.Message);
-            yield break;
-        }
-
-        _conductor.Attach(_music);
-        try
-        {
             _killBus = RuntimeManager.GetBus(KillBusPath);
             _musicBedBus = RuntimeManager.GetBus(MusicBedBusPath);
             _featureBus = RuntimeManager.GetBus(FeatureBusPath);
@@ -372,38 +347,29 @@ public sealed class SoundManager : SingletonBehaviour<SoundManager>, IKillBedSta
         _appliedMusicMix = _appliedKillChordMix = -1f;
         if (!ApplyMix())
             yield break;
-        // Global, optional (banks built before mixer.py lack it; then the timeline tracks play whatever is set here, so
-        // a missing one only warns). Gates the migrated timeline tracks (FMOD/Tools/legacy_gate.py, patterns.LEGACY_TRACKS).
-        if (RuntimeManager.StudioSystem.setParameterByName("LegacyLayers", _legacyActive ? 1f : 0f, true) != FMOD.RESULT.OK &&
-            !_legacyLayersWarned)
-        {
-            _legacyLayersWarned = true;
-            Debug.LogWarning("[SoundManager / FMOD] No global LegacyLayers parameter in the bank; it is ignored. Rebuild the FMOD banks.", this);
-        }
-        foreach (var parameter in FeverParameters)
-            if (!Check(SetMusicParameter(parameter, 0f, true)))
-                yield break;
-        if (!Check(SetMusicParameter("NextSection", 0f, true)))
-            yield break;
-        // Optional: banks built before the feature loops existed simply play without them.
-        _featuresAvailable = SetMusicParameter("FeatureLoop", 0f, true) == FMOD.RESULT.OK;
-        _tensionAvailable = SetMusicParameter("Tension", 0f, true) == FMOD.RESULT.OK &&
-                            SetMusicParameter("Danger", 0f, true) == FMOD.RESULT.OK;
+        // Optional: banks built before mixer.py lack the global parameters; then tension, danger and hurt are off.
+        _globalsAvailable = SetMusicParameter("Tension", 0f, true) == FMOD.RESULT.OK &&
+                            SetMusicParameter("Danger", 0f, true) == FMOD.RESULT.OK &&
+                            SetMusicParameter("Hurt", 0f, true) == FMOD.RESULT.OK;
         _appliedTension = _appliedDanger = 0f;
-        _variationAvailable = SetMusicParameter("Variation", 0f, true) == FMOD.RESULT.OK;
-        _comboAvailable = SetMusicParameter("Combo", 0f, true) == FMOD.RESULT.OK &&
-                          SetMusicParameter("Hurt", 0f, true) == FMOD.RESULT.OK;
         _appliedCombo = 0;
-        _styleAvailable = SetMusicParameter("BedStyle", 0f, true) == FMOD.RESULT.OK;
         _appliedStyle = 0;
         _appliedVariation = 0;
-        if (!_tensionAvailable)
-            Debug.LogWarning("[SoundManager / FMOD] No Tension/Danger parameters in the bank; tension layers are off. Rebuild the FMOD banks.", this);
-        _appliedFeature = 0;
-        if (!_featuresAvailable)
-            Debug.LogWarning("[SoundManager / FMOD] No FeatureLoop parameter in the bank; feature loops are off. Rebuild the FMOD banks.", this);
-        if (!Check(_music.start()))
+        if (!_globalsAvailable)
+            Debug.LogWarning("[SoundManager / FMOD] No global Tension/Danger/Hurt parameters in the bank; tension, danger and hurt are off. Rebuild the FMOD banks.", this);
+
+        // Beat 0 a start lead from now; phrase 0 and the phrase after it at the first section's tempo (OnPhraseStarted
+        // announces the next one).
+        int rate = FmodClock.SampleRate();
+        if (rate <= 0)
+        {
+            ReportFailure("FMOD mixer sample rate unavailable.");
             yield break;
+        }
+        _clock.Reset(rate);
+        _dspSmoother.Reset(rate);
+        _transport.Start(FmodClock.MasterDsp() + (ulong)Math.Round(StartLeadSeconds * rate),
+            SectionSelector.Bpm(_sections.Current.Section), SectionSelector.Bpm(_sections.Next.Section));
 
         _musicPlaying = true;
         _startRoutine = null;
@@ -422,13 +388,8 @@ public sealed class SoundManager : SingletonBehaviour<SoundManager>, IKillBedSta
         ResetPatterns();
         _arrangementValid = false;
         _killPlanner.Clear();
-        _conductor.Detach();
-        if (_music.isValid())
-        {
-            _music.stop(FMOD.Studio.STOP_MODE.IMMEDIATE);
-            _music.release();
-            _music.clearHandle();
-        }
+        _transport.Stop();
+        _audioBeat = _visualBeat = -1;
         MuteTailBuses(true);
     }
 
@@ -439,7 +400,11 @@ public sealed class SoundManager : SingletonBehaviour<SoundManager>, IKillBedSta
         // Fever never cuts into a phrase: it fills exactly one whole phrase, and its build-up is the last bar of the
         // phrase before. That build-up bar must still be far enough ahead and free of the current guest loop
         // (loops that play in bar 4 would clash with the snare roll), otherwise wait one more phrase.
-        double earliest = AudioStepPosition + LookaheadSteps(RhythmLookahead);
+        // "Now" is read from the mixer clock here, not taken from this frame's Update: QueueFever may run after a stall,
+        // and a boundary the mixer has already passed must not be held (its tempo is fixed).
+        if (!_clock.BeatAt(FmodClock.MasterDsp(), out double nowBeat))
+            return;
+        double earliest = nowBeat * StepsPerBeat + LookaheadSteps(FeverMinNoticeSeconds);
         int lastBar = SectionSelector.BarsPerPhrase - 1;
         int feverStart = NextPhraseStep;
         bool loopInBuildBar = _features.Current != null && _features.Current.PlaysInBar(lastBar);
@@ -448,7 +413,6 @@ public sealed class SoundManager : SingletonBehaviour<SoundManager>, IKillBedSta
         _feverStart = feverStart;
 
         // Kill beats already queued from the build-up bar on were voiced for the old bed; re-voice them as fever's sound.
-        if (_conductor.Clock.BeatAt(FmodClock.MasterDsp(), out double nowBeat))
         {
             int buildBeat = (feverStart - FeverBuildSteps) / StepsPerBeat;
             _killNotes.Clear();
@@ -461,22 +425,22 @@ public sealed class SoundManager : SingletonBehaviour<SoundManager>, IKillBedSta
         // in the build-up bar, so drop it. FeatureSelector will not pick another one until fever is over.
         _features.CancelNext();
 
-        // The next section may already have been sent to FMOD; keep the tempo steady through build-up and fever.
+        // The next section's tempo is already announced to the clock; keep the tempo steady through build-up and fever.
         if (FeverHoldsBoundary(NextPhraseStep))
         {
-            Check(SetMusicParameter("NextSection", _sections.HoldNext().Section));
+            _sections.HoldNext();
             _sectionPhraseNext = ArrangementTimeline.NextSectionPhrase(_sections.Current.Section, _sectionPhraseCurrent, _sections.Next.Section);
             OnNextSectionChanged();
         }
         // Pattern notes already scheduled from the build-up bar on change too (style / variation / combo 0 there, fever
         // layers, no core kick): RefreshArrangement invalidates both schedulers from the first changed step, the build-up
         // bar's first step (the core one may already have handed that bar's kicks to FMOD; they are cancelled unstarted).
-        if (_conductor.Clock.BeatAt(FmodClock.MasterDsp(), out double now))
+        if (_clock.BeatAt(FmodClock.MasterDsp(), out double now))
             RefreshArrangement(now);
     }
 
-    /// <summary>Length of one beat at the tempo FMOD is playing (108 BPM before the music starts).</summary>
-    public double BeatSeconds => Running && _conductor.Tempo > 0 ? 60.0 / _conductor.Tempo : 60.0 / 108.0;
+    /// <summary>Length of one beat at the tempo being mixed (108 BPM before the music starts).</summary>
+    public double BeatSeconds => _transport.Running ? 60.0 / _transport.Bpm : 60.0 / 108.0;
 
     /// <summary>
     /// Adds a kill to a beat's chord and returns that beat's step, or -1 if nothing was queued.
@@ -488,8 +452,8 @@ public sealed class SoundManager : SingletonBehaviour<SoundManager>, IKillBedSta
     {
         if (!Running || colorIndex < 0 || colorIndex >= KillChordPlanner.ColorCount)
             return -1;
-        // "Now" from the mixer clock: BeatPosition is capped while a jump landing's beat callback is late.
-        if (!_conductor.Clock.BeatAt(FmodClock.MasterDsp(), out double now))
+        // "Now" from the mixer clock (BeatPosition is the heard beat, behind it by the output latency).
+        if (!_clock.BeatAt(FmodClock.MasterDsp(), out double now))
             return -1;
         _killNotes.Clear();
         int target = _killPlanner.Queue(now, colorIndex, chordStep, this, _killNotes);
@@ -498,7 +462,7 @@ public sealed class SoundManager : SingletonBehaviour<SoundManager>, IKillBedSta
     }
 
     /// <summary>The one-shot scheduler shared by the kill chords and the pattern layers.</summary>
-    OneShotScheduler Shots => _shots ??= new OneShotScheduler(_conductor.Clock, _shotBackend);
+    OneShotScheduler Shots => _shots ??= new OneShotScheduler(_clock, _shotBackend);
     PatternScheduler Patterns => _patterns ??= new PatternScheduler(Shots, this, PatternLookaheadBeats, ~PatternTable.CoreLayerMask);
     PatternScheduler CorePatterns => _corePatterns ??= new PatternScheduler(Shots, this, PatternTable.CoreLookaheadBeats,
         PatternTable.CoreLayerMask, PatternTable.CoreLookaheadBeats);
@@ -533,28 +497,27 @@ public sealed class SoundManager : SingletonBehaviour<SoundManager>, IKillBedSta
     ArrangementState IArrangement.At(int step) => ArrangementTimeline.At(step, in _arrangement);
 
     // The decisions SoundManager has made, as ArrangementTimeline inputs (the same values UpdateStyle / UpdateVariation /
-    // UpdateCombo / UpdateFever / UpdateFeature use, without their parameter lead).
+    // UpdateCombo / UpdateFever use).
     ArrangementInputs CurrentArrangement()
     {
         return new ArrangementInputs
         {
             PhraseStartStep = _phraseStartStep,
-            StyleCurrent = _styleAvailable ? _styleCurrent : StyleSynthpop,
-            StyleNext = _styleAvailable ? _styleNext : StyleSynthpop,
-            VariationCurrent = _variationAvailable ? _variationCurrent : 0,
-            VariationNext = _variationAvailable ? _variationNext : 0,
+            StyleCurrent = _styleCurrent,
+            StyleNext = _styleNext,
+            VariationCurrent = _variationCurrent,
+            VariationNext = _variationNext,
             BreathCurrent = _sections.Current.Breath,
             BreathNext = _sections.Next.Breath,
-            FeatureCurrent = _featuresAvailable && _features.Current != null ? _features.Current.Id : 0,
-            FeatureNext = _featuresAvailable && _features.Next != null ? _features.Next.Id : 0,
+            FeatureCurrent = _features.Current != null ? _features.Current.Id : 0,
+            FeatureNext = _features.Next != null ? _features.Next.Id : 0,
             SectionPhraseCurrent = _sectionPhraseCurrent,
             SectionPhraseNext = _sectionPhraseNext,
             Intensity = _intensity,
-            LiveCombo = _comboAvailable ? _combo : 0,
-            AppliedCombo = _comboAvailable ? _appliedCombo : 0,
-            ComboBar = _comboAvailable ? _comboBar : int.MaxValue,
+            LiveCombo = _combo,
+            AppliedCombo = _appliedCombo,
+            ComboBar = _comboBar,
             FeverStart = _feverStart,
-            Legacy = _legacyActive,
         };
     }
 
@@ -564,7 +527,7 @@ public sealed class SoundManager : SingletonBehaviour<SoundManager>, IKillBedSta
     void RefreshArrangement(double now)
     {
         var next = CurrentArrangement();
-        if (_arrangementValid && !_legacyActive)
+        if (_arrangementValid)
         {
             int from = (int)Math.Floor(now * StepsPerBeat);
             int to = (int)Math.Ceiling((now + MaxPatternLookaheadBeats) * StepsPerBeat);
@@ -580,7 +543,7 @@ public sealed class SoundManager : SingletonBehaviour<SoundManager>, IKillBedSta
     // section's BPM, so the protected span is never too short across a boundary.
     double SafetyBeatsPerSecond()
     {
-        double bpm = Math.Max(_conductor.Tempo, SectionSelector.Bpm(_sections.Next.Section));
+        double bpm = Math.Max(_transport.Bpm, SectionSelector.Bpm(_sections.Next.Section));
         return Math.Max(bpm, SectionSelector.Bpm(_sections.Current.Section)) / 60.0;
     }
 
@@ -590,28 +553,18 @@ public sealed class SoundManager : SingletonBehaviour<SoundManager>, IKillBedSta
     int IKillBedState.ComboAt(int beat) => ComboAt(beat * StepsPerBeat);
     float IKillBedState.Tension => HeardTension;
 
-    // Bed style FMOD plays at a step (UpdateStyle's rule without the lookahead; fever is handled by the caller).
-    int StyleAt(int step)
-    {
-        if (!_styleAvailable)
-            return StyleSynthpop;
-        return step >= NextPhraseStep ? _styleNext : _styleCurrent;
-    }
+    // Bed style played at a step (UpdateStyle's rule; fever is handled by the caller).
+    int StyleAt(int step) => step >= NextPhraseStep ? _styleNext : _styleCurrent;
 
-    // Combo level FMOD plays at a step: the applied level up to the bar it was last switched for, the game's after it.
-    int ComboAt(int step)
-    {
-        if (!_comboAvailable)
-            return 0;
-        return step / StepsPerBar > _comboBar ? _combo : Math.Max(0, _appliedCombo);
-    }
+    // Combo level played at a step: the applied level up to the bar it was last latched for, the game's after it.
+    int ComboAt(int step) => step / StepsPerBar > _comboBar ? _combo : Math.Max(0, _appliedCombo);
 
-    // The next phrase's section was sent or replaced: time beats past that boundary with its BPM, and move one-shots
-    // already handed to FMOD for beats after it.
+    // The next phrase's section was chosen or replaced: the clock times beats past that boundary with its BPM, and
+    // one-shots already handed to FMOD for beats after it are moved.
     void OnNextSectionChanged()
     {
         int boundaryBeat = NextPhraseStep / StepsPerBeat;
-        _conductor.Clock.SetTempoFrom(boundaryBeat, SectionSelector.Bpm(_sections.Next.Section));
+        _transport.SetNextTempo(SectionSelector.Bpm(_sections.Next.Section));
         Shots.RescheduleFrom(boundaryBeat); // every owner: kill chords and pattern notes
     }
 
@@ -619,53 +572,60 @@ public sealed class SoundManager : SingletonBehaviour<SoundManager>, IKillBedSta
     {
         if (!_musicPlaying)
             return;
+        // Output device change with another mixer rate: start over from phrase 0 (rare; the position is not kept).
+        int rate = FmodClock.SampleRate();
+        if (rate > 0 && rate != _clock.SampleRate)
+        {
+            StopMusic();
+            StartMusic();
+            return;
+        }
         if (!ApplyMix())
             return;
-        _conductor.Update();
-        if (!_conductor.HasStarted)
-            return;
-        _audioBeat = _conductor.BeatPosition();
-        double latencyBeats = _conductor.SecondsToBeats(visualLatencyMs / 1000.0);
-        double visual;
-        // The screen reads the mixer clock (it keeps running while beat callbacks are late, e.g. after a timeline jump);
-        // before the first anchor it falls back to the callback-based position.
-        if (_conductor.Clock.HasAnchor && _conductor.Clock.BeatAt(
-                _dspSmoother.Sample(FmodClock.MasterDsp(), System.Diagnostics.Stopwatch.GetTimestamp() / (double)System.Diagnostics.Stopwatch.Frequency),
-                out double clockBeat))
-            visual = clockBeat - latencyBeats;
-        else
-            visual = _audioBeat - latencyBeats;
-        _visualBeat = DspClockSmoother.FollowBeat(_visualBeat, Math.Max(0, visual),
-            Time.unscaledDeltaTime * _conductor.Tempo / 60.0);
-        _roundSeconds += Time.deltaTime;
+        // The clock first: phrase boundaries the mixer has passed are handled (OnPhraseStarted, which announces the next
+        // tempo) before any game logic of this frame can call QueueFever.
+        ulong dsp = FmodClock.MasterDsp();
+        _transport.Update(dsp);
+        if (!_musicPlaying || !_transport.Running)
+            return; // a handler stopped the music
+        _transport.BeatAt(dsp, out _audioBeat);
+        double bpm = _transport.Bpm;
+        double latencyBeats = visualLatencyMs / 1000.0 * bpm / 60.0;
+        // The screen reads the mixer clock between mixer blocks (DspClockSmoother) and never goes back (FollowBeat), also
+        // across a resync; before beat 0 it is negative and BeatPosition reports -1.
+        _transport.BeatAt(
+            _dspSmoother.Sample(dsp, System.Diagnostics.Stopwatch.GetTimestamp() / (double)System.Diagnostics.Stopwatch.Frequency),
+            out double clockBeat);
+        _visualBeat = DspClockSmoother.FollowBeat(_visualBeat, clockBeat - latencyBeats, Time.unscaledDeltaTime * bpm / 60.0);
+        if (_visualBeat >= 0)
+            _roundSeconds += Time.deltaTime;
 
-        // Beats past the next phrase boundary run at the upcoming section's BPM (ruling R11); safe every frame.
-        _conductor.Clock.SetTempoFrom(NextPhraseStep / StepsPerBeat, SectionSelector.Bpm(_sections.Next.Section));
-        UpdatePhrase();
         UpdateFever();
         UpdateOneShots();
     }
 
-    // Each 4-bar phrase: the queued phrase becomes current and the one after it is chosen and sent to FMOD,
-    // which jumps (or plays on) at the next phrase boundary. That leaves a whole phrase of lead time.
+    // Each 4-bar phrase: the queued phrase becomes current and the one after it is chosen; its tempo goes to the clock,
+    // which switches at the next phrase boundary. That leaves a whole phrase of lead time.
     // A phrase boundary inside build-up or fever must not change section, so BPM stays fixed for the whole fever.
     // A boundary exactly at the fever's end is free: the tempo can move as fever finishes.
     bool FeverHoldsBoundary(int boundaryStep) =>
         _feverStart >= 0 && boundaryStep >= _feverStart - FeverBuildSteps && boundaryStep < _feverStart + FeverSteps;
 
-    void UpdatePhrase()
+    // MusicTransport.PhraseStarted: once per phrase, in order, also for every phrase a long stall skipped (one Update can
+    // raise several). It only decides; notes are scheduled by UpdateOneShots from "now", so nothing is scheduled for a
+    // phrase that is already over. After a resync it can come about 0.1 s before the boundary sounds, so it reads the
+    // phrase number, not the beat.
+    void OnPhraseStarted(int phrase)
     {
-        int phrase = _conductor.Bar / SectionSelector.BarsPerPhrase;
         if (phrase <= _lastPhrase)
             return;
         _lastPhrase = phrase;
         _phraseStartStep = phrase * StepsPerPhrase;
         var next = _sections.Advance(_intensity,
-            allowBreath: _feverStart < 0 || AudioStep >= _feverStart + FeverSteps,
+            allowBreath: _feverStart < 0 || _phraseStartStep >= _feverStart + FeverSteps,
             hold: FeverHoldsBoundary(_phraseStartStep + StepsPerPhrase));
         _sectionPhraseCurrent = phrase == 0 ? 1 : _sectionPhraseNext;
         _sectionPhraseNext = ArrangementTimeline.NextSectionPhrase(_sections.Current.Section, _sectionPhraseCurrent, next.Section);
-        Check(SetMusicParameter("NextSection", next.Section));
         OnNextSectionChanged();
         bool feverNext = FeverOverlaps(NextPhraseStep, NextPhraseStep + StepsPerPhrase);
         _styleCurrent = _styleNext;
@@ -681,36 +641,17 @@ public sealed class SoundManager : SingletonBehaviour<SoundManager>, IKillBedSta
     bool FeverOverlaps(double fromStep, double toStep) =>
         _feverStart >= 0 && fromStep < _feverStart + FeverSteps && toStep >= _feverStart - FeverBuildSteps;
 
-    void UpdateFeature(double step)
-    {
-        if (!_featuresAvailable)
-            return;
-        // Timeline loops (legacy path): on just before a phrase that has a loop, off only once the phrase has really
-        // ended (ArrangementTimeline.FeatureLoopParameter; the one-shot loops follow ArrangementState.FeatureLoop).
-        var inputs = CurrentArrangement();
-        int id = ArrangementTimeline.FeatureLoopParameter(step, in inputs);
-        if (id != _appliedFeature && Check(SetMusicParameter("FeatureLoop", id, true)))
-            _appliedFeature = id;
-    }
-
+    // The applied values (what is being mixed now: ArrangementIntensity, CurrentStyle, CurrentVariation, CurrentCombo, the
+    // combo latch) and the global parameters, at the mixer's step. The pattern layers themselves follow
+    // ArrangementTimeline per step (CurrentArrangement).
     void UpdateFever()
     {
-        // Parameters are set slightly ahead so FMOD sees them before the instruments they gate start.
-        double step = AudioStepPosition + LookaheadSteps(RhythmLookahead);
-        bool scheduled = _feverStart >= 0;
-        SetFeverParameter(FeverPhase.Build, scheduled && step >= _feverStart - FeverBuildSteps && step < _feverStart);
-        SetFeverParameter(FeverPhase.Impact, scheduled && step >= _feverStart && step < _feverStart + StepsPerBeat);
-        bool fever = scheduled && step >= _feverStart && step < _feverStart + FeverSteps;
-        SetFeverParameter(FeverPhase.Fever, fever);
-        SetFeverParameter(FeverPhase.Outro, fever && step >= _feverStart + FeverSteps - StepsPerBar);
+        double step = AudioStepPosition;
+        bool fever = _feverStart >= 0 && step >= _feverStart && step < _feverStart + FeverSteps;
 
-        // Look ahead into the next phrase too, so a breath's thinner arrangement starts on its first downbeat.
         bool breath = step >= NextPhraseStep ? _sections.Next.Breath : _sections.Current.Breath;
-        int intensity = fever ? MaxIntensity : breath ? 0 : _intensity;
-        if (intensity != _appliedIntensity && Check(SetMusicParameter("Intensity", intensity)))
-            _appliedIntensity = intensity;
+        _appliedIntensity = fever ? MaxIntensity : breath ? 0 : _intensity;
 
-        UpdateFeature(step);
         UpdateTension(fever || FeverOverlaps(step, step));
         UpdateVariation(step);
         UpdateCombo(step, fever || FeverOverlaps(step, step));
@@ -777,53 +718,42 @@ public sealed class SoundManager : SingletonBehaviour<SoundManager>, IKillBedSta
 
     void UpdateStyle(double step)
     {
-        if (!_styleAvailable)
-            return;
         int style = step >= NextPhraseStep ? _styleNext : _styleCurrent;
         if (FeverOverlaps(step, step))
             style = StyleSynthpop;
-        if (style != _appliedStyle && Check(SetMusicParameter("BedStyle", style, true)))
-            _appliedStyle = style;
+        _appliedStyle = style;
     }
 
     void UpdateCombo(double step, bool feverZone)
     {
-        if (!_comboAvailable)
-            return;
-        if (_hurtPending)
+        if (_hurtPending && _globalsAvailable)
         {
             // Snap to 1, then aim at 0: FMOD's descending seek speed draws the recovery.
             _hurtPending = false;
             if (Check(SetMusicParameter("Hurt", 1f, true)))
                 Check(SetMusicParameter("Hurt", 0f));
         }
-        // Layers are gated per note, so only change the level on a bar line (just ahead of it).
+        // The level is latched per bar (ArrangementInputs.AppliedCombo / ComboBar).
         int bar = (int)Math.Floor(step / StepsPerBar);
         if (bar == _comboBar)
             return;
         _comboBar = bar;
-        int combo = feverZone ? 0 : _combo;
-        if (combo != _appliedCombo && Check(SetMusicParameter("Combo", combo, true)))
-            _appliedCombo = combo;
+        _appliedCombo = feverZone ? 0 : _combo;
     }
 
-    // Like FeatureLoop: switched just before the phrase boundary. Build-up and fever keep the original pattern
-    // (they bring their own rolls and fills).
+    // Switched on the phrase boundary. Build-up and fever keep the original pattern (they bring their own rolls and fills).
     void UpdateVariation(double step)
     {
-        if (!_variationAvailable)
-            return;
         int v = step >= NextPhraseStep ? _variationNext : _variationCurrent;
         if (FeverOverlaps(step, step))
             v = 0;
-        if (v != _appliedVariation && Check(SetMusicParameter("Variation", v, true)))
-            _appliedVariation = v;
+        _appliedVariation = v;
     }
 
-    // FMOD smooths both parameters with its own seek speed (fast up, slow down), so values are sent as they are.
+    // FMOD smooths both global parameters with its own seek speed (fast up, slow down), so values are sent as they are.
     void UpdateTension(bool feverZone)
     {
-        if (!_tensionAvailable)
+        if (!_globalsAvailable)
             return;
         float tension = feverZone ? 0f : _tension;
         float danger = feverZone || !_danger ? 0f : 1f;
@@ -834,29 +764,28 @@ public sealed class SoundManager : SingletonBehaviour<SoundManager>, IKillBedSta
             _appliedDanger = danger;
     }
 
-    void SetFeverParameter(FeverPhase phase, bool on)
+    // MusicTransport.Resynced (the DSP clock went backwards): the clock now restarts at the next bar, so nothing handed
+    // over or planned on the old timing may sound; the schedulers start again from the new "now".
+    void OnResynced()
     {
-        int index = (int)phase;
-        if (_appliedFever[index] == on)
-            return;
-        if (Check(SetMusicParameter(FeverParameters[index], on ? 1f : 0f, true)))
-            _appliedFever[index] = on;
+        Shots.StopAll();
+        _shotBackend.StopAll();
+        ResetPatterns();
+        _killPlanner.Clear();
     }
 
-    // After this frame's decisions (UpdatePhrase, UpdateFever): pattern notes up to now + lookahead, then the
+    // After this frame's decisions (OnPhraseStarted, UpdateFever): pattern notes up to now + lookahead, then the
     // OneShotScheduler caller contract: scheduler first, then the backend, every frame (a note dispatched by the
     // scheduler gets its start time the same frame; skipping either leaves FMOD instances unreleased).
-    // "Now" is the mixer clock, as for the kill chords. The clock's first anchor comes with beat 0's callback, i.e.
-    // after beat 0 started: the first call is already past beat 0, so beat 0's notes of a run are not played on the
-    // one-shot path (PatternScheduler starts with (now, ...]; Docs/Captures/README.md Task 11, known limitation).
+    // "Now" is the mixer clock, as for the kill chords. The clock is anchored from MusicTransport.Start on, so the
+    // first call is during the start lead (now < 0) and beat 0's notes are taken.
     void UpdateOneShots()
     {
-        bool hasNow = _conductor.Clock.BeatAt(FmodClock.MasterDsp(), out double now);
+        bool hasNow = _clock.BeatAt(FmodClock.MasterDsp(), out double now);
         if (hasNow)
         {
             RefreshArrangement(now);
-            if (!_legacyActive)
-                UpdatePatterns(now);
+            UpdatePatterns(now);
         }
         Shots.Update();
         _shotBackend.Update();
@@ -864,8 +793,8 @@ public sealed class SoundManager : SingletonBehaviour<SoundManager>, IKillBedSta
             _killPlanner.Expire(now);
     }
 
-    // Accompaniment (music event parameter) and kill chords (bus:/Kill Chords volume) are mixed separately; only push
-    // values when they change.
+    // Accompaniment (bus:/Music Bed and bus:/Feature volume) and kill chords (bus:/Kill Chords volume) are mixed
+    // separately; only push values when they change.
     bool ApplyMix()
     {
         if (!Mathf.Approximately(musicMix, _appliedMusicMix))
@@ -885,7 +814,7 @@ public sealed class SoundManager : SingletonBehaviour<SoundManager>, IKillBedSta
     }
 
     // The fader curves the old MusicMix / KillChordMix parameters drove (dB at 0, .25, .5, .75, 1), as a linear bus volume.
-    // MusicMix: the automation of the music event's Music Bed group volume and Harmony gain in FMOD/ChordPulse.
+    // MusicMix: the curve of the old MusicMix automation (Music Bed group volume, Harmony gain) of the music event.
     static readonly float[] MusicMixDb = { -80f, -18f, -9f, -3.5f, 0f };
     static readonly float[] KillChordMixDb = { -80f, -18f, -9f, -3.5f, 0f };
 
@@ -902,19 +831,16 @@ public sealed class SoundManager : SingletonBehaviour<SoundManager>, IKillBedSta
         return Mathf.Pow(10f, Mathf.Lerp(db[i], db[i + 1], x - i) / 20f);
     }
 
-    /// <summary>Raised after every music-event parameter write that FMOD accepted (capture / diagnostics).</summary>
+    /// <summary>Raised after every music parameter write that FMOD accepted (capture / diagnostics).</summary>
     public event Action<string, float> MusicParameterSet;
 
-    static readonly string[] GlobalMusicParameters = { "Tension", "Danger", "Hurt" };
-
-    /// <summary>The one place the music event's parameters are written.</summary>
+    /// <summary>
+    /// The one place the music's parameters are written: the global Tension / Danger / Hurt (FMOD/Tools/mixer.py; they
+    /// drive bus effects, and so reach the instrument one-shots).
+    /// </summary>
     FMOD.RESULT SetMusicParameter(string name, float value, bool ignoreSeek = false)
     {
-        // Tension / Danger / Hurt are global since FMOD/Tools/mixer.py (they also drive bus effects, and so reach the
-        // instrument one-shots): the event rejects them, the Studio system takes them.
-        var result = Array.IndexOf(GlobalMusicParameters, name) >= 0
-            ? RuntimeManager.StudioSystem.setParameterByName(name, value, ignoreSeek)
-            : _music.setParameterByName(name, value, ignoreSeek);
+        var result = RuntimeManager.StudioSystem.setParameterByName(name, value, ignoreSeek);
         if (result == FMOD.RESULT.OK)
             MusicParameterSet?.Invoke(name, value);
         return result;
