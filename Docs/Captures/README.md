@@ -1514,26 +1514,29 @@ and cancelled); fixed before the `_b` and `_duck` takes; phrase 0 is in no measu
 Per-note cross-correlation of each new take against the legacy take, both on their own 1 kHz beat-click grid
 (`spikeRefClicks`, Feature solo; band 1.5-8 kHz, guitar 150-600 Hz; correlation peak >= 0.8 unless stated; a phrase's
 first-beat notes get the intended onset move added back, since the timeline did not start them early). Inside = beats
-[L, L + 2) of a jump landing.
+[L, L + 2) of a jump landing. *(Correction, follow-up below: these first figures were computed with the Spike ref click
+still in the mix. The click is as loud as the notes in every band used, so notes on whole beats were partly matched on the
+click. The follow-up subtracts the click first; its figures replace these: path 0 -22.36 ms, final -1.14 ms mean, every
+note within 4.5 ms except two octave-doubled stabs, which match legacy on their own trumpet band.)*
 
-| new take (vs `features_seed7_s13_attack_legacy`) | notes | n | mean | mean abs | max abs |
+| new take (vs `features_seed7_s13_attack_legacy`), click not removed (superseded) | notes | n | mean | mean abs | max abs |
 |---|---|---:|---:|---:|---:|
-| `_attack_new_path0` (no path delay, peak >= 0.6) | outside | 184 | **-20.82 ms** | 20.82 | 34.24 |
+| `_attack_new_path0` (no path delay, peak >= 0.6) | outside | 184 | -20.82 ms | 20.82 | 34.24 |
 | `_attack_new` (Feature path delay 1 block) | all | 160 | -0.94 | 1.19 | 6.54 |
-| same | outside | 156 | -0.97 | 1.21 | **6.54** |
+| same | outside | 156 | -0.97 | 1.21 | 6.54 |
 | same | inside | 4 | +0.07 | 0.35 | 0.69 |
 | same, peak >= 0.6 | outside | 190 | -0.74 | 1.44 | 13.71 |
 
 - The legacy Feature tracks sound one mixer block late, like the legacy Harmony layers (the event's Feature group reaches
-  the mixer through its send to `return:/Feature Duck`): one-shots without a path delay came 20.8 ms (mean, 184 notes)
-  before them. `instruments.PATH_DELAY_BLOCKS` now has `Feature: 1` (every `bus:/Feature/*`). **Absolute latency**: both
+  the mixer through its send to `return:/Feature Duck`): one-shots without a path delay came 20.8 ms (mean, 184 notes;
+  22.36 ms over 190 notes with the click removed, follow-up) before them. `instruments.PATH_DELAY_BLOCKS` now has `Feature: 1` (every `bus:/Feature/*`). **Absolute latency**: both
   paths about one block (21.3 ms) after the beat, if the path-0 one-shots are on the beat as the Task 12 spike clicks showed
   on five other buses; bus:/Feature itself was not spike-measured, and an absolute envelope detector on this music is
   unusable (mean |e| 14.6 ms on the legacy take): not measured directly.
-- **Criterion (match legacy: mean <= 2, max <= 5 ms): mean met, max NOT met**: one note over 5 ms at peak >= 0.8, beat 110
-  (loop 6, trumpet G5 + whistle G6, +6.54 ms, peak 0.89); its scheduled start is +0.98 ms from the anchored beat
-  (`.patterns.csv` vs `.anchors.csv`); cause not found. Six more notes over 5 ms at peak 0.6-0.8 (up to 13.7 ms: trumpet
-  beats 17, 85, 105, 111, whistle 53) have weak correlation peaks; not separated from detector error.
+- *(Superseded by the follow-up.)* Criterion (match legacy: mean <= 2, max <= 5 ms): first read as mean met, max NOT met:
+  one note over 5 ms at peak >= 0.8, beat 110 (loop 6, trumpet G5 + whistle G6, +6.54 ms, peak 0.89). Six more notes over
+  5 ms at peak 0.6-0.8 (up to 13.7 ms: trumpet beats 17, 85, 105, 111, whistle 53). The follow-up shows the whole-beat ones
+  (17, 53, 85, 105) were the click and beats 110 / 111 the detector.
 - Drift of the scheduled feature notes against their anchored beat: median +1.02 ms, p5 -0.35, p95 +2.37 (288 notes).
 
 ### Level per loop (ruling 2: Feature solo, legacy vs new)
@@ -1557,12 +1560,12 @@ Loop span = its bars plus one beat; "without" leaves out [L, L + 1) of a landing
 | 12 Mallet Hook | +0.00 / +0.00 | -0.00 / -0.00 |
 
 Every loop within 1 dB over all its beats (worst +0.85, loop 2 pair b, whose span ends at the landing 48); without the
-accepted windows worst 0.11 dB. The 4-beat windows over 1 dB are reverb tails at -60 dBFS and below next to a landing
-(windows 64, 128, 176; in pair b also 144, 156, 172); their loud beat is the logged beat L-1, which holds the landing gap
-(beats 63 / 127 / 143 / 175, pair b: legacy -47.8 / -40.8 / -39.1 / -38.1 dBFS, new silent / -42.5 / -37.8 / -42.9). At
-beat 63 the legacy take has a note at about 1.4 kHz (F6, a whistle pitch) that the new take does not; `.params.csv` has
-`FeatureLoop` 4 written at beat 63.54; which timeline note it is was not established. All inside accepted windows
-(landing / phrase-end lead).
+accepted windows worst 0.11 dB. *(Corrected in the follow-up: the first window list skipped windows where the new take is
+digitally silent.)* 4-beat windows over 1 dB, pair b: 28, 32, 60, 64, 128, 144, 156, 172, 176. Windows 28 / 60 and the
+loud beat of 128 / 172-176 hold notes of the next loop that the legacy path plays at the end of the previous phrase
+(identified in the follow-up); 32 / 64 / 144 / 156 and the rest are reverb tails at -60 dBFS and below next to a landing,
+whose loud beat is the logged beat L-1 (it holds the landing gap). All inside accepted windows (landing / phrase-end
+lead).
 
 ### Harmony duck by the Feature key (`features`, intensity 3, full mix, `meterFeatureDuck`)
 
@@ -1592,3 +1595,73 @@ take; first-anchor condition, carried); `_duck_i3_new` beat 80.56 x5 (Tension su
 Bass; 1 "group never appeared", 4 "start reached before the delay"), the first beat after the landing 80 (allowed). No
 feature note was late or dropped in any take; late 0 everywhere. Landing callbacks came 126-827 ms late (`_solo_legacy_b`
 the slowest, 500-830 ms, Studio max 94.8 %).
+
+### Task 13 follow-up: the next loop's notes at the end of the previous phrase; the beat-110 outlier
+
+**A. Legacy plays the next loop's last notes at the end of the phrase before it (identified).** The legacy path writes
+`FeatureLoop` = next loop about 0.25 s before the boundary (`.params.csv`: 31.56, 63.54, 79.55, ... in every legacy
+take). The timeline has every loop at every phrase position, so a note of the next loop whose region spans that write
+is triggered in the middle of its region, inside the previous phrase. Beat 63 is loop 4 "Whistle Skip", `W(15.5, F6)`
+(MIDI 89, 1397 Hz, region 63.47-63.97). Its sound starts at beat 63.69 in `_solo_legacy` and `_solo_legacy_b`. In
+`_solo_legacy_b` the F6 band reads -47.7 dBFS in [63.54, 64); the new take is digitally silent there. The new path
+schedules no feature note there (`.patterns.csv`): `ArrangementState.FeatureLoop` switches on the boundary.
+
+Every early write in `_solo_legacy_b` against `_solo_new_b` (band = the note's fundamental +-3 %, over [write, boundary)):
+
+| boundary | next loop | its notes whose region spans the write | legacy / new (dBFS, note band) | heard on the legacy path |
+|---|---|---|---|---|
+| 16, 48, 144, 192 | 1, 3, 9, 12 | none | - | - |
+| 32 | 2 Trumpet Rise | stabs at 15.0 / 15.5 (B4 D5 G5) | -50..-57 / silent | **yes** (from 31.69) |
+| 64 | 4 Whistle Skip | whistle F6 at 15.5 | -47.7 / silent | **yes** (from 63.69) |
+| 80 | 5 Brass Solo | trumpet stab 15.0, whistle B6 15.5 | -85..-115 / -47..-102 | no (legacy window -77 dBFS vs new -39: legacy quieter; not explained) |
+| 96 | 6 Call and Response | stabs 15.0 / 15.5, whistle G6 | -82..-104 / -48..-83 | no (same as 80: legacy -71 vs new -38) |
+| 112 | 7 Latin Groove | conga / tumba 15.0-15.75 | percussion, no pitch test; whole window -32.5 / -32.5 | not determined |
+| 128 | 8 Marimba Run | marimba 15.0-15.75, xylo 15.5 | B6 -53.5 / -97.8, G6 -72.3 / -100.9 | **yes** |
+| 160 | 10 Synth Hook | synth D5 15.5 | -47.7 / -73.6 | **yes** |
+| 176 | 11 Power Chord Hits | guitar G2 15.5 | -54.6 / -88.1 | **yes** |
+
+This is a legacy-path defect that the new path removes: in the game a loop never follows a loop, so on the timeline a loop
+with notes in its last half beat (2, 4, 5, 6, 7, 8, 10, 11) sounded a late fragment of its ending in the phrase before it.
+In these takes it is heard at the boundaries 32, 64, 128, 160 and 176 (`_solo_legacy`, `_attack_legacy` show the same at
+32 and 64). Boundaries 80 and 96 (jump landings) show nothing of it, and their legacy window is quieter than the new one;
+not explained. All of these windows are the accepted phrase-end lead windows; the per-loop figures above leave them out.
+
+**B. Beat 110 (and 111): detector, not timing (met against legacy).**
+- **Click.** The first correlation figures had the Spike ref click in the mix. The click is as loud as the notes in every
+  band used (-50 dBFS in 1.5-8 kHz, like a synth note), so notes on whole beats were partly matched on the click.
+  `featxcorr.py` now subtracts it: template from beats 2-14, window -20..+150 ms, least squares per click. Clicks on
+  silent beats then cancel completely.
+- **New path at 110.** In `_attack_new`, the anchored beats 108-112 are -0.42..+0.29 ms from the click grid. The scheduled
+  starts are +0.90..+1.27 ms from it at 108-111, and beat 110 is +1.27 ms, the same as its neighbours. In `_attack_new_path0`
+  it is +0.73 ms. Nothing in the scheduling of that note stands out.
+- **Legacy vs legacy.** `_attack_legacy` vs a second legacy take with clicks, `_s13f_attack_legacy`: 199 notes, mean 0.00,
+  max 0.02 ms. The timeline is sample-identical from take to take, so a 5 ms criterion is resolvable against legacy.
+- **Second new take.** Only one legacy click take existed, so one pair was recorded: `features_seed7_s13f_attack_legacy` /
+  `_s13f_attack_new`, final code (with the tooltip), 0 stalls, Studio 7.17 / 83.90 and 7.82 / 86.47 %, pattern 2108 / 2103 /
+  late 0 / dropped 0.
+
+| pair (click removed, peak >= 0.8, outside) | n | mean | mean abs | max abs | max without 110 / 111 |
+|---|---:|---:|---:|---:|---:|
+| legacy vs legacy (`_attack_legacy` / `_s13f_attack_legacy`) | 194 | 0.00 | 0.00 | 0.00 | 0.00 |
+| new vs new (`_attack_new` / `_s13f_attack_new`) | 189 | +0.06 | 0.65 | 10.29 (110) | 2.64 |
+| path 0 vs final new (minus one block) | 191 | -0.21 | 0.80 | 16.73 (110) | 8.40 (glock 148.75, peak 0.91) |
+| new vs legacy, first pair | 187 | -1.14 | 1.33 | 5.26 (110) | 3.48 |
+| new vs legacy, second pair (`_s13f_`) | 188 | -1.30 | 1.36 | 16.79 (110) | 4.52 (glock 149, peak 0.89) |
+| path 0 vs legacy | 190 | -22.36 | 22.36 | 34.24 | |
+
+- **Beats 110 and 111 are octave doublings.** Beat 110 is trumpet G5 + whistle G6; beat 111 is a trumpet stab with F5 +
+  whistle F6. The trumpet's second harmonic is the whistle's fundamental, so the summed waveform depends on the
+  sub-millisecond phase between the two one-shots. That phase differs from take to take on the new path (new vs new
+  10.3 ms at 110); the legacy timeline is identical every time.
+- **Measured on the trumpet's own band.** On the fundamental band alone (whistle-free, -20 dB onset crossing):
+  - beat 110 (700-900 Hz): legacy 14.5 / 14.5 ms, new 13.0 / 14.0 / 13.5 (path 0, block removed);
+  - beat 111 (450-750 Hz): legacy 13.5 / 13.5, new 13.5 / 12.0;
+  - both within 1.5 ms of legacy.
+- **Peak 0.6-0.8 outliers.** With the click removed, beats 17, 53, 85 and 105 are within 2 ms. Beat 192 (-6.75 / -7.15 ms,
+  peak 0.67) is a phrase's first beat with xylo (onset 3 ms) and muted cowbell (onset 9 ms) together. The add-back uses
+  the xylo's onset, so the cowbell's intended move (about -6 ms) remains. New vs new at 192 is -0.4 ms (peak 1.0).
+- **Criterion against legacy.** Mean <= 2 ms is met (-1.14 / -1.30). Max <= 5 ms is met for every note by correlation
+  except beats 110 and 111. Those two are met on the trumpet band.
+- **Still open.** The new path's take-to-take spread has one more note over 5 ms, glock 148.75 (+8.40 ms path 0 vs final,
+  peak 0.91). It is +1.06 ms in new vs new and +0.03 ms vs legacy (second pair), so the outlier is in the path-0 take only.
+  Not explained. The absolute latency on bus:/Feature is still inferred, not measured.

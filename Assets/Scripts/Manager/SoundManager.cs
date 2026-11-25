@@ -37,7 +37,8 @@ public sealed class SoundManager : SingletonBehaviour<SoundManager>, IKillBedSta
     // ~5 ms region-end ramp (FMOD/Tools/instruments.py PATTERN_STOP_FADE_MS).
     readonly FmodOneShotBackend _shotBackend = new FmodOneShotBackend();
     OneShotScheduler _shots;
-    // The bed's layers (PatternTable: pitched layers and drums) as one-shots, unless legacyLayers keeps them on the timeline.
+    // The pattern layers (PatternTable: the bed's pitched layers, the drums and the feature loops) as one-shots, unless
+    // legacyLayers keeps them on the timeline.
     // Two schedulers: _patterns takes every layer but the core kick / snare / hat. Lookahead: one beat of dispatch window
     // after a phrase boundary plus the largest sample onset, with margin. _corePatterns takes the core layers
     // (PatternTable.CoreLayerMask) a bar ahead and hands them to FMOD at once: they depend only on decisions made a phrase
@@ -66,7 +67,8 @@ public sealed class SoundManager : SingletonBehaviour<SoundManager>, IKillBedSta
     [SerializeField, Range(0f, 1f)] float killChordMix = 1f;
     [Tooltip("Seed for the per-phrase section choice. 0 = different every round.")]
     [SerializeField] int sectionSeed;
-    [Tooltip("Bed layers (bass, pluck, combo, tension, style layers, drums incl. the core kit): true = the old timeline tracks play them " +
+    [Tooltip("Pattern layers (bed pitched layers: bass, pluck, combo, tension, style layers; style drums and the core kit; " +
+             "the feature loops): true = the old timeline tracks play them " +
              "(global FMOD parameter LegacyLayers 1, PatternScheduler silent); false = Unity schedules them as one-shots " +
              "(LegacyLayers 0). Read when the music starts. Default true until the drop burst of one styles take " +
              "(Docs/Captures/README.md Task 11, fix round 1) is resolved.")]
