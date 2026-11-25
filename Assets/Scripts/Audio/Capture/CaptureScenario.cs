@@ -105,6 +105,16 @@ public sealed class CaptureScenario : MonoBehaviour
     [SerializeField] int feverEveryBeats = 64;
     [Tooltip("fever: no kills (timing / level takes of the bed alone).")]
     [SerializeField] bool feverWithoutKills;
+    [Tooltip("Legacy fever-only takes: runtime child indices of the event's Music Bed / Harmony groups that stay audible, " +
+             "e.g. bed:4,5,7,8,10;harmony:1,2,3; every other leaf of both is muted (Spike ref is not under them). Empty = off.")]
+    [SerializeField] string keepLegacyLeaves = "";
+    [Tooltip("With keepLegacyLeaves: also meter every Music Bed / Harmony leaf (peak RMS per beat -> <take>.leaves.csv) to " +
+             "find which runtime index is which track (list every index in keepLegacyLeaves to meter without muting).")]
+    [SerializeField] bool meterLegacyLeaves;
+    readonly List<(string label, FMOD.DSP dsp)> _leafMeters = new List<(string, FMOD.DSP)>();
+    readonly List<string> _leafLog = new List<string>();
+    float[] _leafPeak;
+    int _leafBeat = -1;
 
     const int Colors = 3;
 
@@ -255,6 +265,8 @@ public sealed class CaptureScenario : MonoBehaviour
         }
         SubscribeShots(sound);
         ApplySolo(sound);
+        if (!string.IsNullOrWhiteSpace(keepLegacyLeaves))
+            StartCoroutine(KeepLegacyLeaves(sound));
         sound.Danger = forceDanger; // applied after StartMusic, which resets it
         if (scenario == Scenario.duck)
         {
@@ -337,6 +349,7 @@ public sealed class CaptureScenario : MonoBehaviour
         if (tensionSteps && beats > 0)
             sound.Tension = TensionStepValues[Math.Min(TensionStepValues.Length - 1, Math.Max(0, sound.CurrentBeat) * TensionStepValues.Length / beats)];
         LogDuckMeter();
+        LogLeafMeters();
 
         int beat = sound.CurrentBeat;
         while (beat > _lastBeat && _lastBeat < beats)
@@ -604,6 +617,121 @@ public sealed class CaptureScenario : MonoBehaviour
         Debug.Log("[CaptureScenario] duck: bus:/Kill Chords at -60 dB");
     }
 
+    // keepLegacyLeaves: Music Bed = the event master's child with the most subgroups, Harmony = its only child with
+    // subgroups (as MuteMusicBed); leaves not listed are muted.
+    IEnumerator KeepLegacyLeaves(SoundManager sound)
+    {
+        var keepBed = new HashSet<int>();
+        var keepHarmony = new HashSet<int>();
+        foreach (var part in keepLegacyLeaves.Split(';'))
+        {
+            var kv = part.Split(':');
+            if (kv.Length != 2)
+                continue;
+            var set = kv[0].Trim() == "harmony" ? keepHarmony : keepBed;
+            foreach (var i in kv[1].Split(','))
+                set.Add(int.Parse(i.Trim(), CultureInfo.InvariantCulture));
+        }
+        var field = typeof(SoundManager).GetField("_music", BindingFlags.Instance | BindingFlags.NonPublic);
+        for (int frame = 0; frame < 20000; frame++)
+        {
+            var music = (FMOD.Studio.EventInstance)field.GetValue(sound);
+            if (music.isValid() && music.getChannelGroup(out FMOD.ChannelGroup root) == FMOD.RESULT.OK && root.hasHandle())
+            {
+                root.getNumGroups(out int count);
+                FMOD.ChannelGroup bed = default;
+                int most = 0;
+                for (int i = 0; i < count; i++)
+                {
+                    root.getGroup(i, out FMOD.ChannelGroup child);
+                    child.getNumGroups(out int n);
+                    if (n > most)
+                    {
+                        most = n;
+                        bed = child;
+                    }
+                }
+                int harmonyCount = 0;
+                for (int i = 0; i < most; i++)
+                {
+                    bed.getGroup(i, out FMOD.ChannelGroup track);
+                    track.getNumGroups(out int n);
+                    harmonyCount = Math.Max(harmonyCount, n);
+                }
+                if (most >= 21 && harmonyCount >= 11) // Music Bed: 20 tracks + Harmony; Harmony: 11 tracks
+                {
+                    int muted = 0, kept = 0;
+                    for (int i = 0; i < most; i++)
+                    {
+                        bed.getGroup(i, out FMOD.ChannelGroup track);
+                        track.getNumGroups(out int n);
+                        if (n > 0)
+                        {
+                            for (int j = 0; j < n; j++)
+                            {
+                                track.getGroup(j, out FMOD.ChannelGroup leaf);
+                                if (meterLegacyLeaves)
+                                    AddLeafMeter("harmony" + j, leaf);
+                                bool keep = keepHarmony.Contains(j);
+                                leaf.setMute(!keep);
+                                if (keep) kept++; else muted++;
+                            }
+                            continue;
+                        }
+                        if (meterLegacyLeaves)
+                            AddLeafMeter("bed" + i, track);
+                        bool keepLeaf = keepBed.Contains(i);
+                        track.setMute(!keepLeaf);
+                        if (keepLeaf) kept++; else muted++;
+                    }
+                    Debug.Log("[CaptureScenario] keepLegacyLeaves: kept " + kept + ", muted " + muted + " of Music Bed (" + most + " children) and Harmony");
+                    yield break;
+                }
+            }
+            yield return null;
+        }
+        Debug.LogError("[CaptureScenario] keepLegacyLeaves: Music Bed channel group not found");
+    }
+
+    void AddLeafMeter(string label, FMOD.ChannelGroup group)
+    {
+        // the track group's head DSP (its fader): what the track plays
+        if (group.getDSP(FMOD.CHANNELCONTROL_DSP_INDEX.HEAD, out FMOD.DSP dsp) != FMOD.RESULT.OK)
+            return;
+        dsp.setMeteringEnabled(true, true);
+        _leafMeters.Add((label, dsp));
+    }
+
+    void LogLeafMeters()
+    {
+        if (_leafMeters.Count == 0 || !_conductor.Clock.BeatAt(MusicConductor.MasterDsp(), out double now))
+            return;
+        if (_leafPeak == null)
+        {
+            _leafPeak = new float[_leafMeters.Count];
+            var head = new StringBuilder("beat");
+            foreach (var (label, _) in _leafMeters)
+                head.Append(',').Append(label);
+            _leafLog.Add(head.ToString());
+        }
+        int beat = (int)Math.Floor(now);
+        if (beat != _leafBeat)
+        {
+            if (_leafBeat >= 0)
+            {
+                var line = new StringBuilder(_leafBeat.ToString(CultureInfo.InvariantCulture));
+                foreach (float v in _leafPeak)
+                    line.Append(',').Append((20 * Math.Log10(v + 1e-9)).ToString("F1", CultureInfo.InvariantCulture));
+                _leafLog.Add(line.ToString());
+            }
+            _leafBeat = beat;
+            Array.Clear(_leafPeak, 0, _leafPeak.Length);
+        }
+        for (int i = 0; i < _leafMeters.Count; i++)
+            if (_leafMeters[i].dsp.getMeteringInfo(out FMOD.DSP_METERING_INFO _, out FMOD.DSP_METERING_INFO output) == FMOD.RESULT.OK)
+                _leafPeak[i] = Math.Max(_leafPeak[i], Rms(output));
+    }
+
     static bool MuteBedLeaves(FMOD.ChannelGroup root, out int muted)
     {
         muted = 0;
@@ -838,6 +966,8 @@ public sealed class CaptureScenario : MonoBehaviour
             File.WriteAllText(Path.ChangeExtension(path, ".oneshots.csv"),
                 "frame,backend,event,handle,now_dsp,start_dsp,...\n" + string.Join("\n", _oneShotLog) + "\n");
         }
+        if (_leafLog.Count > 0)
+            File.WriteAllText(Path.ChangeExtension(path, ".leaves.csv"), string.Join("\n", _leafLog) + "\n");
         if (scenario == Scenario.duck || meterFeatureDuck)
         {
             var duck = new StringBuilder("beat,rms_in,rms_out\n");

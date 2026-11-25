@@ -1767,6 +1767,10 @@ one kill chord per colour on every beat unless `feverWithoutKills`. All takes: E
 | `fever_seed7_s14_kills48_new` (fever every 48) | new | kills | 0 | 8.33 / 79.06 | 2.85 | 1482 / 1480 / 0 / 0 |
 | `fever_seed7_s14_kills48_legacy` (fever every 48) | legacy | kills | 0 | 7.37 / 75.48 | 2.62 | - |
 | `fever_seed7_s14_late25_new` (QueueFever at 25, 73, 121) | new | kills | 0 | 7.61 / 75.29 | 2.81 | 1492 / 1489 / 0 / 0 |
+| `fever_seed7_s14_probe_legacy` (52 beats; leaf-index guess, wrong) | legacy | no kills, 8 leaves kept | 0 | 6.45 / 75.24 | 0.58 | - |
+| `fever_seed7_s14_probe_legacy_run2` (52 beats; leaf meters, nothing muted) | legacy | no kills, Music Bed solo | 0 | 5.17 / 65.22 | 0.92 | - |
+| `fever_seed7_s14_feveronly_legacy` (fix round 1) | legacy | no kills, fever tracks only | 0 | 6.68 / 86.19 | 0.65 | - |
+| `fever_seed7_s14_feveronly_new` (fix round 1) | new | no kills, fever layers only | 0 | 6.08 / 80.26 | 0.61 | 198 / 198 / 0 / 0 |
 
 Columns (from `.cpu.txt`): sched = `PatternScheduler.NoteScheduled` events (a note re-stated after an `Invalidate` counts
 again); started = pattern instances created in FMOD (`FmodOneShotBackend` starts minus Kill Chords starts), including notes
@@ -1795,13 +1799,14 @@ accepted windows: the landing beat [L, L+1) and the beat before a phrase boundar
 | | 80 | +0.23 / -0.15 | -0.05 | -0.00 | -0.04 / -0.04 |
 | | 128 | +0.28 / -0.00 | -0.03 | +0.00 | -0.11 / -0.11 |
 
-- Without the accepted windows every phase is within 0.27 dB (criterion +-1 dB: **met**). Controls with the same
-  script: legacy vs legacy 0.01 dB, new vs new 0.10 dB.
+- Without the accepted windows every phase in the table is within 0.23 dB (the tail beat F+16, not in the table, up to
+  0.27 dB; criterion +-1 dB: **met**). Controls with the same script: legacy vs legacy 0.01 dB, new vs new 0.10 dB.
 - **Impact at the landing 32** (accepted window): the first fever starts at a jump landing. On the click grid the legacy
-  impact is heard about 350 ms after the beat (25 ms RMS blocks: -19 / -17 dBFS 14 blocks after the beat), the new one on
-  the beat (-16 dBFS in the beat's first block). The landing click itself comes late on both paths (the timeline jump),
-  so the new impact falls at the end of beat 31's window. The impact at 80, 112 and 128 (no landing) matches within
-  0.10 dB.
+  impact is heard about 350 ms after beat 32's position on the grid (one beat after click 31; 25 ms RMS blocks: -19 /
+  -17 dBFS 14 blocks later), the new one at that position (-16 dBFS in its first block). The landing click 32 itself
+  is missing or late on both paths (the timeline jump), so the per-beat windows around it are not reliable: the new
+  impact lands in the window counted as beat 31 (+4.8 .. +5.2 dB) and the legacy one in beat 32's (-8.6 .. -10.9 dB).
+  The impact at 80, 112 and 128 (no landing) matches within 0.10 dB.
 - **Build bar, beat F-1** (accepted window): the legacy path writes `FeverBuild` = 0 0.25 s before the boundary
   (`.params.csv`: 31.56, 111.53), and its roll / riser band (2-8 kHz) over [111.75, 112) is -48.1 dBFS against -41.8 on
   the new path, which plays the notes of 111.75 on their step (`_bed_*`).
@@ -1821,23 +1826,47 @@ accepted windows: the landing beat [L, L+1) and the beat before a phrase boundar
 
 ### Timing (per-note cross-correlation, Spike ref click subtracted; Task 13's `featxcorr.py` method)
 
+*(Restated in fix round 1: the first version excluded [L, L+2) instead of the ruled [L, L+1), called the result met over
+the correlatable subset only, and gave an unproven cause for the excluded notes.)*
+
 `fevxcorr.py` (scratch, uses `featxcorr.py`'s declick / load / ref unchanged): every fever-layer note in its phase, one
 measurement per (beat, layer) in the layer's band (lead 1.5-6 kHz, shaker 6-16 kHz, bass fifths 80-250 Hz, roll / snare
-2-8 kHz, riser / fall 1.5-8 kHz, impact 40-120 Hz), window [-10, +70] ms, peak >= 0.8, outside = not in [L, L+2) of a
-landing. The bed takes (no kills) are used: with a kill chord on every beat the windows hold the kills (60 of 170 notes
-reach peak 0.8 in `_legacy_b` / `_new`).
+2-8 kHz, riser / fall 1.5-8 kHz, impact 40-120 Hz), window [-10, +70] ms. N = 170 fever notes per pair; excluded only
+window 0 and [L, L+1) of a landing (none of the 170 falls there: the impact at the landing 32 has no click reference);
+notes in [L+1, L+2) are counted and also listed separately. A note is measured when its correlation peak is >= 0.8.
 
-| pair (outside, peak >= 0.8) | n (of 170) | mean | mean abs | max abs |
+**Fever-only pair (fix round 1).** `fever_seed7_s14_feveronly_legacy` / `_new`: no kills, Music Bed solo, only the
+fever layers audible. Legacy: new `CaptureScenario` option `keepLegacyLeaves` mutes every leaf of the event's Music Bed and
+Harmony groups except the 8 fever tracks (runtime indices Music Bed 4, 6, 12, 13, 14 and Harmony 4, 8, 10, identified with
+`meterLegacyLeaves` in the probe take `fever_seed7_s14_probe_legacy_run2`, `.leaves.csv`; the fever-only legacy take's
+meters show signal only on those 8, in their fever phases). New: `patternLayers` = the 8 fever layers.
+
+| pair | measured (peak >= 0.8) of 170 | mean | mean abs | max abs |
 |---|---:|---:|---:|---:|
-| new vs legacy `_bed_legacy` / `_bed_new` | 106 | -1.47 ms | 1.53 | 2.80 (bass fifths 45) |
-| new vs legacy `_bed_legacy_b` / `_bed_new_b` | 107 | -1.60 | 1.60 | 3.31 (roll / riser 30.75) |
-| legacy vs legacy `_bed_legacy` / `_bed_legacy_b` | 162 | +0.00 | 0.00 | 0.02 |
-| new vs new `_bed_new` / `_bed_new_b` | 129 | -0.13 | 0.59 | 2.02 |
+| new vs legacy, fever only `_feveronly_legacy` / `_feveronly_new` | 125 | -1.50 ms | 1.52 | 3.12 (riser 110.25) |
+| new vs legacy, bed `_bed_legacy` / `_bed_new` | 110 | -1.45 | 1.50 | 2.80 (bass fifths 45) |
+| new vs legacy, bed `_bed_legacy_b` / `_bed_new_b` | 111 | -1.56 | 1.56 | 3.31 (roll / riser 30.75) |
+| legacy vs legacy, bed | 167 | +0.00 | 0.00 | 0.02 |
+| new vs new, bed | 134 | -0.12 | 0.57 | 2.02 |
 
-Criterion against legacy (mean <= 2 ms, max <= 5 ms): **met** in both pairs. Every layer's new notes are 0.5-2.5 ms
-earlier than legacy; the sample onsets explain at most 0.8 ms of it (follow-up B: not explained). About
-60 of 170 notes per new-vs-legacy pair stay below peak 0.8 (the window also holds the other bed layers, which differ
-between paths), against 3 / 36 for the controls; they are not counted.
+- [L+1, L+2) (beats 33-33.75 after the landing 32), included above: fever only 4 notes, mean -0.46, max 0.97 ms; bed
+  pairs 4 / 4 notes, max 1.22 / 1.04 ms.
+- No control pair exists for the fever-only scenario (one pair was recorded); the controls are the bed takes.
+- **Criterion (mean <= 2 ms, max <= 5 ms): met over the 125 measured notes of 170 in the fever-only pair** (and over
+  110 / 111 in the bed pairs). **45 notes remain unmeasured** in the fever-only pair:
+  - 5 have no legacy note: 47.75 (fall, outro snare, shaker) and 111.75 (roll, riser) - the legacy path switches
+    `Fever` / `FeverBuild` off 0.25 s before the boundary (`.params.csv` 47.54, 111.53); peak 0.00 / 0.05.
+  - 40 correlate below 0.8 (peak 0.24-0.80): 22 shaker, 8 roll / riser (beats 28, 30, 30.25, 108, 110, 110.25), 10 outro /
+    lead at 46.5-46.75 and 126.5-126.75. Six of these read more than 5 ms at their low peak: 46.5 lead / fall / snare
+    +7.6 ms (peak 0.73-0.79), 126.5 lead / fall / snare +5.8 ms (0.73-0.79), 126.75 fall -6.4 ms (0.76), 118.75 shaker
+    -5.6 ms (0.55). Their scheduled starts are -0.4 / -0.9 ms (46.5), -2.2 / -2.7 ms (126.5), -3.3 ms (126.75) and
+    -2.6 ms (118.75) from their anchored beats (`.patterns.csv` against `.anchors.csv`; backend starts within 1.4 ms of
+    those), in the range of the measured notes. Whether these notes are within 5 ms is not established.
+  - Why they stay below 0.8 is not explained. The other bed layers are not the main cause: with them removed 45 notes
+    remain, against 59 / 60 in the bed pairs.
+- Every layer's measured notes are about 1.5 ms earlier than legacy; the sample onsets explain at most 0.8 ms of it
+  (follow-up B: not explained).
+- Fever-only pair levels (same script as above, without accepted windows): every phase within 0.21 dB.
 
 ### Task 14 follow-up: unstarted notes accounted; the onset lead
 
