@@ -1331,7 +1331,7 @@ tension, kill chords start a block earlier and stop exactly; Harmony keeps the l
 `OneShotLatencyTests` (RED: compile errors, the API did not exist). Spike check after the fix: Drums hat -1.38 ms, kill
 chord Marimba -1.53 ms (with its 5 ms onset) against the click event's -1.43 ms on the same detector: on the beat.
 
-**Core notes and landings** (commits 11e3b7d, 510b1f3). Core notes handed over 4 beats ahead from the anchor before a jump
+**Core notes and landings** (commits 11e3b7d, 510b1f3; **the re-time described here was removed in fix round 2**). Core notes handed over 4 beats ahead from the anchor before a jump
 landing (which drifts while the timeline stalls ahead of the jump) sounded +12.6 / +15.6 ms late at L+4. `OneShotScheduler`
 now re-times a handed-over note when the clock's newest anchor is >= 2 beats newer than its dispatch anchor and settled
 (half a beat old) and moves its start by > 5 ms. Two simpler rules were measured and rejected: re-timing on any move
@@ -1339,8 +1339,9 @@ now re-times a handed-over note when the clock's newest anchor is >= 2 beats new
 twice), and re-timing once from the first anchor after a landing put L+3 notes 11 ms late. `.retimes.csv` / "retimed" in
 `.cpu.txt` count them (2-76 per take now).
 
-**Attack after the fix** (seed 33, `spikeRefClicks`, against the beat clicks; inside = beats 0-2 after start and L, L+1 after
-the landings 16 / 48 / 64 / 112; every take 0 stalls; final code 510b1f3):
+**Attack after the fix, with the re-time** (superseded; final numbers in fix round 2) (seed 33, `spikeRefClicks`, against
+the beat clicks; inside = beats 0-2 after start and L, L+1 after the landings 16 / 48 / 64 / 112; every take 0 stalls; code
+510b1f3):
 
 | sound (take) | notes | n | mean signed | mean abs | max abs |
 |---|---|---:|---:|---:|---:|
@@ -1361,15 +1362,15 @@ the landings 16 / 48 / 64 / 112; every take 0 stalls; final code 510b1f3):
   pluck's intended onset move). Just over the 2 ms mean. **Absolute Harmony latency for the clock-switch plan: the legacy
   Harmony layers sound +22.8 ms (about one block + 1.4 ms) after the beat click; the Harmony one-shots +20.8 ms.**
 
-**Legacy vs new after the fix** (Music Bed solo, 4-beat windows, same session, final code; every take 0 stalls, no Editor
-refresh during the takes):
+**Legacy vs new after the fix** (Music Bed solo, 4-beat windows, same session, code 510b1f3 with the re-time; every take 0
+stalls, no Editor refresh during the takes; the styles pair was recorded again in fix round 2):
 
 | scenario | legacy | new | windows > 1 dB | late / drops outside the first beat after a landing |
 |---|---|---|---|---|
 | baseline seed 7 | `baseline_seed7_s12l_bed_legacy` | `_s12l_bed_new` | w0 -2.46; landing 48 -1.44; windows ending at the landings 48 / 80 / 96 +1.25 / +1.14 / +1.02 | 0 / 0 |
 | heavy seed 7 | `heavy_seed7_s12l_bed_legacy_run2` | `_s12l_bed_new` | w0 -3.91 | 0 / 0 |
 | heavy seed 33 | `heavy_seed33_s12l_bed_legacy` | `_s12l_bed_new` | w0 -3.89 | 0 / 0 |
-| styles (bed, i3) | `styles_seed7_s12l_bed_i3_legacy` | `_s12l_bed_i3_new` (0 stalls) | w0 -1.88; windows ending at a landing +1.02..+1.27 (7); landing windows 64 -2.41, 192 -2.43, 208 -1.23, 224 -1.80 | **NOT met**: 4 pattern late at 65.5 (cancelled by the unbounded re-time and then late: the re-time's own loss, fixed in fix round 1), 5 pattern dropped (see fix round 1) |
+| styles (bed, i3) | `styles_seed7_s12l_bed_i3_legacy` | `_s12l_bed_i3_new` (0 stalls) | w0 -1.88; windows ending at a landing +1.02..+1.27 (7); landing windows 64 -2.41, 192 -2.43, 208 -1.23, 224 -1.80 | **NOT met**: 4 pattern late at 65.5 (cancelled by the re-time and then late: the re-time's own loss); 15 pattern dropped: L+1 of 128 x4, 144 x6, 224 x3 (Studio landing gap) and 256 x2 (the re-time's own, see fix round 2) |
 
 Every window over 1 dB is window 0 or a jump-landing window (including the windows that end at a landing, explained above,
 ruling 12-3). The late / dropped criterion is **NOT met** in `styles` (see fix round 1).
@@ -1401,9 +1402,11 @@ Late 0 in all three and no re-time over a block, so the re-time stays (ruling 12
 outside the first beat after a landing) is NOT met.** Mechanism of every listed drop, from `.oneshots.csv` ("group never
 appeared" / "start reached before the delay"): the notes are on the beat after a jump landing (L+1); their 1-beat
 post-boundary dispatch window hands them to FMOD at the landing, inside Studio's 0.4-0.6 s no-update gap
-(`.studio.csv`), and their channel group comes too late. The kill chords lose notes the same way at the same beats (kill
-drops 12 / 60 / 27) on both paths. Not the re-time (it only acts at least 4096 samples ahead and keeps the original). Known
-condition (Studio landing gap), carried to the clock switch; a candidate fix is a wider dispatch window for L+1 notes.
+(`.studio.csv`), and their channel group comes too late. Kill chords lose L+1 notes the same way on both paths (legacy
+styles takes: 80.98 x9, 144.94 x3, 224.9 x2). Known condition (Studio landing gap), carried to the clock switch; a candidate
+fix is a wider dispatch window for L+1 notes. *Correction (fix round 2): the "256 x2" drops in every take were not the Studio
+gap but the re-time's own losses (it cancelled the armed instances and their replacements were dropped), and "not the
+re-time" above was wrong; the re-time has been removed.*
 
 **Bass beat 82 / beat 100** (ruling 12-4). Re-measured (`baseline_seed33_s12m_attack_bass_new`, 0 stalls): outside mean
 +0.31, mean |e| 1.11 ms; one note over 5 ms, beat 100 at +23.15 ms (beat 82 was 0.1 ms here). Attribution: not re-timed
@@ -1430,4 +1433,51 @@ the only change at that moment was the behaviour-preserving extraction of the bu
 Per 4-beat window: median -0.42, mean -0.32, max |diff| 1.02 (window 144, a landing). The per-style criterion still holds
 (worst -0.72). The level change is the exact stop (kill chords now end on their sample stop + release, one block earlier
 than with 7237b9f's offset).
+
+### Fix round 2: the re-time removed (commit f201d0d, ruling 12-6)
+
+The bounded re-time still lost notes: a backend handle only means a paused instance exists; the replacement still has to get
+its channel group and delay, and the armed original had already been cancelled. In the three `_s12m_` takes the beat-256
+core kick and hat (handles 5280 / 5281, re-timed by +277 samples with 9719 samples of lead; 5369 / 5370; 5377 / 5378) were
+cancelled and their replacements dropped. Removed: the re-time, its constants, the dispatch-anchor bookkeeping, the
+`NoteRetimed` diagnostics, the `.retimes.csv` writer and the "retimed" counter, and the re-time tests. A dispatched note keeps
+its start when a later anchor moves the clock (`DispatchedNote_KeepsItsStart_WhenTheAnchorMoves`); tempo changes stay
+`RescheduleFrom`'s job. The voice-delay and Harmony path-delay compensation (11e3b7d) stays. EditMode 157/157.
+
+**Attack, final code** (`baseline_seed33_s12n_attack_drums_new`, seed 33, 0 stalls, no refresh; against the beat clicks):
+
+| sound | notes | n | mean signed | mean abs | max abs |
+|---|---|---:|---:|---:|---:|
+| core hat | all | 119 | -1.20 ms | | 14.62 |
+| core hat | outside | 107 | -1.19 | 1.86 | **14.62** |
+| core hat | inside | 12 | | | 2.6 |
+| core kick | all | 60 | +0.25 | | 12.81 |
+| core kick | outside | 56 | +0.26 | 0.77 | **12.81** |
+| core kick | inside | 4 | | | 0.4 |
+| open hat (style, 1-beat lookahead) | outside | 86 | -1.42 | 1.43 | 2.74 |
+| open hat | inside | 5 | | | 14.78 (beat 1.5) |
+
+**Criterion (mean <= 2, max <= 5 ms) NOT met for the core hat and kick** (means met; max 14.6 / 12.8 ms). The outliers are
+exactly the 4-beat-ahead core notes scheduled from a drifting anchor of the callback clock (`MusicConductor.PollAnchor`):
+
+| note | scheduled from anchor | that anchor's running-mean drift (callback DSP -> value used) | measured |
+|---|---|---:|---:|
+| hat beat 5 | 0 (the first anchor) | +17.23 ms | +14.6 ms |
+| hat / kick 52 | 47 (the beat before the jump at 48) | +12.44 ms | +11.3 / +12.8 ms |
+| hat / kick 116 | 111 (the beat before the jump at 112) | +11.77 ms | +9.8 / +11.4 ms |
+
+(ordinary anchors drift about +1.6 ms, e.g. 46 / 110). The beat before a jump and beat 0 have anchors whose poll mean runs
+late (the timeline position stalls ahead of the jump; the first beat's polls lag), and a note handed over four beats ahead
+carries that error; 1-beat-ahead notes (open hat, bass, the rest) are scheduled after the next anchor and do not. Carried
+to the clock switch.
+
+**Styles, final code** (Music Bed solo, bed, i3; `styles_seed7_s12n_bed_i3_legacy` / `_new`, both 0 stalls, no refresh):
+windows over 1 dB: w0 -1.84; windows ending at a landing (28, 44, 140, 172, 204, 220: +1.21..+1.75); landing windows 192
+-2.16, 208 -1.99, 224 -1.57; all window 0 or landing windows (ruling 12-3). Kick beats per style median 0.0 dB. New path:
+pattern 3032 scheduled, **late 0**, dropped 19; kill chords late 0, dropped 17. Drops outside the first beat after a landing:
+**1** (beat 193, dreamy claves Drums 75, "group never appeared": handed over at the landing 192 inside Studio's gap;
+callbacks 192 / 193 were 65 / 59 ms late) - **NOT met** (dropped 0 required), Studio landing gap, carried. **The beat-256
+notes survived** (no loss at or after 255). (The earlier lists of this section were made with a drop-matching script
+that mapped some drops of the first beat after a landing to L+1 notes; the lists above and in fix round 1 are from the
+corrected script.)
 
