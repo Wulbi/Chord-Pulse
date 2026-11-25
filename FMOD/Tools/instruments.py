@@ -42,6 +42,17 @@ JS_PATH = os.path.join(HERE, "instruments.js")
 
 NORMALIZE_DB = -27.0      # per-note target loudness (what the kill chords have now); layers add gain in Unity
 VOLUME_MIN, VOLUME_MAX = -60.0, 10.0   # same clamp as the old kill_voices generator
+# Stop fade of pattern-layer one-shots (InstrumentTable.ReleaseSeconds for every bus but Kill Chords). The timeline cuts
+# the old tracks' notes at the end of their region with a ramp of about 5 ms instead of playing their ADSR release
+# (Task 11, offline render of the real banks: funk keys -44 -> -90 dBFS within the last ~5 ms; in game a 73 ms funk note
+# sounded 80 ms on the timeline, and 95 ms as a one-shot with the event's 20 ms fade: +1.2 dB). The events keep their ADSR.
+PATTERN_STOP_FADE_MS = 5
+
+
+def stop_fade_ms(inst):
+    """Backend fade after a one-shot's stop: kill chords (and the spike click) keep their release, pattern layers end like
+    the timeline notes they replace."""
+    return inst["release"] if inst["bus"] == kill_oneshots.BUS else PATTERN_STOP_FADE_MS
 
 
 class Library:
@@ -362,10 +373,13 @@ def cs_text(insts):
         lines.append("            return false;")
         lines.append("        }")
     lines += ["        return false;", "    }", "",
-              "    /// <summary>Seconds the event's ADSR release fades a note out after its stop time; 0 if the combination does not exist.</summary>",
+              "    /// <summary>",
+              "    /// Seconds the one-shot backend fades a note out after its stop time; 0 if the combination does not exist. Kill chords:",
+              "    /// their event's ADSR release. Pattern layers: the timeline's region-end ramp (instruments.PATTERN_STOP_FADE_MS).",
+              "    /// </summary>",
               "    public static double ReleaseSeconds(Instrument instrument, OutputBus bus)", "    {"]
     for i in insts:
-        lines.append(f"        if (instrument == Instrument.{i['name']} && bus == OutputBus.{i['busFolder']}) return {i['release'] / 1000.0!r};")
+        lines.append(f"        if (instrument == Instrument.{i['name']} && bus == OutputBus.{i['busFolder']}) return {stop_fade_ms(i) / 1000.0!r};")
     lines += ["        return 0.0;", "    }", "",
               "    /// <summary>Seconds from the sample start to its attack, after pitch shifting; 0 if the note is not in the library.</summary>",
               "    public static double OnsetSeconds(Instrument instrument, int midi)", "    {",

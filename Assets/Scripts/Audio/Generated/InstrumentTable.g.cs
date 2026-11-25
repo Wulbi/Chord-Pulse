@@ -619,37 +619,40 @@ public static class InstrumentTable
         return false;
     }
 
-    /// <summary>Seconds the event's ADSR release fades a note out after its stop time; 0 if the combination does not exist.</summary>
+    /// <summary>
+    /// Seconds the one-shot backend fades a note out after its stop time; 0 if the combination does not exist. Kill chords:
+    /// their event's ADSR release. Pattern layers: the timeline's region-end ramp (instruments.PATTERN_STOP_FADE_MS).
+    /// </summary>
     public static double ReleaseSeconds(Instrument instrument, OutputBus bus)
     {
-        if (instrument == Instrument.Acid && bus == OutputBus.TensionAcid) return 0.05;
+        if (instrument == Instrument.Acid && bus == OutputBus.TensionAcid) return 0.005;
         if (instrument == Instrument.Bass && bus == OutputBus.KillChords) return 0.12;
-        if (instrument == Instrument.Bass && bus == OutputBus.Bass) return 0.0;
-        if (instrument == Instrument.BassEnv && bus == OutputBus.Bass) return 0.06;
+        if (instrument == Instrument.Bass && bus == OutputBus.Bass) return 0.005;
+        if (instrument == Instrument.BassEnv && bus == OutputBus.Bass) return 0.005;
         if (instrument == Instrument.Bells && bus == OutputBus.KillChords) return 0.12;
-        if (instrument == Instrument.Bells && bus == OutputBus.Harmony) return 0.25;
-        if (instrument == Instrument.Bells && bus == OutputBus.DreamyBells) return 0.0;
+        if (instrument == Instrument.Bells && bus == OutputBus.Harmony) return 0.005;
+        if (instrument == Instrument.Bells && bus == OutputBus.DreamyBells) return 0.005;
         if (instrument == Instrument.Brass && bus == OutputBus.KillChords) return 0.12;
-        if (instrument == Instrument.Choir && bus == OutputBus.DreamyChoir) return 0.6;
+        if (instrument == Instrument.Choir && bus == OutputBus.DreamyChoir) return 0.005;
         if (instrument == Instrument.Clav && bus == OutputBus.KillChords) return 0.12;
-        if (instrument == Instrument.ClavHigh && bus == OutputBus.FunkKeys) return 0.0;
+        if (instrument == Instrument.ClavHigh && bus == OutputBus.FunkKeys) return 0.005;
         if (instrument == Instrument.Glass && bus == OutputBus.KillChords) return 0.12;
-        if (instrument == Instrument.GlassPad && bus == OutputBus.ComboPad) return 0.5;
+        if (instrument == Instrument.GlassPad && bus == OutputBus.ComboPad) return 0.005;
         if (instrument == Instrument.Glock && bus == OutputBus.KillChords) return 0.12;
         if (instrument == Instrument.Guitar && bus == OutputBus.KillChords) return 0.12;
-        if (instrument == Instrument.Guitar && bus == OutputBus.FunkGuitar) return 0.0;
+        if (instrument == Instrument.Guitar && bus == OutputBus.FunkGuitar) return 0.005;
         if (instrument == Instrument.Harp && bus == OutputBus.KillChords) return 0.12;
         if (instrument == Instrument.Marimba && bus == OutputBus.KillChords) return 0.12;
-        if (instrument == Instrument.Marimba && bus == OutputBus.LatinMarimba) return 0.0;
+        if (instrument == Instrument.Marimba && bus == OutputBus.LatinMarimba) return 0.005;
         if (instrument == Instrument.OrigBlue && bus == OutputBus.KillChords) return 0.12;
         if (instrument == Instrument.OrigRed && bus == OutputBus.KillChords) return 0.12;
         if (instrument == Instrument.OrigYellow && bus == OutputBus.KillChords) return 0.12;
-        if (instrument == Instrument.Pluck && bus == OutputBus.Harmony) return 0.0;
-        if (instrument == Instrument.Rubber && bus == OutputBus.Bass) return 0.06;
-        if (instrument == Instrument.SineSub && bus == OutputBus.MusicBed) return 0.6;
-        if (instrument == Instrument.SineSub && bus == OutputBus.TensionSub) return 0.06;
+        if (instrument == Instrument.Pluck && bus == OutputBus.Harmony) return 0.005;
+        if (instrument == Instrument.Rubber && bus == OutputBus.Bass) return 0.005;
+        if (instrument == Instrument.SineSub && bus == OutputBus.MusicBed) return 0.005;
+        if (instrument == Instrument.SineSub && bus == OutputBus.TensionSub) return 0.005;
         if (instrument == Instrument.SpikeClick && bus == OutputBus.KillChords) return 0.12;
-        if (instrument == Instrument.Strings && bus == OutputBus.TensionStrings) return 0.4;
+        if (instrument == Instrument.Strings && bus == OutputBus.TensionStrings) return 0.005;
         if (instrument == Instrument.Sub && bus == OutputBus.KillChords) return 0.12;
         if (instrument == Instrument.Vibes && bus == OutputBus.KillChords) return 0.12;
         return 0.0;

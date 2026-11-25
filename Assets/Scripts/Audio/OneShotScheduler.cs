@@ -313,6 +313,13 @@ public static class OneShotArming
             return OneShotArm.Drop;
         return hasGroup ? OneShotArm.Apply : OneShotArm.Wait;
     }
+
+    /// <summary>
+    /// True if an applied note's stop is missing from its channel group (delay end is not stop + release) and the stop is
+    /// still ahead, so it can be put back in time. A note without a stop (0) plays to its end and is never re-applied.
+    /// </summary>
+    public static bool StopLost(ulong delayEnd, ulong stop, ulong releaseSamples, ulong now) =>
+        stop > 0 && now < stop && delayEnd != stop + releaseSamples;
 }
 
 /// <summary>
@@ -366,13 +373,7 @@ public sealed class FmodOneShotBackend : IOneShotBackend
 
     readonly Dictionary<int, Note> _notes = new Dictionary<int, Note>();
     readonly List<int> _keys = new List<int>();
-    readonly OneShotRelease _release;
-
-    /// <param name="releaseSeconds">Fade after a note's stop time per (instrument, bus); default InstrumentTable.ReleaseSeconds.</param>
-    public FmodOneShotBackend(Func<Instrument, OutputBus, double> releaseSeconds = null)
-    {
-        _release = new OneShotRelease(releaseSeconds ?? InstrumentTable.ReleaseSeconds);
-    }
+    readonly OneShotRelease _release = new OneShotRelease(InstrumentTable.ReleaseSeconds);
     readonly Dictionary<(Instrument, OutputBus), FMOD.Studio.EventDescription> _descriptions = new Dictionary<(Instrument, OutputBus), FMOD.Studio.EventDescription>();
     int _next;
     int _sampleRate;
@@ -388,6 +389,10 @@ public sealed class FmodOneShotBackend : IOneShotBackend
     public int StartedCount { get; private set; }
     /// <summary>Notes cancelled (Stop at or before their start) before they sounded.</summary>
     public int CancelledCount { get; private set; }
+    /// <summary>Times a pattern note's stop (delay end and fade) was put back after FMOD Studio cleared it.</summary>
+    public int StopReappliedCount { get; private set; }
+
+    static ulong DelayEnd(FMOD.ChannelGroup g) => g.getDelay(out _, out ulong end, out _) == FMOD.RESULT.OK ? end : 0;
 
     public ulong NowDsp => MusicConductor.MasterDsp();
 
@@ -527,17 +532,24 @@ public sealed class FmodOneShotBackend : IOneShotBackend
     // Start, then full level until the stop time, then a linear fade to silence over the release (Stop 0 = no stop yet).
     bool ApplyTimes(FMOD.ChannelGroup group, Note n)
     {
-        ulong end = n.Stop > 0 ? n.Stop + n.ReleaseSamples : 0;
+        ulong stop = StopAt(n);
+        ulong end = n.Stop > 0 ? stop + n.ReleaseSamples : 0;
         if (group.setDelay(n.Start, end, true) != FMOD.RESULT.OK)
             return false;
         group.removeFadePoints(0, ulong.MaxValue);
         if (n.Stop > 0)
         {
-            group.addFadePoint(n.Stop, 1f);
+            group.addFadePoint(stop, 1f);
             group.addFadePoint(end, 0f);
         }
         return true;
     }
+
+    // Stop point in the group's delay clock. The voice starts one mixer block after its group's delay start (the start
+    // times are computed so the attack still lands on the beat), while the delay end is exact: without this block a
+    // pattern note sounded one block (21 ms) shorter than its length (Task 11, funk keys 59 instead of 80 ms). Kill
+    // chords keep their timing (Task 11 must not change them).
+    ulong StopAt(in Note n) => n.Stop == 0 ? 0 : n.Stop + (n.Bus == OutputBus.KillChords ? 0UL : _blockSamples);
 
     /// <summary>
     /// Applies start / stop times once each instance's channel group exists, then unpauses it. A note keeps waiting
@@ -556,14 +568,24 @@ public sealed class FmodOneShotBackend : IOneShotBackend
             var n = _notes[key];
             if (n.Applied)
             {
-                if (DiagnosticLog != null && n.Checks < 6)
+                if (DiagnosticLog != null && (n.Checks < 6 || (n.Checks < 400 && n.Stop > 0 && now < n.Stop + n.ReleaseSamples + 4096)))
                 {
                     n.Checks++;
                     _notes[key] = n;
                     DiagnosticLog("check," + key + "," + now + "," + n.Start + "," + n.Checks + "," + Probe(n.Group));
                 }
+                // FMOD Studio clears the group's delay end (and its fade points) on one of its updates after the unpause
+                // (Task 11: in most notes' 3rd-6th check the delay end read 0), so the note ran until Update stopped the
+                // instance a frame after its stop time. Put the stop back while it is still ahead. Pattern layers only:
+                // kill chords keep their current behaviour (Task 11 must not change them; see the Task 11 report).
+                if (n.Bus != OutputBus.KillChords && OneShotArming.StopLost(DelayEnd(n.Group), StopAt(n), n.ReleaseSamples, now))
+                {
+                    if (ApplyTimes(n.Group, n))
+                        StopReappliedCount++;
+                    DiagnosticLog?.Invoke("reapply," + key + "," + now + "," + n.Start + "," + n.Stop);
+                }
                 bool playedOut = n.Stop == 0 && n.Released && IsFinished(key);
-                if (playedOut || (n.Released && n.Stop > 0 && now >= n.Stop + n.ReleaseSamples))
+                if (playedOut || (n.Released && n.Stop > 0 && now >= StopAt(n) + n.ReleaseSamples))
                 {
                     n.Instance.stop(FMOD.Studio.STOP_MODE.IMMEDIATE);
                     n.Instance.release();

@@ -33,18 +33,9 @@ public sealed class SoundManager : SingletonBehaviour<SoundManager>, IKillBedSta
     readonly KillChordPlanner _killPlanner = new KillChordPlanner();
     readonly List<OneShotNote> _killNotes = new List<OneShotNote>();
     // One scheduler and backend for every one-shot (kill chords and the bed's pattern layers; owners scope CancelFrom).
-    readonly FmodOneShotBackend _shotBackend = new FmodOneShotBackend(OneShotReleaseSeconds);
-
-    /// <summary>
-    /// Fade after a pattern note's stop time. The timeline cut the old tracks' notes at the end of their region (offline
-    /// render, Docs/Captures/README.md Task 11: a combo bell fell about 20 dB within 28 ms of its end) instead of playing
-    /// their ADSR release, so pattern notes end with this short declick rather than InstrumentTable.ReleaseSeconds.
-    /// </summary>
-    public const double PatternStopFadeSeconds = 0.02;
-
-    /// <summary>Release of a one-shot: kill chords keep their instrument's release, pattern layers end like the timeline.</summary>
-    public static double OneShotReleaseSeconds(Instrument instrument, OutputBus bus) =>
-        bus == OutputBus.KillChords ? InstrumentTable.ReleaseSeconds(instrument, bus) : PatternStopFadeSeconds;
+    // Stop fades come from InstrumentTable.ReleaseSeconds: kill chords their release, pattern layers the timeline's
+    // ~5 ms region-end ramp (FMOD/Tools/instruments.py PATTERN_STOP_FADE_MS).
+    readonly FmodOneShotBackend _shotBackend = new FmodOneShotBackend();
     OneShotScheduler _shots;
     // The bed's pitched layers (PatternTable) as one-shots, unless legacyLayers keeps them on the timeline.
     // Lookahead: one beat of dispatch window after a phrase boundary plus the largest sample onset, with margin.
