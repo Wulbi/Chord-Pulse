@@ -43,7 +43,7 @@ MonoBehaviour:
   Path: FMOD/ChordPulse/Build/Desktop/ChordPulse.bank
   Name: ChordPulse
   StudioPath: bank:/ChordPulse
-  lastModified: 639312068519376642
+  lastModified: 639312106786689619
   FileSizes:
   - Name: Desktop
     Value: 6774272
@@ -1344,7 +1344,7 @@ MonoBehaviour:
   - {fileID: -9072669451329646237}
   StringsBanks:
   - {fileID: 4610869450805227881}
-  cacheTime: 639312068520068834
+  cacheTime: 639312106787346380
   cacheVersion: 131637
 --- !u!114 &417851344225667453
 MonoBehaviour:
@@ -1749,7 +1749,7 @@ MonoBehaviour:
   Path: FMOD/ChordPulse/Build/Desktop/ChordPulse.strings.bank
   Name: ChordPulse.strings
   StudioPath: bank:/ChordPulse.strings
-  lastModified: 639312068520068834
+  lastModified: 639312106787346380
   FileSizes:
   - Name: Desktop
     Value: 3822

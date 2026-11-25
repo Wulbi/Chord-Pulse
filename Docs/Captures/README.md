@@ -1141,3 +1141,153 @@ chords only; new: pattern notes as well). The burst occurred only on the new pat
 beyond the usual landing stall) was not found or reproduced, so it is not fixed here. Per the controller's ruling the flip
 condition "drops only at landings" is not met: **`SoundManager.legacyLayers` is back to true** (the code default; no scene or
 prefab serializes it).
+
+## Task 12: drums as scheduled one-shots (style drums, core kit, second scheduler)
+
+The 10 drum tracks (`Kick - beats 1 and 3`, `Snare - beats 2 and 4`, `Eighth-note hats`, `Clap layer`, `Snare variations`,
+`Combo hats`, `Latin perc`, `Latin shaker`, `Funk drums`, `Dreamy perc`; 3216 notes) are gated on `LegacyLayers` like the
+13 Task 11 tracks (`legacy_gate.js`: added 3216, second run "unchanged 6320", Metadata byte-identical; the event XML gained
+3216 `ParameterCondition` objects and nothing else). Their notes are pattern clips (`FMOD/Tools/pattern_drums.py`, 11
+layers, 22 clips): one instrument `Drums` whose `Note` is the percussion number (`samples.PERC`, General MIDI numbers,
+every sound at pitch 0), on `bus:/Music Bed/Layers` and, for the latin percussion, `bus:/Music Bed/Layers/Latin Perc`
+(the track's 90 Hz high-pass, `mixer.py`). Every drum note has length 0 (plays to its sample end; the timeline cut it at
+its region end, which matters for the snare and clap: +0.8 dB per 0.7-beat note at 108 BPM, offline). The old track
+fader is folded into the note's dB (kick -12, snare -4, eighth hats -2, clap -6, snare variations -4).
+`patterns.py --compare-legacy`: unexplained 0 (new rules: track fader folded 592, length 0 3216, combo hats' 1 ms ADSR
+attack dropped 256; the kick's `FeverBuild [0, 0.5]` = every fever phase but Build).
+
+Core kit: `Core kick` (every style and fever phase but the build-up bar), `Core snare` / `Core hat` (styles of
+`patterns.STYLE_USES_CORE_BACKBEAT`: synthpop) are `PatternTable.CoreLayerMask`. `SoundManager` schedules them with a
+second `PatternScheduler` (`_corePatterns`, lookahead and dispatch window `PatternTable.CoreLookaheadBeats` = 4) and every
+other layer with `_patterns` (lookahead 1.5, as Task 11 set it; the brief's 1.0 would be shorter than the onset + dispatch
+lead `PatternScheduler` documents). `UpdatePatterns` / `InvalidatePatterns` / `ResetPatterns` call both;
+`RefreshArrangement` compares the decisions over now .. now + 4. `CaptureScenario.patternLayers` sets both masks.
+**`legacyLayers` stays true.**
+
+### Kill-chord stop (carried from Task 11, commit 7237b9f)
+
+Kill chords now stop like the pattern layers: stop one mixer block later (`OneShotArming.StopAt`, no bus fork) and a stop
+that FMOD Studio cleared is re-applied (every bus). RED: `StopPoint_IsOneBlockLater_OnEveryBus` / `LostStop_IsReapplied_
+OnEveryBus` failed on `KillChords` (10000 instead of 11024; false). `killsOnly` pair (`styles` seed 7, kill chords only):
+
+| takes | windows | per-window diff (median / mean / max) | style RMS vs style 0 (latin / funk / dreamy) |
+|---|---:|---|---|
+| `_s12_kills_before_run2` (valid) | | | +0.03 / -0.34 / -0.06 |
+| `_s12_kills_before_ab` (same pre-fix code, recorded later, 1 stall) vs `before_run2` | 63 | +0.00 / -0.05 / 2.22 (landings 48, 68) | +0.01 / -0.29 / -0.01 |
+| `_s12_kills_after_run2` (2 stalls of 104 / 111 ms) vs `before_run2` | 63 | -0.39 / -0.33 / 1.04 (landing 144) | +0.51 / -0.70 / +0.44 |
+| `_s12_kills_after_run4` (1 stall) vs `before_ab` | 63 | -0.44 / -0.36 / 2.25 (landings) | +0.53 / -0.69 / +0.46 |
+
+The fix lowers the kill chords by about 0.4 dB (they now end on their sample stop instead of on the first `Update` after
+stop + release); per style vs style 0 they stay within 1 dB (worst -0.70, funk). No valid (0-stall) after-take was
+recorded: the machine had external load during these takes (two games and a background download; Studio avg 9-11 %
+against 7.15 % in the clean before-take), the A/B take on the old code under the same load was equally degraded.
+
+### Max Instances: the funk kick was stolen (fixed, commit 51cfab5)
+
+First new-path styles takes (`_s12a_bed_i3_new_a/b/c`, valid): every even beat of the funk block -1.3..-2.2 dB against
+legacy, the 4-beat windows still within 1 dB. Kick-beat low band (< 120 Hz, first 80 ms of beats 4k+2): funk -30.0 dB,
+the other styles -0.2..-0.4 dB: the funk kick never sounded, although it was scheduled, started, armed and unpaused
+like every other kick (`.oneshots.csv`). Cause: `Max Instances` of `event:/Inst/MusicBed/Drums` (23, stealing Oldest)
+counted only the sounding time. An instance exists from its dispatch (paused; 4 beats early for the core kit) until its
+event's timeline ends, which is the end of the event's longest region (all sounds of an instrument event start at 0;
+claves 1.3 s), so each funk 16th hat lived 1.3 s and the oldest instances, the pending core kicks, were stolen. The rule
+now counts dispatch -> timeline end (length 0) or stop + release; Drums / Music Bed 43, Latin Perc 23, the other pattern
+events +1..+4. Same scenario after the fix (`_s12b_bed_i3_new_a..d`): funk kick -0.4..-0.5 dB median.
+
+### Acceptance (Editor, Music Bed solo = Kill Chords and Feature buses muted, `logOneShots`; legacy then new, same session)
+
+Legacy references: `_s12a_bed_legacy` takes. New: `_s12b_` takes (final banks; the legacy path plays no `event:/Inst`
+pattern event, so the max-instances rebuild does not change it).
+
+| scenario | legacy | new | windows > 1 dB (diff) | late | drops |
+|---|---|---|---|---:|---|
+| baseline seed 7 | `baseline_seed7_s12a_bed_legacy_run2` | `baseline_seed7_s12b_bed_new` | w0 -2.50, w11 (44-47) +1.36, w12 (48) -1.16, w19 (76-79) +1.27 | 0 | 0 |
+| heavy seed 7 | `heavy_seed7_s12a_bed_legacy` | `heavy_seed7_s12b_bed_new` | w0 -3.87 | 0 | 0 |
+| heavy seed 33 | `heavy_seed33_s12a_bed_legacy` | `heavy_seed33_s12b_bed_new_a` / `_b` | w0 -3.84 / -3.88 | 0 / 0 | 25 / 0, all in the first beat after the landing at 16 |
+| heavy seed 7, full mix | `heavy_seed7_s12b_full_legacy` | `heavy_seed7_s12b_full_new` | w0 -1.07 | 0 | 0 |
+| styles (bed, i3, 256 beats) | `styles_seed7_s12a_bed_i3_legacy` | `_s12b_bed_i3_new_a..d` (**each 1 stall, not valid**) | w0, windows ending at a landing (+1.0..+1.6), landing windows 192 (-2.8..-3.0), 208 (-1.1), 224 (-1.6..-2.0) | see below | see below |
+
+- Window 0: beat 0's notes cannot be scheduled before the clock's first anchor; the core kick, snare and hat of beat 0
+  are now among them (-2.5 / -3.9 dB, Task 11 -1.0).
+- Windows that end at a jump landing (44-47 before 48, 76-79 before 80, ...): the beat log stamps the landing beat with its
+  late callback (300-450 ms), so the logged last beat of the window holds the landing gap; the timeline is silent there
+  and the one-shots play on the grid (per beat: L-1 +3.5..+5.6 dB, L -5.7..-11 dB, L-4..L-2 within 0.6 dB). Landing
+  windows (accepted).
+- Styles landing windows at 192 (dreamy) also have beats L+2 / L+3 at -1.6 / -3.3 dB in every take; not explained further.
+- The styles criterion has no valid take on the final code (four takes, each with one main-thread stall); the three
+  valid takes on the earlier banks show the same window set.
+
+### Attack (core drums solo against the timeline's beat clicks)
+
+`baseline_seed33_s12_attack_core_new` / `_legacy` (seed 33, intensity 0, `holdArrangement`, Music Bed solo,
+`patternLayers` Core kick,Core hat, `spikeRefClicks`, `logOneShots`, both 0 stalls). Detector: band envelope (hat > 6 kHz,
+kick < 150 Hz, click 900-1100 Hz), 30 % crossing; the legacy take calibrates it (the timeline starts the drum samples on
+the beat): hat -0.40 ms (sd 0.00, 56 even beats), kick +0.90 ms (sd 0.05).
+
+| notes | n | mean signed | mean abs | max abs |
+|---|---:|---:|---:|---:|
+| hat, all | 128 | +19.42 ms | 19.74 ms | 22.96 ms |
+| hat, outside one beat after start / a landing | 113 | +20.69 ms | 20.69 ms | 22.69 ms |
+| kick, all | 64 | +18.52 ms | 19.15 ms | 22.92 ms |
+| kick, outside | 56 | +20.79 ms | 20.79 ms | 22.92 ms |
+
+**Criterion (mean <= 2, max <= 5 ms) NOT met**: the one-shot core drums sound about 20.7 ms (close to one 1024-sample
+mixer block, 21.3 ms) after the beat click, steadily (no drift across the take or across the landings), while the
+timeline drums sit on the click. Inside notes (landing beats, where the music is silent and the reference is the
+extrapolated grid) are not meaningful. Cause not established. Candidate: Task 11's observation that a pattern one-shot's
+voice starts one mixer block after its group's delay start; if that holds for every pattern bus, Task 11's pluck result
+was calibrated against a legacy path that is itself one block late (the timeline pluck goes through the Harmony send /
+return; its calibration offset was +24.64 ms), while the Task 10 spike click on bus:/Kill Chords was on time. Not
+measured here; needs a spike-click take on a pattern bus.
+
+Drift of core notes (scheduled up to 4 beats ahead from an older anchor): each note's DSP start at scheduling vs the beat's
+anchored DSP time: core median +1.25..+1.58 ms, other pattern notes +1.42..+1.48 ms (p5..p95 within -0.4..+4.4 ms) in
+heavy 7 / heavy 33 / styles takes; the outliers are beats next to a landing, where the reference itself is the late
+callback. Tempo changes at a phrase boundary re-time dispatched notes (`RescheduleFrom`); a later anchor does not, and
+`Invalidate` is not involved (it re-states arrangement decisions only).
+
+### Losses and Studio bursts (ruling 5)
+
+Every new-path take, losses outside the first beat after a landing:
+
+| take | stalls | Studio avg / max % (frames >= 95 %) | Core dsp avg / max % | pattern sched / started / late / dropped | kill late / dropped | losses outside (cause) |
+|---|---:|---|---|---|---|---|
+| `baseline_seed7_s12a_bed_new` | 0 | 8.54 / 94.14 (0) | 1.20 / 2.05 | 1105 / 1105 / 0 / 3 | 0 / 0 | - |
+| `heavy_seed7_s12a_bed_new` | 0 | 9.17 / 90.63 (0) | 2.92 / 4.34 | 1589 / 1588 / 0 / 0 | 0 / 0 | - |
+| `heavy_seed33_s12a_bed_new` | 0 | 9.70 / 89.09 (0) | 2.80 / 3.64 | 1400 / 1396 / 0 / 0 | 0 / 0 | - |
+| `styles_seed7_s12a_bed_i3_new_a` | 0 | 11.36 / 94.06 (0) | 2.07 / 3.71 | 3024 / 3011 / 2 / 14 | 9 / 21 | 9 kill + 2 pattern late at 130 (clock) |
+| `styles_seed7_s12a_bed_i3_new_b` | 0 | 10.96 / 89.82 (0) | 2.04 / 3.16 | 3024 / 3015 / 0 / 14 | 0 / 10 | - |
+| `styles_seed7_s12a_bed_i3_new_c` | 0 | 10.55 / 89.08 (0) | 2.07 / 3.30 | 3031 / 3017 / 0 / 10 | 0 / 0 | - |
+| `styles_seed7_s12b_bed_i3_new_a` | 1 | 11.03 / 95.60 (1) | 2.06 / 3.18 | 3031 / 3016 / 3 / 6 | 9 / 0 | 9 kill + 3 pattern late at 194 (clock); 3 pattern dropped at 232.5 (350 ms main-thread frame) |
+| `styles_seed7_s12b_bed_i3_new_b` | 1 | 10.66 / 100.88 (5) | 1.94 / 3.43 | 3000 / 2983 / 9 / 4 | 5 / 13 | 31 at 81.9-84.5 (Studio double gap at 80, then a 935 ms main-thread frame) |
+| `styles_seed7_s12b_bed_i3_new_c` | 1 | 13.21 / 116.79 (74) | 2.22 / 10.62 | 3012 / 3004 / 0 / 47 | 0 / 27 | 51 dropped (group never appeared) at 112.97, 129.2-129.99, 145, 193, 225: the second beat after landings, behind Studio gaps of 0.54-0.84 s (callbacks 128 / 144 932 / 759 ms late) |
+| `styles_seed7_s12b_bed_i3_new_d` | 1 | 12.02 / 99.22 (21) | 2.06 / 3.36 | 3022 / 3005 / 6 / 21 | 9 / 30 | 30 at 193.45-195 (918 ms main-thread frame) |
+| `baseline_seed7_s12b_bed_new` | 0 | 8.18 / 86.11 (0) | 1.21 / 1.76 | 1105 / 1105 / 0 / 0 | 0 / 0 | - |
+| `heavy_seed7_s12b_bed_new` | 0 | 8.51 / 85.38 (0) | 2.85 / 3.45 | 1589 / 1588 / 0 / 0 | 0 / 0 | - |
+| `heavy_seed33_s12b_bed_new_a` | 0 | 9.91 / 91.32 (0) | 2.78 / 6.55 | 1406 / 1400 / 0 / 1 | 0 / 24 | - |
+| `heavy_seed33_s12b_bed_new_b` | 0 | 10.25 / 89.88 (0) | 2.78 / 3.73 | 1400 / 1396 / 0 / 0 | 0 / 0 | - |
+| `heavy_seed33_s12b_full_new_c` | 0 | 10.82 / 96.76 (2) | 6.14 / 10.67 | 1400 / 1396 / 0 / 0 | 0 / 0 | - (the >= 95 % frames are at the landing 112) |
+| `heavy_seed7_s12b_full_new` | 0 | 9.52 / 91.86 (0) | 5.83 / 9.11 | 1589 / 1587 / 0 / 0 | 0 / 0 | - |
+
+What the logs show (`.studio.csv`: runs of frames in which Studio's update CPU reading did not change = no Studio update
+completed; `.anchors.csv`; Editor.log):
+1. **Every jump landing** has a Studio no-update gap of 0.4-0.5 s, on both paths. Occasionally it is longer or doubled
+   (new: 0.59 + 0.61 s at 80, 0.84 / 0.81 s at 128 / 144; legacy kills-only takes, old and new kill code: 1.46 s at 224,
+   0.77 s at 48). Notes due in that time lose their channel group ("group never appeared") one to two beats after the
+   landing. The burst is not new-path-only; why Studio occasionally takes twice as long was not found.
+2. **Beat clock after a landing**: a landing callback 140-172 ms late (under `MusicConductor`'s half-beat limit) becomes an
+   anchor and moves the clock back by up to a beat (193.40 -> 192.38); the next anchor puts it back, and notes whose
+   dispatch fell in between are counted late (never played late; kill chords alike). Clock limitation, for the clock
+   switch. The core kick of those beats, dispatched 4 beats earlier, played.
+3. **Editor main-thread freezes** (918 / 935 ms) each directly after an `Asset Pipeline Refresh ... RefreshV2` in the
+   Editor log (no file under Assets changed; probably the Editor's auto-refresh on focus while the machine was in use).
+   Notes are neither dispatched nor armed during the freeze. Editor-only.
+4. External load (games, browser) during several takes; under it the legacy kills-only takes showed the same kinds of
+   bursts (`styles_seed7_s12_kills_after_run3` / `_run4`, `_before_ab`).
+
+### CPU (avg %, Editor)
+
+Heavy seed 7 full mix: Studio update 9.67 legacy -> 9.52 new, Core dsp 5.51 -> 5.83 (budget 12; max 9.11). Heavy seed 33
+full mix new: 10.82 / 6.14. Baseline seed 7 (Music Bed solo): Studio 9.07 -> 8.18, Core dsp 1.00 -> 1.21 (no full-mix
+baseline take; budget 11 / 6). Styles (solo): Studio 10.55-13.21, Core dsp 1.94-2.22. Within the budgets; no fallback
+needed.
