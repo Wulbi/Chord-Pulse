@@ -2546,3 +2546,101 @@ How the kick lag was measured:
   ruling C-5).
 - A 300 ms stall just before a beat loses that beat's kill chord and its late pattern notes: 25 notes on beat 31 in
   Step 4. No step of this task has a criterion on missing notes in that take.
+
+## Task 15b (stages 3-8): legacy timeline tracks, legacy parameters and legacy generators removed
+
+`FMOD/Tools/cleanup_music.py` -> `cleanup_music.js` removes the legacy timeline layers from the FMOD project. Every layer
+they held is already an `event:/Inst/*` one-shot, and the game no longer starts `event:/Music/ChordPulseGame`.
+
+What it deleted (CLI run 1, saved):
+- the 37 tracks of `patterns.LEGACY_TRACKS` (10,328 notes);
+- the event's Harmony and Feature groups (empty once those tracks were gone);
+- 1 automation curve: the Music Bed group's volume on MusicMix;
+- 13 event parameter proxies: BedStyle, Variation, Combo, Intensity, FeatureLoop, Fever, FeverBuild, FeverImpact,
+  FeverOutro, MusicMix, and the event's proxies of the global Tension / Danger / Hurt;
+- 9 presets that no event used any more: BedStyle, Variation, Combo, Intensity, FeatureLoop, FeverBuild, FeverImpact,
+  FeverOutro, MusicMix;
+- `return:/Harmony Duck`, `return:/Feature Duck`;
+- the global `LegacyLayers`.
+
+Run 2 logged "nothing to do", and Metadata was MD5-identical to run 1. `-build` ran as a separate command and the banks
+were copied to `Assets/StreamingAssets`.
+
+Kept:
+- the `Spike ref` track, `NextSection`, `SpikeRef`, the tempo and transition markers;
+- the Music Bed group;
+- `event:/Music/ChordPulsePreview`, and the `Fever` preset it still uses.
+
+**Reference checks** (pre-cleanup Metadata, every file searched for the object ids):
+- `LegacyLayers` (preset and its GameParameter): only the music event XML.
+- Both returns: only the music event XML.
+  - They had no effects, only a fader. Their outputs went to `bus:/Music Bed/Harmony` and `bus:/Feature`.
+  - Their only inputs were the two pre-fader sends of the event's Harmony / Feature groups.
+  - The kill-chord sidechain keys sit on bus effects, not on the returns.
+- No snapshot exists.
+- Each of the 9 deleted presets: only the music event XML. ChordPulsePreview references only `Fever`.
+
+**Counts:**
+
+| | before | after |
+|---|---:|---:|
+| music event `SingleSound` | 10,456 | 128 (Spike ref) |
+| event XML | 18,776,153 B | 163,598 B |
+| event tracks | 41 | 2 (Music Bed, Spike ref) |
+| event parameters | 15 | 2 (NextSection, SpikeRef) |
+| Desktop `ChordPulse.bank` | 7,070,400 B | 2,748,320 B |
+| Metadata files changed / deleted | | 1 (event XML) / 12 (10 ParameterPreset, 2 Return) |
+
+- No `event:/Inst/*` file changed.
+- The 340 objects the event kept are byte-identical, except the Event, Timeline and Music Bed group objects, which lost
+  their references to deleted objects.
+
+**Generators:**
+- Deleted:
+  - `bed_variation.js`, `bed_combo.js`, `bed_tension.js`, `bed_style.js`;
+  - `legacy_gate.py` / `.js`, `bed_style.py`;
+  - `patterns.py --compare-legacy`.
+- Kept as data modules. Their FMOD-script code was removed; running one directly now exits with a message.
+  - `bed_tension.py`: read by `mixer.py` (Tension curves, Danger cutoff).
+  - `bed_combo.py`: read by `mixer.py` (Hurt curves).
+  - `bed_variation.py`: read by `bed_notes.py`.
+- `mixer.py` no longer creates `LegacyLayers` or the Duck returns, and no longer touches the event's groups. On the
+  cleaned project its `mixer.js` logged "created 0, updated 0, added 0, removed 0 / nothing to do", and Metadata was
+  unchanged.
+- I re-ran `patterns`, `instruments`, `mixer`, `bed_notes`, `feature_loops`, `kill_oneshots`, `spike_click` and
+  `cleanup_music`. Every `*.g.cs`, `instruments.js`, `kill_oneshots.js` and `spike_click.js` is byte-identical to before
+  the task. Only `mixer.js` changed.
+- EditMode suite: 183 / 183.
+
+### Take
+
+Editor, baseline seed 7, 128 beats, `logOneShots`, full mix. Auto refresh was disallowed around each take (one
+`DisallowAutoRefresh` / `AllowAutoRefresh` pair per take).
+
+| take | stalls | Studio update avg / max % | Core dsp avg / max % | pattern sched / started / late / dropped | kill started / late / dropped |
+|---|---:|---|---|---|---|
+| `baseline_seed7_s15b` (**invalid**: unforced 3448 ms stall at beat 46) | 1 | 0.67 / 1.06 | 1.15 / 2.60 | 1097 / 1089 / 7 / 2 | 282 / 0 / 0 |
+| `baseline_seed7_s15b_r2` | 0 | 0.67 / 1.06 | 1.15 / 2.34 | 1134 / 1131 / 0 / 0 | 288 / 0 / 0 |
+
+- The late / dropped notes of the invalid take are all at beat 53.2, the first frame after its stall.
+- `_r2`: ONESHOTS started 1419, late 0, dropped 0, cancelled 12. `.losses.csv` is empty.
+
+| criterion (`baseline_seed7_s15b_r2`) | value | verdict |
+|---|---|---|
+| late 0, dropped 0 | 0 / 0 (pattern and kill) | met |
+| Studio update avg ≤ 11 % | 0.67 % | met |
+| Core dsp avg ≤ 6 % | 1.15 % | met |
+| full-mix RMS per 4-beat window within ±1 dB of `baseline_seed7_s6c` (`rms --compare`) | max \|diff\| 0.000 dB over 31 windows; none outside ±1 dB | met |
+- Counters of `_r2` as measured, next to the same counters of `baseline_seed7_s6c`:
+
+  | counter | `_r2` | `_s6c` |
+  |---|---:|---:|
+  | PATTERNS scheduled | 1134 | 1129 |
+  | PATTERNS started | 1131 | 1128 |
+  | ONESHOTS started | 1419 | 1416 |
+  | ONESHOTS cancelled | 12 | 13 |
+  | KILLS started | 288 | 288 |
+
+  scheduled minus started is 3 in `_r2` and 1 in `_s6c`. Not looked into note by note; no criterion covers it.
+- The take ran on the final banks: the later `mixer.js` run changed nothing, so the banks were not rebuilt after the
+  take.
