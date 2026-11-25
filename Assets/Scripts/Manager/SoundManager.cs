@@ -62,8 +62,8 @@ public sealed class SoundManager : SingletonBehaviour<SoundManager>, IKillBedSta
     [SerializeField] int sectionSeed;
     [Tooltip("Bed pitched layers (bass, pluck, combo, tension, style layers): true = the old timeline tracks play them " +
              "(global FMOD parameter LegacyLayers 1, PatternScheduler silent); false = Unity schedules them as one-shots " +
-             "(LegacyLayers 0). Read when the music starts.")]
-    [SerializeField] bool legacyLayers = true;
+             "(LegacyLayers 0, the default since Task 11's acceptance takes). Read when the music starts.")]
+    [SerializeField] bool legacyLayers;
 
     SectionSelector _sections = new SectionSelector(0);
     FeatureSelector _features = new FeatureSelector(0);
