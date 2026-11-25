@@ -72,6 +72,9 @@ public sealed class CaptureScenario : MonoBehaviour
     [SerializeField] bool tensionSteps;
     [Tooltip("styles: keep the bed audible (musicMix) instead of forcing MusicMix 0.")]
     [SerializeField] bool stylesWithBed;
+    [Tooltip(">= 0: SoundManager.Intensity for the take (the off-beat pluck plays from 1, funk guitar from 2; it also " +
+             "steers the section choice). -1 = leave it (0 after StartMusic; duck sets 3).")]
+    [SerializeField] int intensity = -1;
 
     [Header("duck (kill-chord ducking of the Harmony group)")]
     [Tooltip("Off = the same take without kills, the reference the ducked take is compared with.")]
@@ -201,6 +204,8 @@ public sealed class CaptureScenario : MonoBehaviour
         sound.MusicMix = musicMix;
         if ((scenario == Scenario.styles && !stylesWithBed) || killsOnly)
             sound.MusicMix = 0f; // kill chords alone: the bed would differ between styles
+        if (intensity >= 0)
+            sound.Intensity = intensity;
         SubscribeShots(sound);
         ApplySolo(sound);
         sound.Danger = forceDanger; // applied after StartMusic, which resets it
