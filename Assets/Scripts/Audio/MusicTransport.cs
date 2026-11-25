@@ -5,6 +5,10 @@ using System;
 /// 16 beats a new phrase begins. Phrase boundaries are fixed once as integer DSP samples
 /// (boundary[n+1] = boundary[n] + round(16 * 60 / bpm[n] * sampleRate)), so they never drift, and the shared
 /// <see cref="BeatClock"/> is re-anchored on each boundary before <see cref="PhraseStarted"/> is raised.
+/// A resync (DSP clock went backwards) that lands on a phrase boundary raises <see cref="PhraseStarted"/> about 0.1 s
+/// before that boundary sounds, so <see cref="BeatAt"/> of "now" can be below <c>Phrase * 16</c> in that window.
+/// Handlers may call <see cref="Stop"/>, <see cref="Start"/> and <see cref="SetNextTempo"/>; calling
+/// <see cref="Update"/> from inside a handler is not supported.
 /// </summary>
 public sealed class MusicTransport
 {

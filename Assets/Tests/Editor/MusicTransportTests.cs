@@ -186,7 +186,9 @@ public class MusicTransportTests
         var clock = new BeatClock(Rate);
         var t = new MusicTransport(clock);
         var started = new List<int>();
-        const ulong newStart = 10000000;
+        // The new start (480000) lies before dspNow (960000), so without the run counter the old catch-up loop would go on
+        // and raise the new run's phrases inside the first Update.
+        const ulong newStart = 480000;
         t.PhraseStarted += n =>
         {
             started.Add(n);
@@ -197,14 +199,16 @@ public class MusicTransportTests
             }
         };
         t.Start(0, 120, 120);
-        t.Update(40 * 24000);
+        t.Update(960000);
         CollectionAssert.AreEqual(new[] { 0, 1 }, started);
         Assert.IsTrue(t.Running);
         Assert.AreEqual(-1, t.Phrase);
 
-        t.Update(newStart);
-        Assert.AreEqual(0, t.Phrase);
-        CollectionAssert.AreEqual(new[] { 0, 1, 0 }, started);
+        // New run at 120 BPM: a phrase is 384000 samples, so phrase 0 starts at 480000, phrase 1 at 864000 and phrase 2
+        // at 1248000 (not yet at 960000): [0, 1, 0, 1].
+        t.Update(960000);
+        Assert.AreEqual(1, t.Phrase);
+        CollectionAssert.AreEqual(new[] { 0, 1, 0, 1 }, started);
     }
 
     // Semantics: a resync that lands on a phrase boundary counts that boundary as passed at once (it is no longer
@@ -235,6 +239,35 @@ public class MusicTransportTests
         t.Update(5800 + 100000);
         CollectionAssert.AreEqual(new[] { 0, 1 }, started);
         Assert.AreEqual(1, t.Phrase);
+
+        // SetNextTempo now concerns phrase 2 only; phrase 1 (tempo 108) is already fixed.
+        // Phrase 2 starts at 5800 + round(16*60/108*48000) = 5800 + 426667 = 432467.
+        t.SetNextTempo(90);
+        Assert.IsTrue(clock.DspAt(16, out d16));
+        Assert.IsTrue(clock.DspAt(17, out d17));
+        Assert.That((double)(d17 - d16), Is.EqualTo(26667.0).Within(1));
+        Assert.IsTrue(clock.DspAt(32, out ulong d32));
+        Assert.IsTrue(clock.DspAt(33, out ulong d33));
+        Assert.That((double)(d33 - d32), Is.EqualTo(32000.0).Within(1));
+        t.Update(432467);
+        CollectionAssert.AreEqual(new[] { 0, 1, 2 }, started);
+        Assert.AreEqual(90.0, t.Bpm, 1e-9);
+    }
+
+    [Test]
+    public void Resynced_HandlerStops_AtPhraseEnd_NoPhraseStartedFollows()
+    {
+        var clock = new BeatClock(Rate);
+        var t = new MusicTransport(clock);
+        var started = new List<int>();
+        t.PhraseStarted += started.Add;
+        t.Start(0, 120, 108);
+        t.Update(324000); // beat 13.5
+        t.Resynced += t.Stop;
+        t.Update(1000);
+        CollectionAssert.AreEqual(new[] { 0 }, started);
+        Assert.IsFalse(t.Running);
+        Assert.AreEqual(-1, t.Phrase);
     }
 
     [Test]
