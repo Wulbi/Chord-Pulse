@@ -4,7 +4,7 @@ var INSTRUMENTS = [
   "name": "Acid",
   "bus": "Music Bed/Layers/Tension Acid",
   "busFolder": "TensionAcid",
-  "max": 6,
+  "max": 8,
   "attack": 2,
   "release": 50,
   "notes": [
@@ -108,7 +108,7 @@ var INSTRUMENTS = [
   "name": "Bass",
   "bus": "Music Bed/Layers/Bass",
   "busFolder": "Bass",
-  "max": 5,
+  "max": 7,
   "attack": 0,
   "release": 0,
   "notes": [
@@ -348,7 +348,7 @@ var INSTRUMENTS = [
   "name": "Bells",
   "bus": "Music Bed/Harmony",
   "busFolder": "Harmony",
-  "max": 6,
+  "max": 7,
   "attack": 2,
   "release": 250,
   "notes": [
@@ -407,7 +407,7 @@ var INSTRUMENTS = [
   "name": "Bells",
   "bus": "Music Bed/Harmony/Dreamy Bells",
   "busFolder": "DreamyBells",
-  "max": 5,
+  "max": 6,
   "attack": 0,
   "release": 0,
   "notes": [
@@ -748,7 +748,7 @@ var INSTRUMENTS = [
   "name": "ClavHigh",
   "bus": "Music Bed/Harmony/Funk Keys",
   "busFolder": "FunkKeys",
-  "max": 6,
+  "max": 10,
   "attack": 0,
   "release": 0,
   "notes": [
@@ -800,7 +800,7 @@ var INSTRUMENTS = [
   "name": "Drums",
   "bus": "Music Bed/Layers",
   "busFolder": "MusicBed",
-  "max": 23,
+  "max": 43,
   "attack": 0,
   "release": 0,
   "notes": [
@@ -859,7 +859,7 @@ var INSTRUMENTS = [
   "name": "Drums",
   "bus": "Music Bed/Layers/Latin Perc",
   "busFolder": "LatinPerc",
-  "max": 17,
+  "max": 23,
   "attack": 0,
   "release": 0,
   "notes": [
@@ -1590,7 +1590,7 @@ var INSTRUMENTS = [
   "name": "Marimba",
   "bus": "Music Bed/Harmony/Latin Marimba",
   "busFolder": "LatinMarimba",
-  "max": 6,
+  "max": 8,
   "attack": 0,
   "release": 0,
   "notes": [
@@ -2008,7 +2008,7 @@ var INSTRUMENTS = [
   "name": "Pluck",
   "bus": "Music Bed/Harmony",
   "busFolder": "Harmony",
-  "max": 7,
+  "max": 10,
   "attack": 0,
   "release": 0,
   "notes": [
@@ -2095,7 +2095,7 @@ var INSTRUMENTS = [
   "name": "Rubber",
   "bus": "Music Bed/Layers/Bass",
   "busFolder": "Bass",
-  "max": 6,
+  "max": 9,
   "attack": 2,
   "release": 60,
   "notes": [
@@ -2213,7 +2213,7 @@ var INSTRUMENTS = [
   "name": "SineSub",
   "bus": "Music Bed/Layers/Tension Sub",
   "busFolder": "TensionSub",
-  "max": 5,
+  "max": 6,
   "attack": 3,
   "release": 60,
   "notes": [

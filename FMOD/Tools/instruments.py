@@ -220,7 +220,7 @@ function syncSound(s, n, inst, isNew) {
     var af = audioFile(n.file);
     if (isNew || !s.audioFile || s.audioFile.id !== af.id) {
         s.audioFile = af;
-        var len = Math.max(0.5, af.length);
+        var len = Math.max(__MIN_REGION__, af.length);
         if (differs(s.length, len)) s.length = len;
         changed = true;
     }
@@ -406,7 +406,8 @@ def write(path, text):
 
 def main():
     insts = build()
-    write(JS_PATH, JS_TEMPLATE.replace("__INSTRUMENTS__", json.dumps(insts, indent=1)))
+    write(JS_PATH, JS_TEMPLATE.replace("__INSTRUMENTS__", json.dumps(insts, indent=1))
+          .replace("__MIN_REGION__", repr(patterns.EVENT_REGION_MIN_S)))
     write(CS_PATH, cs_text(insts))
     kill_oneshots.write_table()
     kill_oneshots.write_js()

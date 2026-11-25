@@ -24,9 +24,13 @@ Rules (same sound as the old generators):
 - The old style / variation generators left the last 16th of the phrase empty (Unity switched those parameters just
   before the boundary); the combo hats and the 16th shaker always had a note there, and keep it (the one-shot path
   decides per step, without lead).
-- Max Instances per (instrument, bus) = the most notes sounding at once (length + release, or the sample length for
-  length 0) at 132 BPM + 4, over every arrangement state and the previous phrase's tails. Core layers' notes count from
-  their dispatch (CORE_LOOKAHEAD_BEATS before the beat: a started, paused instance is an instance).
+- Max Instances per (instrument, bus) = the most instances alive at once at 132 BPM + 4, over every arrangement state
+  and the previous phrase's tails. An instance lives from its dispatch (a started, paused instance counts: the dispatch
+  window before the beat, CORE_LOOKAHEAD_BEATS for core layers, DISPATCH_WINDOW_BEATS otherwise) to its stop + release
+  (the backend stops it), or for length 0 until the event's timeline ends: the end of its longest sound region (every
+  note's region is its sample, at least EVENT_REGION_MIN_S, and all of them start at 0), whichever note plays. Counting
+  only the sounding time let the Drums event steal its oldest instances, the pending core kicks (Task 12: in funk every
+  hat instance lived 1.3 s, the claves region, and the kick never sounded).
 """
 import json
 import os
@@ -44,6 +48,11 @@ PHRASE_BEATS = 16
 MAX_BPM = 132
 ASSETS = os.path.join(HERE, "..", "ChordPulse", "Assets")
 SPARE_INSTANCES = 4
+# instruments.js makes every sound region at least this long; a length-0 instance runs until its timeline passes it.
+EVENT_REGION_MIN_S = 0.5
+# KillChordPlanner.DispatchWindow (PatternScheduler's default): 1 beat for the first POST_BOUNDARY_BEATS + 1 beats of a
+# phrase (PostBoundaryBeats = 1), else OneShotScheduler.DispatchWindowBeats.
+POST_BOUNDARY_BEATS, POST_BOUNDARY_DISPATCH_BEATS, DISPATCH_WINDOW_BEATS = 1, 1.0, 0.5
 FEVER_PHASES = ["None", "Build", "Impact", "Fever", "Outro"]   # FeverPhaseMask bits 1, 2, 4, 8, 16 (None = outside fever)
 
 
@@ -203,6 +212,8 @@ def max_instances(clips, insts, layers):
     core = {l.name for l in layers if l.core}
     for key, inst in insts.items():
         rel = inst.release_ms / 1000.0
+        timeline = max(max(n.inst.sample_seconds(n.midi), EVENT_REGION_MIN_S)
+                       for c in clips for n in c.notes if n.inst.key == key)
         per_state = []
         for st in states:
             iv = []
@@ -211,8 +222,14 @@ def max_instances(clips, insts, layers):
                     for n in c.notes:
                         if n.inst.key == key:
                             a = n.beat * spb
-                            end = a + (n.length * spb + rel if n.length > 0 else n.inst.sample_seconds(n.midi))
-                            iv.append((a - (CORE_LOOKAHEAD_BEATS * spb if c.layer in core else 0.0), end))
+                            end = a + (n.length * spb + rel if n.length > 0 else timeline)
+                            if c.layer in core:
+                                window = CORE_LOOKAHEAD_BEATS
+                            elif int(n.beat) % PHRASE_BEATS <= POST_BOUNDARY_BEATS:
+                                window = POST_BOUNDARY_DISPATCH_BEATS
+                            else:
+                                window = DISPATCH_WINDOW_BEATS
+                            iv.append((a - window * spb, end))
             per_state.append(iv)
         times = sorted({a for iv in per_state for a, _ in iv})
         best = 0

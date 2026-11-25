@@ -61,7 +61,7 @@
 	</object>
 	<object class="EventAutomatableProperties" id="{7d16469e-f50e-48ea-9f2a-139f5ed40dfd}">
 		<property name="maxVoices">
-			<value>6</value>
+			<value>8</value>
 		</property>
 	</object>
 	<object class="MarkerTrack" id="{87df8a1c-578e-444b-a1c3-521f3c749401}" />
