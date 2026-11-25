@@ -1369,10 +1369,65 @@ refresh during the takes):
 | baseline seed 7 | `baseline_seed7_s12l_bed_legacy` | `_s12l_bed_new` | w0 -2.46; landing 48 -1.44; windows ending at the landings 48 / 80 / 96 +1.25 / +1.14 / +1.02 | 0 / 0 |
 | heavy seed 7 | `heavy_seed7_s12l_bed_legacy_run2` | `_s12l_bed_new` | w0 -3.91 | 0 / 0 |
 | heavy seed 33 | `heavy_seed33_s12l_bed_legacy` | `_s12l_bed_new` | w0 -3.89 | 0 / 0 |
-| styles (bed, i3) | `styles_seed7_s12l_bed_i3_legacy` | `_s12l_bed_i3_new` (first attempt, valid) | w0 -1.88; windows ending at a landing +1.02..+1.27 (7); landing windows 64 -2.41, 192 -2.43, 208 -1.23, 224 -1.80 | 4 pattern late at 65.5 (clock after a landing); 5 pattern dropped at 63.90 / 111.89 / 127.89 / 255.91 (inside the Studio gap that starts ~0.2 beat before a landing) |
+| styles (bed, i3) | `styles_seed7_s12l_bed_i3_legacy` | `_s12l_bed_i3_new` (0 stalls) | w0 -1.88; windows ending at a landing +1.02..+1.27 (7); landing windows 64 -2.41, 192 -2.43, 208 -1.23, 224 -1.80 | **NOT met**: 4 pattern late at 65.5 (cancelled by the unbounded re-time and then late: the re-time's own loss, fixed in fix round 1), 5 pattern dropped (see fix round 1) |
 
-Every window over 1 dB is window 0 or a jump-landing window (including the windows that end at a landing, explained above).
+Every window over 1 dB is window 0 or a jump-landing window (including the windows that end at a landing, explained above,
+ruling 12-3). The late / dropped criterion is **NOT met** in `styles` (see fix round 1).
 Inside the dreamy landing windows the beats L+1..L+3 are still -1.4..-3.4 dB (192, 208, 224); not explained further.
-Kick beats now match legacy exactly in every style (low band median 0.0 dB; -0.3..-0.4 before the fix). Losses outside
-the first beat after a landing remain in `styles` (9 of 3032 pattern notes; causes above). CPU, heavy seed 7 full mix
+Kick beats now match legacy exactly in every style (low band median 0.0 dB; -0.3..-0.4 before the fix). CPU, heavy seed 7 full mix
 (`heavy_seed7_s12l_full_new`): Studio update 9.03 %, Core dsp 5.72 % (budget 12).
+
+### Fix round 1: the re-time bounded; drops listed; kill chords on the final code
+
+**Re-time (commit c9274d8).** The settled-anchor re-time followed any move: in `styles_seed7_s12l_bed_i3_new` a wrong anchor
+held for half a beat moved beats 194 and 196 by +4912 samples (+102 ms; 196 was moved back two beats later, 194 could not
+be), and at 65.5 it cancelled four notes that were then late (dropped). Now a re-time follows only a move of 5 ms ..
+`RetimeMaxSamples` (1024, one block; the drift it exists for is 12-16 ms); a larger move is a clock discontinuity and the
+note keeps its time (tempo changes stay `RescheduleFrom`'s job). The new instance is started before the original is
+stopped, and both starts must be `RetimeMinLeadSamples` ahead, so a re-time never drops a note. Tests (RED shown):
+`Retime_StepBackAnchor_NoteKeepsItsTime`, `Retime_ForwardJumpOverABlock_NoteKeepsItsTime`, `Retime_DriftWithinABlock_Follows`,
+`Retime_ThatCannotBeHandedOver_KeepsTheOriginal`; the settle assertions (`Retime_AnchorNotSettled_Waits`,
+`Update_ClockMovedDispatchedNote_RetimesIt`) shown RED with the settle condition removed.
+
+Three new-path `styles` takes after the fix (bed, i3, Music Bed solo, `logOneShots`, 0 stalls, no Editor refresh):
+
+| take | Studio avg / max % | pattern sched / late / dropped | kill late / dropped | re-times, largest move | pattern drops outside the first beat after a landing |
+|---|---|---|---|---|---|
+| `styles_seed7_s12m_bed_i3_new_a` | 10.74 / 89.13 | 3031 / 0 / 22 | 0 / 12 | 45, 776 samples | 3 at 193 (L+1 of 192: dreamy shaker 82, claves 75, acid 48), 2 at 256 (core kick / hat; landing at the end of the take) |
+| `styles_seed7_s12m_bed_i3_new_b` | 11.82 / 96.31 (8 frames >= 95) | 3032 / 0 / 38 | 0 / 60 | 47, 545 | 34: L+1 of 16 (clap 39, acid), 48 (clap x3), 80 (cowbell 56, acid, shaker 82, marimba 76, slap 62), 128 (acid, snare / clap / hat x3), 144 (snare / clap / hat x3, guitar x2, acid), 176 (snare / clap / hat x6), 193.5 (shaker / sub, acid x2), 224 (acid, claves, shaker), 256 x2 |
+| `styles_seed7_s12m_bed_i3_new_c` | 10.99 / 92.00 | 3032 / 0 / 18 | 0 / 27 | 58, 442 | 11: L+1 of 80 (cowbell), 128 (guitar, acid, snare / clap / hat x3), 224 (acid, claves, shaker), 256 x2 |
+
+Late 0 in all three and no re-time over a block, so the re-time stays (ruling 12-5). **The drop criterion (dropped 0
+outside the first beat after a landing) is NOT met.** Mechanism of every listed drop, from `.oneshots.csv` ("group never
+appeared" / "start reached before the delay"): the notes are on the beat after a jump landing (L+1); their 1-beat
+post-boundary dispatch window hands them to FMOD at the landing, inside Studio's 0.4-0.6 s no-update gap
+(`.studio.csv`), and their channel group comes too late. The kill chords lose notes the same way at the same beats (kill
+drops 12 / 60 / 27) on both paths. Not the re-time (it only acts at least 4096 samples ahead and keeps the original). Known
+condition (Studio landing gap), carried to the clock switch; a candidate fix is a wider dispatch window for L+1 notes.
+
+**Bass beat 82 / beat 100** (ruling 12-4). Re-measured (`baseline_seed33_s12m_attack_bass_new`, 0 stalls): outside mean
++0.31, mean |e| 1.11 ms; one note over 5 ms, beat 100 at +23.15 ms (beat 82 was 0.1 ms here). Attribution: not re-timed
+(`.retimes.csv` empty), scheduled +1.83 ms from the anchored beat, anchor 99 / 100 callbacks 0 / 8 ms late, group delay
+start = start - 1 block as designed, and the voice's channel position puts its start 37 samples (0.8 ms) after the target
+(beat 98: -74 samples). In the audio the bass envelope starts rising at the click at beats 98, 100 and 102 alike; the
+30 % detector threshold is set by a later envelope peak that differs per note. The outliers are the bass detector's,
+not the note timing (the hat / kick / open hat detectors have no such outliers). Bass max <= 5 ms is therefore not
+demonstrated by this detector; the timing evidence (channel position) is within 1 ms.
+
+**Kill chords on the final code** (ruling I3; `styles` seed 7, MusicMix 0 = kill chords only). The legacy timeline kill
+chords no longer exist (removed in Task 6); the criterion they met is the per-style level vs style 0 within 1 dB. Before =
+`styles_seed7_s12_kills_before_run2` (0 stalls; recorded at the start of this task on b8a7b70's kill behaviour and banks:
+the only change at that moment was the behaviour-preserving extraction of the bus policy into `OneShotArming`). After =
+`styles_seed7_s12m_kills_final` (final code c9274d8 + banks, 0 stalls, no refresh, kills 2304 started, late 0, dropped 0):
+
+| | synthpop | latin | funk | dreamy |
+|---|---:|---:|---:|---:|
+| beat RMS before (dBFS) | -32.23 | -32.21 | -32.57 | -32.30 |
+| beat RMS after | -32.72 | -32.20 | -33.44 | -32.24 |
+| change | -0.49 | +0.01 | -0.87 | +0.06 |
+| vs style 0, before / after | 0 / 0 | +0.03 / +0.52 | -0.34 / -0.72 | -0.06 / +0.48 |
+
+Per 4-beat window: median -0.42, mean -0.32, max |diff| 1.02 (window 144, a landing). The per-style criterion still holds
+(worst -0.72). The level change is the exact stop (kill chords now end on their sample stop + release, one block earlier
+than with 7237b9f's offset).
+
