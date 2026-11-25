@@ -21,15 +21,9 @@ public sealed class KillChordPlanner
     // always get enough lead to be scheduled sample-accurately.
     public const double ChordLeadBeats = 0.4;
     public const int MaxVoicing = 3;
-    // FMOD Studio stalls about 0.5 s around a section-jump landing; one-shots whose instance is created during the stall
-    // get their channel group too late and are dropped (never played late, ruling R12). Notes on the first beats after
-    // a phrase boundary are therefore handed to FMOD up to this many beats early instead of half a beat (ruling R15).
-    public const int PostBoundaryBeats = 1;
-    public const double PostBoundaryDispatchBeats = 1.0;
     public const int ColorCount = 3;
 
     const int StepsPerBeat = SoundManager.StepsPerBeat;
-    const int BeatsPerPhrase = SectionSelector.BarsPerPhrase * SoundManager.BeatsPerBar;
 
     sealed class Record
     {
@@ -46,9 +40,11 @@ public sealed class KillChordPlanner
     readonly List<KillNote> _after = new List<KillNote>();
     int _lastChordStep = -1;
 
-    /// <summary>First beats after a phrase boundary get a wider window (see <see cref="PostBoundaryDispatchBeats"/>).</summary>
-    public static double DispatchWindow(int beat) =>
-        beat % BeatsPerPhrase <= PostBoundaryBeats ? PostBoundaryDispatchBeats : OneShotScheduler.DispatchWindowBeats;
+    /// <summary>
+    /// How early a beat's notes are handed to FMOD: <see cref="OneShotScheduler.DispatchWindowBeats"/> on every beat.
+    /// The music has no timeline jump any more (the clock is <c>MusicTransport</c>), so phrase landings need no wider window.
+    /// </summary>
+    public static double DispatchWindow(int beat) => OneShotScheduler.DispatchWindowBeats;
 
     /// <summary>
     /// Adds a kill to a beat's chord and returns that beat's step (-1: none). <paramref name="chordStep"/> >= 0 joins that

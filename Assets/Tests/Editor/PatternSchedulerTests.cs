@@ -298,19 +298,28 @@ public class PatternSchedulerTests
     }
 
     [Test]
-    public void LandingBeats_UseWideDispatchWindow()
+    public void LandingBeats_UseDefaultDispatchWindow()
     {
+        // No landing special case any more: the boundary beat waits for half a beat like every other beat.
         var p = Make();
         At(15.0);
-        p.Update(15.0); // beat 16 notes: one beat ahead, handed over at once (landing window)
+        p.Update(15.0);
         ulong boundary = (ulong)(16 * SamplesPerBeat);
+        foreach (var s in _backend.Starts)
+            Assert.Less(s.dspStart + 8000, boundary, "a beat 16 note was handed over a beat early");
+
+        // within half a beat, the boundary beat's notes are handed over.
+        _backend.Starts.Clear();
+        At(15.6);
+        p.Update(15.6);
+        _shots.Update();
         int atBoundary = 0;
         foreach (var s in _backend.Starts)
             if (s.dspStart <= boundary && s.dspStart + 8000 >= boundary)
                 atBoundary++;
         Assert.Greater(atBoundary, 0);
 
-        // beat 18 is outside the landing window: its notes wait until half a beat away.
+        // beat 18 likewise.
         _backend.Starts.Clear();
         At(17.0);
         p.Update(17.0);
@@ -440,8 +449,10 @@ public class PatternSchedulerTests
         p.Update(15.0);
         Assert.AreEqual(3, CountOf("DreamyChoir", 16.0));
 
-        // beat 15.5 (250 ms before the boundary): none has started; the arrangement changes from beat 16.
+        // beat 15.5 (250 ms before the boundary): the beat 16 notes are handed over (half-beat window, no landing
+        // special case) but none has started; the arrangement changes from beat 16.
         At(15.5);
+        _shots.Update();
         _state.Combo = 3;
         int stopsBefore = _backend.Stops.Count;
         p.Invalidate(16, 15.5, 2.0);

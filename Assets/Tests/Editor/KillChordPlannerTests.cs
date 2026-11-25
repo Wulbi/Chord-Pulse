@@ -207,8 +207,8 @@ public class KillChordPlannerTests
     [Test]
     public void DispatchWindow_PhraseLanding()
     {
-        Assert.AreEqual(1.0, KillChordPlanner.DispatchWindow(16));
-        Assert.AreEqual(1.0, KillChordPlanner.DispatchWindow(17));
-        Assert.AreEqual(0.5, KillChordPlanner.DispatchWindow(18));
+        // No landing special case: every beat, boundary or not, uses half a beat.
+        foreach (int beat in new[] { 0, 1, 2, 15, 16, 17, 18, 31, 32, 33, 64, 65, 127 })
+            Assert.AreEqual(0.5, KillChordPlanner.DispatchWindow(beat), "beat " + beat);
     }
 }
