@@ -10,8 +10,16 @@
       Finds attack times in two frequency bands and pairs them: ref (e.g. a metronome click) vs test (e.g. a kill
       chord click). Prints the mean / max absolute and mean signed difference in ms.
 
+  python FMOD/Tools/analyze_capture.py spike <wav> [--allow-missing N] [--stall-beats 9.8,15.7] [--verbose]
+      Clock mode (the .beats.csv has a dsp column and there is no .timeline.csv: takes from unity-music-clock Task 6
+      on): the reference is the beat's frame in .beats.csv, computed by the music clock. For every click of .spike.csv
+      the error is attack frame - beat frame (ms; the test-band onset nearest the beat within half a beat). Prints mean
+      |error| / max / mean signed, for all clicks, per lead, for the 4 beats after each tempo change and (with
+      --stall-beats) for the 4 beats after each forced stall; missing (no click), late (> +5 ms), early (< -5 ms).
+      Exit 1 unless mean <= 2 ms, max <= 5 ms (after changes and stalls too), early 0, late 0, missing <= N.
+
   python FMOD/Tools/analyze_capture.py spike <wav> [--offset-ms X]
-      Task 3 scheduling spike. Pairs every scheduled SpikeClick (3 kHz, test band 2800-3200) with the Spike ref
+      Timeline mode (older takes with a .timeline.csv): Task 3 scheduling spike. Pairs every scheduled SpikeClick (3 kHz, test band 2800-3200) with the Spike ref
       timeline click (1 kHz, ref band 900-1100) of the same beat, using the take's sidecar logs
       (.beats.csv, .spike.csv, .timeline.csv). Prints error stats before and after removing a constant offset
       (the mean signed error of the take, or --offset-ms), for all beats and for the 4 beats after each section
@@ -24,8 +32,10 @@
       Prints the number of backward steps, max |delta beat - dt*bpm/60| (with its beat position) and the longest hold:
       consecutive frames whose delta beat is below 0.25 * dt*bpm/60, in ms of wall time, with its beat position. Exit 1
       if the beat ever goes back, a frame deviates by more than 0.05 beat, or the longest hold exceeds 30 ms.
+      Frames marked forced=1 (CaptureScenario stallMs: the frame that carries a forced Thread.Sleep) are printed on
+      their own and left out of the deviation and hold checks.
 
-  python FMOD/Tools/analyze_capture.py landings <wav>
+  python FMOD/Tools/analyze_capture.py landings <wav> [--at-beats 30.5,47.7]
       For every 16th beat of the beat log: delay of the logged boundary frame against the frame predicted from the
       previous beat and its BPM (ms), RMS of the first and the next half beat after the predicted boundary, RMS of the
       same place one phrase (boundary b-8) earlier, and silent runs (>= 20 ms, 5 ms windows with peak below -70 dBFS)
@@ -33,6 +43,8 @@
       window at the same offset in beats (ms scaled by bpm[b] / bpm[b-4]) after the previous bar's downbeat (beat b-4,
       its logged frame) is entirely silent by the same rule; a run starting less than 20 ms after the boundary, or any run when beat b-4 is not in the
       beat log, is always a gap.
+      --at-beats: the same silent-run check within one beat after each given (fractional) beat, e.g. forced stalls; a
+      run is a rest only if the same window 4 beats earlier is entirely silent. Prints the number of gaps.
 
   python FMOD/Tools/analyze_capture.py bands <wav> [--compare <ref wav>] [--window-beats 4] [--from-beat 8]
         [--hit-every N --hit-from M] [--chord-every 4 --chord-offset 1 --chord-ms 80]
@@ -203,6 +215,112 @@ def stats(values):
 
 
 def cmd_spike(args):
+    base = os.path.splitext(args.wav)[0]
+    rows = read_csv(base + ".beats.csv")
+    if rows and "dsp" in rows[0] and not os.path.isfile(base + ".timeline.csv"):
+        return cmd_spike_clock(args)
+    return cmd_spike_timeline(args)
+
+
+def cmd_spike_clock(args):
+    """Clock-referenced spike (unity-music-clock Task 7): every click against its beat's frame in .beats.csv, which the
+    music clock computed (MusicTransport / BeatClock DSP sample -> AudioCapture.FrameAtDsp). No reference click."""
+    audio, rate = read_wav(args.wav)
+    base = os.path.splitext(args.wav)[0]
+    beats = {int(r["beat"]): (int(r["frame"]), float(r["bpm"])) for r in read_csv(base + ".beats.csv")}
+    spikes = read_csv(base + ".spike.csv")
+    test = band_onsets(audio.mean(axis=1), rate, (2800.0, 3200.0))
+
+    changes = [b for b in sorted(beats) if b - 1 in beats and beats[b][1] != beats[b - 1][1]]
+    post = {}
+    for c in changes:
+        for b in range(c, c + 4):
+            post[b] = c
+    stalls = []
+    if args.stall_beats:
+        stalls = [float(v) for v in args.stall_beats.split(",") if v.strip()]
+    after_stall = {}
+    for s in stalls:
+        first = int(np.floor(s)) + 1
+        for b in range(first, first + 4):
+            after_stall[b] = s
+
+    wanted = sorted(int(r["beat"]) for r in spikes)
+    not_scheduled = sorted(int(r["beat"]) for r in spikes if r["scheduled"] != "1")
+    no_frame = [b for b in wanted if b not in beats]
+    measured = [b for b in wanted if b in beats]
+    # Every test-band onset belongs to the nearest wanted beat, if it lies within half a beat of it.
+    assigned = {b: [] for b in measured}
+    for t in test:
+        frame_t = t * rate
+        best, best_d = None, None
+        for b in measured:
+            d = frame_t - beats[b][0]
+            if abs(d) <= 0.5 * 60.0 / beats[b][1] * rate and (best_d is None or abs(d) < abs(best_d)):
+                best, best_d = b, d
+        if best is not None:
+            assigned[best].append(best_d / rate * 1000.0)
+    rows, missing, extra = [], [], []
+    for b in measured:
+        errs = assigned[b]
+        if not errs:
+            missing.append(b)
+            continue
+        e = min(errs, key=abs)
+        extra.extend((b, x) for x in errs if x is not e)
+        lead = next((float(r["lead"]) for r in spikes if int(r["beat"]) == b), float("nan"))
+        rows.append((b, lead, e))
+    missing_all = sorted(set(missing) | set(no_frame))
+    early = [(b, e) for b, _, e in rows if e < -5.0]
+    late = [(b, e) for b, _, e in rows if e > 5.0]
+
+    print("%s: clicks wanted %d (not scheduled %d: %s), beats without a .beats.csv frame %d, measured %d, missing %d, extra %d" % (
+        os.path.basename(args.wav), len(wanted), len(not_scheduled), " ".join(map(str, not_scheduled)) or "-",
+        len(no_frame), len(rows), len(missing_all), len(extra)))
+    print("tempo changes: " + (", ".join("beat %d (%g->%g BPM)" % (c, beats[c - 1][1], beats[c][1]) for c in changes) or "-"))
+    if missing_all:
+        print("  missing: " + " ".join(map(str, missing_all)))
+
+    def line(name, sel):
+        v = [x[2] for x in rows if sel(x)]
+        if not v:
+            print("  %-26s n=  0" % name)
+            return float("nan"), float("nan")
+        a = np.abs(np.array(v))
+        print("  %-26s n=%3d  mean|e| %5.2f  max|e| %5.2f  mean signed %+6.2f ms (%+.0f samples)  sd %4.2f" % (
+            name, len(v), a.mean(), a.max(), float(np.mean(v)), float(np.mean(v)) * rate / 1000.0, float(np.std(v))))
+        return float(a.mean()), float(a.max())
+
+    print("attack frame - beat frame (ms; + = late):")
+    overall = line("all", lambda x: True)
+    line("lead 1 beat (even)", lambda x: x[1] >= 0.99)
+    line("lead 0.3 beat (odd)", lambda x: x[1] < 0.99)
+    jump = line("4 beats after tempo change", lambda x: x[0] in post)
+    for c in changes:
+        line("  after change at %d" % c, lambda x, c=c: post.get(x[0]) == c)
+    stall = (float("nan"), float("nan"))
+    if stalls:
+        stall = line("4 beats after a stall", lambda x: x[0] in after_stall)
+        for s in stalls:
+            line("  after stall at %g" % s, lambda x, s=s: after_stall.get(x[0]) == s)
+    if args.verbose:
+        for b, lead, e in rows:
+            print("    beat %3d lead %.1f err %+7.2f ms%s%s" % (b, lead, e, "  *change" if b in post else "",
+                                                            "  *stall" if b in after_stall else ""))
+    print("TIMING: early %d, late %d (+-5 ms), missing %d (allowed %d)" % (len(early), len(late), len(missing_all), args.allow_missing))
+    if early:
+        print("  early: " + ", ".join("%d (%+.2f ms)" % x for x in early))
+    if late:
+        print("  late: " + ", ".join("%d (%+.2f ms)" % x for x in late))
+    ok_acc = len(rows) > 0 and overall[0] <= 2.0 and overall[1] <= 5.0 and (np.isnan(jump[1]) or jump[1] <= 5.0) and \
+        (np.isnan(stall[1]) or stall[1] <= 5.0)
+    ok = ok_acc and not early and not late and len(missing_all) <= args.allow_missing
+    print("GATE (mean|e| <= 2 ms, max|e| <= 5 ms incl. the 4 beats after tempo changes%s; early 0, late 0, missing <= %d): %s" % (
+        " and after stalls" if stalls else "", args.allow_missing, "PASS" if ok else "FAIL"))
+    return 0 if ok else 1
+
+
+def cmd_spike_timeline(args):
     audio, rate = read_wav(args.wav)
     base = os.path.splitext(args.wav)[0]
     beats = {int(r["beat"]): (int(r["frame"]), float(r["bpm"])) for r in read_csv(base + ".beats.csv")}
@@ -434,6 +552,37 @@ def cmd_landings(args):
             sil += "  (rest: " + ", ".join(rests) + ")"
         print("%4d  %4.0f  %+8.0f  %13s  %12s  %14s  %s" % (
             b, bpm, (frame - expected) / rate * 1000.0, fmt_db(first), fmt_db(nxt), prev, sil))
+    if args.at_beats:
+        # Arbitrary points (e.g. forced stalls): silent runs within one beat after the point, its frame interpolated
+        # between the logged beats; rest = the same window one bar (4 beats) earlier is entirely silent too.
+        thr = 10 ** (-70.0 / 20.0)
+
+        def frame_at(x):
+            b0 = int(np.floor(x))
+            if b0 not in beats or b0 + 1 not in beats:
+                return None
+            return beats[b0][0] + (x - b0) * (beats[b0 + 1][0] - beats[b0][0])
+        print("point  frame  silent runs >= 20 ms within one beat after the point (offset+length ms); rest = also silent 4 beats earlier")
+        total_gaps = 0
+        for x in [float(v) for v in args.at_beats.split(",") if v.strip()]:
+            f0 = frame_at(x)
+            if f0 is None:
+                print("%6g  not in the beat log" % x)
+                continue
+            beat_len = rate * 60.0 / beats[int(np.floor(x))][1]
+            gaps, rests = [], []
+            for off, length in silent_runs(mono, f0, beat_len, rate):
+                e = frame_at(x - 4)
+                rest = False
+                if e is not None:
+                    a0 = int(round(e + off * rate / 1000.0))
+                    seg = mono[a0:a0 + int(round(length * rate / 1000.0))]
+                    rest = len(seg) > 0 and float(np.max(np.abs(seg))) < thr
+                (rests if rest else gaps).append("%.0f+%.0f" % (off, length))
+            total_gaps += len(gaps)
+            print("%6g  %d  %s%s" % (x, int(round(f0)), ", ".join(gaps) if gaps else "-",
+                                     "  (rest: " + ", ".join(rests) + ")" if rests else ""))
+        print("gaps after the points: %d" % total_gaps)
     return 0
 
 
@@ -441,7 +590,11 @@ def cmd_frames(args):
     path = os.path.splitext(args.wav)[0] + ".frames.csv"
     if not os.path.isfile(path):
         raise SystemExit("frame log not found: " + path)
-    rows = [(float(r["dt"]), float(r["beat"]), float(r["bpm"])) for r in read_csv(path)]
+    raw = read_csv(path)
+    forced_flags = [r.get("forced") == "1" for r in raw]
+    rows = [(float(r["dt"]), float(r["beat"]), float(r["bpm"])) for r in raw]
+    if any(forced_flags):
+        return frames_with_forced(path, rows, forced_flags)
     # Frames before the music runs report a negative beat; start at the first frame with a beat >= 0.
     first = next((i for i, r in enumerate(rows) if r[1] >= 0), None)
     if first is None or len(rows) - first < 2:
@@ -470,6 +623,47 @@ def cmd_frames(args):
             hold_ms = 0.0
     print("%s: %d frames, backward steps %d, frozen frames (delta 0) %d, max |delta beat - dt*bpm/60| %.4f beat at beat %.2f, frames over 0.05: %d, longest hold %.0f ms at beat %.2f (limit 30 ms)" % (
         os.path.basename(path), len(rows) - first, backward, stalled, worst, worst_at, over, hold_best, hold_at))
+    return 1 if backward or over or hold_best > 30.0 else 0
+
+
+def frames_with_forced(path, rows, forced):
+    """frames for a take with forced stalls (column forced = 1 on the frame whose dt holds the Thread.Sleep): those
+    frames are reported on their own and left out of the over-0.05 count, the max deviation and the hold; every other
+    frame is judged as in a stall-free take (backward steps count everywhere)."""
+    first = next((i for i, r in enumerate(rows) if r[1] >= 0), None)
+    if first is None or len(rows) - first < 2:
+        raise SystemExit("no frames with a running beat clock in " + path)
+    backward, worst, worst_at, over, over_at = 0, 0.0, 0.0, 0, []
+    hold_ms, hold_best, hold_at, hold_start = 0.0, 0.0, 0.0, 0.0
+    for i in range(first + 1, len(rows)):
+        dt, beat, bpm = rows[i]
+        delta = beat - rows[i - 1][1]
+        if delta < 0:
+            backward += 1
+        dev = abs(delta - dt * bpm / 60.0)
+        if forced[i]:
+            print("  forced-stall frame: dt %.0f ms, beat %.3f -> %.3f (delta %.3f, dt*bpm/60 %.3f, |dev| %.4f beat)" % (
+                dt * 1000.0, rows[i - 1][1], beat, delta, dt * bpm / 60.0, dev))
+            hold_ms = 0.0
+            continue
+        if dev > worst:
+            worst, worst_at = dev, beat
+        if dev > 0.05:
+            over += 1
+            over_at.append("%.2f (dt %.0f ms, dev %.3f)" % (beat, dt * 1000.0, dev))
+        if delta < 0.25 * dt * bpm / 60.0:
+            if hold_ms == 0.0:
+                hold_start = rows[i - 1][1]
+            hold_ms += dt * 1000.0
+            if hold_ms > hold_best:
+                hold_best, hold_at = hold_ms, hold_start
+        else:
+            hold_ms = 0.0
+    print("%s: %d frames (%d forced-stall frames excluded), backward steps %d, max |delta beat - dt*bpm/60| %.4f beat at beat %.2f, "
+          "frames over 0.05 outside the forced-stall frames: %d, longest hold %.0f ms at beat %.2f (limit 30 ms)" % (
+              os.path.basename(path), len(rows) - first, sum(forced[first:]), backward, worst, worst_at, over, hold_best, hold_at))
+    if over_at:
+        print("  over: " + ", ".join(over_at[:40]))
     return 1 if backward or over or hold_best > 30.0 else 0
 
 
@@ -697,12 +891,15 @@ def main():
     p.add_argument("--offset-ms", type=float, default=None, help="constant correction; default: this take's mean signed error")
     p.add_argument("--max-pair-ms", type=float, default=40.0)
     p.add_argument("--verbose", action="store_true")
+    p.add_argument("--allow-missing", type=int, default=0, help="clock mode: clicks allowed to be missing")
+    p.add_argument("--stall-beats", default="", help="clock mode: comma-separated forced-stall beats; the 4 beats after each are reported")
     p.set_defaults(func=cmd_spike)
     p = sub.add_parser("frames")
     p.add_argument("wav")
     p.set_defaults(func=cmd_frames)
     p = sub.add_parser("landings")
     p.add_argument("wav")
+    p.add_argument("--at-beats", default="", help="comma-separated beats (e.g. forced stalls): silent runs within one beat after each")
     p.set_defaults(func=cmd_landings)
     p = sub.add_parser("tail")
     p.add_argument("wav")

@@ -62,6 +62,14 @@ public sealed class CaptureScenario : MonoBehaviour
              "event, handle, DSP clock, ...). Off = the backends compute nothing for it.")]
     [SerializeField] bool logOneShots;
 
+    [Header("forced stalls (unity-music-clock Task 7)")]
+    [Tooltip("> 0: System.Threading.Thread.Sleep(stallMs) once on the frame in which SoundManager.BeatPosition first " +
+             "passes each value of stallAtBeats (a forced main-thread stall). The frame after it is counted as a forced " +
+             "stall in .cpu.txt, apart from the unforced stalls, and marked forced=1 in .frames.csv. 0 = off.")]
+    [SerializeField] int stallMs;
+    [Tooltip("Visual beats at which stallMs is forced (ascending).")]
+    [SerializeField] float[] stallAtBeats = new float[0];
+
     public enum Solo { none, musicBed, harmony, bedWithoutHarmony, feature }
 
     [Header("Task 11: bed pitched layers")]
@@ -135,6 +143,10 @@ public sealed class CaptureScenario : MonoBehaviour
     readonly List<string> _spikeLog = new List<string>();
     int _stalls;
     float _longestFrame;
+    // forced stalls: next stallAtBeats index, whether the previous frame slept, frames counted as forced, resyncs seen
+    int _nextStall, _forcedStalls, _resyncs;
+    bool _forcedPending;
+    readonly List<string> _stallLog = new List<string>();
     // one-shots (SoundManager's shared scheduler / backend, read through reflection: _shots, _shotBackend, _patterns)
     FmodOneShotBackend _killBackend;
     FieldInfo _killSchedulerField, _patternsField, _corePatternsField;
@@ -277,11 +289,17 @@ public sealed class CaptureScenario : MonoBehaviour
 
         // A long frame delays kills and the beat log; such a take is not a valid reference.
         float dt = Time.unscaledDeltaTime;
+        // The frame after a forced Thread.Sleep carries it in its dt: counted apart from the unforced stalls.
+        bool forced = _forcedPending;
+        _forcedPending = false;
         if (dt > 0.1f)
         {
-            if (_lastBeat >= 0)
+            if (forced)
+                _forcedStalls++;
+            else if (_lastBeat >= 0)
                 _stalls++; // stalls before the first beat (music loading) do not matter
-            Debug.LogWarning("[CaptureScenario] Frame stall " + (dt * 1000f).ToString("F0") + " ms at beat " + _lastBeat);
+            Debug.LogWarning("[CaptureScenario] Frame stall " + (dt * 1000f).ToString("F0") + " ms at beat " + _lastBeat +
+                             (forced ? " (forced)" : ""));
         }
         _longestFrame = Mathf.Max(_longestFrame, dt);
 
@@ -303,7 +321,8 @@ public sealed class CaptureScenario : MonoBehaviour
 
         if (holdArrangement)
             HoldArrangement(sound);
-        _frameLog.Add(string.Format(CultureInfo.InvariantCulture, "{0:F6},{1:F5},{2}", dt, sound.BeatPosition, sound.CurrentBpm));
+        _frameLog.Add(string.Format(CultureInfo.InvariantCulture, "{0:F6},{1:F5},{2},{3}", dt, sound.BeatPosition, sound.CurrentBpm,
+            forced ? 1 : 0));
 
         if (logOneShots && _clock.HasAnchor)
         {
@@ -325,6 +344,7 @@ public sealed class CaptureScenario : MonoBehaviour
         if (tensionSteps && beats > 0)
             sound.Tension = TensionStepValues[Math.Min(TensionStepValues.Length - 1, Math.Max(0, sound.CurrentBeat) * TensionStepValues.Length / beats)];
         LogDuckMeter();
+        ForceStall(sound);
 
         int beat = sound.CurrentBeat;
         while (beat > _lastBeat && _lastBeat < beats)
@@ -339,6 +359,25 @@ public sealed class CaptureScenario : MonoBehaviour
                 return;
             }
             QueueKills(sound, _lastBeat);
+        }
+    }
+
+    // stallMs / stallAtBeats: one Thread.Sleep per value, on the first frame whose visual beat is at or past it (after
+    // this frame's scheduling, so the next frame sees the whole gap).
+    void ForceStall(SoundManager sound)
+    {
+        if (stallMs <= 0 || stallAtBeats == null)
+            return;
+        double position = sound.BeatPosition;
+        while (_nextStall < stallAtBeats.Length && position >= stallAtBeats[_nextStall])
+        {
+            bool okNow = _clock.BeatAt(FmodClock.MasterDsp(), out double mixerBeat);
+            _stallLog.Add(string.Format(CultureInfo.InvariantCulture, "STALL forced {0} ms at visual beat {1:F3} (target {2:F2}, mixer beat {3:F3})",
+                stallMs, position, stallAtBeats[_nextStall], okNow ? mixerBeat : -1));
+            Debug.Log("[CaptureScenario] " + _stallLog[_stallLog.Count - 1]);
+            _nextStall++;
+            System.Threading.Thread.Sleep(stallMs);
+            _forcedPending = true;
         }
     }
 
@@ -395,6 +434,11 @@ public sealed class CaptureScenario : MonoBehaviour
     // A resync re-anchors the clock at a bar: the rest of the phrase is taken again.
     void OnResync()
     {
+        _resyncs++;
+        string line = "RESYNC at capture frame " + AudioCapture.FramesCaptured + ", master dsp " + FmodClock.MasterDsp() +
+                      ", anchor beat " + (_clock.HasAnchor ? _clock.AnchorBeat.ToString(CultureInfo.InvariantCulture) : "-");
+        _stallLog.Add(line);
+        Debug.LogWarning("[CaptureScenario] " + line);
         if (_clock.HasAnchor)
             LogBeats(_clock.AnchorBeat);
     }
@@ -705,7 +749,7 @@ public sealed class CaptureScenario : MonoBehaviour
         _transport.PhraseStarted -= OnPhrase;
         _transport.Resynced -= OnResync;
         sound.MusicParameterSet -= OnMusicParameter;
-        File.WriteAllText(Path.ChangeExtension(path, ".frames.csv"), "dt,beat,bpm\n" + string.Join("\n", _frameLog) + "\n");
+        File.WriteAllText(Path.ChangeExtension(path, ".frames.csv"), "dt,beat,bpm,forced\n" + string.Join("\n", _frameLog) + "\n");
         File.WriteAllText(Path.ChangeExtension(path, ".studio.csv"), "frame,beat_now,dt,studio_update,core_dsp\n" + string.Join("\n", _studioLog) + "\n");
         File.WriteAllText(Path.ChangeExtension(path, ".params.csv"), "beat_now,name,value\n" + string.Join("\n", _paramLog) + "\n");
         File.WriteAllText(Path.ChangeExtension(path, ".beats.csv"), BeatLog(_beats));
@@ -771,8 +815,14 @@ public sealed class CaptureScenario : MonoBehaviour
             "[CaptureScenario] DONE {0}: STUDIO update avg {9:F2}% max {10:F2}%; CORE dsp avg {1:F2}% max {2:F2}%, core total (dsp+stream+update) avg {3:F2}% max {4:F2}%, samples {5}, dropped frames {6}, stalls >100 ms after the first beat {7} (take is only a valid reference if 0), longest frame {8:F0} ms",
             Path.GetFileName(path), dspAvg, _dspMax, totalAvg, _totalMax, _cpuSamples, AudioCapture.FramesDropped,
             _stalls, _longestFrame * 1000f, studioAvg, _studioMax) + spikeSummary + killSummary + oneShotSummary;
+        if (stallMs > 0)
+            summary += string.Format(CultureInfo.InvariantCulture, "; forced stalls {0} ({1} ms at {2}; not counted in the stalls above)",
+                _forcedStalls, stallMs, stallAtBeats == null ? "-" : string.Join("/", Array.ConvertAll(stallAtBeats, v => v.ToString("0.###", CultureInfo.InvariantCulture))));
+        summary += "; RESYNCED " + _resyncs;
         if (_stopFrame >= 0)
             summary += "; STOP frame " + _stopFrame + (_restartFrame >= 0 ? "; RESTART frame " + _restartFrame : "");
+        foreach (var line in _stallLog)
+            summary += "\n" + line;
         Debug.Log(summary);
         File.WriteAllText(Path.ChangeExtension(path, ".cpu.txt"), summary + "\n");
 #if UNITY_EDITOR
