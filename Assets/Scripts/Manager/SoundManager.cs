@@ -37,7 +37,7 @@ public sealed class SoundManager : SingletonBehaviour<SoundManager>, IKillBedSta
     // ~5 ms region-end ramp (FMOD/Tools/instruments.py PATTERN_STOP_FADE_MS).
     readonly FmodOneShotBackend _shotBackend = new FmodOneShotBackend();
     OneShotScheduler _shots;
-    // The pattern layers (PatternTable: the bed's pitched layers, the drums and the feature loops) as one-shots, unless
+    // The pattern layers (PatternTable: the bed's pitched layers, the drums, the feature loops and the fever layers) as one-shots, unless
     // legacyLayers keeps them on the timeline.
     // Two schedulers: _patterns takes every layer but the core kick / snare / hat. Lookahead: one beat of dispatch window
     // after a phrase boundary plus the largest sample onset, with margin. _corePatterns takes the core layers
@@ -68,7 +68,7 @@ public sealed class SoundManager : SingletonBehaviour<SoundManager>, IKillBedSta
     [Tooltip("Seed for the per-phrase section choice. 0 = different every round.")]
     [SerializeField] int sectionSeed;
     [Tooltip("Pattern layers (bed pitched layers: bass, pluck, combo, tension, style layers; style drums and the core kit; " +
-             "the feature loops): true = the old timeline tracks play them " +
+             "the feature loops; the fever layers): true = the old timeline tracks play them " +
              "(global FMOD parameter LegacyLayers 1, PatternScheduler silent); false = Unity schedules them as one-shots " +
              "(LegacyLayers 0). Read when the music starts. Default true until the drop burst of one styles take " +
              "(Docs/Captures/README.md Task 11, fix round 1) is resolved.")]
@@ -468,7 +468,9 @@ public sealed class SoundManager : SingletonBehaviour<SoundManager>, IKillBedSta
             _sectionPhraseNext = ArrangementTimeline.NextSectionPhrase(_sections.Current.Section, _sectionPhraseCurrent, _sections.Next.Section);
             OnNextSectionChanged();
         }
-        // Pattern notes already scheduled from the build-up bar on change too (style / variation / combo 0 there).
+        // Pattern notes already scheduled from the build-up bar on change too (style / variation / combo 0 there, fever
+        // layers, no core kick): RefreshArrangement invalidates both schedulers from the first changed step, the build-up
+        // bar's first step (the core one may already have handed that bar's kicks to FMOD; they are cancelled unstarted).
         if (_conductor.Clock.BeatAt(MusicConductor.MasterDsp(), out double now))
             RefreshArrangement(now);
     }

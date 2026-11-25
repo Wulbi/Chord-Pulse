@@ -91,6 +91,27 @@ public class ArrangementTimelineTests
     }
 
     [Test]
+    public void Fever_StepFunction_BuildBar_ImpactFirstBeat_OutroLastBar()
+    {
+        // The fever layers' phase (pattern_fever.py) per step, no lead: the timeline's FeverBuild / FeverImpact / Fever /
+        // FeverOutro parameter rule (SoundManager.UpdateFever) without its 0.25 s lead. Impact is fever's first beat.
+        var x = Inputs();
+        x.FeverStart = 96;
+        for (int step = 80; step < 140; step++)
+        {
+            var expected = step < 88 || step >= 128 ? FeverPhaseMask.None
+                : step < 96 ? FeverPhaseMask.Build
+                : step < 96 + SoundManager.StepsPerBeat ? FeverPhaseMask.Impact
+                : step < 120 ? FeverPhaseMask.Fever
+                : FeverPhaseMask.Outro;
+            Assert.AreEqual(expected, ArrangementTimeline.At(step, in x).Fever, $"step {step}");
+        }
+        x.FeverStart = -1;
+        for (int step = 80; step < 140; step++)
+            Assert.AreEqual(FeverPhaseMask.None, ArrangementTimeline.At(step, in x).Fever, $"no fever, step {step}");
+    }
+
+    [Test]
     public void FeatureLoopAt_StepFunction_SwitchesOnTheBoundary_ZeroOverFever()
     {
         var x = Inputs(); // current loop 5, next loop 6, next phrase from step 64

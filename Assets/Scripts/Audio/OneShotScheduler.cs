@@ -483,7 +483,7 @@ public sealed class FmodOneShotBackend : IOneShotBackend
             Instance = instance, Start = dspStart, ReleaseSamples = _release.SamplesFor(inst, bus, _sampleRate), Bus = bus,
             VoiceBlocks = InstrumentTable.VoiceDelayBlocks(inst, bus), PathBlocks = InstrumentTable.PathDelayBlocks(bus),
         };
-        DiagnosticLog?.Invoke("start," + handle + "," + NowDsp + "," + dspStart);
+        DiagnosticLog?.Invoke("start," + handle + "," + NowDsp + "," + dspStart + "," + inst + "," + bus + "," + midi);
         return handle;
     }
 

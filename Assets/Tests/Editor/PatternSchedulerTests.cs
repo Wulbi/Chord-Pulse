@@ -10,6 +10,7 @@ public class PatternSchedulerTests
             new List<(int, Instrument, int, float, ulong)>();
         public readonly List<(int handle, ulong dspStop)> Stops = new List<(int, ulong)>();
         public readonly List<ulong> NowAtStart = new List<ulong>();
+        public readonly List<int> Releases = new List<int>();
         public ulong Now;
         int _next;
         public ulong NowDsp => Now;
@@ -23,7 +24,7 @@ public class PatternSchedulerTests
         }
 
         public void Stop(int handle, ulong dspStop) => Stops.Add((handle, dspStop));
-        public void Release(int handle) { }
+        public void Release(int handle) => Releases.Add(handle);
         public bool IsFinished(int handle) => false;
     }
 
@@ -794,5 +795,101 @@ public class PatternSchedulerTests
         // the other layers are not this scheduler's
         foreach (var e in _events)
             Assert.AreEqual(Instrument.Drums, e.note.Instrument);
+    }
+
+    // ---- Task 14: fever layers (pattern_fever.py); the arrangement is ArrangementTimeline's step function ----
+
+    // A phrase from step 0 in one style, fever queued from feverStartStep (-1: none); everything else neutral.
+    static ArrangementInputs FeverInputs(int feverStartStep, int style) => new ArrangementInputs
+    {
+        PhraseStartStep = 0, StyleCurrent = style, StyleNext = style, SectionPhraseCurrent = 1, SectionPhraseNext = 2,
+        Intensity = 1, ComboBar = int.MaxValue, FeverStart = feverStartStep,
+    };
+
+    static readonly string[] LatinClips = { "LatinBass", "LatinMarimba", "LatinConga", "LatinCowbell", "LatinBongo", "LatinClaves", "LatinShaker" };
+
+    [Test]
+    public void FeverQueued_ReplacesBuildBar()
+    {
+        var inputs = FeverInputs(-1, 1); // latin
+        _arr.F = step => ArrangementTimeline.At(step, in inputs);
+        var p = Make(lookahead: 4.0, mask: ~PatternTable.CoreLayerMask);
+        At(11.0);
+        p.Update(11.0); // (11, 15]: bar 4 of the phrase in latin
+        Assert.Greater(CountOf("LatinBass", 12.0), 0, "the latin bass of bar 4 is scheduled");
+        Assert.AreEqual(0, CountOf("FeverBuildRoll") + CountOf("FeverBuildRiser"));
+
+        // QueueFever: fever from beat 16, so bar 4 (beats 12..16) becomes the build-up bar (style 0 + roll and riser).
+        inputs.FeverStart = 32;
+        _events.Clear();
+        p.Invalidate(12, 11.0, 2.0);
+        p.Update(11.0);
+        Assert.AreEqual(9, CountOf("FeverBuildRoll"), "roll at 12, 12.5, 13, 13.5, 14, 14.25, 14.5, 14.75, 15");
+        Assert.AreEqual(5, CountOf("FeverBuildRiser"), "riser at 14 .. 15 (bar 4's notes only)");
+        foreach (var e in _events)
+            Assert.GreaterOrEqual(e.beat, 12.0, "only the build-up bar is re-stated");
+        foreach (var name in LatinClips)
+            Assert.AreEqual(0, CountOf(name), name + " re-scheduled in the build-up bar");
+        Assert.Greater(CountOf("BassA"), 0, "the build-up bar plays style 0");
+
+        At(15.0);
+        _shots.Update();
+        ulong build = (ulong)(12 * SamplesPerBeat) - 4096;
+        foreach (var s in _backend.Starts)
+            Assert.IsFalse(s.dspStart >= build && (s.inst == Instrument.BassEnv || s.inst == Instrument.Marimba),
+                $"cancelled latin note started: {s.inst} {s.midi}");
+    }
+
+    [Test]
+    public void Impact_OnlyFirstBeat()
+    {
+        var inputs = FeverInputs(32, 0); // fever beats 16..32
+        _arr.F = step => ArrangementTimeline.At(step, in inputs);
+        var p = Make(lookahead: 16.0, mask: ~PatternTable.CoreLayerMask);
+        At(15.5);
+        p.Update(15.5); // (15.5, 31.5]: the whole fever phrase
+        Assert.AreEqual(3, CountOf("FeverImpact"), "kick, clap and open hat once");
+        foreach (var e in _events)
+            if (IsNoteOf("FeverImpact", e.note, e.beat))
+                Assert.AreEqual(16.0, e.beat, "impact note after fever's first beat");
+        Assert.AreEqual(20, CountOf("FeverLead"), "the lead plays the whole fever phrase");
+        Assert.Greater(CountOf("FeverOutroFall"), 0);
+        foreach (var e in _events)
+            if (IsNoteOf("FeverOutroFall", e.note, e.beat) || IsNoteOf("FeverOutroSnare", e.note, e.beat))
+                Assert.GreaterOrEqual(e.beat, 28.0, "outro note before fever's last bar");
+        Assert.AreEqual(0, CountOf("FeverBuildRoll", 16.0) + CountOf("FeverBuildRiser", 16.0), "build-up notes in fever");
+        Assert.AreEqual(2, CountOf("FeverBuildRoll") + CountOf("FeverBuildRiser"), "the build-up bar's last roll and riser notes (15.75)");
+    }
+
+    [Test]
+    public void FeverQueued_CancelsCoreKickInBuildBar()
+    {
+        var inputs = FeverInputs(-1, 0);
+        _arr.F = step => ArrangementTimeline.At(step, in inputs);
+        var p = MakeCore();
+        At(10.5);
+        p.Update(10.5); // core: (10.5, 14.5], handed to the backend at once
+        ulong buildStart = (ulong)(12 * SamplesPerBeat), feverStart = (ulong)(16 * SamplesPerBeat);
+        var kicks = new List<(int handle, ulong start)>();
+        foreach (var s in _backend.Starts)
+            if (s.inst == Instrument.Drums && s.midi == Kick && s.dspStart + 4096 >= buildStart && s.dspStart < feverStart)
+                kicks.Add((s.handle, s.dspStart));
+        Assert.AreEqual(2, kicks.Count, "the kicks of beats 12 and 14 are with the backend");
+
+        // QueueFever: the bar 12..16 becomes the build-up bar, where the core kick is silent.
+        inputs.FeverStart = 32;
+        int startsBefore = _backend.Starts.Count;
+        _events.Clear();
+        p.Invalidate(12, 10.5, 2.0);
+        p.Update(10.5);
+        foreach (var (handle, start) in kicks)
+        {
+            Assert.IsTrue(_backend.Stops.Exists(x => x.handle == handle && x.dspStop < start), $"kick {handle} not stopped before its start");
+            Assert.Contains(handle, _backend.Releases, $"kick {handle} not released");
+        }
+        Assert.AreEqual(0, CountDrum(Kick, b => b >= 12 && b < 16), "a kick re-scheduled in the build-up bar");
+        for (int i = startsBefore; i < _backend.Starts.Count; i++)
+            Assert.IsFalse(_backend.Starts[i].inst == Instrument.Drums && _backend.Starts[i].midi == Kick, "a kick handed over again");
+        Assert.Greater(CountDrum(Snare, b => b >= 12 && b < 16), 0, "the core snare of the build-up bar is re-stated");
     }
 }

@@ -142,6 +142,39 @@ public class InstrumentCoverageTests
         }
     }
 
+    /// <summary>
+    /// The eight fever tracks (FMOD/Tools/pattern_fever.py): one layer and one clip each, in the phase of its old condition
+    /// (FeverBuild / FeverImpact / Fever = the whole fever phrase / FeverOutro), and every note voiced.
+    /// </summary>
+    [TestCase("Fever lead", "FeverLead", FeverPhaseMask.Impact | FeverPhaseMask.Fever | FeverPhaseMask.Outro, 20)]
+    [TestCase("Fever shaker", "FeverShaker", FeverPhaseMask.Impact | FeverPhaseMask.Fever | FeverPhaseMask.Outro, 32)]
+    [TestCase("Fever bass fifths", "FeverBassFifths", FeverPhaseMask.Impact | FeverPhaseMask.Fever | FeverPhaseMask.Outro, 8)]
+    [TestCase("Fever build roll", "FeverBuildRoll", FeverPhaseMask.Build, 48)]
+    [TestCase("Fever build riser", "FeverBuildRiser", FeverPhaseMask.Build, 32)]
+    [TestCase("Fever impact", "FeverImpact", FeverPhaseMask.Impact, 12)]
+    [TestCase("Fever outro fall", "FeverOutroFall", FeverPhaseMask.Outro, 32)]
+    [TestCase("Fever outro snare", "FeverOutroSnare", FeverPhaseMask.Outro, 32)]
+    public void FeverClips_OnePerTrack_InTheirPhase(string layer, string clipName, FeverPhaseMask phases, int notes)
+    {
+        int layerIndex = System.Array.IndexOf(PatternTable.LayerNames, layer);
+        Assert.GreaterOrEqual(layerIndex, 0, $"no layer {layer}");
+        Assert.AreEqual(0UL, PatternTable.CoreLayerMask & (1UL << layerIndex), "fever layers are not core layers");
+        int clips = 0;
+        foreach (var c in PatternTable.Clips)
+            if (c.Layer == layerIndex)
+                clips++;
+        Assert.AreEqual(1, clips, $"clips of {layer}");
+        var clip = PatternTable.Clips[System.Array.IndexOf(PatternTable.ClipNames, clipName)];
+        Assert.AreEqual(layerIndex, clip.Layer);
+        Assert.AreEqual(phases, clip.Fever);
+        Assert.AreEqual((15, 0, 4, 0, 0f, 0), (clip.StyleMask, (int)clip.VariationMin, (int)clip.VariationMax, (int)clip.ComboMin, clip.IntensityMin, (int)clip.FeatureLoop));
+        Assert.AreEqual(notes, clip.Count);
+        var voiced = new List<(Instrument, OutputBus, int)>();
+        for (int i = clip.First; i < clip.First + clip.Count; i++)
+            voiced.Add((PatternTable.Notes[i].Instrument, PatternTable.Notes[i].Bus, PatternTable.Notes[i].Midi));
+        AssertCovered(voiced);
+    }
+
     static BedNotes.Note[] BedNotesArray(string name)
     {
         switch (name)

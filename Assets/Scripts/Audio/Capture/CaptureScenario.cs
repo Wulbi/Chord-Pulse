@@ -15,7 +15,7 @@ using UnityEngine;
 /// </summary>
 public sealed class CaptureScenario : MonoBehaviour
 {
-    public enum Scenario { baseline, heavy, spike, styles, duck, features }
+    public enum Scenario { baseline, heavy, spike, styles, duck, features, fever }
 
     [SerializeField] Scenario scenario = Scenario.baseline;
     [SerializeField] int seed = 7;
@@ -97,6 +97,14 @@ public sealed class CaptureScenario : MonoBehaviour
     [Tooltip("features: phrase featureFirstPhrase + k - 1 plays feature loop k (1 .. 12; FeatureSelector Current / Next " +
              "forced every frame), the other phrases none; no kills. From phrase 1: 13 phrases = 208 beats.")]
     [SerializeField] int featureFirstPhrase = 1;
+
+    [Header("fever (Task 14)")]
+    [Tooltip("fever: SoundManager.QueueFever() at this beat and every feverEveryBeats after it (0 = once); one kill chord " +
+             "per colour on every beat (fever kill chords: style 0). Seed 7: fever 32..48 (build-up bar 28..32), 96..112.")]
+    [SerializeField] int feverAtBeat = 24;
+    [SerializeField] int feverEveryBeats = 64;
+    [Tooltip("fever: no kills (timing / level takes of the bed alone).")]
+    [SerializeField] bool feverWithoutKills;
 
     const int Colors = 3;
 
@@ -743,6 +751,13 @@ public sealed class CaptureScenario : MonoBehaviour
                 break;
             case Scenario.features:
                 break; // no kills
+            case Scenario.fever:
+                if (beat >= feverAtBeat && (beat == feverAtBeat || (feverEveryBeats > 0 && (beat - feverAtBeat) % feverEveryBeats == 0)))
+                    sound.QueueFever();
+                if (!feverWithoutKills)
+                    for (int color = 0; color < Colors; color++)
+                        sound.QueueKillChord(color);
+                break;
             case Scenario.duck:
                 if (duckKills && beat % 4 == 0)
                     for (int color = 0; color < Colors; color++)
