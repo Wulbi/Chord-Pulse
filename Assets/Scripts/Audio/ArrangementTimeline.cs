@@ -67,6 +67,30 @@ public static class ArrangementTimeline
         return step >= x.FeverStart + FeverSteps - StepsPerBar ? FeverPhaseMask.Outro : FeverPhaseMask.Fever;
     }
 
+    /// <summary>
+    /// Feature loop that plays at a step (step function, no lead): the phrase's loop, switched exactly on the phrase
+    /// boundary; 0 over fever and its build-up bar (fever is the highlight, no guest loop plays over any of it).
+    /// </summary>
+    public static int FeatureLoopAt(int step, in ArrangementInputs x)
+    {
+        if (FeverZone(step, in x))
+            return 0;
+        return step >= x.PhraseStartStep + StepsPerPhrase ? x.FeatureNext : x.FeatureCurrent;
+    }
+
+    /// <summary>
+    /// The music event's FeatureLoop parameter for the timeline loops (legacy path), from a step that already includes
+    /// SoundManager's parameter lead: a next loop is switched on as soon as the lead step reaches the phrase boundary, but
+    /// without a next loop the current one stays on until the phrase has really ended (the inputs advance), so the lead
+    /// does not cut its last notes. 0 while the lead step is in fever or its build-up bar.
+    /// </summary>
+    public static int FeatureLoopParameter(double leadStep, in ArrangementInputs x)
+    {
+        if (x.FeverStart >= 0 && leadStep >= x.FeverStart - FeverBuildSteps && leadStep < x.FeverStart + FeverSteps)
+            return 0;
+        return leadStep >= x.PhraseStartStep + StepsPerPhrase && x.FeatureNext != 0 ? x.FeatureNext : x.FeatureCurrent;
+    }
+
     public static ArrangementState At(int step, in ArrangementInputs x)
     {
         bool next = step >= x.PhraseStartStep + StepsPerPhrase;
@@ -82,7 +106,7 @@ public static class ArrangementTimeline
             Combo = zone ? 0 : bar > x.ComboBar ? x.LiveCombo : System.Math.Max(0, x.AppliedCombo),
             Intensity = fever ? MaxIntensity : breath ? 0 : x.Intensity,
             Fever = phase,
-            FeatureLoop = zone ? 0 : next ? x.FeatureNext : x.FeatureCurrent,
+            FeatureLoop = FeatureLoopAt(step, in x),
             SectionPhrase = next ? x.SectionPhraseNext : x.SectionPhraseCurrent,
             Legacy = x.Legacy,
         };

@@ -15,7 +15,7 @@ using UnityEngine;
 /// </summary>
 public sealed class CaptureScenario : MonoBehaviour
 {
-    public enum Scenario { baseline, heavy, spike, styles, duck }
+    public enum Scenario { baseline, heavy, spike, styles, duck, features }
 
     [SerializeField] Scenario scenario = Scenario.baseline;
     [SerializeField] int seed = 7;
@@ -60,7 +60,7 @@ public sealed class CaptureScenario : MonoBehaviour
     [SerializeField] bool logOneShots;
 
     public enum Layers { asSoundManager, legacy, oneShots }
-    public enum Solo { none, musicBed, harmony, bedWithoutHarmony }
+    public enum Solo { none, musicBed, harmony, bedWithoutHarmony, feature }
 
     [Header("Task 11: bed pitched layers")]
     [Tooltip("SoundManager.legacyLayers for the take: legacy = the timeline tracks (LegacyLayers 1), oneShots = the " +
@@ -69,7 +69,9 @@ public sealed class CaptureScenario : MonoBehaviour
     [Tooltip("Mute global buses to hear one family. musicBed: bus:/Kill Chords and bus:/Feature muted (the whole bed, " +
              "timeline drums included). harmony: also the event's non-Harmony Music Bed tracks (drums, timeline bass/tension...) " +
              "and bus:/Music Bed/Layers (one-shot bass/tension/dreamy sub) muted. bedWithoutHarmony: Kill Chords, Feature and " +
-             "bus:/Music Bed/Harmony muted (drums + bass/tension/dreamy sub). The kill-keyed duck is off in every solo (muted key).")]
+             "bus:/Music Bed/Harmony muted (drums + bass/tension/dreamy sub). feature: bus:/Kill Chords, bus:/Music Bed/Layers, " +
+             "bus:/Music Bed/Harmony and the event's non-Harmony Music Bed tracks muted (bus:/Feature alone: timeline loops and " +
+             "one-shot loops). The kill-keyed duck is off in every solo (muted key).")]
     [SerializeField] Solo soloLayers = Solo.none;
     [Tooltip("Steps SoundManager.Tension 0 -> 0.3 -> 0.5 -> 0.7 -> 0.9 over the take (fifths of the beats); overrides heavy's 0.8.")]
     [SerializeField] bool tensionSteps;
@@ -87,6 +89,14 @@ public sealed class CaptureScenario : MonoBehaviour
     [Header("duck (kill-chord ducking of the Harmony group)")]
     [Tooltip("Off = the same take without kills, the reference the ducked take is compared with.")]
     [SerializeField] bool duckKills = true;
+    [Tooltip("Any scenario but duck: meter the Feature-keyed compressor of bus:/Music Bed/Harmony (input / output RMS per " +
+             "mixer block -> <take>.duck.csv), i.e. how much the feature loops duck the Harmony layers. Harmony must be audible.")]
+    [SerializeField] bool meterFeatureDuck;
+
+    [Header("features (Task 13)")]
+    [Tooltip("features: phrase featureFirstPhrase + k - 1 plays feature loop k (1 .. 12; FeatureSelector Current / Next " +
+             "forced every frame), the other phrases none; no kills. From phrase 1: 13 phrases = 208 beats.")]
+    [SerializeField] int featureFirstPhrase = 1;
 
     const int Colors = 3;
 
@@ -140,7 +150,7 @@ public sealed class CaptureScenario : MonoBehaviour
     const int StyleBlockBeats = 64;
     FieldInfo _styleCurrent, _styleNext;
     // holdArrangement
-    FieldInfo _variationNextField, _featuresField;
+    FieldInfo _variationNextField, _featuresField, _lastPhraseField;
     MethodInfo _cancelNext;
     // per-frame visual beat (dt, beat, bpm) and every music parameter write (beat_now, name, value)
     readonly List<string> _frameLog = new List<string>();
@@ -176,6 +186,7 @@ public sealed class CaptureScenario : MonoBehaviour
         sound.MusicParameterSet += OnMusicParameter;
         _variationNextField = typeof(SoundManager).GetField("_variationNext", BindingFlags.Instance | BindingFlags.NonPublic);
         _featuresField = typeof(SoundManager).GetField("_features", BindingFlags.Instance | BindingFlags.NonPublic);
+        _lastPhraseField = typeof(SoundManager).GetField("_lastPhrase", BindingFlags.Instance | BindingFlags.NonPublic);
         _cancelNext = _featuresField.FieldType.GetMethod("CancelNext", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
         _killBackend = (FmodOneShotBackend)typeof(SoundManager).GetField("_shotBackend", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(sound);
         _killSchedulerField = typeof(SoundManager).GetField("_shots", BindingFlags.Instance | BindingFlags.NonPublic);
@@ -247,8 +258,10 @@ public sealed class CaptureScenario : MonoBehaviour
             StartCoroutine(QuietKillBus());
             RuntimeManager.GetBus("bus:/Feature").setMute(true);
             StartCoroutine(MuteMusicBed(sound));
-            StartCoroutine(MeterDuckCompressor());
+            StartCoroutine(MeterDuckCompressor(featureKeyed: false));
         }
+        else if (meterFeatureDuck)
+            StartCoroutine(MeterDuckCompressor(featureKeyed: true));
         Debug.Log("[CaptureScenario] " + scenario + " seed " + seed + ", " + beats + " beats -> " + _wavPath);
     }
 
@@ -307,6 +320,8 @@ public sealed class CaptureScenario : MonoBehaviour
             SetSpikeRef(sound);
         if (scenario == Scenario.styles)
             ForceStyle(sound);
+        if (scenario == Scenario.features)
+            ForceFeatures(sound);
         SubscribeShots(sound);
         if (double.IsNaN(_firstAnchorBeat) && _conductor.Clock.HasAnchor &&
             _conductor.Clock.BeatAt(MusicConductor.MasterDsp(), out double anchorNow))
@@ -467,6 +482,27 @@ public sealed class CaptureScenario : MonoBehaviour
 
     static int StyleFor(int beat) => Math.Max(0, beat) / StyleBlockBeats % 4;
 
+    FeatureSelector.Loop FeatureFor(int phrase)
+    {
+        int id = phrase - featureFirstPhrase + 1;
+        return id >= 1 && id <= FeatureLoopNotes.Loops.Length ? FeatureLoopNotes.Loops[id - 1] : null;
+    }
+
+    // features: the current and the next phrase get their loop; SoundManager reads both every frame (the legacy FeatureLoop
+    // parameter and ArrangementInputs). Its own Advance at a boundary picks nothing new (Current is set by then). Next is
+    // only set once SoundManager has advanced to the phrase before it: the first Advance (phrase 0) would otherwise
+    // promote the next phrase's loop into phrase 0 for a frame (seen in the first takes: loop 1's beat-0 note at beat 0).
+    void ForceFeatures(SoundManager sound)
+    {
+        var features = (FeatureSelector)_featuresField.GetValue(sound);
+        int next = sound.NextPhraseStep / SoundManager.StepsPerPhrase;
+        bool advanced = (int)_lastPhraseField.GetValue(sound) == next - 1;
+        typeof(FeatureSelector).GetField("<Current>k__BackingField", BindingFlags.Instance | BindingFlags.NonPublic)
+            .SetValue(features, FeatureFor(next - 1));
+        typeof(FeatureSelector).GetField("<Next>k__BackingField", BindingFlags.Instance | BindingFlags.NonPublic)
+            .SetValue(features, advanced ? FeatureFor(next) : null);
+    }
+
     // Holds the bed style (and so the kill-chord style) at StyleFor(beat) for the current and the next phrase.
     void ForceStyle(SoundManager sound)
     {
@@ -498,8 +534,9 @@ public sealed class CaptureScenario : MonoBehaviour
 
     // Metering on the kill-keyed compressor of bus:/Music Bed/Harmony (FMOD/Tools/mixer.py; until Task 7 it was on
     // return:/Harmony Duck). The bus holds [Feature-keyed, kill-keyed] compressors in signal order; DSP index 0 is the
-    // fader (head), so the first compressor found from index 0 is the kill-keyed one, the last before the fader.
-    IEnumerator MeterDuckCompressor()
+    // fader (head), so the first compressor found from index 0 is the kill-keyed one, the last before the fader, and the
+    // second is the Feature-keyed one.
+    IEnumerator MeterDuckCompressor(bool featureKeyed)
     {
         var bus = RuntimeManager.GetBus("bus:/Music Bed/Harmony");
         bus.lockChannelGroup();
@@ -508,21 +545,22 @@ public sealed class CaptureScenario : MonoBehaviour
             if (bus.getChannelGroup(out FMOD.ChannelGroup group) == FMOD.RESULT.OK && group.hasHandle())
             {
                 group.getNumDSPs(out int count);
+                int skip = featureKeyed ? 1 : 0;
                 for (int i = 0; i < count; i++)
                 {
                     group.getDSP(i, out FMOD.DSP dsp);
-                    if (dsp.getType(out FMOD.DSP_TYPE type) == FMOD.RESULT.OK && type == FMOD.DSP_TYPE.COMPRESSOR)
+                    if (dsp.getType(out FMOD.DSP_TYPE type) == FMOD.RESULT.OK && type == FMOD.DSP_TYPE.COMPRESSOR && skip-- == 0)
                     {
                         dsp.setMeteringEnabled(true, true);
                         _duckComp = dsp;
-                        Debug.Log("[CaptureScenario] duck: metering the kill-keyed Harmony compressor");
+                        Debug.Log("[CaptureScenario] duck: metering the " + (featureKeyed ? "Feature" : "kill") + "-keyed Harmony compressor");
                         yield break;
                     }
                 }
             }
             yield return null;
         }
-        Debug.LogError("[CaptureScenario] duck: kill-keyed Harmony compressor not found");
+        Debug.LogError("[CaptureScenario] duck: " + (featureKeyed ? "Feature" : "kill") + "-keyed Harmony compressor not found");
     }
 
     void LogDuckMeter()
@@ -651,6 +689,13 @@ public sealed class CaptureScenario : MonoBehaviour
         }
         else if (soloLayers == Solo.bedWithoutHarmony)
             RuntimeManager.GetBus("bus:/Music Bed/Harmony").setMute(true);
+        else if (soloLayers == Solo.feature)
+        {
+            RuntimeManager.GetBus("bus:/Feature").setMute(false);
+            RuntimeManager.GetBus("bus:/Music Bed/Layers").setMute(true);
+            RuntimeManager.GetBus("bus:/Music Bed/Harmony").setMute(true);
+            StartCoroutine(MuteMusicBed(sound));
+        }
     }
 
     void OnNoteLate(object owner, double beat)
@@ -696,6 +741,8 @@ public sealed class CaptureScenario : MonoBehaviour
                 for (int color = 0; color < Colors; color++)
                     sound.QueueKillChord(color);
                 break;
+            case Scenario.features:
+                break; // no kills
             case Scenario.duck:
                 if (duckKills && beat % 4 == 0)
                     for (int color = 0; color < Colors; color++)
@@ -776,7 +823,7 @@ public sealed class CaptureScenario : MonoBehaviour
             File.WriteAllText(Path.ChangeExtension(path, ".oneshots.csv"),
                 "frame,backend,event,handle,now_dsp,start_dsp,...\n" + string.Join("\n", _oneShotLog) + "\n");
         }
-        if (scenario == Scenario.duck)
+        if (scenario == Scenario.duck || meterFeatureDuck)
         {
             var duck = new StringBuilder("beat,rms_in,rms_out\n");
             foreach (var line in _duckLog)

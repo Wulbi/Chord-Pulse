@@ -682,6 +682,47 @@ public class PatternSchedulerTests
         Assert.AreEqual(CountDrum(Shaker), CountDrum(Shaker, OnSixteenthEorA), "funk has no 8th shaker");
     }
 
+    // Feature-loop notes handed to the scheduler (their bus is a sub-bus of bus:/Feature).
+    List<double> FeatureBeats()
+    {
+        var beats = new List<double>();
+        foreach (var e in _events)
+            if (InstrumentCoverageTests.FeatureFlag(e.note.Bus) != 0)
+                beats.Add(e.beat);
+        return beats;
+    }
+
+    [Test]
+    public void FeatureLoop_PlaysOnlyItsBars()
+    {
+        // Loop 2 "Trumpet Rise": startBar 3, 1 bar -> beats 12 .. 16 of its phrase only, all 12 notes of it.
+        var loop = FeatureLoopNotes.Loops[1];
+        Assert.AreEqual((2, 3, 1), (loop.Id, loop.StartBar, loop.Bars));
+        _state.FeatureLoop = 2;
+        var p = Make(lookahead: 16.0);
+        At(0);
+        p.Update(-0.01); // from beat 0 on
+        var beats = FeatureBeats();
+        Assert.AreEqual(12, beats.Count, "loop 2 has 12 notes (two 3-note stabs)");
+        foreach (double b in beats)
+            Assert.IsTrue(b >= 12.0 && b < 16.0, $"loop 2 note at beat {b}, outside bar 4");
+
+        // No loop: no feature note; another loop: none of loop 2's beats-12..16-only shape.
+        foreach (int other in new[] { 0, 1 })
+        {
+            _events.Clear();
+            _state.FeatureLoop = other;
+            p.Reset();
+            p.Update(-0.01);
+            beats = FeatureBeats();
+            if (other == 0)
+                Assert.AreEqual(0, beats.Count, "feature notes without a loop");
+            else
+                foreach (double b in beats)
+                    Assert.IsTrue(b >= 0.0 && b < 4.0, $"loop 1 (bar 1) note at beat {b}");
+        }
+    }
+
     [Test]
     public void DrumNotes_PlayToSampleEnd()
     {

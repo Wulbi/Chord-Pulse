@@ -681,10 +681,10 @@ public sealed class SoundManager : SingletonBehaviour<SoundManager>, IKillBedSta
     {
         if (!_featuresAvailable)
             return;
-        // Switch on just before a phrase that has a loop, but switch off only once the phrase has really ended,
-        // so the lookahead does not cut the last note of a loop.
-        var loop = step >= NextPhraseStep && _features.Next != null ? _features.Next : _features.Current;
-        int id = loop == null || FeverOverlaps(step, step) ? 0 : loop.Id;
+        // Timeline loops (legacy path): on just before a phrase that has a loop, off only once the phrase has really
+        // ended (ArrangementTimeline.FeatureLoopParameter; the one-shot loops follow ArrangementState.FeatureLoop).
+        var inputs = CurrentArrangement();
+        int id = ArrangementTimeline.FeatureLoopParameter(step, in inputs);
         if (id != _appliedFeature && Check(SetMusicParameter("FeatureLoop", id, true)))
             _appliedFeature = id;
     }

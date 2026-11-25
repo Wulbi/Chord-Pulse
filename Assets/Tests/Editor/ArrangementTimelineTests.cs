@@ -91,6 +91,44 @@ public class ArrangementTimelineTests
     }
 
     [Test]
+    public void FeatureLoopAt_StepFunction_SwitchesOnTheBoundary_ZeroOverFever()
+    {
+        var x = Inputs(); // current loop 5, next loop 6, next phrase from step 64
+        Assert.AreEqual(5, ArrangementTimeline.FeatureLoopAt(63, in x));
+        Assert.AreEqual(6, ArrangementTimeline.FeatureLoopAt(64, in x));
+        x.FeatureNext = 0; // no loop next phrase: off exactly on the boundary (no lead, nothing to protect)
+        Assert.AreEqual(5, ArrangementTimeline.FeatureLoopAt(63, in x));
+        Assert.AreEqual(0, ArrangementTimeline.FeatureLoopAt(64, in x));
+        x.FeatureNext = 6;
+        x.FeverStart = 96; // build-up bar 88..95, fever 96..127: no loop over any of it
+        Assert.AreEqual(6, ArrangementTimeline.FeatureLoopAt(87, in x));
+        Assert.AreEqual(0, ArrangementTimeline.FeatureLoopAt(88, in x));
+        Assert.AreEqual(0, ArrangementTimeline.FeatureLoopAt(127, in x));
+        Assert.AreEqual(6, ArrangementTimeline.FeatureLoopAt(128, in x));
+        for (int step = 30; step < 130; step++)
+            Assert.AreEqual(ArrangementTimeline.FeatureLoopAt(step, in x), ArrangementTimeline.At(step, in x).FeatureLoop, $"step {step}");
+    }
+
+    [Test]
+    public void FeatureLoopParameter_OnEarlyForTheNextLoop_OffOnlyWhenThePhraseHasEnded()
+    {
+        // SoundManager's FeatureLoop parameter rule for the timeline loops (set with its lead): a next loop is switched on
+        // as soon as the lead step reaches the boundary; with no next loop the current one stays on until the phrase
+        // advances, so the lead does not cut its last notes. 0 while the lead step is in fever or its build-up bar.
+        var x = Inputs();
+        Assert.AreEqual(5, ArrangementTimeline.FeatureLoopParameter(63.9, in x));
+        Assert.AreEqual(6, ArrangementTimeline.FeatureLoopParameter(64.1, in x));
+        x.FeatureNext = 0;
+        Assert.AreEqual(5, ArrangementTimeline.FeatureLoopParameter(64.1, in x));
+        x.FeatureNext = 6;
+        x.FeverStart = 96;
+        Assert.AreEqual(6, ArrangementTimeline.FeatureLoopParameter(87.9, in x));
+        Assert.AreEqual(0, ArrangementTimeline.FeatureLoopParameter(88.0, in x));
+        Assert.AreEqual(0, ArrangementTimeline.FeatureLoopParameter(127.9, in x));
+        Assert.AreEqual(6, ArrangementTimeline.FeatureLoopParameter(128.0, in x));
+    }
+
+    [Test]
     public void FirstDifferentStep_NoChange_IsMinus1()
     {
         var a = Inputs();
