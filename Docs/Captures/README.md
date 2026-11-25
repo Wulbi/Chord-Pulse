@@ -1975,17 +1975,23 @@ No take had a frame with Studio update ≥ 95 %.
   - One at 32.745, "start reached first".
   - Ten at 128.5 / 128.75, "group never appeared": core hat (Drums 42), snare (38), SineSub, Acid, Rubber bass and the
     FunkKeys clav 76 / 79.
-  - Landing 128's callback was 54 ms late. Every drop is inside the accepted window.
+  - Landing 128's beat callback was 54 ms late. That is `.anchors.csv`: callback DSP minus the clock's own time for
+    the beat, which is itself late at a jump. It is a different measure from the +443 ms landing delay that `landings`
+    gives at 128, which uses the beat log against the expected boundary. Every drop is inside the accepted window.
 - **Late notes:** 0 in every take, pattern and kill alike.
 - **Scheduled vs handed over**, accounted with Task 14's `unstarted.py`:
   - Most of the difference is notes pending at the end of the take (1-5 per take).
   - `styles` also has 16 notes cancelled before dispatch and stated again.
   - Notes handed over with a start more than 25 ms from their scheduling-time estimate:
-    baseline 4 (49.5 / 50, after landing 48), heavy 7 8 (113.25-114.25), styles 63 (after landings), duck 19 (after
-    landings 32 / 64 / 112), standalone 4 / 7. These are the landing-anchor item below.
+    - baseline 4: 49.5 / 50, after landing 48.
+    - heavy 7 8: 113.25-114.25, after the phrase boundary 112. 112 is not a landing here (`landings` +5 ms) and there
+      is no tempo change; cause not shown.
+    - styles 63: not checked note by note.
+    - duck 19: 33-34, 65-65.5 and 112.75-113.5, after landings 32 / 64 / 112.
+    - standalone baseline 4 (49.5 / 50) and standalone heavy 4 (49.5-50.25), after landing 48.
 - **Kill chords in `fever_seed7_s15a_new`:** 1290 voices started against 1296 on legacy, with no late, drop or cancel.
-  - Around landing 96 the anchors of 96 and 97 are only 5424 samples apart, because the landing callback was late
-    (`.anchors.csv`).
+  - At landing 96 the callback was 55 ms late, and the anchors of 96 and 97 are only 5424 samples apart (a beat is
+    26,667 samples; `.anchors.csv`).
   - The kills of two capture beats ended up on one target beat: voicing 2, which adds one MIDI-72 voice per colour.
     The neighbouring beat got none. Net: 6 voices fewer.
   - This is the late-landing-anchor item, carried. No kill was lost by the scheduler.
@@ -2042,10 +2048,10 @@ No take had a frame with Studio update ≥ 95 %.
 
 | take | n | mean | mean abs | p95 | max abs | notes > 5 ms (beats) |
 |---|---:|---:|---:|---:|---:|---|
-| baseline 7 | 1030 | +0.77 | 0.86 | +2.03 | **12.37** | 5: core kick / snare 117 +12.4 (4 beats ahead from anchor 113); 113.5 bass / sub / acid +11.4 |
-| heavy 7 | 1471 | +1.04 | 1.09 | +2.24 | **8.19** | 2: core 5.0 +8.2 (from the first anchor) |
-| heavy 33 | 1298 | +1.17 | 1.33 | +2.33 | **25.52** | 11: 111.17-111.92 (the beat before the jump at 112: +25.5 .. -9.7), core 5.0 +5.4 |
-| styles | 2761 | +1.26 | 1.50 | +3.08 | **14.34** | 68: largest 65.19 +14.3 (L+1 of 64), core 68.19 +14.2, 200.5 / 200.94 -10.6 / +12.7, 97.0 +9.4, 145.x +8.3 (L+1 of 144) |
+| baseline 7 | 1030 | +0.77 | 0.86 | +2.03 | **12.37** | 5: core 117 +12.4; 113.5 bass / sub / acid +11.4 |
+| heavy 7 | 1471 | +1.04 | 1.09 | +2.24 | **8.19** | 2: core 5.0 +8.2 |
+| heavy 33 | 1298 | +1.17 | 1.33 | +2.33 | **25.52** | 11: 111.17-111.92 (+25.5 .. -9.7), core 5.0 +5.4 |
+| styles | 2761 | +1.26 | 1.50 | +3.08 | **14.34** | 68: largest 65.19 +14.3, core 68.19 +14.2, 200.5 / 200.94 -10.6 / +12.7, 97.0 +9.4, 145.x +8.3 |
 | features | 1894 | +0.99 | 1.05 | +2.10 | 3.10 | 0 |
 | fever | 1312 | +0.96 | 0.99 | +2.21 | 3.35 | 0 |
 | duck | 1352 | +1.06 | 1.19 | +2.42 | **15.42** | 22: core 5.0 +15.4, 96.75 / 97 +8.7 / +9.0, 49 / 49.5 +7.3 / +7.1, core 52 +6.6 |
@@ -2056,15 +2062,90 @@ No take had a frame with Studio update ≥ 95 %.
   - The mean is met in every take.
   - **Max NOT met** in baseline 7, heavy 7, heavy 33, styles, duck and both standalone takes.
   - Met in features and fever.
-- **Carried item 2 (core notes 4 beats ahead follow a late anchor):** core notes scheduled from the first anchor (5.0:
-  +8.2 / +5.4 / +15.4) and from the anchor after a phrase boundary (117 +12.4, 68.19 +14.2), up to 15.4 ms
-  (Task 12: 14.62).
-- **Carried item 1 (anchors after the music start and after landings):**
-  - Notes in L+1 .. L+2: up to +14.3 ms (styles).
-  - The beat before a jump (heavy 33, 111.x): up to 25.5 ms.
-- **Standalone:** the ±16-18 ms readings are in both directions and sit about a third of a 16th apart. Whether the
-  anchors (the reference) or the notes are off in the 60 fps player is not shown by the logs. Task 5's audio spike
-  measurement in the standalone player was within 3.3 ms.
+**A1. Every outlier above 5 ms, one by one** (fix round 1; `scratchpad/t15a/outliers.py`, full list in the task report).
+
+Columns, for each start line in table A over 5 ms:
+- **disp:** the beat at dispatch (`.studio.csv`); lead = note beat minus that beat.
+- **A_d:** the anchor beat in force at the dispatch frame (`.oneshots.csv` clock lines).
+- **clock change:** the note's beat extrapolated from A_d at A_d's tempo, minus the grid of refined anchors (each
+  anchor's last per-frame clock value). Only meaningful where A_d and the note share a tempo and no jump lies between them.
+- **cb late / ref move:** of the note's beat, from `.anchors.csv`. Callback lateness, and refined minus callback-time
+  anchor (how far the reference beat moved after its callback).
+
+Classes:
+1. **Late anchor after the music start.** Dispatched from anchor 0-2, 4 beats ahead (core).
+2. **Late anchor after a landing.** Dispatched from the anchor before a landing beat L during its landing gap, or from
+   L's own anchor; or the beat before the jump.
+3. **Anchor moved between dispatch and beat.** No landing and no tempo change. The extrapolation from the dispatch-time
+   anchor accounts for the error within 0.5 ms; what moved the clock is not shown.
+4. **Reference moved.** The reference beat's callback-time anchor differs from its refined value. Against the refined
+   grid the note is within 5 ms.
+5. **Cause not shown.**
+
+| take | outliers (note beat: error vs table A grid) | class | evidence |
+|---|---|---|---|
+| baseline 7 | 113.5 bass / sub / acid +11.4 (lead 0.99); 117 core +12.4 (lead 3.99) | 3 | A_d 112, a phrase boundary: `landings` +4 ms, callback 20 ms late, 116 BPM on both sides. Clock change +11.1 / +12.0 = error vs refined grid +11.1 / +12.0. The anchors from 113 on sit 11-12 ms later than an extrapolation from 112; what moved them is not shown |
+| heavy 7 | 5.0 core +8.2 (lead 3.98) | 1 | A_d 0, clock change +7.6 |
+| heavy 33 | 5.0 core +5.4 (lead 3.97) | 1 | A_d 0, clock change +4.6 |
+| heavy 33 | 111.17 -9.7, 111.44 +25.5, 111.75 +13.7, 111.92 -5.9 (drums, perc, bass, bells; lead 0.2-0.5) | 2 (beat before the jump at 112) | 112 is a jump (`landings` +349 ms); the callback-time anchor of 112 was refined by +46.4 ms, so neither grid is steady across the jump (refined: -18.5 / +4.5 / -21.4 ms) |
+| styles | 49 / 49.5 (lead 1) +7.1 / +6.8, core 52 (lead 4) +6.4 | 2 | A_d 47, dispatched at 48.02-48.53 before the landing anchor 48 (landing +347 ms, 124 -> 132 BPM) |
+| styles | core 53 +5.9 (lead 4) | 2 | A_d 48 = the landing anchor; clock change +4.7 |
+| styles | 65.19 +14.3, 66.19 +7.9, core 68.19 +14.2 | 2 | A_d 63; landing 64 (+511 ms, 132 -> 108 BPM); anchor 63 moved +170 ms after dispatch |
+| styles | 97 marimba / latin perc +9.4 (lead 1.01) | 3 | A_d 95; 96 is no landing (`landings` -1 ms), callbacks 96 / 97 5 / 21 ms late, 132 BPM on both sides; clock change +8.7 = error vs refined grid +8.6 |
+| styles | 113.19 +5.9, core 116.19 +5.2 | 2 | A_d 111; landing 112 (+344 ms); anchor 111 moved +98 ms after dispatch |
+| styles | 145 / 145.25 / 145.5 / 145.75 +8.0..+8.3 (lead 1), core 148 +7.6 | 2 | A_d 143, dispatched at 143.97-144.77 before the landing anchor 144 (+367 ms, 124 -> 132 BPM) |
+| styles | 160.75 / 161 +5.9 / +6.0 (lead 1), core 164 +6.3 (lead 4) | 3 | A_d 159; 160 is no landing (+4 ms), no tempo change; clock change +4.8 / +5.0 / +4.8 = error vs refined grid |
+| styles | 200.5 -10.6, 200.94 +12.7 / +12.4, 201.5 -6.1 (lead 0.4-0.5) | 4 | Mid-phrase, no landing, no tempo change. Beat 201's callback was 22 ms late, and its callback-time anchor is 19.8 ms off its refined value. Against the refined grid the notes are -2.9 / +2.2..+2.5 / +3.6 ms. Why 201's callback was late is not shown |
+| styles | 209.875 -5.2 (lead 1.35) | 2 | A_d 208 = the landing anchor (+350 ms) |
+| duck | 5.0 core +15.4 (lead 3.99) | 1 | A_d 0, clock change +15.2 |
+| duck | 49 / 49.5 +7.3 / +7.1 (lead 1), core 52 +6.6, core 53 +6.1 | 2 | A_d 47 (52) / 48 (53); landing 48 (+308 ms, 124 -> 132 BPM) |
+| duck | 96.75 / 97 +8.7 / +9.0 (lead 1) | 3 | A_d 95; 96 is no landing (`landings` -3 ms), callbacks 5 / 21 ms late, 132 BPM; clock change +7.2 = error vs refined grid +7.2 |
+| baseline standalone | 37 groups at ±14-18 ms; 99.0 (read as 98.94) +15.8 / +12.6 | 4 | Callback-time anchors in the player are off their refined values by a median of 17 ms (max 20.3); the extrapolation is within 5 ms of the refined grid |
+| baseline standalone | 7.0 core +5.4 (lead 3.97) | 1 | A_d 2, clock change +5.1 |
+| baseline standalone | 113.5 +11.3, core 117 +12.7 | 3 | A_d 112, the same pattern as the Editor baseline |
+| heavy standalone | 34 groups at ±14-18 ms | 4 | Median ref move 18 ms; extrapolation within 5 ms of the refined grid |
+| heavy standalone | 49 / 49.25 +5.4 (lead 1) | 2 | A_d 47; landing 48 |
+| heavy standalone | 113.31 -10.7, 113.5 / 113.75 +12.3 / +12.1, core 117 +12.7 | 3 | A_d 112; for 113.31 anchor 112 moved -9.1 ms after dispatch |
+
+Count (distinct outlier beats):
+
+| | class 1 | class 2 | class 3 | class 4 | class 5 |
+|---|---:|---:|---:|---:|---:|
+| Editor | 3 | 23 | 8 | 3 | 0 |
+| standalone | 1 | 2 | 6 | 72 groups | 0 |
+
+- The class 3 beats are all 0.5-4 beats after a phrase boundary that is not a landing (96, 112, 160). An anchor step
+  of +5..+12 ms at such a boundary, with no late callback over 21 ms and no tempo change, is a finding; the logs do not
+  show what causes it.
+- **Against the refined grid instead of the callback-time grid** (`disp_ref.py --refined`), max abs is:
+
+  | baseline 7 | heavy 7 | heavy 33 | styles | features | fever | duck | standalone baseline / heavy |
+  |---:|---:|---:|---:|---:|---:|---:|---:|
+  | 12.0 | 14.1 | 21.4 | 15.0 | 2.9 | 2.35 | 20.4 | 12.3 / 12.3 |
+
+  The outliers then sit at the same phrase boundaries, including notes just before them (for example 111.5-112.5,
+  30.5, 110.5). So max ≤ 5 ms is NOT met against either reference, outside features and fever.
+
+**A2. Click-based figure** (fever takes, which carry the 1 kHz Spike ref click).
+- **`analyze_capture.py spike`:** cannot be run on these takes. It pairs SpikeClick one-shots (3 kHz) with the click and
+  needs the `.spike.csv` / `.timeline.csv` that only the `spike` scenario writes ("No such file ... .timeline.csv").
+  It would need a spike take (or SpikeClick notes scheduled in the scenario), which is not part of this task.
+- **`analyze_capture.py onsets --ref-band 900-1100`** (click vs attacks in a test band):
+
+  | take | test band | paired / test onsets | mean abs | max abs | mean signed |
+  |---|---|---:|---:|---:|---:|
+  | `fever_seed7_s15a_new` | 40-120 Hz (core kick, bass fifths, impact) | 23 / 33 | 3.20 ms | 5.98 ms | -1.88 ms |
+  | `fever_seed7_s15a_legacy` | 40-120 Hz | 22 / 27 | 2.29 ms | 5.19 ms | -2.29 ms |
+  | `fever_seed7_s15a_new` | 6-16 kHz | 38 / 101 | 33.64 ms | 47.73 ms | -33.49 ms |
+  | `fever_seed7_s15a_legacy` | 6-16 kHz | 63 / 127 | 25.10 ms | 46.17 ms | -23.87 ms |
+
+  - The tool has no early / late / missing classification.
+  - The low band pairs about 23 attacks of the 128+ beats. The legacy take, whose timeline drums start on the click,
+    reads -2.29 ms mean / 5.19 ms max, so the detector itself is off by about 2-5 ms on this material. The new take
+    differs from it by +0.41 ms mean signed.
+  - The high band pairs hats and shakers with the wrong click (about -25..-34 ms), which is meaningless.
+  - **Absolute criterion (mean ≤ 2 / max ≤ 5 ms): not measurable with `onsets` on these takes**, because its own
+    legacy calibration does not meet the criterion. Relative to legacy: +0.4 ms.
 
 **B. New vs legacy, per note in the audio** (`fever` pair with the click; Task 14's `fevxcorr.py`, Spike ref click
 subtracted, full mix with kill chords).
@@ -2072,7 +2153,8 @@ subtracted, full mix with kill chords).
 - mean -0.64 ms, mean abs 0.90, max abs 2.17 (shaker 116.25).
 - Per layer: shaker -1.38, impact -1.54, the others -0.5 .. +0.1 ms.
 - This is carried item 3 (one-shots about 1.1-2.2 ms ahead of the timeline), measured smaller here and over fewer
-  notes: the kill chords lower the correlation.
+  notes. Task 14's fever-only pair, without kill chords, reached 125 of 170. That the kill chords are why fewer notes
+  reach the 0.8 threshold here is not shown.
 
 **C. Stacked notes dispatched in different frames** (carried item 4; `scratchpad/t15a/timing.py`).
 - For beats whose notes on several instruments were handed over in different frames: the spread of (backend start -
@@ -2088,11 +2170,17 @@ lost.
 
 ### NOT met / carried to the clock switch
 
-- Attack max ≤ 5 ms: NOT met. Max 8.2-25.5 ms in the Editor and up to 17.9 ms in the standalone player (table A).
-  Causes: carried items 1 and 2.
+- Attack max ≤ 5 ms (log-based, table A): NOT met. Max 8.2-25.5 ms in the Editor and 17.8 / 17.9 ms in the standalone
+  player. Per outlier (A1):
+  - class 1 (first anchors after the start, carried item 2): 3 Editor beats, 1 standalone.
+  - class 2 (landings, carried item 1): 23 / 2.
+  - class 3 (anchor step at a non-landing phrase boundary, 96 / 112 / 160; cause not shown): 8 / 6.
+  - class 4 (reference moved): 3 Editor (styles 200.5-201.5) and the standalone ±14-18 ms readings.
+- Click-based absolute attack figure: not measurable (A2). `spike` needs a spike take, and `onsets` reads 5.19 ms max
+  on the legacy calibration.
 - Late-landing anchor: kill chords of two beats merged onto one beat after landing 96 (`fever` new, 6 voices fewer).
-  Notes handed over about 25-40 ms off their scheduling-time estimate after landings (the larger styles values were not checked note by note). Carried item 1.
-- Standalone ±16-18 ms readings against the anchors: cause not shown.
+  Notes handed over more than 25 ms off their scheduling-time estimate after landings (baseline, duck, standalone) and
+  after the non-landing boundary 112 (heavy 7, cause not shown). The styles values were not checked note by note.
 - Stacked-note spread: carried item 4, see C.
 - New vs legacy lead -0.64 ms mean (fever, full mix): carried item 3.
 
