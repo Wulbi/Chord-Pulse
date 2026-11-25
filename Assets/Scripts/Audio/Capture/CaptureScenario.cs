@@ -127,6 +127,7 @@ public sealed class CaptureScenario : MonoBehaviour
     double _dspSum, _totalSum, _studioSum;
     float _studioMax;
     float _dspMax, _totalMax;
+    int _channelsPeak, _realChannelsPeak; // Core System getChannelsPlaying, per frame (playing incl. virtual / real)
     bool _finished;
     // stopTailSeconds / restartAfterStop
     bool _stopping, _restarted;
@@ -317,6 +318,11 @@ public sealed class CaptureScenario : MonoBehaviour
             _totalSum += total;
             _dspMax = Mathf.Max(_dspMax, cpu.dsp);
             _totalMax = Mathf.Max(_totalMax, total);
+            if (RuntimeManager.CoreSystem.getChannelsPlaying(out int channels, out int realChannels) == FMOD.RESULT.OK)
+            {
+                _channelsPeak = Math.Max(_channelsPeak, channels);
+                _realChannelsPeak = Math.Max(_realChannelsPeak, realChannels);
+            }
         }
 
         if (holdArrangement)
@@ -819,6 +825,7 @@ public sealed class CaptureScenario : MonoBehaviour
             summary += string.Format(CultureInfo.InvariantCulture, "; forced stalls {0} ({1} ms at {2}; not counted in the stalls above)",
                 _forcedStalls, stallMs, stallAtBeats == null ? "-" : string.Join("/", Array.ConvertAll(stallAtBeats, v => v.ToString("0.###", CultureInfo.InvariantCulture))));
         summary += "; RESYNCED " + _resyncs;
+        summary += "; CHANNELS playing peak " + _channelsPeak + ", real peak " + _realChannelsPeak;
         if (_stopFrame >= 0)
             summary += "; STOP frame " + _stopFrame + (_restartFrame >= 0 ? "; RESTART frame " + _restartFrame : "");
         foreach (var line in _stallLog)
