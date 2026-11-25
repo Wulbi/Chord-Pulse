@@ -162,6 +162,82 @@ public class MusicTransportTests
     }
 
     [Test]
+    public void Stop_InsidePhraseStarted_RaisesNothingMore()
+    {
+        var clock = new BeatClock(Rate);
+        var t = new MusicTransport(clock);
+        var started = new List<int>();
+        t.PhraseStarted += n =>
+        {
+            started.Add(n);
+            if (n == 1)
+                t.Stop();
+        };
+        t.Start(0, 120, 120);
+        t.Update(40 * 24000);
+        CollectionAssert.AreEqual(new[] { 0, 1 }, started);
+        Assert.AreEqual(-1, t.Phrase);
+        Assert.IsFalse(t.Running);
+    }
+
+    [Test]
+    public void StopThenStart_InsidePhraseStarted_OldCatchUpRaisesNothingMore()
+    {
+        var clock = new BeatClock(Rate);
+        var t = new MusicTransport(clock);
+        var started = new List<int>();
+        const ulong newStart = 10000000;
+        t.PhraseStarted += n =>
+        {
+            started.Add(n);
+            if (n == 1 && started.Count == 2)
+            {
+                t.Stop();
+                t.Start(newStart, 120, 120);
+            }
+        };
+        t.Start(0, 120, 120);
+        t.Update(40 * 24000);
+        CollectionAssert.AreEqual(new[] { 0, 1 }, started);
+        Assert.IsTrue(t.Running);
+        Assert.AreEqual(-1, t.Phrase);
+
+        t.Update(newStart);
+        Assert.AreEqual(0, t.Phrase);
+        CollectionAssert.AreEqual(new[] { 0, 1, 0 }, started);
+    }
+
+    // Semantics: a resync that lands on a phrase boundary counts that boundary as passed at once (it is no longer
+    // replaceable by SetNextTempo; the new phrase's tempo applies from the resync anchor on).
+    [Test]
+    public void Update_DspWentBackwards_AtPhraseEnd_UsesNextTempo()
+    {
+        var clock = new BeatClock(Rate);
+        var t = new MusicTransport(clock);
+        var started = new List<int>();
+        t.PhraseStarted += started.Add;
+        t.Start(0, 120, 108);
+        t.Update(324000); // beat 13.5
+        CollectionAssert.AreEqual(new[] { 0 }, started);
+
+        t.Update(1000);
+        Assert.IsTrue(clock.DspAt(16, out ulong d16));
+        Assert.IsTrue(clock.DspAt(17, out ulong d17));
+        Assert.AreEqual(5800UL, d16);
+        Assert.That((double)(d17 - d16), Is.EqualTo(26667.0).Within(1));
+
+        CollectionAssert.AreEqual(new[] { 0, 1 }, started);
+        Assert.AreEqual(1, t.Phrase);
+        Assert.AreEqual(32, t.NextPhraseBeat);
+        Assert.AreEqual(108.0, t.Bpm, 1e-9);
+
+        t.Update(5800);
+        t.Update(5800 + 100000);
+        CollectionAssert.AreEqual(new[] { 0, 1 }, started);
+        Assert.AreEqual(1, t.Phrase);
+    }
+
+    [Test]
     public void Stop_ThenStart_ResetsPhraseAndBeat()
     {
         var clock = new BeatClock(Rate);
