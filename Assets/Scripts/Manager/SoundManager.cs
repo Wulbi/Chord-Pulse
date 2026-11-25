@@ -366,9 +366,15 @@ public sealed class SoundManager : SingletonBehaviour<SoundManager>, IKillBedSta
             ReportFailure("FMOD mixer sample rate unavailable.");
             yield break;
         }
+        ulong startDsp = FmodClock.MasterDsp();
+        if (startDsp == 0)
+        {
+            ReportFailure("FMOD mixer clock unavailable.");
+            yield break;
+        }
         _clock.Reset(rate);
         _dspSmoother.Reset(rate);
-        _transport.Start(FmodClock.MasterDsp() + (ulong)Math.Round(StartLeadSeconds * rate),
+        _transport.Start(startDsp + (ulong)Math.Round(StartLeadSeconds * rate),
             SectionSelector.Bpm(_sections.Current.Section), SectionSelector.Bpm(_sections.Next.Section));
 
         _musicPlaying = true;
