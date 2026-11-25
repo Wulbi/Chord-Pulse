@@ -1,0 +1,138 @@
+using System;
+
+/// <summary>
+/// A self-running phrase clock on the DSP clock. Beat 0 sounds at the DSP sample given to <see cref="Start"/>; every
+/// 16 beats a new phrase begins. Phrase boundaries are fixed once as integer DSP samples
+/// (boundary[n+1] = boundary[n] + round(16 * 60 / bpm[n] * sampleRate)), so they never drift, and the shared
+/// <see cref="BeatClock"/> is re-anchored on each boundary before <see cref="PhraseStarted"/> is raised.
+/// </summary>
+public sealed class MusicTransport
+{
+    public const int BeatsPerBar = 4;
+    public const int BeatsPerPhrase = 16;
+
+    const double ResyncLeadSeconds = 0.1;
+
+    readonly BeatClock _clock;
+    bool _running;
+    int _phrase = -1;
+    double _bpm;            // tempo of the sounding phrase (of phrase 0 before it starts)
+    double _nextBpm;        // tempo of the phrase after the sounding one
+    int _nextPhrase;        // phrase whose boundary is awaited
+    ulong _nextBoundary;    // DSP sample of that boundary
+    bool _hasLast;
+    ulong _lastNow;
+
+    public MusicTransport(BeatClock clock)
+    {
+        _clock = clock ?? throw new ArgumentNullException(nameof(clock));
+    }
+
+    public bool Running => _running;
+    public int Phrase => _phrase;
+    public int NextPhraseBeat => (_phrase + 1) * BeatsPerPhrase;
+    public double Bpm => _running ? _bpm : 0;
+
+    public event Action<int> PhraseStarted;
+    public event Action Resynced;
+
+    /// <summary>Beat 0 sounds at <paramref name="dspStart"/>; <paramref name="nextBpm"/> is the tempo from beat 16.</summary>
+    public void Start(ulong dspStart, double bpm, double nextBpm)
+    {
+        if (bpm <= 0 || nextBpm <= 0)
+            throw new ArgumentOutOfRangeException(bpm <= 0 ? nameof(bpm) : nameof(nextBpm));
+        _clock.Reset();
+        _running = true;
+        _phrase = -1;
+        _bpm = bpm;
+        _nextBpm = nextBpm;
+        _nextPhrase = 0;
+        _nextBoundary = dspStart;
+        _hasLast = false;
+        _lastNow = 0;
+        _clock.Anchor(0, dspStart, bpm);
+        _clock.SetTempoFrom(BeatsPerPhrase, nextBpm);
+    }
+
+    public void Stop()
+    {
+        _running = false;
+        _phrase = -1;
+        _bpm = 0;
+        _nextBpm = 0;
+        _nextPhrase = 0;
+        _nextBoundary = 0;
+        _hasLast = false;
+        _lastNow = 0;
+        _clock.Reset();
+    }
+
+    /// <summary>Tempo from <see cref="NextPhraseBeat"/> on; can be replaced until that boundary has passed.</summary>
+    public void SetNextTempo(double bpm)
+    {
+        if (!_running || bpm <= 0)
+            return;
+        if (_phrase < 0)
+        {
+            // Before beat 0 the next phrase is phrase 0 itself.
+            _bpm = bpm;
+            _clock.Anchor(0, _nextBoundary, bpm);
+            return;
+        }
+        _nextBpm = bpm;
+        _clock.SetTempoFrom(NextPhraseBeat, bpm);
+    }
+
+    public bool BeatAt(double dsp, out double beat) => _clock.BeatAt(dsp, out beat);
+
+    public void Update(ulong dspNow)
+    {
+        if (!_running)
+            return;
+        if (_hasLast && dspNow < _lastNow)
+            Resync(dspNow);
+        _hasLast = true;
+        _lastNow = dspNow;
+
+        while (dspNow >= _nextBoundary)
+        {
+            int n = _nextPhrase;
+            ulong boundary = _nextBoundary;
+            if (n > 0)
+                _bpm = _nextBpm; // _nextBpm stays as is: without a SetNextTempo the next phrase keeps this tempo
+            _nextPhrase = n + 1;
+            _nextBoundary = boundary + PhraseSamples(_bpm);
+            _phrase = n;
+            _clock.Anchor(n * BeatsPerPhrase, boundary, _bpm);
+            PhraseStarted?.Invoke(n);
+        }
+    }
+
+    ulong PhraseSamples(double bpm)
+    {
+        return (ulong)Math.Round(BeatsPerPhrase * 60.0 / bpm * _clock.SampleRate, MidpointRounding.AwayFromZero);
+    }
+
+    void Resync(ulong dspNow)
+    {
+        ulong lead = (ulong)Math.Round(ResyncLeadSeconds * _clock.SampleRate, MidpointRounding.AwayFromZero);
+        ulong newDsp = dspNow + lead;
+        if (_phrase < 0)
+        {
+            // Not yet at beat 0: shift the start itself.
+            _nextBoundary = newDsp;
+            _clock.Anchor(0, newDsp, _bpm);
+            _clock.SetTempoFrom(BeatsPerPhrase, _nextBpm);
+        }
+        else
+        {
+            _clock.BeatAt(_lastNow, out double current);
+            int bar = (int)Math.Floor(current / BeatsPerBar) + 1;
+            int beat = Math.Min(bar * BeatsPerBar, NextPhraseBeat);
+            _clock.Anchor(beat, newDsp, _bpm);
+            double toBoundary = (NextPhraseBeat - beat) * 60.0 / _bpm * _clock.SampleRate;
+            _nextBoundary = newDsp + (ulong)Math.Round(toBoundary, MidpointRounding.AwayFromZero);
+        }
+        Resynced?.Invoke();
+    }
+}
