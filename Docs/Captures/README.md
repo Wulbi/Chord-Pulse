@@ -2224,3 +2224,107 @@ lost.
   sources.
 - `git status --short` and `git diff --stat` are identical to before the trial and to the start of the task.
 - `PatternTable.StyleCount` is 4 again, and EditMode passed **173 / 173**.
+
+## Clock switch — Task 6 (unity-music-clock): the music runs on `MusicTransport`
+
+From this task on `SoundManager` no longer starts `event:/Music/ChordPulseGame`. Beat 0 is set 0.25 s after the samples
+are loaded, on the FMOD master DSP clock (`FmodClock`), and `MusicTransport` fixes every phrase boundary as an integer
+DSP sample. Every layer is a one-shot (the `legacyLayers` path is gone). `OneShotScheduler.DefaultScheduleOffsetSamples`
+is 0 (it was -110, the lag behind the timeline's beat; the next task calibrates it against this clock).
+
+What changed in the capture files:
+- `.beats.csv` is `beat,frame,bpm,dsp`. Each beat's DSP sample is computed by the clock when `MusicTransport` starts its
+  phrase (a resync takes the rest of the phrase again). `frame` is `AudioCapture.FrameAtDsp(dsp)`: the capture pairs the
+  master DSP clock with its own frame counter on its first mixer block, using the capture DSP's own clock. Every later
+  block is checked against that pairing; `.cpu.txt` reports the mismatches as "CAPTURE dsp-to-frame mismatches" (0 in
+  every take below). `analyze_capture.py` reads the extra column without any change.
+- No `.anchors.csv` (no beat callbacks) and no `.timeline.csv`. Capture options removed: `layers`, `spikeRefClicks`,
+  `keepLegacyLeaves`, `meterLegacyLeaves`. `spike` has a new `spikeDispatchBeats` option.
+
+Settings: Editor, `logOneShots`, the scenario's own kills, full mix. Each take ran with
+`AssetDatabase.DisallowAutoRefresh()` before Play mode and `AllowAutoRefresh()` after it, one call each per take. Editor.log
+shows a refresh only at Play mode entry, before the capture started; there was none during a take.
+
+### Takes
+
+| take | stalls | Studio update avg / max % | Core dsp avg / max % | pattern sched / handed / late / dropped | kill started / late / dropped | cancelled | FIRSTANCHOR |
+|---|---:|---|---|---|---|---:|---:|
+| `baseline_seed7_s6c` (128 beats) | 0 | 0.68 / 1.20 | 1.23 / 2.59 | 1129 / 1128 / 0 / 0 | 288 / 0 / 0 | 13 | -0.41 |
+| `fever_seed33_s6c` (68 beats, `QueueFever` at beat 24) | 0 | 0.83 / 1.67 | 2.07 / 3.22 | 608 / 604 / 0 / 0 | 612 / 0 / 0 | 19 | -0.41 |
+| `heavy_seed7_s6c` (128 beats) | 0 | 1.39 / 2.29 | 5.11 / 6.58 | 1616 / 1614 / 0 / 0 | 3069 / 0 / 0 | 40 | -0.41 |
+
+- Every take is listed; none was invalid. The longest frame in each (4.1 s) is the bank load before the first beat.
+- ONESHOTS late 0 and dropped 0 in all three takes. `.losses.csv` is empty in all three.
+- FIRSTANCHOR is the beat at the first frame with a clock: -0.41, during the start lead. In the reference takes it was
+  +0.04 (`baseline_seed7_s15a_new`) and 0.00 (`heavy_seed7_s15a_new`).
+- "cancelled" counts notes that were stopped before they sounded. It is not part of any criterion here. Its cause was
+  not looked into note by note.
+
+### Step 3: baseline seed 7
+
+| criterion | value | verdict |
+|---|---|---|
+| every boundary delay ≤ 5 ms (`landings`) | 16 / 32 / 48 / 64 / 80 / 96 / 112: +0 / +0 / -0 / +0 / +0 / +0 / -0 ms | met |
+| first half-beat RMS ±1 dB against the previous phrase, boundaries with the same arrangement | 16 / 32 / 48 / 80 / 112 (same pattern notes in the first half beat as b-16): -0.00 / +0.27 / -0.13 / -0.00 / +0.16 dB. 64 and 96 have different notes than b-16 (-1.10 / -0.30) and are not compared | met |
+| no silence > 20 ms at a boundary | `landings` lists 64: 320+95 ms, 80: 320+95 ms, 112: 475+40 ms | see below |
+| `frames`: backward 0, over 0.05 beat 0 | 17295 frames, backward 0, over 0, max deviation 0.0066 beat, longest hold 0 ms | met |
+| ONESHOTS late / dropped 0 | 0 / 0 | met |
+
+The three silences listed by `landings` are rests of the arrangement, not gaps at the boundary:
+- The same windows are silent in both reference takes of this seed. `baseline_seed7_s15a_new` has 64: 335+90, 80: 330+90
+  and 112: 480+35. `baseline_seed7_s15a_legacy_d`, whose notes came from the timeline, has 112: 480+35.
+- At 64 and 80 the window is also silent one phrase away (80 after 64, 64 after 80). The phrase's only notes there are
+  the tension bus's Acid and SineSub, which are at -80 dB at Tension 0 (`bed_tension.CURVES`), and drum hits that start
+  up to 0.3 beat before the window.
+- At 112 no pattern note starts in the window.
+- So no silence is caused by the clock switch. The analyzer's rest test (same offset after b-4) does not classify them as
+  rests. Read literally, its count is 3.
+
+### Step 4: fever seed 33
+
+- `QueueFever` at beat 24 put fever at 32..48, with the build-up bar at 28..32.
+- Without fever the section choice gives phrase 2 (beat 32) section 0 = 108 BPM. This is `SectionSelector(33)` run with the
+  same arguments: phrases 0, 1, 2 are sections 0, 1, 0.
+- `.beats.csv` has beats 16-47 at 116 BPM and beat 64 at 108, so **the held boundary 32 kept 116 BPM: met**.
+- Beats 32-35: late 0 and dropped 0. In fact the whole take had none (`.losses.csv` is empty). **Met.**
+- `landings`: 16 / 32 / 48 / 64 are +0 / -0 / -0 / -0 ms. 32 is the fever impact (+7 dB, expected). There are no gaps.
+- `frames`: backward 0, over 0, max 0.0071 beat.
+
+### Exact arithmetic (every one-shot of the take)
+
+Script: `scratchpad/c6/exact.py`, with the onset table dumped from `InstrumentTable.OnsetSeconds`.
+- The independent clock comes from beat 0's DSP sample and each phrase's BPM in `.beats.csv`:
+  `boundary[n+1] = boundary[n] + round(16 * 60 / bpm[n] * 48000)`, and a beat is `round(boundary + offset * 60 / bpm * 48000)`.
+- Every `.beats.csv` DSP sample equals that arithmetic, with 0 deviation for all 128 / 80 / 128 beats.
+- Every start the backend received (`.oneshots.csv`), plus its sample onset, is compared with the independent sample of
+  its beat. Pattern notes take their beat from `.patterns.csv`; kill notes take the nearest beat.
+
+| take | starts | deviation 0 | -1 | +1 | max abs |
+|---|---:|---:|---:|---:|---:|
+| baseline 7 | 1416 | 1382 | 28 | 6 | 1 sample |
+| fever 33 | 1216 | 1201 | 7 | 8 | 1 sample |
+| heavy 7 | 4683 | 4610 | 66 | 7 | 1 sample |
+
+- Every ±1 start was handed over while the clock was still anchored on an earlier phrase than the note's. This is from
+  the `clock,anchor` line of the same frame in `.oneshots.csv`.
+- Such a note is timed by `BeatClock`'s pending tempo, which runs on from the old anchor without rounding the boundary to
+  a whole sample. EditMode `TransportSchedulingTests` reproduces it. Notes handed over after their phrase's anchor are
+  exact.
+
+### CPU against the budget
+
+| budget | take | value | verdict |
+|---|---|---:|---|
+| Studio update avg, baseline ≤ 11 % | `baseline_seed7_s6c` | 0.68 % (15a new 4.85) | met |
+| Core dsp avg, baseline ≤ 6 % | `baseline_seed7_s6c` | 1.23 % (15a new 1.79) | met |
+| Core dsp avg, heavy ≤ 12 % | `heavy_seed7_s6c` | 5.11 % (15a new 5.56) | met |
+
+### The carried items of Task 15a, before and after
+
+| item | before (15a reference takes) | after (`_s6c`) |
+|---|---|---|
+| beat 0 after the music start | the clock's first anchor came with beat 0's callback (FIRSTANCHOR +0.04 / 0.00), so beat 0's one-shots could not be scheduled | the clock runs from -0.41 beat. Beat 0's pattern notes are scheduled (baseline 7, heavy 10) at the exact sample. In baseline, beat 0's first half beat is -31.6 dB, the same as beat 16 |
+| landing delays (`landings`) | baseline 7: +213 / +237 / +353 ms at 48 / 80 / 96; heavy 7: +377 / +367 / +574 | 0 ms at every boundary of all three takes |
+| anchor steps of 5-12 ms at non-landing boundaries (96, 112, 160) | class 3 outliers, e.g. baseline 113.5 / 117 +11-12 ms | no per-beat anchor any more. Every beat's sample equals the integer-boundary arithmetic (0 deviation), and every start is within 1 sample |
+| drops in the first beat after a landing | styles: 11 at 32.7 and 128.5-128.75 | 0 drops in all three takes (no styles take was recorded) |
+| kill chords of two beats merged onto one after a landing | `fever_seed7_s15a_new` landing 96: 6 voices fewer | fever 33: 68 of 68 beats carry 9 kill notes each. Heavy 7: every beat 1-128 has kill notes (24 each, 21 on beat 1), 3069 in total as in 15a |
