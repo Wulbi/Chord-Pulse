@@ -2335,3 +2335,186 @@ Script: `scratchpad/c6/exact.py`, with the onset table dumped from `InstrumentTa
 | anchor steps of 5-12 ms at non-landing boundaries (96, 112, 160) | class 3 outliers, e.g. baseline 113.5 / 117 +11-12 ms | no per-beat anchor any more. Every beat's sample equals the integer-boundary arithmetic (0 deviation), and every start is within 1 sample |
 | drops in the first beat after a landing | styles: 11 at 32.7 and 128.5-128.75 | 0 drops in all three takes (no styles take was recorded) |
 | kill chords of two beats merged onto one after a landing | `fever_seed7_s15a_new` landing 96: 6 voices fewer | fever 33: 68 of 68 beats carry 9 kill notes each. Heavy 7: every beat 1-128 has kill notes (24 each, 21 on beat 1), 3069 in total as in 15a |
+
+## Clock-referenced accuracy and forced stalls — Task 7 (unity-music-clock)
+
+The `spike` clicks are now measured against the clock itself. The reference is each beat's frame in `.beats.csv`
+(MusicTransport's DSP sample through `AudioCapture.FrameAtDsp`); there is no reference click (`analyze_capture.py spike`,
+clock mode).
+
+New capture options, both off by default:
+- `stallMs` / `stallAtBeats` put the main thread to sleep once when the visual beat passes each value.
+- The frame that carries the sleep is counted as "forced stalls N" in `.cpu.txt`, not in `stalls >100 ms`. It is marked
+  `forced=1` in `.frames.csv`, and `frames` leaves those frames out of its deviation and hold checks.
+- Every `MusicTransport.Resynced` is logged and counted (`RESYNCED N`).
+- `landings --at-beats` runs the silence check within one beat after any point.
+
+Settings: Editor, `logOneShots`, `scheduleOffsetSamples` 0 (`DefaultScheduleOffsetSamples`, unchanged). Auto refresh was
+disallowed per take, with one call before Play mode and one after.
+
+### Takes (every take recorded in this task)
+
+| take | unforced stalls | forced stalls | RESYNCED | ONESHOTS late / dropped | Studio avg / max % | Core dsp avg / max % | valid |
+|---|---:|---|---:|---|---|---|---|
+| `spike_seed33_s7c_d05` | **2** (2339 ms at beat 9.4, 1158 ms at 23.5) | - | 0 | 15 / 5 | 0.62 / 0.84 | 1.07 / 1.99 | **no** |
+| `spike_seed33_s7c_d05_r2` | 0 | - | 0 | 0 / 0 | 0.57 / 0.78 | 0.93 / 1.74 | yes |
+| `spike_seed33_s7c_d4_stall300` | 0 | 3 x 300 ms at 9.8 / 15.7 / 40.2 | 0 | 0 / 0 | 0.56 / 0.78 | 0.94 / 1.79 | yes |
+| `heavy_seed7_s7c_stall300` | 0 | 2 x 300 ms at 30.5 / 47.7 | 0 | 7 / 18 | 1.43 / 2.35 | 5.12 / 6.99 | yes |
+| `heavy_seed7_s7c_stall2000` | 0 | 1 x 2000 ms at 30.5 | 0 | 31 / 0 | 1.43 / 2.14 | 5.10 / 9.76 | yes |
+
+- **`spike_seed33_s7c_d05` is invalid.**
+  - Its two unforced stalls are on Unity frames 788 and 2433.
+  - Two Editor queries (`execute_code`) were run during the take, and they returned `frameCount` 788 and 2433.
+  - It was re-recorded as `_r2`. No query was made during any later take.
+- `CAPTURE dsp-to-frame mismatches` is 0 in all five takes.
+- `MusicTransport.Resynced` fired 0 times in all five takes, including the forced stalls.
+
+### Step 1: spike seed 33, 68 beats, `spikeDispatchBeats` 0.5 (`spike_seed33_s7c_d05_r2`)
+
+| clicks | n | mean \|e\| ms | max \|e\| ms | mean signed ms |
+|---|---:|---:|---:|---:|
+| all | 64 | 0.82 | 0.85 | -0.82 (-39 samples) |
+| lead 1 beat (even) | 32 | 0.83 | 0.85 | -0.83 |
+| lead 0.3 beat (odd) | 32 | 0.81 | 0.83 | -0.81 |
+| 4 beats after tempo change 16 / 32 / 48 / 64 | 4 / 4 / 4 / 1 | 0.81 / 0.80 / 0.82 / 0.85 | 0.85 / 0.83 / 0.85 / 0.85 | -0.81 / -0.80 / -0.82 / -0.85 |
+
+- Missing 0, late 0, early 0.
+- `analyze_capture.py spike`: GATE PASS (mean ≤ 2, max ≤ 5, the 4 beats after each change included).
+- `frames`: backward 0, over 0.05 beat 0, max 0.0066 beat, hold 0 ms.
+
+**Calibration: not applied. `DefaultScheduleOffsetSamples` stays 0.** The analyzer's mean signed error (-0.82 ms) is
+beyond the brief's ±0.5 ms trigger. It is the onset detector's own bias, not an offset of the clicks:
+- **Detector on known clicks.** `band_onsets` uses a zero-phase band-pass and envelope and puts the onset at 15 % of the
+  peak. Run on the SpikeClick waveform (`spike_click.click_samples(3000)`) placed at known samples in silence, it reports
+  every click 39.0 samples early (-0.81 ms), with no spread.
+- **Cross-correlation of the capture.** The capture is correlated with the same click waveform (2-4 kHz band) around
+  every beat frame. All 64 clicks are at lag **0 samples**, with a normalised peak of 0.98-0.99.
+- **Other takes.** The same holds for every click of `_d4_stall300` (64 of 64) and for the 58 measured clicks of the
+  invalid `_d05`.
+
+So the clicks start on the clock's beat sample. Moving the offset by +39 samples would make every one-shot 0.8 ms late.
+Whether the brief's rule should be applied literally anyway is left to the reviewer.
+
+### Step 2: spike seed 33, `spikeDispatchBeats` 4.0, `stallMs` 300 at 9.8 / 15.7 / 40.2 (`spike_seed33_s7c_d4_stall300`)
+
+| clicks | n | mean \|e\| ms | max \|e\| ms |
+|---|---:|---:|---:|
+| all | 64 | 0.83 | 0.87 |
+| 4 beats after tempo change 16 / 32 / 48 / 64 | 4 / 4 / 4 / 1 | 0.82 / 0.83 / 0.83 / 0.85 | 0.85 / 0.87 / 0.85 / 0.85 |
+| 4 beats after the stall at 9.8 / 15.7 / 40.2 | 4 / 4 / 4 | 0.82 / 0.82 / 0.84 | 0.85 / 0.85 / 0.85 |
+
+- **Missing 0, late 0, early 0: met.** The 4 beats after each stall pass the accuracy check.
+- Cross-correlation: 64 of 64 clicks at lag 0.
+- Where the stalls were taken:
+
+  | stall | visual beat | mixer beat | visual beat moved by the stall frame (expected) |
+  |---|---:|---:|---|
+  | 1 | 9.806 | 9.764 | 0.550 (0.550) |
+  | 2 | 15.701 | 15.678 | 0.568 (0.590) |
+  | 3 | 40.201 | 40.167 | 0.548 (0.548) |
+
+- `frames` outside the stall frames: over 0.05 beat 0, hold 0 ms.
+
+### Step 3: not triggered
+
+There was no early click in Step 1 or Step 2 (early 0). Since Task 5b, `FmodOneShotBackend.Start` starts every instance
+paused and unpauses it only after its delay is set. Nothing was changed, and `OneShotScheduler.cs` was not touched.
+
+### Step 4: heavy seed 7, `stallMs` 300 at 30.5 / 47.7 (`heavy_seed7_s7c_stall300`)
+
+| criterion | value | verdict |
+|---|---|---|
+| no silence > 20 ms within one beat after a stall | `landings --at-beats 30.5,31.0,47.7,48.25` (the stall points, and the mixer beat where each stall ended): 0 runs at all four points | met |
+| late 0, early 0 | see the list below the table | met |
+| boundaries (`landings`) | delay 0 at every boundary 16..112, no gaps | - |
+| `frames` outside the 2 forced-stall frames | backward 0, over 0.05 beat 0, max 0.0111 beat, hold 0 ms | - |
+
+How late 0 / early 0 was established:
+- Every note handed to the backend had its start applied at least 4630 samples ahead; 0 were applied at or after their
+  start.
+- Every backend start + onset is on the independent beat sample: 4628 at 0, 41 at -1 and 7 at +1 sample.
+- The core kick, cross-correlated with its sample, is at the same lag as in `heavy_seed7_s6c` on all 64 kick beats (max
+  difference 1 sample).
+
+Losses (`.losses.csv`). All are on beat 31, the first beat after the stall at 30.5:
+- The whole beat-31 kill chord, 24 notes: 6 late in the scheduler, and 18 dropped by the backend because the stall ended
+  after their start.
+- One pattern note, Acid 31.0 on TensionAcid, late in the scheduler. At Tension 0.8 it is audible.
+- The stall at 47.7 lost nothing.
+
+Step 4 has no criterion on missing notes, so these losses are recorded here and not judged.
+
+### Step 5: heavy seed 7, `stallMs` 2000 at 30.5 (`heavy_seed7_s7c_stall2000`)
+
+| criterion | value | verdict |
+|---|---|---|
+| late 0, early 0 (missing allowed) | every note handed over had its start applied at least 3715 samples ahead; 0 at or after it. Backend starts + onset against the independent beat sample: 4516 at 0, 34 at -1, 7 at +1 | met |
+| kick attack against the `.beats.csv` frame, from the first beat after the stall | see the list below the table: max +123 samples = **2.56 ms** (≤ 5) | met |
+| `frames`: no over-limit frame outside the stall frame | backward 0, over 0.05 beat 0, max 0.0077 beat, hold 0 ms | met |
+
+Kick attack:
+- The stall ran from mixer beat 30.46 to about 34.07.
+- The core kicks on beats 36 to 126 are at lag +66 to +123 samples, at most **2.56 ms**.
+- Against `heavy_seed7_s6c`, beat 36 differs by +1 sample and every later kick by 0.
+
+The stall frame itself moved the visual beat by 3.770 beat (expected 3.880).
+
+Losses and the boundary inside the stall:
+- Lost: the beat-31 kill chord (24 notes, late) and 7 pattern notes on beats 31.0-31.75 (late).
+- Beats 32-34 have no kill chord; they were never queued.
+- Boundary 32 fell inside the stall, and `landings` shows it silent for 265+250 ms.
+- Beats 32 and 34 still have their core kick, which was handed over a bar ahead, before the stall.
+
+How the kick lag was measured:
+- Both the capture and the kick sample are low-passed below 200 Hz. They are cross-correlated within ±10 ms of each
+  core-kick beat (scratch script, not committed).
+- Where other low parts play with the kick, the normalised peak is 0.7-0.8 and the lag scatters between 66 and 123
+  samples. `heavy_seed7_s6c` has the same scatter, beat for beat.
+- The kicks that sounded alone show the kick's own lag (carried item 4).
+
+### Carried measurements
+
+1. **The three Task 6 silences (`baseline_seed7_s6c`, ruling C-4).** For each window, the notes in `.oneshots.csv` were
+   checked against it, using each note's start and the delay end read back from its group.
+   - **64 and 80.** Both windows are 320+95 ms, i.e. beats 64.576-64.747 (and the same offsets after 80).
+     - No note starts inside the window.
+     - Notes spanning it, on the tension buses:
+       - TensionStrings 52 / 55 / 60, from the boundary beat to +1907 ms. Log lines 95131-95153 for 64,
+         120792-120794 for 80.
+       - Acid 36 and SineSub 36, from 64.5 to +185 ms. Log lines 95898 / 95899 for 64, 121650 / 121651 for 80.
+     - Every other note is a drum hit of length 0 that starts 42 ms or more before the window. The kill chords are on
+       beats 4k+1.
+   - **112.** The window is 475+40 ms, i.e. beats 112.918-112.996.
+     - No note starts inside it.
+     - TensionStrings 52 / 55 / 60 span it (log lines 170910-170943).
+     - Every other note is a drum hit that starts 475 ms or more before.
+   - **The tension buses are silent here.** They are at -80 dB at Tension 0 (`bed_tension.CURVES`: strings up to 0.25,
+     sub up to 0.45, acid up to 0.65). The baseline sets no Tension (`.params.csv` is empty).
+   - So no audible note is scheduled to sound in any of the three windows: **each is a rest in the arrangement, not a
+     gap**. The capture lost no note there (`.losses.csv` is empty).
+2. **Capture mapping (`FrameAtDsp` against `getDSPClock`).**
+   - Mismatches: 0 in every take.
+   - Before any calibration, the analyzer's mean signed error is -0.82 ms. This is the detector bias (Step 1).
+   - By cross-correlation, every click starts exactly on its beat frame: lag 0 for 64 of 64 in each valid spike take.
+   - **No constant offset between the capture's clock and the master DSP clock is observed.**
+3. **±1-sample starts across a boundary.**
+   - In the spike takes, the 4 beats after each tempo change match the other beats (tables above), with
+     cross-correlation lag 0 for those beats too.
+   - In the heavy takes the known ±1 shows: stall300 has 41 starts at -1 and 7 at +1 (of 4676); stall2000 has 34 at -1
+     and 7 at +1 (of 4557).
+4. **Per-bus onset.**
+   - Kill Chords (SpikeClick): 0 samples against the clock (Step 1).
+   - Music Bed/Layers (core kick): in `heavy_seed7_s7c_stall2000`, the kicks on beats 32 and 34 sounded alone during the
+     stall (normalised peak 0.999). Each kick is **+72 / +73 samples (1.5 ms)** after its beat frame. The cause of this
+     lag was not investigated.
+   - `Music Bed/Harmony` and `Feature` (`PATH_DELAY_BLOCKS`): **not measured**.
+5. **Deferred defects.** `Resynced` fired 0 times in every take, including the forced 300 ms and 2000 ms stalls. No
+   `MasterDsp() == 0` resync and no phrase-end resync was hit.
+
+### NOT met / open
+
+- No criterion of Steps 1, 2, 4 or 5 is NOT met.
+- Step 1's calibration rule was not applied. The value that triggers it (-0.82 ms) is the detector's own bias (see
+  Step 1). This needs a ruling.
+- A 300 ms stall just before a beat loses that beat's kill chord and its late pattern notes: 25 notes on beat 31 in
+  Step 4. No step of this task has a criterion on missing notes in that take.
