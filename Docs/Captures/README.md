@@ -2369,42 +2369,65 @@ disallowed per take, with one call before Play mode and one after.
 - `CAPTURE dsp-to-frame mismatches` is 0 in all five takes.
 - `MusicTransport.Resynced` fired 0 times in all five takes, including the forced stalls.
 
+### Detector bias, raw and corrected errors
+
+`spike` (clock mode) finds each click with `band_onsets`: a zero-phase band-pass and envelope, with the onset at 15 % of
+the peak. That detector reports a click early.
+- **How the bias is measured.** On every run, `spike` places the SpikeClick waveform (`spike_click.click_samples(3000)`)
+  at 16 known samples in silence and runs the same `band_onsets` on it. The result is printed as the `detector bias`
+  line: **-39.0 samples = -0.812 ms**, min = max = -39.0.
+- **What it affects.** Raw errors are attack frame - beat frame. Corrected errors are raw - bias. The raw mean |e|, max
+  and late / early columns all carry the -0.81 ms. Judged on raw errors, the ±5 ms gate would in fact be late
+  > +5.81 ms and early < -4.19 ms.
+- **What the gate uses.** Mean ≤ 2, max ≤ 5, late > +5 ms, early < -5 ms and the exit code are all judged on the
+  **corrected** errors.
+- **Cross-check with `--xcorr`.** This gives the exact click lag in samples: the capture is cross-correlated with the
+  click waveform, both band-passed 2-4 kHz, within ±10 ms of each beat frame.
+
+Commands (Steps 1 and 2):
+```
+python FMOD/Tools/analyze_capture.py spike Docs/Captures/spike_seed33_s7c_d05_r2.wav --xcorr
+python FMOD/Tools/analyze_capture.py spike Docs/Captures/spike_seed33_s7c_d4_stall300.wav --stall-beats 9.8,15.7,40.2 --xcorr
+```
+
 ### Step 1: spike seed 33, 68 beats, `spikeDispatchBeats` 0.5 (`spike_seed33_s7c_d05_r2`)
 
-| clicks | n | mean \|e\| ms | max \|e\| ms | mean signed ms |
-|---|---:|---:|---:|---:|
-| all | 64 | 0.82 | 0.85 | -0.82 (-39 samples) |
-| lead 1 beat (even) | 32 | 0.83 | 0.85 | -0.83 |
-| lead 0.3 beat (odd) | 32 | 0.81 | 0.83 | -0.81 |
-| 4 beats after tempo change 16 / 32 / 48 / 64 | 4 / 4 / 4 / 1 | 0.81 / 0.80 / 0.82 / 0.85 | 0.85 / 0.83 / 0.85 / 0.85 | -0.81 / -0.80 / -0.82 / -0.85 |
+| clicks | n | raw mean \|e\| / max / signed ms | corrected mean \|e\| / max / signed ms |
+|---|---:|---|---|
+| all | 64 | 0.82 / 0.85 / -0.82 | 0.02 / 0.04 / -0.01 (-0.4 samples) |
+| lead 1 beat (even) | 32 | 0.83 / 0.85 / -0.83 | 0.02 / 0.04 / -0.02 |
+| lead 0.3 beat (odd) | 32 | 0.81 / 0.83 / -0.81 | 0.02 / 0.04 / +0.00 |
+| 4 beats after tempo change 16 | 4 | 0.81 / 0.85 / -0.81 | 0.02 / 0.04 / +0.00 |
+| 4 beats after tempo change 32 | 4 | 0.80 / 0.83 / -0.80 | 0.02 / 0.02 / +0.01 |
+| 4 beats after tempo change 48 | 4 | 0.82 / 0.85 / -0.82 | 0.03 / 0.04 / -0.01 |
+| beat after tempo change 64 | 1 | 0.85 / 0.85 / -0.85 | 0.04 / 0.04 / -0.04 |
 
-- Missing 0, late 0, early 0.
-- `analyze_capture.py spike`: GATE PASS (mean ≤ 2, max ≤ 5, the 4 beats after each change included).
+- Corrected: missing 0, late 0, early 0. The raw counts are also 0 / 0 / 0.
+- **GATE PASS** on the corrected errors (exit 0).
+- `--xcorr`: 64 of 64 clicks at lag 0 samples.
 - `frames`: backward 0, over 0.05 beat 0, max 0.0066 beat, hold 0 ms.
 
-**Calibration: not applied. `DefaultScheduleOffsetSamples` stays 0.** The analyzer's mean signed error (-0.82 ms) is
-beyond the brief's ±0.5 ms trigger. It is the onset detector's own bias, not an offset of the clicks:
-- **Detector on known clicks.** `band_onsets` uses a zero-phase band-pass and envelope and puts the onset at 15 % of the
-  peak. Run on the SpikeClick waveform (`spike_click.click_samples(3000)`) placed at known samples in silence, it reports
-  every click 39.0 samples early (-0.81 ms), with no spread.
-- **Cross-correlation of the capture.** The capture is correlated with the same click waveform (2-4 kHz band) around
-  every beat frame. All 64 clicks are at lag **0 samples**, with a normalised peak of 0.98-0.99.
-- **Other takes.** The same holds for every click of `_d4_stall300` (64 of 64) and for the 58 measured clicks of the
-  invalid `_d05`.
-
-So the clicks start on the clock's beat sample. Moving the offset by +39 samples would make every one-shot 0.8 ms late.
-Whether the brief's rule should be applied literally anyway is left to the reviewer.
+**Calibration.**
+- The corrected mean signed error is **-0.01 ms (-0.4 samples)**. That is within the ±0.5 ms trigger.
+- The raw -0.82 ms is the detector bias above. Cross-correlation puts every click on its beat sample.
+- On that basis `DefaultScheduleOffsetSamples` was left at 0 by controller ruling C-5.
 
 ### Step 2: spike seed 33, `spikeDispatchBeats` 4.0, `stallMs` 300 at 9.8 / 15.7 / 40.2 (`spike_seed33_s7c_d4_stall300`)
 
-| clicks | n | mean \|e\| ms | max \|e\| ms |
-|---|---:|---:|---:|
-| all | 64 | 0.83 | 0.87 |
-| 4 beats after tempo change 16 / 32 / 48 / 64 | 4 / 4 / 4 / 1 | 0.82 / 0.83 / 0.83 / 0.85 | 0.85 / 0.87 / 0.85 / 0.85 |
-| 4 beats after the stall at 9.8 / 15.7 / 40.2 | 4 / 4 / 4 | 0.82 / 0.82 / 0.84 | 0.85 / 0.85 / 0.85 |
+| clicks | n | raw mean \|e\| / max / signed ms | corrected mean \|e\| / max / signed ms |
+|---|---:|---|---|
+| all | 64 | 0.83 / 0.87 / -0.83 | 0.03 / 0.06 / -0.02 (-0.9 samples) |
+| 4 beats after tempo change 16 | 4 | 0.82 / 0.85 / -0.82 | 0.03 / 0.04 / -0.01 |
+| 4 beats after tempo change 32 | 4 | 0.83 / 0.87 / -0.83 | 0.04 / 0.06 / -0.02 |
+| 4 beats after tempo change 48 | 4 | 0.83 / 0.85 / -0.83 | 0.04 / 0.04 / -0.02 |
+| beat after tempo change 64 | 1 | 0.85 / 0.85 / -0.85 | 0.04 / 0.04 / -0.04 |
+| 4 beats after the stall at 9.8 | 4 | 0.82 / 0.85 / -0.82 | 0.03 / 0.04 / -0.01 |
+| 4 beats after the stall at 15.7 | 4 | 0.82 / 0.85 / -0.82 | 0.03 / 0.04 / -0.01 |
+| 4 beats after the stall at 40.2 | 4 | 0.84 / 0.85 / -0.84 | 0.03 / 0.04 / -0.03 |
 
-- **Missing 0, late 0, early 0: met.** The 4 beats after each stall pass the accuracy check.
-- Cross-correlation: 64 of 64 clicks at lag 0.
+- **Missing 0, late 0, early 0 (corrected; raw also 0 / 0): met.**
+- The 4 beats after each stall pass the accuracy check. GATE PASS (exit 0).
+- `--xcorr`: 64 of 64 clicks at lag 0.
 - Where the stalls were taken:
 
   | stall | visual beat | mixer beat | visual beat moved by the stall frame (expected) |
@@ -2467,7 +2490,10 @@ Losses and the boundary inside the stall:
 
 How the kick lag was measured:
 - Both the capture and the kick sample are low-passed below 200 Hz. They are cross-correlated within ±10 ms of each
-  core-kick beat (scratch script, not committed).
+  core-kick beat.
+- **The kick-lag figures in Steps 4 and 5 and in carried item 4 come from a script that is not in the repo.** These are
+  the absolute lags and the comparison with `heavy_seed7_s6c`. Only the click cross-correlation is committed
+  (`spike --xcorr`).
 - Where other low parts play with the kick, the normalised peak is 0.7-0.8 and the lag scatters between 66 and 123
   samples. `heavy_seed7_s6c` has the same scatter, beat for beat.
 - The kicks that sounded alone show the kick's own lag (carried item 4).
@@ -2494,8 +2520,10 @@ How the kick lag was measured:
      gap**. The capture lost no note there (`.losses.csv` is empty).
 2. **Capture mapping (`FrameAtDsp` against `getDSPClock`).**
    - Mismatches: 0 in every take.
-   - Before any calibration, the analyzer's mean signed error is -0.82 ms. This is the detector bias (Step 1).
-   - By cross-correlation, every click starts exactly on its beat frame: lag 0 for 64 of 64 in each valid spike take.
+   - Before any calibration, the raw mean signed error is -0.82 ms. This is the detector bias of -0.81 ms. The
+     corrected mean signed error is -0.01 ms (Step 1) and -0.02 ms (Step 2).
+   - By cross-correlation (`spike --xcorr`), every click starts exactly on its beat frame: lag 0 for 64 of 64 in each
+     valid spike take.
    - **No constant offset between the capture's clock and the master DSP clock is observed.**
 3. **±1-sample starts across a boundary.**
    - In the spike takes, the 4 beats after each tempo change match the other beats (tables above), with
@@ -2514,7 +2542,7 @@ How the kick lag was measured:
 ### NOT met / open
 
 - No criterion of Steps 1, 2, 4 or 5 is NOT met.
-- Step 1's calibration rule was not applied. The value that triggers it (-0.82 ms) is the detector's own bias (see
-  Step 1). This needs a ruling.
+- Step 1 calibration: the corrected mean signed error (-0.01 ms) is within ±0.5 ms. The offset stays 0 (controller
+  ruling C-5).
 - A 300 ms stall just before a beat loses that beat's kill chord and its late pattern notes: 25 notes on beat 31 in
   Step 4. No step of this task has a criterion on missing notes in that take.
