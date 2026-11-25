@@ -44,8 +44,15 @@ public class InstrumentCoverageTests
     {
         Assert.Greater(PatternTable.Notes.Length, 0, "the pattern table is empty");
         var notes = new List<(Instrument, OutputBus, int)>();
+        bool drums = false, latinDrums = false;
         foreach (var n in PatternTable.Notes)
+        {
             notes.Add((n.Instrument, n.Bus, n.Midi));
+            drums |= n.Instrument == Instrument.Drums && n.Bus == OutputBus.MusicBed;
+            latinDrums |= n.Instrument == Instrument.Drums && n.Bus == OutputBus.LatinPerc;
+        }
+        // Task 12: the drum kit (Note = percussion number) on the bed bus and on the Latin perc sub-bus is covered too.
+        Assert.IsTrue(drums && latinDrums, "the pattern table has no drum notes on MusicBed / LatinPerc");
         AssertCovered(notes);
     }
 

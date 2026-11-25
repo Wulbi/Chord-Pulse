@@ -37,10 +37,16 @@ public sealed class SoundManager : SingletonBehaviour<SoundManager>, IKillBedSta
     // ~5 ms region-end ramp (FMOD/Tools/instruments.py PATTERN_STOP_FADE_MS).
     readonly FmodOneShotBackend _shotBackend = new FmodOneShotBackend();
     OneShotScheduler _shots;
-    // The bed's pitched layers (PatternTable) as one-shots, unless legacyLayers keeps them on the timeline.
-    // Lookahead: one beat of dispatch window after a phrase boundary plus the largest sample onset, with margin.
+    // The bed's layers (PatternTable: pitched layers and drums) as one-shots, unless legacyLayers keeps them on the timeline.
+    // Two schedulers: _patterns takes every layer but the core kick / snare / hat. Lookahead: one beat of dispatch window
+    // after a phrase boundary plus the largest sample onset, with margin. _corePatterns takes the core layers
+    // (PatternTable.CoreLayerMask) a bar ahead and hands them to FMOD at once: they depend only on decisions made a phrase
+    // ahead (style, fever), so an ordinary frame stall cannot cut them. Every Update / Invalidate / Reset goes to both
+    // (UpdatePatterns, InvalidatePatterns, ResetPatterns).
     const double PatternLookaheadBeats = 1.5;
+    static readonly double MaxPatternLookaheadBeats = Math.Max(PatternLookaheadBeats, PatternTable.CoreLookaheadBeats);
     PatternScheduler _patterns;
+    PatternScheduler _corePatterns;
     ArrangementInputs _arrangement;
     bool _arrangementValid;
     bool _legacyActive = true;
@@ -60,7 +66,7 @@ public sealed class SoundManager : SingletonBehaviour<SoundManager>, IKillBedSta
     [SerializeField, Range(0f, 1f)] float killChordMix = 1f;
     [Tooltip("Seed for the per-phrase section choice. 0 = different every round.")]
     [SerializeField] int sectionSeed;
-    [Tooltip("Bed pitched layers (bass, pluck, combo, tension, style layers): true = the old timeline tracks play them " +
+    [Tooltip("Bed layers (bass, pluck, combo, tension, style layers, drums incl. the core kit): true = the old timeline tracks play them " +
              "(global FMOD parameter LegacyLayers 1, PatternScheduler silent); false = Unity schedules them as one-shots " +
              "(LegacyLayers 0). Read when the music starts. Default true until the drop burst of one styles take " +
              "(Docs/Captures/README.md Task 11, fix round 1) is resolved.")]
@@ -365,7 +371,7 @@ public sealed class SoundManager : SingletonBehaviour<SoundManager>, IKillBedSta
         if (!ApplyMix())
             yield break;
         // Global, optional (banks built before mixer.py lack it; then the timeline tracks play whatever is set here, so
-        // a missing one only warns). Gates the 13 migrated timeline tracks (FMOD/Tools/legacy_gate.py).
+        // a missing one only warns). Gates the migrated timeline tracks (FMOD/Tools/legacy_gate.py, patterns.LEGACY_TRACKS).
         if (RuntimeManager.StudioSystem.setParameterByName("LegacyLayers", _legacyActive ? 1f : 0f, true) != FMOD.RESULT.OK &&
             !_legacyLayersWarned)
         {
@@ -411,7 +417,7 @@ public sealed class SoundManager : SingletonBehaviour<SoundManager>, IKillBedSta
         _musicPlaying = false;
         Shots.StopAll();
         _shotBackend.StopAll(); // also the release tails the scheduler has already let go of
-        Patterns.Reset();
+        ResetPatterns();
         _arrangementValid = false;
         _killPlanner.Clear();
         _conductor.Detach();
@@ -489,7 +495,27 @@ public sealed class SoundManager : SingletonBehaviour<SoundManager>, IKillBedSta
 
     /// <summary>The one-shot scheduler shared by the kill chords and the pattern layers.</summary>
     OneShotScheduler Shots => _shots ??= new OneShotScheduler(_conductor.Clock, _shotBackend);
-    PatternScheduler Patterns => _patterns ??= new PatternScheduler(Shots, this, PatternLookaheadBeats);
+    PatternScheduler Patterns => _patterns ??= new PatternScheduler(Shots, this, PatternLookaheadBeats, ~PatternTable.CoreLayerMask);
+    PatternScheduler CorePatterns => _corePatterns ??= new PatternScheduler(Shots, this, PatternTable.CoreLookaheadBeats,
+        PatternTable.CoreLayerMask, PatternTable.CoreLookaheadBeats);
+
+    void UpdatePatterns(double now)
+    {
+        Patterns.Update(now);
+        CorePatterns.Update(now);
+    }
+
+    void InvalidatePatterns(double fromBeat, double now, double beatsPerSecond)
+    {
+        Patterns.Invalidate(fromBeat, now, beatsPerSecond);
+        CorePatterns.Invalidate(fromBeat, now, beatsPerSecond);
+    }
+
+    void ResetPatterns()
+    {
+        Patterns.Reset();
+        CorePatterns.Reset();
+    }
 
     void ScheduleKillNotes()
     {
@@ -529,17 +555,18 @@ public sealed class SoundManager : SingletonBehaviour<SoundManager>, IKillBedSta
     }
 
     // Takes the current decisions for the pattern layers; if they change a step that may already be scheduled (now ..
-    // now + lookahead), PatternScheduler.Invalidate from the first such step (it keeps notes within its onset safety).
+    // now + the longer lookahead), both schedulers are invalidated from the first such step (each keeps notes within its
+    // onset safety; a change only one scheduler's layers care about re-states the other's notes unchanged).
     void RefreshArrangement(double now)
     {
         var next = CurrentArrangement();
         if (_arrangementValid && !_legacyActive)
         {
             int from = (int)Math.Floor(now * StepsPerBeat);
-            int to = (int)Math.Ceiling((now + PatternLookaheadBeats) * StepsPerBeat);
+            int to = (int)Math.Ceiling((now + MaxPatternLookaheadBeats) * StepsPerBeat);
             int step = ArrangementTimeline.FirstDifferentStep(in _arrangement, in next, from, to);
             if (step >= 0)
-                Patterns.Invalidate((double)step / StepsPerBeat, now, SafetyBeatsPerSecond());
+                InvalidatePatterns((double)step / StepsPerBeat, now, SafetyBeatsPerSecond());
         }
         _arrangement = next;
         _arrangementValid = true;
@@ -825,7 +852,7 @@ public sealed class SoundManager : SingletonBehaviour<SoundManager>, IKillBedSta
         {
             RefreshArrangement(now);
             if (!_legacyActive)
-                Patterns.Update(now);
+                UpdatePatterns(now);
         }
         Shots.Update();
         _shotBackend.Update();

@@ -640,4 +640,118 @@ public class PatternSchedulerTests
             Assert.Greater(e.beat, 3.0);
         Assert.AreEqual(0, _shots.LateCount);
     }
+
+    // ---- Task 12: drums (percussion numbers: FMOD/Tools/samples.py PERC) ----
+
+    const int Kick = 36, Snare = 38, ClosedHat = 42, Shaker = 82;
+
+    PatternScheduler MakeCore() =>
+        Make(lookahead: PatternTable.CoreLookaheadBeats, mask: PatternTable.CoreLayerMask, window: PatternTable.CoreLookaheadBeats);
+
+    int CountDrum(int number, Func<double, bool> beatFilter = null)
+    {
+        int count = 0;
+        foreach (var e in _events)
+            if (e.note.Instrument == Instrument.Drums && e.note.Midi == number && (beatFilter == null || beatFilter(e.beat)))
+                count++;
+        return count;
+    }
+
+    static bool OnSixteenthEorA(double beat)
+    {
+        double f = beat - Math.Floor(beat);
+        return f == 0.25 || f == 0.75;
+    }
+
+    [Test]
+    public void Funk_Combo1_Adds16thShaker()
+    {
+        _state.Style = 2;
+        _state.Combo = 0;
+        var p = Make(lookahead: 16.0, mask: ~PatternTable.CoreLayerMask);
+        At(0.1);
+        p.Update(0.1);
+        Assert.Greater(CountDrum(ClosedHat), 0, "funk 16th hats play at combo 0");
+        Assert.AreEqual(0, CountDrum(Shaker), "no shaker in funk at combo 0");
+
+        _events.Clear();
+        _state.Combo = 1;
+        p.Reset();
+        p.Update(0.1);
+        Assert.AreEqual(32, CountDrum(Shaker, OnSixteenthEorA), "16th shaker on every e / a of the phrase (beat 0.25 .. 15.75)");
+        Assert.AreEqual(CountDrum(Shaker), CountDrum(Shaker, OnSixteenthEorA), "funk has no 8th shaker");
+    }
+
+    [Test]
+    public void DrumNotes_PlayToSampleEnd()
+    {
+        int drums = 0;
+        foreach (var n in PatternTable.Notes)
+            if (n.Instrument == Instrument.Drums)
+            {
+                drums++;
+                Assert.AreEqual(0f, n.LengthBeats, $"drum note {n.Midi} at beat {n.Beat}");
+            }
+        Assert.Greater(drums, 0, "no drum notes in the pattern table");
+    }
+
+    [Test]
+    public void CoreKick_SilentInBuildBar()
+    {
+        _state.Fever = FeverPhaseMask.Build;
+        var p = MakeCore();
+        At(0.1);
+        p.Update(0.1);
+        Assert.AreEqual(0, CountDrum(Kick), "kick in the build-up bar");
+        Assert.Greater(CountDrum(Snare), 0, "the snare keeps playing in the build-up bar");
+
+        foreach (var phase in new[] { FeverPhaseMask.None, FeverPhaseMask.Impact, FeverPhaseMask.Fever, FeverPhaseMask.Outro })
+        {
+            _events.Clear();
+            _state.Fever = phase;
+            p.Reset();
+            p.Update(0.1);
+            Assert.AreEqual(2, CountDrum(Kick), "kicks at 2 and 4 in " + phase);
+        }
+    }
+
+    [Test]
+    public void CoreBackbeat_OnlyInSynthpop()
+    {
+        _state.Style = 1;
+        var p = MakeCore();
+        At(0.1);
+        p.Update(0.1);
+        Assert.AreEqual(0, CountDrum(Snare) + CountDrum(ClosedHat), "core snare / hat in latin");
+        Assert.Greater(CountDrum(Kick), 0, "the kick plays in every style");
+        Assert.IsFalse(PatternTable.StyleUsesCoreBackbeat[1]);
+
+        _events.Clear();
+        _state.Style = 0;
+        p.Reset();
+        p.Update(0.1);
+        Assert.Greater(CountDrum(Snare), 0);
+        Assert.Greater(CountDrum(ClosedHat), 0);
+        Assert.IsTrue(PatternTable.StyleUsesCoreBackbeat[0]);
+    }
+
+    [Test]
+    public void Core_LookaheadIsOneBar()
+    {
+        Assert.AreEqual(4.0, PatternTable.CoreLookaheadBeats);
+        var p = MakeCore();
+        At(0);
+        p.Update(0);
+        Assert.AreEqual(1, CountDrum(Kick, b => b == 4.0), "the kick of beat 4 is scheduled at now 0");
+        // ... and handed to FMOD at once (dispatch window = the lookahead), not half a beat before it.
+        ulong at4 = (ulong)(4 * SamplesPerBeat);
+        bool handed = false;
+        foreach (var s in _backend.Starts)
+            if (s.inst == Instrument.Drums && s.midi == Kick && s.dspStart + 8000 >= at4 && s.dspStart <= at4)
+                handed = true;
+        Assert.IsTrue(handed, "beat 4 kick not handed to the backend at now 0");
+        // the other layers are not this scheduler's
+        foreach (var e in _events)
+            Assert.AreEqual(Instrument.Drums, e.note.Instrument);
+    }
 }

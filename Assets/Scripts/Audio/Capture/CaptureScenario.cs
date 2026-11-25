@@ -76,7 +76,7 @@ public sealed class CaptureScenario : MonoBehaviour
              "steers the section choice). -1 = leave it (0 after StartMusic; duck sets 3).")]
     [SerializeField] int intensity = -1;
     [Tooltip("Comma-separated PatternTable.LayerNames: only these pattern layers are scheduled (one-shot path; sets the " +
-             "PatternScheduler layer mask). Empty = all.")]
+             "layer masks of both PatternSchedulers, core and the rest). Empty = all.")]
     [SerializeField] string patternLayers = "";
     [Tooltip("Music parameter SpikeRef = 1 in any scenario: the timeline's 1 kHz click on every beat (attack reference).")]
     [SerializeField] bool spikeRefClicks;
@@ -121,7 +121,7 @@ public sealed class CaptureScenario : MonoBehaviour
     float _longestFrame;
     // one-shots (SoundManager's shared scheduler / backend, read through reflection: _shots, _shotBackend, _patterns)
     FmodOneShotBackend _killBackend;
-    FieldInfo _killSchedulerField, _patternsField;
+    FieldInfo _killSchedulerField, _patternsField, _corePatternsField;
     readonly List<string> _killLossLog = new List<string>();
     readonly List<string> _lossLog = new List<string>();
     int _killLate, _patternLate, _patternScheduled;
@@ -177,6 +177,7 @@ public sealed class CaptureScenario : MonoBehaviour
         _killBackend = (FmodOneShotBackend)typeof(SoundManager).GetField("_shotBackend", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(sound);
         _killSchedulerField = typeof(SoundManager).GetField("_shots", BindingFlags.Instance | BindingFlags.NonPublic);
         _patternsField = typeof(SoundManager).GetField("_patterns", BindingFlags.Instance | BindingFlags.NonPublic);
+        _corePatternsField = typeof(SoundManager).GetField("_corePatterns", BindingFlags.Instance | BindingFlags.NonPublic);
         if (layers != Layers.asSoundManager)
             typeof(SoundManager).GetField("legacyLayers", BindingFlags.Instance | BindingFlags.NonPublic).SetValue(sound, layers == Layers.legacy);
         _killBackend.NoteDropped += OnNoteDropped;
@@ -213,7 +214,8 @@ public sealed class CaptureScenario : MonoBehaviour
             sound.MusicMix = 0f; // kill chords alone: the bed would differ between styles
         if (intensity >= 0)
             sound.Intensity = intensity;
-        if (!string.IsNullOrWhiteSpace(patternLayers) && _patternsField.GetValue(sound) is PatternScheduler mask)
+        if (!string.IsNullOrWhiteSpace(patternLayers) && _patternsField.GetValue(sound) is PatternScheduler mask &&
+            _corePatternsField.GetValue(sound) is PatternScheduler coreMask)
         {
             ulong bits = 0;
             foreach (var name in patternLayers.Split(','))
@@ -224,7 +226,10 @@ public sealed class CaptureScenario : MonoBehaviour
                 else
                     bits |= 1UL << layer;
             }
-            typeof(PatternScheduler).GetField("_layerMask", BindingFlags.Instance | BindingFlags.NonPublic).SetValue(mask, bits);
+            // Each scheduler keeps only its own layers (SoundManager: core layers vs the rest).
+            var maskField = typeof(PatternScheduler).GetField("_layerMask", BindingFlags.Instance | BindingFlags.NonPublic);
+            maskField.SetValue(mask, bits & ~PatternTable.CoreLayerMask);
+            maskField.SetValue(coreMask, bits & PatternTable.CoreLayerMask);
         }
         SubscribeShots(sound);
         ApplySolo(sound);
@@ -594,9 +599,14 @@ public sealed class CaptureScenario : MonoBehaviour
             patterns.NoteScheduled += OnPatternNote;
             _subscribedPatterns = patterns;
         }
+        if (_corePatternsField.GetValue(sound) is PatternScheduler core && core != _subscribedCorePatterns)
+        {
+            core.NoteScheduled += OnPatternNote;
+            _subscribedCorePatterns = core;
+        }
     }
 
-    PatternScheduler _subscribedPatterns;
+    PatternScheduler _subscribedPatterns, _subscribedCorePatterns;
 
     static void UnmuteSoloBuses()
     {
