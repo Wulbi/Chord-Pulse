@@ -82,7 +82,6 @@ public sealed class OneShotScheduler
         public double OnsetSeconds;
         public double WindowBeats;
         public int Handle = -1; // >= 0 once handed to the backend
-        public int DispatchAnchor; // the clock's anchor beat when it was handed over
         public ulong Start;
         public ulong Stop;
     }
@@ -109,42 +108,8 @@ public sealed class OneShotScheduler
     /// </summary>
     public long ScheduleOffsetSamples { get; set; } = DefaultScheduleOffsetSamples;
 
-    /// <summary>
-    /// A note already handed to the backend is re-timed (cancelled and handed over again) when the clock now puts its start
-    /// more than this many samples (5 ms at 48 kHz, the attack criterion's maximum) from the start it was handed over with.
-    /// Task 12 follow-up: core drums handed over 4 beats ahead from a pre-landing anchor sounded 12-16 ms late four beats
-    /// after a jump landing. Only notes handed over from an anchor at least <see cref="RetimeAfterAnchors"/> beats older
-    /// than the clock's newest one are checked, and only once that anchor has settled (<see cref="AnchorSettleBeats"/>):
-    /// a new anchor refines itself by up to +-8 ms around a phrase boundary, and following it re-created a third of all
-    /// notes (baseline_seed33_s12j_attack_drums_new: 289 re-times of +-5..8 ms) or, re-timing once from an unsettled anchor
-    /// right after a landing, put the notes 11 ms late (_s12k_).
-    /// </summary>
-    public const long RetimeThresholdSamples = 240;
-
-    /// <summary>
-    /// The largest move a re-time follows: one mixer block (1024 samples, the project's DSP buffer). The drift it exists for
-    /// is 12-16 ms (600-750 samples); a larger move is a clock discontinuity (a wrong anchor, a step back after a landing)
-    /// and the note keeps its time (fix round 1: a held wrong anchor moved notes by +102 ms and back).
-    /// </summary>
-    public const long RetimeMaxSamples = 1024;
-
-    /// <summary>A handed-over note is checked once the clock has this many newer anchors than the one it was handed over with.</summary>
-    public const int RetimeAfterAnchors = 2;
-
-    /// <summary>The beat anchor is final half a beat after its beat (MusicConductor.PollAnchor averages the polls up to then).</summary>
-    public const double AnchorSettleBeats = 0.5;
-
-    /// <summary>Notes starting sooner than this (4 mixer blocks) keep their time: a new instance needs that long to arm.</summary>
-    public const long RetimeMinLeadSamples = 4096;
-
     /// <summary>Notes that were never started because their start time had already passed (never played late).</summary>
     public int LateCount { get; private set; }
-
-    /// <summary>Handed-over notes re-timed because the clock moved them (<see cref="RetimeThresholdSamples"/>).</summary>
-    public int RetimedCount { get; private set; }
-
-    /// <summary>Diagnostics: a note was re-timed (its owner, beat and the move of its start in samples).</summary>
-    public event Action<object, double, long> NoteRetimed;
 
     /// <summary>Diagnostics: a note was counted in <see cref="LateCount"/> (its owner and beat).</summary>
     public event Action<object, double> NoteLate;
@@ -200,9 +165,10 @@ public sealed class OneShotScheduler
 
     /// <summary>
     /// Hands waiting notes whose start is at most <see cref="DispatchWindowBeats"/> away to the backend, drops waiting
-    /// notes whose start has already passed (<see cref="LateCount"/>), releases handles whose stop time has passed
-    /// (zero-length notes: whose backend reports them finished), and re-times handed-over notes the clock has moved
-    /// (<see cref="RetimeThresholdSamples"/>).
+    /// notes whose start has already passed (<see cref="LateCount"/>), and releases handles whose stop time has passed
+    /// (zero-length notes: whose backend reports them finished). A handed-over note keeps the start it was handed over with
+    /// when later anchors move the clock (Task 12 fix round 2: re-timing armed notes lost notes); tempo changes go through
+    /// <see cref="RescheduleFrom"/>.
     /// </summary>
     public void Update()
     {
@@ -217,9 +183,7 @@ public sealed class OneShotScheduler
                 {
                     _backend.Release(note.Handle);
                     _notes.RemoveAt(i);
-                    continue;
                 }
-                TryRetime(note, now);
                 continue;
             }
             var result = Dispatch(note, now);
@@ -301,42 +265,11 @@ public sealed class OneShotScheduler
         if (handle < 0)
             return DispatchResult.Failed;
         note.Handle = handle;
-        note.DispatchAnchor = _clock.AnchorBeat;
         note.Start = (ulong)start;
         note.Stop = (ulong)Math.Max(stop, start);
         if (note.LengthBeats > 0)
             _backend.Stop(handle, note.Stop); // zero length: no stop time, the sample plays to its end
         return DispatchResult.Sent;
-    }
-
-    // A handed-over note that has not started yet, ahead of the clock's newest anchor, whose start the clock now puts more
-    // than RetimeThresholdSamples away.
-    // Re-times a handed-over note: only a drift between RetimeThresholdSamples and RetimeMaxSamples, both times far enough
-    // ahead to arm, and only once the new instance exists (the original is stopped after that; if the backend cannot start
-    // the new one, the original stands).
-    void TryRetime(Note note, ulong now)
-    {
-        if (!_clock.HasAnchor || _clock.AnchorBeat < note.DispatchAnchor + RetimeAfterAnchors ||
-            note.Beat < _clock.AnchorBeat || (long)note.Start - (long)now <= RetimeMinLeadSamples ||
-            !_clock.BeatAt(now, out double nowBeat) || nowBeat < _clock.AnchorBeat + AnchorSettleBeats ||
-            !Times(note, out long start, out long stop, out _))
-            return;
-        long moved = start - (long)note.Start;
-        if (Math.Abs(moved) <= RetimeThresholdSamples || Math.Abs(moved) > RetimeMaxSamples ||
-            start - (long)now <= RetimeMinLeadSamples)
-            return;
-        int handle = _backend.Start(note.Inst, note.Bus, note.Midi, note.GainDb, (ulong)start);
-        if (handle < 0)
-            return;
-        Cancel(note, now); // the original, not yet sounding
-        note.Handle = handle;
-        note.DispatchAnchor = _clock.AnchorBeat;
-        note.Start = (ulong)start;
-        note.Stop = (ulong)Math.Max(stop, start);
-        if (note.LengthBeats > 0)
-            _backend.Stop(handle, note.Stop);
-        RetimedCount++;
-        NoteRetimed?.Invoke(note.Owner, note.Beat, moved);
     }
 
     void Cancel(Note note, ulong now)

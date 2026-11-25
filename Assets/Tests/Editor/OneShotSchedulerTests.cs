@@ -25,13 +25,8 @@ public class OneShotSchedulerTests
             }
         }
 
-        /// <summary>Start returns -1 (the backend could not create the instance).</summary>
-        public bool FailStarts;
-
         public int Start(Instrument inst, OutputBus bus, int midi, float gainDb, ulong dspStart)
         {
-            if (FailStarts)
-                return -1;
             int handle = _next++;
             Starts.Add((handle, inst, bus, midi, gainDb, dspStart));
             return handle;
@@ -482,153 +477,21 @@ public class OneShotSchedulerTests
         Assert.AreEqual(OneShotArm.Drop, OneShotArming.Decide(false, true, 200000, 0));
     }
 
-    // Task 12 follow-up: a note handed over beats ahead (core drums: 4 beats) keeps the start of the clock it was dispatched
-    // with; at a jump landing that clock was extrapolated from a drifting pre-landing anchor (+12..+16 ms measured). Update
-    // re-times such a note when the clock, with a settled anchor RetimeAfterAnchors beats newer than the note's, moves its
-    // start by more than RetimeThresholdSamples.
+    // Task 12 fix round 2 (ruling 12-6): a note handed to the backend keeps its start when a later anchor moves the clock
+    // (re-timing armed notes lost notes); only RescheduleFrom (a tempo change) hands notes over again.
     [Test]
-    public void Update_ClockMovedDispatchedNote_RetimesIt()
+    public void DispatchedNote_KeepsItsStart_WhenTheAnchorMoves()
     {
         var (clock, backend, scheduler) = Make();
         clock.Anchor(0, 0, 120);
         backend.Now = 0;
         Assert.IsTrue(scheduler.Schedule(N(72, 4, 0, 0f, 0.0), Owner, 4.0)); // handed over at once
-        Assert.AreEqual(1, backend.Starts.Count);
         Assert.AreEqual(96000UL, backend.Starts[0].dspStart);
-
-        clock.Anchor(1, 24000 - 600, 120); // the clock learns beat 1 was 600 samples (12.5 ms) earlier
-        backend.Now = 24000;
-        scheduler.Update();
-        Assert.AreEqual(1, backend.Starts.Count, "one newer anchor: not yet");
-        clock.Anchor(2, 48000 - 600, 120);
-        backend.Now = 48000;
-        scheduler.Update();
-        Assert.AreEqual(1, backend.Starts.Count, "the new anchor has not settled yet (half a beat)");
-        backend.Now = 48000 + 12000;
-        scheduler.Update();
-        Assert.AreEqual(2, backend.Starts.Count, "re-dispatched with the new time");
-        Assert.AreEqual(96000UL - 600UL, backend.Starts[1].dspStart);
-        Assert.IsTrue(backend.Stops.Exists(s => s.handle == backend.Starts[0].handle), "the old instance is stopped");
-        Assert.AreEqual(1, scheduler.ActiveCount);
-
-        clock.Anchor(3, 72000, 120); // moves it back by 600, but the note was just handed over again from anchor 2
-        backend.Now = 72000 + 12000;
-        scheduler.Update();
-        Assert.AreEqual(2, backend.Starts.Count, "not re-timed from an anchor only one beat newer");
-    }
-
-    [Test]
-    public void Update_SmallClockMove_KeepsTheDispatchedNote()
-    {
-        var (clock, backend, scheduler) = Make();
-        clock.Anchor(0, 0, 120);
-        backend.Now = 0;
-        Assert.IsTrue(scheduler.Schedule(N(72, 4, 0, 0f, 0.0), Owner, 4.0));
-        clock.Anchor(2, 48000 - (ulong)(OneShotScheduler.RetimeThresholdSamples / 2), 120);
-        backend.Now = 48000 + 12000;
+        clock.Anchor(2, 48000 - 600, 120); // the clock now puts beat 4 600 samples earlier
+        backend.Now = 60000;
         scheduler.Update();
         Assert.AreEqual(1, backend.Starts.Count);
         Assert.AreEqual(0, backend.Stops.Count);
-    }
-
-    [Test]
-    public void Update_NoteAboutToStart_IsNotRetimed()
-    {
-        var (clock, backend, scheduler) = Make();
-        clock.Anchor(0, 0, 120);
-        backend.Now = 0;
-        Assert.IsTrue(scheduler.Schedule(N(72, 3, 0, 0f, 0.0), Owner, 4.0));
-        clock.Anchor(2, 48000 + 600, 120);
-        backend.Now = 72000 - (ulong)OneShotScheduler.RetimeMinLeadSamples + 1; // nearer than the re-time lead
-        scheduler.Update();
-        Assert.AreEqual(1, backend.Starts.Count);
-    }
-
-    [Test]
-    public void Update_NoteDispatchedFromTheLatestAnchors_IsNotRetimed()
-    {
-        var (clock, backend, scheduler) = Make();
-        clock.Anchor(0, 0, 120);
-        backend.Now = 0;
-        Assert.IsTrue(scheduler.Schedule(N(72, 1.5, 0, 0f, 0.0), Owner, 4.0)); // a near note (kill chord, 1-beat lead)
-        clock.Anchor(1, 24000 + 600, 120); // the next anchor refines the clock by 12.5 ms
-        backend.Now = 24000 + 12000;
-        scheduler.Update();
-        Assert.AreEqual(1, backend.Starts.Count);
-    }
-
-    // Fix round 1 (ruling 12-5): a re-time follows only a drift up to RetimeMaxSamples (one mixer block); a larger move is a
-    // clock discontinuity (a wrong anchor, a step back after a landing) and the note keeps its time. A re-time that cannot
-    // be handed over keeps the original note.
-
-    // Hands a note for beat 4 over at once from anchor 0 (120 BPM, 24000 samples per beat), then gives the clock a settled
-    // anchor 2 that moves beat 4 by `move` samples.
-    static (BeatClock clock, FakeBackend backend, OneShotScheduler scheduler) HandedOverThenMoved(long move)
-    {
-        var (clock, backend, scheduler) = Make();
-        clock.Anchor(0, 0, 120);
-        backend.Now = 0;
-        Assert.IsTrue(scheduler.Schedule(N(72, 4, 0, 0f, 0.0), Owner, 4.0));
-        clock.Anchor(2, (ulong)(48000 + move), 120);
-        backend.Now = (ulong)(48000 + move + 12000); // half a beat after the new anchor: settled
-        return (clock, backend, scheduler);
-    }
-
-    [Test]
-    public void Retime_StepBackAnchor_NoteKeepsItsTime()
-    {
-        var (_, backend, scheduler) = HandedOverThenMoved(4912); // the +102 ms move of styles_seed7_s12l_bed_i3_new
-        scheduler.Update();
-        Assert.AreEqual(1, backend.Starts.Count);
-        Assert.AreEqual(0, backend.Stops.Count);
-        Assert.AreEqual(0, scheduler.RetimedCount);
-    }
-
-    [Test]
-    public void Retime_ForwardJumpOverABlock_NoteKeepsItsTime()
-    {
-        var (_, backend, scheduler) = HandedOverThenMoved(-(OneShotScheduler.RetimeMaxSamples + 1));
-        scheduler.Update();
-        Assert.AreEqual(1, backend.Starts.Count);
-        Assert.AreEqual(0, scheduler.RetimedCount);
-    }
-
-    [Test]
-    public void Retime_DriftWithinABlock_Follows()
-    {
-        var (_, backend, scheduler) = HandedOverThenMoved(-600);
-        scheduler.Update();
-        Assert.AreEqual(2, backend.Starts.Count);
-        Assert.AreEqual(96000UL - 600UL, backend.Starts[1].dspStart);
-        Assert.AreEqual(1, scheduler.RetimedCount);
-        Assert.AreEqual(0, scheduler.LateCount);
-    }
-
-    [Test]
-    public void Retime_ThatCannotBeHandedOver_KeepsTheOriginal()
-    {
-        var (_, backend, scheduler) = HandedOverThenMoved(-600);
-        backend.FailStarts = true;
-        scheduler.Update();
-        Assert.AreEqual(1, backend.Starts.Count);
-        Assert.AreEqual(0, backend.Stops.Count, "the original instance is not stopped");
         Assert.AreEqual(1, scheduler.ActiveCount);
-        Assert.AreEqual(0, scheduler.LateCount);
-    }
-
-    [Test]
-    public void Retime_AnchorNotSettled_Waits()
-    {
-        var (clock, backend, scheduler) = Make();
-        clock.Anchor(0, 0, 120);
-        backend.Now = 0;
-        Assert.IsTrue(scheduler.Schedule(N(72, 4, 0, 0f, 0.0), Owner, 4.0));
-        clock.Anchor(2, 48000 - 600, 120);
-        backend.Now = 48000; // the anchor's beat has just started: not settled
-        scheduler.Update();
-        Assert.AreEqual(1, backend.Starts.Count);
-        backend.Now = 48000 + 12000;
-        scheduler.Update();
-        Assert.AreEqual(2, backend.Starts.Count);
     }
 }

@@ -599,7 +599,6 @@ public sealed class CaptureScenario : MonoBehaviour
         if (shots != null && shots != _subscribedShots)
         {
             shots.NoteLate += OnNoteLate;
-            shots.NoteRetimed += OnNoteRetimed;
             _subscribedShots = shots;
         }
         if (_patternsField.GetValue(sound) is PatternScheduler patterns && patterns != _subscribedPatterns)
@@ -652,16 +651,6 @@ public sealed class CaptureScenario : MonoBehaviour
         }
         else if (soloLayers == Solo.bedWithoutHarmony)
             RuntimeManager.GetBus("bus:/Music Bed/Harmony").setMute(true);
-    }
-
-    readonly List<string> _retimeLog = new List<string>();
-
-    // Every re-timed note (logOneShots): beat now, note beat, owner, move of its start (samples).
-    void OnNoteRetimed(object owner, double beat, long moved)
-    {
-        bool okNow = _conductor.Clock.BeatAt(MusicConductor.MasterDsp(), out double now);
-        _retimeLog.Add(string.Format(CultureInfo.InvariantCulture, "{0:F3},{1:F3},{2},{3}", okNow ? now : -1, beat,
-            owner is PatternScheduler ? "pattern" : "kill", moved));
     }
 
     void OnNoteLate(object owner, double beat)
@@ -767,20 +756,17 @@ public sealed class CaptureScenario : MonoBehaviour
             _killBackend.StartedCount - killStarted, _patternLate, _killBackend.DroppedCount - killDropped, _firstAnchorBeat);
         // Total across every one-shot user of this take: the kill chords plus, in spike takes, the SpikeClick scheduler.
         string oneShotSummary = string.Format(CultureInfo.InvariantCulture,
-            "; ONESHOTS started {0}, late {1}, dropped {2}, cancelled {3}, retimed {4}",
+            "; ONESHOTS started {0}, late {1}, dropped {2}, cancelled {3}",
             _killBackend.StartedCount + (_backend != null ? _backend.StartedCount : 0),
             (scheduler != null ? scheduler.LateCount : 0) + (_scheduler != null ? _scheduler.LateCount : 0),
             _killBackend.DroppedCount + (_backend != null ? _backend.DroppedCount : 0),
-            _killBackend.CancelledCount + (_backend != null ? _backend.CancelledCount : 0),
-            scheduler != null ? scheduler.RetimedCount : 0);
+            _killBackend.CancelledCount + (_backend != null ? _backend.CancelledCount : 0));
         var losses = new StringBuilder("beat_now,late,dropped\n");
         foreach (var line in _killLossLog)
             losses.Append(line).Append('\n');
         File.WriteAllText(Path.ChangeExtension(path, ".kills.csv"), losses.ToString());
         // Every lost one-shot with its own beat and owner (kill = KillChordPlanner, pattern = PatternScheduler).
         File.WriteAllText(Path.ChangeExtension(path, ".losses.csv"), "beat_now,note_beat,owner,kind,bus\n" + string.Join("\n", _lossLog) + "\n");
-        if (logOneShots)
-            File.WriteAllText(Path.ChangeExtension(path, ".retimes.csv"), "beat_now,note_beat,owner,moved_samples\n" + string.Join("\n", _retimeLog) + "\n");
         if (logOneShots)
             File.WriteAllText(Path.ChangeExtension(path, ".patterns.csv"),
                 "frame,beat,instrument,bus,midi,onset_s,beat_dsp,start_dsp\n" + string.Join("\n", _patternLog) + "\n");
@@ -823,8 +809,6 @@ public sealed class CaptureScenario : MonoBehaviour
             _killBackend.NoteDropped -= OnNoteDropped;
         if (_subscribedShots != null)
             _subscribedShots.NoteLate -= OnNoteLate;
-        if (_subscribedShots != null)
-            _subscribedShots.NoteRetimed -= OnNoteRetimed;
         if (_frameCapApplied)
         {
             Application.targetFrameRate = _savedFrameRate;
