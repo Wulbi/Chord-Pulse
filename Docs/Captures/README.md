@@ -897,3 +897,132 @@ dropped 0):
 
 Task 5b `_c_` takes for comparison: 60 fps 0 / 0 / 0.90 / 3.17; 15 fps 0 early, 8 late (+5..+7). Same as before: the 15 fps
 late clicks are the beat-clock limitation described under Task 5b; nothing early, nothing missing.
+
+## Task 11: bed pitched layers as scheduled one-shots (legacy tracks gated)
+
+The 13 migrated timeline tracks (`patterns.LEGACY_TRACKS`: `Bass - C Am F G` (also the Latin / Funk bass lines),
+`Offbeat pluck`, `Combo pad`, `Combo bells`, `Tension strings`, `Tension sub`, `Tension acid bass`, `Latin marimba`,
+`Funk keys`, `Funk guitar`, `Dreamy choir`, `Dreamy bells`, `Dreamy sub`) only play while the global `LegacyLayers` is 1
+(`FMOD/Tools/legacy_gate.py` -> `legacy_gate.js`, 3104 notes, each keeps its other conditions). `SoundManager.legacyLayers`
+(read in `StartMusic`) picks the path: true = `LegacyLayers` 1 and the `PatternScheduler` silent (`ArrangementState.Legacy`),
+false = `LegacyLayers` 0 and the pattern layers are Unity one-shots. **The default stays true** (see "Verdict").
+Drums, feature loops, fever and `Spike ref` stay on the timeline; the music-event parameter writes are unchanged.
+On the new path these rules take effect: onset (notes start `OnsetSeconds` early, Task 9 table), 0/0 release for tracks
+without ADSR, parallel limiters (event master on the timeline part, `Music Bed/Layers` on the one-shots), no 0.25 s
+parameter lead (below) and the stop fade (below).
+
+### Gate condition (measured on a copy of the project, bank rendered offline with WAVWRITER_NRT)
+
+A test event with one 5 ms click per candidate condition on the discrete `LegacyLayers` (Studio max 2), rendered at runtime
+value 0 and 1. A condition [lo, hi] matches the values v with ceil(lo) <= v <= ceil(hi):
+
+| condition | value 0 | value 1 |
+|---|---|---|
+| [0.5, 1] (brief), [1, 1], [0.6, 1.4], [1, 2], [0.5, 1.5], [0.9, 1.1] | silent | plays |
+| [1.1, 1.9], [1.5, 2], [1.4, 2] | silent | silent |
+| [0, 0.4], [-0.4, 0.4], [0, 1] | plays | plays |
+| [0, 0] | plays | silent |
+
+Chosen: **[0.5, 1]**. The gated copy rendered with `LegacyLayers` 1 matched the ungated bank per bar within 0.01 dB
+(sample-level differences come from the rebuild itself: an ungated rebuild differs the same way); with 0 the bed lost the
+13 tracks (-6.5 to -7.1 dB per bar, drums left). On the real project: added 3104, second run "unchanged 3104" and
+Metadata byte-identical, only `ParameterCondition` objects added (no GUID removed or changed). `patterns.py --compare-legacy`
+now requires the gate on every migrated note: unexplained 0.
+
+Step 1 (legacy path unchanged; `baseline_seed7_s11_legacy_gate` vs Task 9's `baseline_seed7_s9_after`): max 0.135 dB.
+
+### Arrangement (`ArrangementTimeline`, SoundManager)
+
+`SoundManager` implements `IArrangement.At(step)` = `ArrangementTimeline.At(step, inputs)`: the decisions it already makes
+(current / next phrase style, variation, breath, feature loop, SectionPhrase; the game's intensity; combo latched up to
+`_comboBar`, the game's level after it; fever start) as step functions without the parameter lead. Fever zone (build-up bar
+to fever end) = style 0, variation 0, combo 0; intensity 3 in fever, 0 in breath phrases. SectionPhrase: 1 when a phrase
+starts a run in its section or follows that section's second phrase, 2 when the same section continues after its first
+phrase (seed 7 sections 0,0,1,0,0,0,1,1 -> 1,2,1,1,2,1,1,2: 16 plays on, 32 section 1 start, 48 back to section 0's start,
+64 plays on, 80 loops back, 96 jumps, 112 plays on; the seed 33 spike timeline log starts every phrase at its section's
+start). Each frame, after `UpdatePhrase` / `UpdateFever`, the inputs are compared with the last frame's over now .. now +
+lookahead (1.5 beats) and `PatternScheduler.Invalidate` runs from the first changed step (combo / hurt drop: the next bar
+line; intensity and breath: their step; style / variation: the boundary; fever: its build-up bar, `QueueFever` checks at
+once). Notes within about 125 ms of now keep their state (Invalidate's onset safety).
+
+Intended difference: the old path set parameters 0.25 s ahead, so the last ~0.25 s of a phrase already followed the next
+phrase's state; the new path switches exactly on the step (in the solos the last window of a phrase reads up to +0.8 dB).
+
+### Stop fade (fixed in this task)
+
+Harmony solo takes showed the one-shots ringing 0.25-0.5 s past each note's end (combo bell MIDI 81 after its end at beat
+8.4: +27 dB at beats 8.5-8.75). An offline render of the real banks shows the timeline cuts its notes at the region end
+(bell -18 dB within 28 ms) instead of playing the ADSR release that Task 9 put into `InstrumentTable.ReleaseSeconds`.
+Pattern one-shots now end with a 20 ms fade (`SoundManager.PatternStopFadeSeconds`); kill chords keep their release. The
+experiment take `heavy_seed7_s11_i3_soloharmony_new_exp_rel20ms` (same change, uncommitted then) moved the worst harmony
+windows from +1.25 / +1.41 / +1.26 dB to +0.33 / +0.46 / +0.46 dB.
+
+### Acceptance (Editor, every take `stalls >100 ms after the first beat 0`; legacy then new in the same session)
+
+| scenario | legacy take | new take (13ea929 + 1f35f46) | max window diff | windows > 1 dB |
+|---|---|---|---:|---|
+| baseline seed 7 | `baseline_seed7_s11_legacy` | `baseline_seed7_s11_new2` | 1.02 | window 0 (-1.02, first beat) |
+| heavy seed 7 | `heavy_seed7_s11_legacy` | `heavy_seed7_s11_new3` | 1.02 | window 0 (-1.02, first beat) |
+| heavy seed 33 | `heavy_seed33_s11_legacy` | `heavy_seed33_s11_new2` | 0.79 | - |
+| styles (`stylesWithBed`, intensity 3, 256 beats) | `styles_seed7_s11_bed_i3_legacy` | `styles_seed7_s11_bed_i3_new2` | 0.72 | - |
+
+(`heavy_seed7_s11_new2` had 2 stalls and is not used.)
+
+Per-family solos (`soloLayers`, heavy seed 7, intensity 3):
+- **bedWithoutHarmony** (Kill Chords, Feature and Music Bed/Harmony muted: timeline drums + bass / tension / dreamy sub on
+  both paths): max 2.60 dB, only window 0 (-2.60) over 1 dB; median per-beat difference +0.48 dB (parallel limiters: the
+  drums no longer share the event limiter with the bass and tension layers).
+- **harmony** (also the event's non-Harmony Music Bed tracks and Music Bed/Layers muted; the kill-keyed duck is off because
+  its key is muted, on both paths): window 0 -3.71 (the first bar's pad chord is a beat-0 note), 16 (beat 64) -1.52 and
+  18 (beat 72) -1.21 in the breath (dreamy) phrase, not explained (combo pad, dreamy bells and combo bells sound MIDI 77
+  together and the pad starts 36-65 ms earlier by the onset rule; per-pitch levels move +-4-9 dB both ways there), 19 +1.03
+  and 20 +1.20 at the jump landing of beat 80 (the timeline layers wait for Studio's stall, the one-shots play). Two legacy
+  harmony takes differ by at most 0.20 dB per window.
+- **harmony at intensity 1** (`baseline_seed7_s11_i1_soloharmony_*`): funk phrases (beats 80-111) **+1.2 to +1.46 dB** in
+  every window with an identical note set. The funk keys (ClavHigh) are the only mono sample of the 13 layers; probably the
+  mono-to-stereo handling differs between the timeline track and the instrument event (not verified, not fixed).
+
+Note sets: the notes the new path scheduled (`.patterns.csv`) equal what the timeline plays with the logged parameter values
+(`.params.csv`, with their lead) and the SectionPhrase rule, except notes on the last eighth of a phrase (the lead, intended).
+
+One-shots: late 0 in every take; dropped 0 except the two styles takes (the same 9 in each): pattern notes at beats
+128.49-128.74 (TensionSub, TensionAcid, FunkKeys x4, Bass) and 192.49 (TensionSub, TensionAcid), all in the first beat after
+a jump landing (dispatched one beat early, their channel group came after the start during Studio's stall); the first styles
+take also dropped 2 kill notes at 192.16 / 192.17. `.losses.csv` lists every loss with its note beat and owner; `.cpu.txt`
+has a PATTERNS part (scheduled, started, late, dropped) next to KILLS.
+
+Attack: `analyze_capture.py onsets` pairs two bands of one take and cannot measure this on music. A per-note envelope onset
+against each take's own beat log (pluck notes of the intensity-1 harmony solos) gives new - legacy mean +0.26 ms on the 25
+pluck attacks it could find in beats 1-63, with outliers up to 24 ms where it picks other features: not a trustworthy number.
+Per-note diagnostic (`logOneShots`: `.patterns.csv` + `.oneshots.csv`): every pattern note's `setDelay` was applied at least
+one mixer block before its start, and every check before a start (4338-10050 per take) read channel position 0: nothing
+early. The start comes from the same beat clock and backend as the Task 10 spike clicks (60 fps: 0.81 / 2.33 ms mean / max).
+Onset moves (ComboPad, Tension strings, Dreamy choir first-bar notes 30-71 ms earlier) could not be measured on the captures
+(slow attacks give no detectable onset under the other layers); the new path applies them by construction (`onset_s`).
+
+Tension sweep (`tensionSteps` 0 / 0.3 / 0.5 / 0.7 / 0.9, bedWithoutHarmony, heavy seed 7): median window difference per level
++0.08 / +0.10 / +0.16 / +0.26 / +0.09 dB; bands over the take <300 Hz +0.16, 300-2k +0.03, >2k 0.00 dB: the sub-bus gain
+curves follow the old track automation.
+
+CPU (Studio update avg / Core dsp avg, %): baseline 5.98 / 1.72 -> 6.25 / 2.06; heavy seed 7 7.27 / 5.36 -> 7.15 / 5.75;
+heavy seed 33 8.00 / 5.59 -> 8.40 / 5.71; styles 8.73 / 3.20 -> 8.69 / 3.37 (budgets: Studio 11, Core 6 baseline / 12 heavy).
+
+Landings (`analyze_capture.py landings`, heavy seed 33, beats 16 / 32 / 48 / 64 / 80 / 96 / 112): boundary delay legacy
++276 / +253 / +328 / +323 / -2 / +276 / +403 ms, new +300 / +319 / +374 / +342 / -2 / +328 / +434 ms; no gaps in either; the
+first half beat after a landing is louder on the new path (beat 112: -31.0 legacy, -29.8 new dBFS).
+
+### Known limitations
+
+- First beat: the clock's first anchor comes with beat 0's callback; at that frame now = beat 0.000-0.038 (`FIRSTANCHOR` in
+  `.cpu.txt`), so beat 0's notes cannot be scheduled (start = beat - onset needs at least a mixer block of lead): the bass,
+  tension and pad notes of beat 0 are missing on the new path (window 0: -1.02 dB full mix, -2.6 / -3.7 dB solos); every
+  note from beat 0.5 on plays. Needs the clock switch of a later plan.
+- Notes within about 125 ms of now keep the state they were scheduled with when a decision changes.
+- `legacyLayers` is read in `StartMusic` only.
+- Open: funk keys +1.2-1.5 dB, two breath-phrase harmony windows (-1.2 / -1.5 dB).
+
+### Verdict
+
+Full-mix takes pass (every window within 1 dB except the first-beat window, 1.02), late 0, drops only at landings, CPU in
+budget. The harmony family does not (funk keys level, two breath-phrase windows). **`legacyLayers` stays true by default**;
+`CaptureScenario.layers = oneShots` (or the inspector field) plays the new path.

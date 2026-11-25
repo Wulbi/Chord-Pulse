@@ -124,3 +124,5 @@ InitTestScene*.unity*
 /FMOD/ChordPulse/.unsaved/
 /FMOD/ChordPulse/.cache/
 FMOD/Tools/__pycache__/
+/Docs/Captures/*.losses.csv
+/Docs/Captures/*.patterns.csv
