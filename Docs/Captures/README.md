@@ -1023,9 +1023,10 @@ first half beat after a landing is louder on the new path (beat 112: -31.0 legac
 
 ### Verdict
 
-Full-mix takes pass (every window within 1 dB except the first-beat window, 1.02), late 0, drops only at landings, CPU in
-budget. The harmony family does not (funk keys level, two breath-phrase windows). **`legacyLayers` stayed true at this
-point** (superseded: the follow-up round below found both causes and flipped the default to false);
+Full-mix takes pass (every window within 1 dB except the first-beat window, 1.02), late 0, drops in these takes only in the
+first beat after a jump landing, CPU in budget. The harmony family does not (funk keys level, two breath-phrase windows).
+**`legacyLayers` stayed true at this point** (the follow-up round below found both causes and flipped the default to false;
+fix round 1 set it back to true);
 `CaptureScenario.layers = oneShots` (or the inspector field) plays the new path.
 
 ### Follow-up round: causes of the open differences, attack measured, final takes, default
@@ -1060,9 +1061,10 @@ tried could not hold its delays (Studio clears them there before the first re-ap
 `patternLayers` Pluck, `spikeRefClicks`): every pluck attack (150-700 Hz envelope, 30 % crossing) against the timeline's
 1 kHz beat clicks of the same take, beat position interpolated between clicks, notes in the first beat after a phrase
 boundary excluded. The legacy take calibrates the detector (attack - click +24.64 ms, sd 0.29 ms; the timeline starts the
-pluck sample on the beat, so its attack is at beat + sample onset). One-shot attack vs beat, 98 notes: mean signed
--1.19 ms, **mean |e| 1.33 ms, max |e| 2.60 ms**; beat 1.5 (the clock's second anchor after start) was +11.8 ms and is
-excluded like the first beat. Criterion met (mean <= 2, max <= 5) from beat 2 on.
+pluck sample on the beat, so its attack is at beat + sample onset). One-shot attack vs beat: 98 notes from beat 2 on
+(no landing notes in this take's detectable set): mean signed -1.19 ms, mean |e| 1.33 ms, max |e| 2.60 ms; beat 1.5 was
++11.8 ms. **The criterion is not met at beat 1.5** (see fix round 1: it is the first anchor's error, carried to the clock
+switch); fix round 1 also measures the notes after jump landings.
 
 **Final takes** (same session, code c848087's parent 624fd01 + default flip; every take stalls 0):
 
@@ -1071,16 +1073,71 @@ excluded like the first beat. Criterion met (mean <= 2, max <= 5) from beat 2 on
 | baseline seed 7 | `baseline_seed7_s11z_legacy` | `_s11z_new` | 1.03 | w0 (beat 0) | 0 | 0 |
 | heavy seed 7 | `heavy_seed7_s11z_legacy` | `_s11z_new` | 1.05 | w0 (beat 0) | 0 | 0 |
 | heavy seed 33 | `heavy_seed33_s11z_legacy` | `_s11z_new` | 0.94 | - | 0 | 0 |
-| styles (bed, i3) | `styles_seed7_s11z_bed_i3_legacy` | `_s11z_bed_i3_new_r2` | 0.54 | - | 0 | 7 pattern at 128.49-128.74 (landing) |
+| styles (bed, i3) | `styles_seed7_s11z_bed_i3_legacy` | `_s11z_bed_i3_new` (valid, 0 stalls) | 0.90 | - | 0 | 28 (15 pattern, 13 kill): 12 in the first beat after a landing (7 pattern at 128.16-128.49; 1 pattern + 4 kill at 144.96-144.99) and **16 outside it** (7 pattern + 9 kill at 145.24-145.99); Studio max 100.6 % |
+| styles, retake | same | `_s11z_bed_i3_new_r2` (retake of the line above) | 0.54 | - | 0 | 7 pattern at 128.49-128.74 (first beat after the landing) |
 | harmony i3 heavy 7 | `heavy_seed7_s11z_i3_soloharmony_legacy` | `_new` | 3.82 | w0, w16 (landing 64), w18 (-1.49, pad onset, shown above) | 0 | 1 Bass at 80.35 (landing) |
 | harmony i1 baseline 7 | `baseline_seed7_s11z_i1_soloharmony_legacy` | `_new` | 1.45 | w15 / w19 (phrase-end lead), w16 (landing 64) | 0 | 0 |
 
-The first styles take `_s11z_bed_i3_new` (max 0.90 dB) also dropped 8 pattern and 13 kill notes at beats 144.96-145.99
-after the jump landing at 144, with a Studio update spike (max 100.6 %); the repeat had only the landing drops at 128.
+The valid styles take `_s11z_bed_i3_new` dropped notes at beats 144.96-145.99, one to two beats after the jump landing at 144
+(16 drops outside the first beat after a landing: 7 pattern, 9 kill; `.losses.csv` lists them), with a Studio update
+maximum of 100.6 % and no main-thread frame over 13.5 ms between beats 143 and 147. Its retake did not repeat it. Fix round 1
+below.
 
 CPU (Studio update / Core dsp avg %, legacy -> new): baseline 6.10 / 1.71 -> 6.77 / 1.81; heavy 7.26 / 5.29 -> 7.72 / 5.46;
 heavy seed 33 8.86 / 5.66 -> 8.44 / 5.79; styles 8.74 / 3.19 -> 9.85 / 3.55.
 
-**Default:** every window over 1 dB is beat 0, a landing, a phrase-end lead window or the pad-onset interference shown by
-experiment; late 0; drops only at landings; CPU in budget. **`SoundManager.legacyLayers` now defaults to false** (commit
-c848087); no scene or prefab serializes a SoundManager. The earlier verdict above is superseded.
+**Default (follow-up round):** every window over 1 dB is beat 0, a landing, a phrase-end lead window or the pad-onset
+interference shown by experiment; late 0; CPU in budget; `legacyLayers` was set to false (commit c848087). That flip did not
+account for the drop burst of the valid styles take above and is withdrawn in fix round 1.
+
+### Fix round 1: attack after start and after jump landings; the styles drop burst; default back to true
+
+`CaptureScenario` now also writes `<take>.studio.csv` (per frame: beat, frame time, Studio update and Core dsp CPU) and
+`<take>.anchors.csv` (per beat callback: master DSP clock when it is handled vs the clock's DSP time of that beat, and the
+clock's anchor beat).
+
+**Attack, every note** (`baseline_seed33_s11r_attack_pluck_new` / `_legacy`: seed 33 with jump landings at 16, 48, 64 and
+112, the beat callbacks there 352-381 ms late; intensity 1, `holdArrangement`, harmony solo, `patternLayers` Pluck,
+`spikeRefClicks`, `logOneShots`; method as above, detector calibrated on the legacy take):
+
+| notes | n | mean signed | mean abs | max abs |
+|---|---:|---:|---:|---:|
+| all | 93 | -1.00 ms | 1.44 ms | 16.14 ms |
+| outside one beat after start / a landing | 89 | -1.18 ms | 1.27 ms | 2.48 ms |
+| inside | 4 | +2.81 ms | 5.26 ms | 16.14 ms |
+
+Inside notes: beat 0.5 -2.29 ms (scheduled from the first poll of beat 0's anchor); beat 16.5 -1.65 ms (anchor 15, age 1.5
+beats, beat 15's callback 8 ms after its clock time); beat 64.5 -0.96 ms (anchor 63, age 1.5, callback +20 ms); beat 1.5
++16.14 ms. The landings at 48 and 112 start breath phrases (no pluck). Beat 1.5 was dispatched at frame 315 from beat 0's
+anchor, whose running mean of polls had drifted to DSP 73589 while the true beat 0 (beat 1's anchor minus one beat) is
+72677: the anchor is 19.00 ms late, and the note's start is 18.99 ms late against the same reference - the note carries
+exactly the anchor's error, and notes scheduled after beat 1's anchor are back within 2.5 ms (the seed-7 take showed the
+same at beat 1.5: +11.8 ms). **Criterion (mean <= 2, max <= 5 ms): met outside the first beats after start (and on the two
+post-landing notes measured: -1.65 / -0.96 ms); NOT met at beat 1.5**, the second beat after start, because of the beat
+clock's first anchor (`MusicConductor.PollAnchor` averages polls whose timeline position lags during the first beat). This
+is the clock's limitation, carried to the clock switch; this task does not change the clock.
+
+**Styles drop burst.** The valid take `styles_seed7_s11z_bed_i3_new` (not logged with `logOneShots`, so the per-note drop
+reason is not available for it) dropped 16 notes 1-2 beats after the landing at 144, 9 of them kill chords (same code on both
+paths), with Studio update max 100.6 % and main-thread frames <= 13.5 ms over beats 143-147: Studio, not the main thread,
+fell behind. Eight more styles takes in one session on the current code (`_s11r_bed_i3_{legacy,new}_{a,b,c}` with full logs,
+plus the earlier takes):
+
+| take | path | Studio avg / max % | frames >= 95 % | drops in the first beat after a landing (reason) | drops outside |
+|---|---|---|---:|---|---:|
+| `_s11r_..._legacy_a` | legacy | 9.42 / 85.8 | 0 | 0 | 0 |
+| `_s11r_..._new_a` | new | 9.41 / 88.7 | 0 | 7 (group never appeared before the start) | 0 |
+| `_s11r_..._legacy_b` | legacy | 9.06 / 85.0 | 0 | 9 kill (3 group never appeared, 6 start reached before the delay) | 0 |
+| `_s11r_..._new_b` | new | 9.07 / 84.1 | 0 | 7 (group never appeared) | 0 |
+| `_s11r_..._legacy_c` | legacy | 9.02 / 87.1 | 0 | 2 kill (start reached before the delay) | 0 |
+| `_s11r_..._new_c` | new | 9.47 / 89.1 | 0 | 15 (group never appeared) | 0 |
+| earlier: `_s11_..._legacy`, `_s11z_..._legacy` | legacy | 8.73 / 81.7, 8.74 / 82.7 | - | 0, 0 | 0, 0 |
+| earlier: `_s11_..._new`, `_new2`, `_s11z_..._new_r2` | new | 8.76 / 84.0, 8.69 / 84.4, 9.85 / 90.9 | - | 11, 9, 7 | 0 |
+| `_s11z_..._new` (the valid failing take) | new | 9.99 / **100.6** | - | 12 | **16** |
+
+Result: drops outside the first beat after a landing in 1 of 7 new-path styles takes and 0 of 5 legacy takes; Studio
+update maxima >= 95 % only in that same take. Inside the first beat after a landing both paths drop notes (legacy: kill
+chords only; new: pattern notes as well). The burst occurred only on the new path; its cause (a Studio update stall well
+beyond the usual landing stall) was not found or reproduced, so it is not fixed here. Per the controller's ruling the flip
+condition "drops only at landings" is not met: **`SoundManager.legacyLayers` is back to true** (the code default; no scene or
+prefab serializes it).
