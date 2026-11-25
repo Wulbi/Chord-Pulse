@@ -304,7 +304,15 @@ public class PatternSchedulerTests
         var p = Make();
         At(15.0);
         p.Update(15.0);
+        _shots.Update();
         ulong boundary = (ulong)(16 * SamplesPerBeat);
+        // The beat 16 notes are already scheduled (lookahead 1 beat), so the check below is about the dispatch window,
+        // not about notes that do not exist yet.
+        int pending16 = 0;
+        foreach (var e in _events)
+            if (Math.Abs(e.beat - 16.0) < 1e-9)
+                pending16++;
+        Assert.Greater(pending16, 0, "no beat 16 note was scheduled at 15.0");
         foreach (var s in _backend.Starts)
             Assert.Less(s.dspStart + 8000, boundary, "a beat 16 note was handed over a beat early");
 

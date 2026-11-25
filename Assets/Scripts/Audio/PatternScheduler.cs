@@ -6,8 +6,8 @@ using System;
 /// play is decided per note by <see cref="IArrangement"/> at the note's own step. Pure: no FMOD, no Unity API, and no
 /// allocation on the Update path (apart from what OneShotScheduler.Schedule itself allocates per note).
 /// The lookahead must be long enough that a note is handed over before its start: at the fastest tempo it (in seconds)
-/// has to exceed <see cref="MaxOnsetSeconds"/> plus the dispatch lead (the dispatch window, 1 beat after a phrase
-/// boundary), or early-onset notes on phrase starts would be late. Notes are never scheduled before beat 0.
+/// has to exceed <see cref="MaxOnsetSeconds"/> plus the dispatch lead (the dispatch window, half a beat on every beat),
+/// or early-onset notes on phrase starts would be late. Notes are never scheduled before beat 0.
 /// </summary>
 public sealed class PatternScheduler
 {
@@ -20,8 +20,8 @@ public sealed class PatternScheduler
     const double PhraseBeats = PatternTable.PhraseBeats;
 
     /// <summary>
-    /// Slack on top of <see cref="MaxOnsetSeconds"/> for Invalidate: the schedule offset (about 2.3 ms) and a mixer block or
-    /// frame between the beat the caller read and the DSP clock that decides "already started".
+    /// Slack on top of <see cref="MaxOnsetSeconds"/> for Invalidate: the schedule offset (0 since unity-music-clock Task 6)
+    /// and a mixer block or frame between the beat the caller read and the DSP clock that decides "already started".
     /// </summary>
     public const double OnsetMarginSeconds = 0.05;
 

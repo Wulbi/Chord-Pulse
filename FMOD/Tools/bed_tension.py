@@ -4,9 +4,7 @@ timeline tracks were deleted; running this file only prints that.
 
 Adaptive bed, axis 1: tension layers for event:/Music/ChordPulseGame (Docs/AdaptiveAudioPlan.md 8-1).
 
-Writes bed_tension.js next to this file. Run it on the FMOD project (FMOD Studio closed) with
-    fmodstudiocl.exe -script FMOD/Tools/bed_tension.js FMOD/ChordPulse/ChordPulse.fspro
-It is idempotent: it removes what an earlier run made ("Tension *" tracks, its automation and filter).
+The bed_tension.js script and the timeline tracks it wrote are gone; the notes below describe what the tracks were.
 
 Two game parameters, both 0..1 and smoothed by FMOD seek speed:
 - Tension: how close the nearest enemy is / how low health is (Unity computes it).
@@ -20,17 +18,9 @@ Levels and curves were set from offline renders (bed RMS -36 dB): the layers add
 All layers sit inside "Music Bed", so MusicMix still controls them.
 Notes cover every bar of all four tempo sections; the chords are the usual C - Am - F - G per phrase.
 """
-import json
 import os
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-
-SECTIONS = []
-_t = 0.0
-for _bpm in (108, 116, 124, 132):
-    SECTIONS.append((_t, _bpm))
-    _t += 32 * 60.0 / _bpm
-BARS_PER_SECTION = 8
 
 # file, root (MIDI), peak short-term RMS (dB), attack onset seconds. AT / DeviceNTI roots match file names.
 STRINGS = [("Synth/AT700_EnsembleStrings_A2_v90.wav", 45, -9.2, 0.072)]
@@ -82,26 +72,7 @@ def note(track, table, midi, start, length, vol=0.0, shift=True):
             "volume": round(max(-60.0, min(TARGET_DB[track] - sample[2] + vol, 10.0)), 2)}
 
 
-def build():
-    notes = []
-    for start, bpm in SECTIONS:
-        beat = 60.0 / bpm
-        for bar in range(BARS_PER_SECTION):
-            bar_start = start + bar * 4 * beat
-            voicing, root = CHORDS[bar % 4]
-            # A phrase downbeat may be a section-jump landing point: never start a note before it.
-            first = bar % 4 == 0
-            for m in voicing:
-                notes.append(note("strings", STRINGS, m, bar_start, 4 * beat, shift=not first))
-            for b in SUB_BEATS:
-                notes.append(note("sub", SUB, root, bar_start + b * beat, 0.4 * beat))
-            for i, offset in enumerate(ACID_PATTERN):
-                notes.append(note("acid", ACID, root + offset, bar_start + i * 0.5 * beat, 0.4 * beat,
-                                  vol=0.0 if i % 2 == 0 else -3.0))
-    return notes
-
-
-# Stages 3-8 Task 15b: the timeline tracks this file built were deleted from the music event (cleanup_music.py),
+# Stages 3-8 Task 15b: the timeline tracks this file built were deleted from the music event (retired/cleanup_music.py),
 # and bed_tension.js with them. Only the data above is still read, by mixer.py (CURVES, DANGER_CUTOFF); this file no longer writes an
 # FMOD script, so running it cannot rebuild those tracks.
 if __name__ == "__main__":

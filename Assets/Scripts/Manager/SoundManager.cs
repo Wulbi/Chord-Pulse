@@ -36,8 +36,8 @@ public sealed class SoundManager : SingletonBehaviour<SoundManager>, IKillBedSta
     readonly FmodOneShotBackend _shotBackend = new FmodOneShotBackend();
     OneShotScheduler _shots;
     // The pattern layers (PatternTable: the bed's pitched layers, the drums, the feature loops and the fever layers) as one-shots.
-    // Two schedulers: _patterns takes every layer but the core kick / snare / hat. Lookahead: one beat of dispatch window
-    // after a phrase boundary plus the largest sample onset, with margin. _corePatterns takes the core layers
+    // Two schedulers: _patterns takes every layer but the core kick / snare / hat. Lookahead: the half-beat dispatch window
+    // plus the largest sample onset, with margin (it was sized for the old one-beat window after a phrase boundary). _corePatterns takes the core layers
     // (PatternTable.CoreLayerMask) a bar ahead and hands them to FMOD at once: they depend only on decisions made a phrase
     // ahead (style, fever), so an ordinary frame stall cannot cut them. Every Update / Invalidate / Reset goes to both
     // (UpdatePatterns, InvalidatePatterns, ResetPatterns).

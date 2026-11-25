@@ -99,7 +99,7 @@ public sealed class OneShotScheduler
     /// <summary>
     /// 0 since the music runs on MusicTransport (unity-music-clock Task 6): the -110 measured with the Task 3 spike capture
     /// (Docs/Captures/README.md, take spike_seed33_B2) was the lag behind the timeline's beat, and there is no timeline any
-    /// more. Calibrated against the new clock in the following task.
+    /// more. Measured against the clock in unity-music-clock Tasks 7 / 8: Kill Chords spike clicks at lag 0, so 0 stays.
     /// </summary>
     public const long DefaultScheduleOffsetSamples = 0;
 
@@ -127,8 +127,9 @@ public sealed class OneShotScheduler
     /// backend at once.
     /// False if the clock has no anchor yet, the start is already in the past (counted in <see cref="LateCount"/>),
     /// or the backend failed on an immediate start.
-    /// <paramref name="dispatchWindowBeats"/> widens (or narrows) the dispatch window for this note, e.g. to create the
-    /// instance before FMOD Studio's stall at a section-jump landing.
+    /// <paramref name="dispatchWindowBeats"/> widens (or narrows) the dispatch window for this note, e.g. the core drum
+    /// layers' bar-ahead window (PatternTable.CoreLookaheadBeats). Phrase landings no longer get a wider one (unity-music-clock
+    /// Task 8).
     /// </summary>
     public bool Schedule(in OneShotNote note, object owner, double dispatchWindowBeats = DispatchWindowBeats)
     {
@@ -354,8 +355,8 @@ public static class OneShotArming
 /// EVENT_PROPERTY.SCHEDULE_DELAY was as precise but about 24 ms late on average, an offset that depends on the Studio
 /// update timing; see Docs/Captures/README.md.)
 /// <see cref="Stop"/> with a time at or before now, or at or before the note's start, cancels the note at once.
-/// A note stopped at its end time fades out over <see cref="InstrumentTable.ReleaseSeconds"/> from that time (like the 120 ms ADSR
-/// release of the timeline notes it replaces) instead of being cut.
+/// A note stopped at its end time fades out over <see cref="InstrumentTable.ReleaseSeconds"/> from that time instead of being
+/// cut (kill chords: their event's ADSR release; pattern layers: the ~5 ms region-end ramp of the deleted timeline notes).
 /// </summary>
 public sealed class FmodOneShotBackend : IOneShotBackend
 {

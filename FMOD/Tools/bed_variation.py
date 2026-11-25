@@ -4,9 +4,7 @@ timeline tracks were deleted; running this file only prints that.
 
 Adaptive bed, axis 3: per-phrase pattern variations for event:/Music/ChordPulseGame (Docs/AdaptiveAudioPlan.md 8-3).
 
-Writes bed_variation.js next to this file. Run it on the FMOD project (FMOD Studio closed) with
-    fmodstudiocl.exe -script FMOD/Tools/bed_variation.js FMOD/ChordPulse/ChordPulse.fspro
-It is idempotent: notes it added before are removed and the conditions it put on the original notes are reset.
+The bed_variation.js script and the timeline tracks it wrote are gone; the notes below describe what the tracks were.
 
 Game parameter Variation (0..4, one value per 4-bar phrase, chosen by Unity one phrase ahead):
 
@@ -23,17 +21,9 @@ The bass variants live on the original bass track, so the Tension bass/acid cros
 Unity switches Variation shortly before a phrase boundary (lookahead), so no pattern has a note on the
 last 16th of a phrase; fills end on the "and" of beat 4.
 """
-import json
 import os
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-
-SECTIONS = []
-_t = 0.0
-for _bpm in (108, 116, 124, 132):
-    SECTIONS.append((_t, _bpm))
-    _t += 32 * 60.0 / _bpm
-BARS_PER_SECTION = 8
 
 BASS_FILE, BASS_ROOT = "AT101V_101Bass_C2_v100.wav", 36
 PLUCK_FILE, PLUCK_ROOT = "AT101V_PolyPluck_C4_v100.wav", 60
@@ -98,37 +88,7 @@ def fill(bar):
     return [(s, -26.0 + 10.0 * i / (len(steps) - 1)) for i, s in enumerate(steps)]
 
 
-def build():
-    notes = []
-    for start, bpm in SECTIONS:
-        beat = 60.0 / bpm
-        for bar in range(BARS_PER_SECTION):
-            bar_start = start + bar * 4 * beat
-            pb = bar % 4
-
-            def add(track, kind, b, midi, root, length, vol, file):
-                notes.append({"track": track, "range": RANGES[kind], "file": file,
-                              "start": round(bar_start + b * beat, 6), "length": round(length * beat, 6),
-                              "pitch": midi - root, "volume": vol, "intensity": track == "pluck"})
-
-            for b, m, l, v in bass_b(pb):
-                add("bass", "bassB", b, m, BASS_ROOT, l, v, BASS_FILE)
-            for b, m, l, v in bass_c(pb):
-                add("bass", "bassC", b, m, BASS_ROOT, l, v, BASS_FILE)
-            for b, m, l, v in pluck_b(pb):
-                add("pluck", "pluckB", b, m, PLUCK_ROOT, l, v, PLUCK_FILE)
-            for b, m, l, v in pluck_c(pb):
-                add("pluck", "pluckC", b, m, PLUCK_ROOT, l, v, PLUCK_FILE)
-            for b, v in ghosts(pb):
-                add("snare", "drumsGhost", b, 0, 0, 0.5, v, SNARE_FILE)
-            for b, v in fill(pb):
-                add("snare", "drumsFill", b, 0, 0, 0.4, v, SNARE_FILE)
-    for n in notes:
-        assert -12 <= n["pitch"] <= 12, n
-    return notes
-
-
-# Stages 3-8 Task 15b: the timeline tracks this file built were deleted from the music event (cleanup_music.py),
+# Stages 3-8 Task 15b: the timeline tracks this file built were deleted from the music event (retired/cleanup_music.py),
 # and bed_variation.js with them. Only the data above is still read, by bed_notes.py (RANGES, ghosts, fill); this file no longer writes an
 # FMOD script, so running it cannot rebuild those tracks.
 if __name__ == "__main__":

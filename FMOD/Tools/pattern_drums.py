@@ -1,7 +1,7 @@
 """
 Pattern data: the drums, one 4-bar phrase (16 beats) each, for the PatternScheduler (Task 12).
 
-Layers (legacy timeline track in brackets; `python -I FMOD/Tools/patterns.py --compare-legacy` checks they agree):
+Layers (the deleted timeline track each replaced in brackets; the --compare-legacy check went with those tracks):
     Core kick, Core snare, Core hat   the hand-made core kit (values copied from the event XML)
                                       [Kick - beats 1 and 3 / Snare - beats 2 and 4 / Eighth-note hats, closed hats]
     Open hat                          off-beat open hats, Intensity 1.5+               [Eighth-note hats, open hats]

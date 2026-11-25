@@ -205,7 +205,7 @@ public class KillChordPlannerTests
     }
 
     [Test]
-    public void DispatchWindow_PhraseLanding()
+    public void DispatchWindow_IsHalfBeatOnEveryBeat()
     {
         // No landing special case: every beat, boundary or not, uses half a beat.
         foreach (int beat in new[] { 0, 1, 2, 15, 16, 17, 18, 31, 32, 33, 64, 65, 127 })

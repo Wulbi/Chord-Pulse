@@ -1,7 +1,7 @@
 """
 Pattern data: the eight fever tracks (lead, shaker, bass fifths, build roll, build riser, impact, outro fall, outro
 snare), for the PatternScheduler (Task 14). They were made by hand on the music event's timeline, so no generator ever
-held them: extract_fever.py read them from the event XML once (every copy - 4 tempo sections x 8 bars - was equal) and
+held them: extract_fever.py (now FMOD/Tools/retired/) read them from the event XML once (every copy - 4 tempo sections x 8 bars - was equal) and
 printed the data block below. This file is the source from now on.
 
 Fever phases (ArrangementState.Fever, ArrangementTimeline: a step function, no parameter lead):
@@ -12,7 +12,7 @@ Fever phases (ArrangementState.Fever, ArrangementTimeline: a step function, no p
 Each clip is a 16-beat phrase like the timeline copy: 1-bar tracks are repeated in every bar, 4-bar tracks follow the
 chords (C Am F G); a phase only lets its own bars through (the riser and the fall sound only in bar 4, G).
 
-Layers = the eight old tracks (gated by LegacyLayers like the other migrated tracks). The tracks had no effects and no
+Layers = the eight old tracks (deleted in stages 3-8 Task 15b like the other migrated tracks). The tracks had no effects and no
 ADSR: the lead, riser and fall played into the event's Harmony group (-> bus:/Music Bed/Harmony, ducked by the kill
 chords, one block late like every Harmony layer), the rest into Music Bed (-> bus:/Music Bed/Layers). Every note keeps
 its timeline length (stop with the 5 ms region-end fade) and its dB plus its track's fader (TRACK_DB; the one-shot path

@@ -8,9 +8,10 @@ Music rules (Docs/AdaptiveAudioPlan.md section 7):
   0 over fever and its build-up bar). Unity picks the id one phrase ahead (Audio/FeatureSelector.cs).
 - Beats are relative to the phrase start (0..16). MIDI 60 = C4. Percussion notes name their sound (PERC).
 
-Layers = the six old timeline tracks (`Feature trumpet` ... `Feature guitar`, gated by LegacyLayers like the bed tracks);
-each plays through its own sub-bus of bus:/Feature carrying the track's filters (mixer.py SUB_BUSES). One clip per (loop,
-layer). Same sound as the old feature_loops.py placements (`python -I FMOD/Tools/patterns.py --compare-legacy`):
+Layers = the six old timeline tracks (`Feature trumpet` ... `Feature guitar`, deleted in stages 3-8 Task 15b with the
+other migrated tracks); each plays through its own sub-bus of bus:/Feature carrying the track's filters (mixer.py
+SUB_BUSES). One clip per (loop, layer). Same sound as the old feature_loops.py placements (checked by the removed
+--compare-legacy, Docs/Captures/README.md Task 13):
 - Volume: instrument target - sample RMS + accent (a stab's notes -3 dB), clamped to [-30, 10] like the old generator,
   plus the track fader (whistle -1 dB); patterns.py splits it into the event volume and GainDb.
 - Length: gated instruments (synth, guitar) and the held trumpet note stop at the written length; the others ring at

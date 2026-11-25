@@ -49,8 +49,11 @@ ASSETS = os.path.join(HERE, "..", "ChordPulse", "Assets")
 SPARE_INSTANCES = 4
 # instruments.js makes every sound region at least this long; a length-0 instance runs until its timeline passes it.
 EVENT_REGION_MIN_S = 0.5
-# KillChordPlanner.DispatchWindow (PatternScheduler's default): 1 beat for the first POST_BOUNDARY_BEATS + 1 beats of a
-# phrase (PostBoundaryBeats = 1), else OneShotScheduler.DispatchWindowBeats.
+# Dispatch windows assumed by max_instances() (how long a started, paused instance lives before its beat). This is the
+# OLD rule: 1 beat for the first POST_BOUNDARY_BEATS + 1 beats of a phrase, else DISPATCH_WINDOW_BEATS. Since
+# unity-music-clock Task 8 KillChordPlanner.DispatchWindow (PatternScheduler's default) is
+# OneShotScheduler.DispatchWindowBeats (0.5) on every beat, so the count below over-estimates the landing beats; it is
+# kept as is because changing it changes Max Instances in instruments.js (an FMOD CLI run and a bank rebuild).
 POST_BOUNDARY_BEATS, POST_BOUNDARY_DISPATCH_BEATS, DISPATCH_WINDOW_BEATS = 1, 1.0, 0.5
 FEVER_PHASES = ["None", "Build", "Impact", "Fever", "Outro"]   # FeverPhaseMask bits 1, 2, 4, 8, 16 (None = outside fever)
 

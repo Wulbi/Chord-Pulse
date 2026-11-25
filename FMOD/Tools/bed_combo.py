@@ -4,9 +4,7 @@ timeline tracks were deleted; running this file only prints that.
 
 Adaptive bed, axis 2: combo layers and the hurt dip for event:/Music/ChordPulseGame (Docs/AdaptiveAudioPlan.md 8-2).
 
-Writes bed_combo.js next to this file. Run it on the FMOD project (FMOD Studio closed) with
-    fmodstudiocl.exe -script FMOD/Tools/bed_combo.js FMOD/ChordPulse/ChordPulse.fspro
-It is idempotent: it removes the "Combo *" tracks and its hurt effects from an earlier run.
+The bed_combo.js script and the timeline tracks it wrote are gone; the notes below describe what the tracks were.
 
 Game parameters:
 - Combo 0..3: kill streak level, changed by Unity only on bar lines (instruments are gated by conditions).
@@ -19,17 +17,9 @@ Game parameters:
   the hit "knock the wind out" of the accompaniment. It works on the lows, so it never fights the Danger
   low-pass from bed_tension.py.
 """
-import json
 import os
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-
-SECTIONS = []
-_t = 0.0
-for _bpm in (108, 116, 124, 132):
-    SECTIONS.append((_t, _bpm))
-    _t += 32 * 60.0 / _bpm
-BARS_PER_SECTION = 8
 
 HAT = ("Pallor_ClosedHat_Synthpop_v110.wav", 0)
 PAD = ("Synth/AT20V_GlassPad_A3_v90.wav", 57)
@@ -52,34 +42,7 @@ def pick(table, midi):
     return sample, midi - sample[1]
 
 
-def build():
-    notes = []
-    for start, bpm in SECTIONS:
-        beat = 60.0 / bpm
-        for bar in range(BARS_PER_SECTION):
-            t0 = start + bar * 4 * beat
-            b = BARS[bar % 4]
-            for i in range(4):
-                for sub in (0.25, 0.75):
-                    accent = -2.0 if sub == 0.75 else 0.0
-                    notes.append(dict(track="hats", combo=1, file=HAT[0], pitch=0, start=t0 + (i + sub) * beat,
-                                      length=0.2 * beat, volume=LEVEL["hats"] + accent))
-            for m in b["pad"]:
-                s, p = pick([PAD], m)
-                notes.append(dict(track="pad", combo=2, file=s[0], pitch=p, start=t0, length=4 * beat,
-                                  volume=LEVEL["pad"]))
-            for i, m in enumerate(b["bells"]):
-                s, p = pick(BELLS, m)
-                notes.append(dict(track="bells", combo=3, file=s[0], pitch=p, start=t0 + (i + 0.5) * beat,
-                                  length=0.9 * beat, volume=LEVEL["bells"] - (0 if i == 0 else 2.0)))
-    for n in notes:
-        assert -12 <= n["pitch"] <= 24, n
-        n["start"] = round(n["start"], 6)
-        n["length"] = round(n["length"], 6)
-    return notes
-
-
-# Stages 3-8 Task 15b: the timeline tracks this file built were deleted from the music event (cleanup_music.py),
+# Stages 3-8 Task 15b: the timeline tracks this file built were deleted from the music event (retired/cleanup_music.py),
 # and bed_combo.js with them. Only the data above is still read, by mixer.py (HURT_LOW_CUT, HURT_GAIN); this file no longer writes an
 # FMOD script, so running it cannot rebuild those tracks.
 if __name__ == "__main__":

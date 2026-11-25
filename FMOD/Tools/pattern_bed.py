@@ -1,8 +1,8 @@
 """
 Pattern data: the background bed's pitched layers, one 4-bar phrase (16 beats) each, for the PatternScheduler.
 
-Layers (legacy timeline track in brackets; the old generators that put these notes on the timeline still run until the
-tracks are gated / deleted, and `python -I FMOD/Tools/patterns.py --compare-legacy` checks the two agree):
+Layers (the deleted timeline track each replaced in brackets; those tracks, their generators and the --compare-legacy
+check are gone since stages 3-8 Task 15b, the music event since unity-music-clock Task 8):
     Bass             A original half notes / B drive / C walk (synthpop), Latin tumbao, Funk rubber bass  [Bass - C Am F G]
     Pluck            A original off-beat 8ths (two phrases), B arpeggio, C tresillo stabs               [Offbeat pluck]
     Combo pad, Combo bells                                                                              [Combo pad / bells]
@@ -11,7 +11,7 @@ tracks are gated / deleted, and `python -I FMOD/Tools/patterns.py --compare-lega
 
 Values moved from bed_variation.py, bed_combo.py, bed_tension.py and bed_style.py. Bass A and Pluck A were never
 generated: they are the hand-made original notes of those two tracks, copied here from the event XML (compare-legacy
-checks every copy in the event still matches). Pluck A is an 8-bar pattern, so it is two clips (SectionPhrase 1 / 2).
+checked every copy in the event matched, before the tracks were deleted). Pluck A is an 8-bar pattern, so it is two clips (SectionPhrase 1 / 2).
 
 Each note's volume is the dB the old timeline note had (target - sample RMS + accent, clamped to [-60, 10] like the old
 generators, or the direct note volume); patterns.py splits it into the instrument event's NORMALIZE_DB - RMS plus GainDb.
@@ -228,7 +228,8 @@ def phrase(pattern, inst):
 
 
 I1, I2 = 0.5, 1.5   # old Intensity conditions [0.5, 3] / [1.5, 3]
-# legacy_shift: how the old generator moved the note start (compare-legacy only): "none"; "onset" (sample onset / pitch
+# legacy_shift: how the old generator moved the note start (read only by the removed compare-legacy check; kept as a
+# record): "none"; "onset" (sample onset / pitch
 # ratio); "onset_not_phrase_start" (same, but not on a phrase's first bar); ("fixed", s); ("fixed_not_phrase_start", s).
 CLIPS = [
     Clip("BassA", "Bass", phrase(bass_a, BASS), styles=(SYNTHPOP,), variation=(0, 0)),
