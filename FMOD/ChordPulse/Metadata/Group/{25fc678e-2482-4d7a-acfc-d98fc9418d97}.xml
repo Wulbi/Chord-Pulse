@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<objects serializationModel="Studio.02.02.00">
+	<object class="MixerGroup" id="{25fc678e-2482-4d7a-acfc-d98fc9418d97}">
+		<property name="name">
+			<value>Latin Perc</value>
+		</property>
+		<relationship name="effectChain">
+			<destination>{07a0a05e-a4c5-434f-978f-91827da44c66}</destination>
+		</relationship>
+		<relationship name="panner">
+			<destination>{fbc63c98-2298-48b4-b8cb-c07bf7dfa2c3}</destination>
+		</relationship>
+		<relationship name="output">
+			<destination>{d7ae6692-1e29-49f4-b377-d6d902fcd124}</destination>
+		</relationship>
+	</object>
+	<object class="MixerBusEffectChain" id="{07a0a05e-a4c5-434f-978f-91827da44c66}">
+		<relationship name="effects">
+			<destination>{56883468-7a6d-442f-991f-cd7f5ec76724}</destination>
+			<destination>{a4fb356a-1ded-4403-83f2-6d0b02f53952}</destination>
+		</relationship>
+	</object>
+	<object class="MixerBusPanner" id="{fbc63c98-2298-48b4-b8cb-c07bf7dfa2c3}" />
+	<object class="HighpassEffect" id="{56883468-7a6d-442f-991f-cd7f5ec76724}">
+		<property name="cutoff">
+			<value>90</value>
+		</property>
+	</object>
+	<object class="MixerBusFader" id="{a4fb356a-1ded-4403-83f2-6d0b02f53952}" />
+</objects>

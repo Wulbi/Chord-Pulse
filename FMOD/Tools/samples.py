@@ -59,6 +59,24 @@ CHOIR = [("Synth/ATFS1_VowelChoir_C3_v90.wav", 48, -14.0, 0.065),               
          ("Synth/ATFS1_VowelChoir_G3_v90.wav", 55, -11.3, 0.062),
          ("Synth/ATFS1_VowelChoir_C4_v90.wav", 60, -11.8, 0.071)]
 
+# --- drum kit (pattern_drums.py): one instrument, Note = percussion number (General MIDI drum map), every sound at
+# pitch 0 (root = its number). RMS as bed_style.PERC used (the kick measured the same way); onsets measured with
+# measure_sample.py (Task 12).
+KICK, SNARE, CLAP, CLOSED_HAT, OPEN_HAT = 36, 38, 39, 42, 46
+COWBELL, BONGO_HI, BONGO_LO, CONGA_SLAP, CONGA, CLAVES, SHAKER = 56, 60, 61, 62, 63, 75, 82
+PERC = [("Pallor_Kick_Synthpop_v115.wav", KICK, -11.8, 0.0),
+        ("Pallor_Snare_Synthpop_v115.wav", SNARE, -14.8, 0.0),
+        ("Pallor_Clap_Synthpop_v110.wav", CLAP, -15.9, 0.0),
+        ("Pallor_ClosedHat_Synthpop_v110.wav", CLOSED_HAT, -28.5, 0.0),
+        ("Pallor_OpenHat_Synthpop_v110.wav", OPEN_HAT, -19.0, 0.0),
+        ("WorldPerc/Cowbell2_Normal_v3_rr1_Mid.wav", COWBELL, -21.8, 0.01),
+        ("WorldPerc/BongoH_Hit1_v3_rr1_Mid.wav", BONGO_HI, -27.5, 0.009),
+        ("WorldPerc/BongoL_Hit1_v3_rr1_Mid.wav", BONGO_LO, -26.2, 0.011),
+        ("WorldPerc/Quinto_HitN_v3_rr1_Sum.wav", CONGA_SLAP, -26.0, 0.001),
+        ("WorldPerc/Conga_HitN_v3_rr1_Sum.wav", CONGA, -28.5, 0.001),
+        ("WorldPerc/Claves1_Hit_v3_rr1_Mid.wav", CLAVES, -38.8, 0.009),
+        ("Pallor_Shaker_Synthpop_v110.wav", SHAKER, -21.6, 0.0)]
+
 
 def pick(table, midi, max_pitch=15):
     s = min(table, key=lambda x: (abs(midi - x[1]), -x[1]))

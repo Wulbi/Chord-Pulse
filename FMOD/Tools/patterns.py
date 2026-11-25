@@ -8,20 +8,25 @@ with the instrument library (instruments.py LAYERS calls register(lib)).
     python -I FMOD/Tools/patterns.py --compare-legacy
         Compares the table with what the music event's timeline plays today on the migrated tracks (LEGACY_TRACKS): every
         timeline note of all four tempo sections (both phrases of each 8-bar section) from the event XML, and checks the
-        old generators' build() notes are exactly those notes minus the hand-made Bass A / Pluck A. Differences are
-        counted per rule of the Task 9 brief; anything else is printed as UNEXPLAINED (exit code 1).
+        old generators' build() notes are exactly those notes minus the hand-made ones (Bass A / Pluck A, the core kit,
+        open hats and clap layer). Differences are counted per rule of the Task 9 / Task 12 briefs; anything else is
+        printed as UNEXPLAINED (exit code 1).
 
-Data modules (PATTERN_LAYERS) define Inst / Layer / Clip / N; see pattern_bed.py.
+Data modules (PATTERN_LAYERS) define Inst / Layer / Clip / N; see pattern_bed.py and pattern_drums.py.
 
 Rules (same sound as the old generators):
 - Volume: old note volume (target - rms + accent, clamped to [-60, 10]) = instrument event volume (NORMALIZE_DB - rms,
   clamped) + GainDb. A note whose old target - rms + accent was clamped is reported (warning) and GainDb carries the clamp.
 - Onset: the scheduler starts every note InstrumentTable.OnsetSeconds early (also on a phrase's first beat).
+- Length 0 (the drums): the note plays to the end of its sample; the old track's fader is folded into the note's dB.
 - ADSR: an instrument with the old track's attack / release is its own (instrument, bus) event (0 / 0 = the track had
   no ADSR: the note stops hard at its end like the timeline note).
-- The last 16th of the phrase is empty (Unity switches style / variation just before the phrase boundary).
-- Max Instances per (instrument, bus) = the most notes sounding at once (length + release) at 132 BPM + 4, over every
-  arrangement state and the previous phrase's tails.
+- The old style / variation generators left the last 16th of the phrase empty (Unity switched those parameters just
+  before the boundary); the combo hats and the 16th shaker always had a note there, and keep it (the one-shot path
+  decides per step, without lead).
+- Max Instances per (instrument, bus) = the most notes sounding at once (length + release, or the sample length for
+  length 0) at 132 BPM + 4, over every arrangement state and the previous phrase's tails. Core layers' notes count from
+  their dispatch (CORE_LOOKAHEAD_BEATS before the beat: a started, paused instance is an instance).
 """
 import json
 import os
@@ -36,8 +41,8 @@ CS_PATH = os.path.join(HERE, "..", "..", "Assets", "Scripts", "Audio", "Generate
 NORMALIZE_DB = -27.0                   # keep equal to instruments.NORMALIZE_DB (instruments imports this module)
 VOLUME_MIN, VOLUME_MAX = -60.0, 10.0   # old generators' note volume clamp, and the instrument event volume clamp
 PHRASE_BEATS = 16
-LAST_SIXTEENTH = PHRASE_BEATS - 0.25
 MAX_BPM = 132
+ASSETS = os.path.join(HERE, "..", "ChordPulse", "Assets")
 SPARE_INSTANCES = 4
 FEVER_PHASES = ["None", "Build", "Impact", "Fever", "Outro"]   # FeverPhaseMask bits 1, 2, 4, 8, 16 (None = outside fever)
 
@@ -59,10 +64,36 @@ class Inst:
         s, _ = self.sample(midi)
         return round(max(VOLUME_MIN, min(NORMALIZE_DB - s[2], VOLUME_MAX)), 2)
 
+    def sample_seconds(self, midi):
+        """Length of the note's sample at its pitch (RIFF header; pure Python)."""
+        s, pitch = self.sample(midi)
+        return wav_seconds(s[0]) / (2 ** (pitch / 12.0))
+
     def onset(self, midi):
         """InstrumentTable.OnsetSeconds (instruments.py): sample onset / pitch ratio, 6 decimals."""
         s, pitch = self.sample(midi)
         return round(s[3] / (2 ** (pitch / 12.0)), 6)
+
+
+def wav_seconds(file):
+    import struct
+    with open(os.path.join(ASSETS, file), "rb") as f:
+        riff, _, wave = struct.unpack("<4sI4s", f.read(12))
+        assert riff == b"RIFF" and wave == b"WAVE", file
+        rate = align = None
+        while True:
+            head = f.read(8)
+            assert len(head) == 8, f"{file}: no data chunk"
+            cid, size = struct.unpack("<4sI", head)
+            if cid == b"fmt ":
+                fmt = f.read(size)
+                rate, align = struct.unpack("<I", fmt[4:8])[0], struct.unpack("<H", fmt[12:14])[0]
+            elif cid == b"data":
+                return size / align / rate
+            else:
+                f.seek(size, 1)
+            if size % 2:
+                f.seek(1, 1)
 
 
 class N:
@@ -80,8 +111,10 @@ class N:
 
 
 class Layer:
-    def __init__(self, name, legacy_track):
-        self.name, self.legacy_track = name, legacy_track
+    """core: one of PatternTable.CoreLayerMask, scheduled a bar ahead by SoundManager's second PatternScheduler."""
+
+    def __init__(self, name, legacy_track, core=False):
+        self.name, self.legacy_track, self.core = name, legacy_track, core
 
 
 class Clip:
@@ -98,13 +131,21 @@ class Clip:
 
     @property
     def conditions(self):
-        """(styles, variation min, max, combo min, intensity min) - the part compare-legacy checks."""
-        return (tuple(sorted(self.styles)), self.variation[0], self.variation[1], self.combo, self.intensity)
+        """(styles, variation min, max, combo min, intensity min, fever phases) - the part compare-legacy checks."""
+        return (tuple(sorted(self.styles)), self.variation[0], self.variation[1], self.combo, self.intensity,
+                tuple(p for p in FEVER_PHASES if p in self.fever))
 
 
 # Data modules (each defines LAYERS and CLIPS), imported lazily: they import the classes above from this module.
-PATTERN_LAYERS = ["pattern_bed"]
+PATTERN_LAYERS = ["pattern_bed", "pattern_drums"]
 STYLE_COUNT = 4   # 0 synthpop, 1 latin, 2 funk, 3 dreamy (SoundManager BedStyle)
+# Styles whose backbeat is the core snare and hat (the other styles bring their own); a new style adds one entry here,
+# the music event does not change. Fever phrases are synthpop. -> PatternTable.StyleUsesCoreBackbeat
+STYLE_USES_CORE_BACKBEAT = [True, False, False, False]
+# The core layers (Layer.core) depend only on decisions made a phrase ahead (style, fever): SoundManager schedules and
+# hands them to FMOD a bar ahead, so an ordinary frame stall cannot cut them. -> PatternTable.CoreLookaheadBeats
+CORE_LOOKAHEAD_BEATS = 4.0
+assert len(STYLE_USES_CORE_BACKBEAT) == STYLE_COUNT
 
 
 def collect():
@@ -127,7 +168,7 @@ def collect():
         assert set(c.fever) <= set(FEVER_PHASES) and c.fever, c.name
         assert c.section_phrase in (0, 1, 2), c.name
         for n in c.notes:
-            assert 0 <= n.beat < LAST_SIXTEENTH, f"clip {c.name}: note at beat {n.beat} (the last 16th must stay empty)"
+            assert 0 <= n.beat < PHRASE_BEATS, f"clip {c.name}: note at beat {n.beat}"
             assert 0 <= n.midi <= 127 and n.length >= 0, (c.name, n.beat, n.midi)
             n.inst.sample(n.midi)   # asserts the pitch range
             first = insts.setdefault(n.inst.key, n.inst)
@@ -154,11 +195,12 @@ def _states():
                         yield (style, variation, combo, intensity, phrase)
 
 
-def max_instances(clips, insts):
+def max_instances(clips, insts, layers):
     """(name, bus) -> most notes sounding at once at MAX_BPM (+ SPARE_INSTANCES), over every arrangement state."""
     spb = 60.0 / MAX_BPM
     result = {}
     states = list(_states())
+    core = {l.name for l in layers if l.core}
     for key, inst in insts.items():
         rel = inst.release_ms / 1000.0
         per_state = []
@@ -168,9 +210,9 @@ def max_instances(clips, insts):
                 if c.matches(*st):
                     for n in c.notes:
                         if n.inst.key == key:
-                            assert n.length > 0, "length 0 needs the sample length here"
                             a = n.beat * spb
-                            iv.append((a, a + n.length * spb + rel))
+                            end = a + (n.length * spb + rel if n.length > 0 else n.inst.sample_seconds(n.midi))
+                            iv.append((a - (CORE_LOOKAHEAD_BEATS * spb if c.layer in core else 0.0), end))
             per_state.append(iv)
         times = sorted({a for iv in per_state for a, _ in iv})
         best = 0
@@ -184,10 +226,10 @@ def max_instances(clips, insts):
 
 def register(lib):
     """instruments.py layer: every (instrument, bus) of the patterns with its ADSR and Max Instances, and every note."""
-    _, clips, insts = collect()
+    layers, clips, insts = collect()
     for w in clamp_warnings(clips):
         print(w)
-    mx = max_instances(clips, insts)
+    mx = max_instances(clips, insts, layers)
     for key, inst in sorted(insts.items()):
         lib.add(inst.name, inst.table, mx[key], bus=inst.bus, max_pitch=inst.max_pitch,
                 attack_ms=inst.attack_ms, release_ms=inst.release_ms)
@@ -205,7 +247,7 @@ def cs_text(bus_member):
     layers, clips, _ = collect()
     layer_index = {l.name: i for i, l in enumerate(layers)}
     L = [
-        "// Generated by FMOD/Tools/patterns.py - edit the Python file (data: pattern_bed.py), not this one.",
+        "// Generated by FMOD/Tools/patterns.py - edit the Python file (data: pattern_bed.py, pattern_drums.py), not this one.",
         "// Phrase patterns (16 beats) per layer and the arrangement conditions of each clip, for the PatternScheduler.",
         "",
         "/// <summary>Fever phase a clip plays in (a bit per phase); None = outside fever.</summary>",
@@ -272,6 +314,15 @@ def cs_text(bus_member):
         f"    public const int StyleCount = {STYLE_COUNT};",
         f"    public const float PhraseBeats = {PHRASE_BEATS}f;",
         "",
+        "    /// <summary>Layers (bits) of the core kick / snare / hat, scheduled a bar ahead by their own PatternScheduler.</summary>",
+        f"    public const ulong CoreLayerMask = 0x{sum(1 << i for i, l in enumerate(layers) if l.core):X}UL;",
+        "    /// <summary>Lookahead and dispatch window (beats) of the core layers' scheduler.</summary>",
+        f"    public const double CoreLookaheadBeats = {CORE_LOOKAHEAD_BEATS!r};",
+        "",
+        "    /// <summary>Per style: the core snare and hat are its backbeat (the other styles bring their own).</summary>",
+        "    public static readonly bool[] StyleUsesCoreBackbeat = { " +
+        ", ".join("true" if b else "false" for b in STYLE_USES_CORE_BACKBEAT) + " };",
+        "",
         "    public static readonly string[] LayerNames =",
         "    {",
     ]
@@ -302,9 +353,14 @@ def write_table(bus_member):
 
 
 def __getattr__(name):
-    """LEGACY_TRACKS: the old timeline tracks the pattern layers replace (one per layer; legacy_gate.py reads it)."""
+    """LEGACY_TRACKS: the old timeline tracks the pattern layers replace, each once, in layer order (legacy_gate.py
+    reads it; Core hat and Open hat share Eighth-note hats)."""
     if name == "LEGACY_TRACKS":
-        return [l.legacy_track for l in collect()[0]]
+        out = []
+        for l in collect()[0]:
+            if l.legacy_track not in out:
+                out.append(l.legacy_track)
+        return out
     raise AttributeError(name)
 
 
@@ -328,8 +384,9 @@ def _load_objects(path):
 
 
 def legacy_notes(tracks):
-    """Every SingleSound of the music event on the given tracks: start / length s, file, pitch, volume, conditions, ADSR.
-    Studio leaves properties at their default out of the XML (start 0, length 1 s, volume 0, pitch 0)."""
+    """Every SingleSound of the music event on the given tracks: start / length s, file, pitch, volume, conditions, ADSR,
+    and the track's fader (track_db). Studio leaves properties at their default out of the XML (start 0, length 1 s,
+    volume 0, pitch 0)."""
     import glob
     objs = _load_objects(EVENT_XML)
     files, params = {}, {}
@@ -344,9 +401,11 @@ def legacy_notes(tracks):
     for cls, props, rels in objs.values():
         if cls != "GroupTrack":
             continue
-        name = objs[rels["mixerGroup"][0]][1].get("name")
+        group = objs[rels["mixerGroup"][0]][1]
+        name = group.get("name")
         if name not in tracks:
             continue
+        track_db = float(group.get("volume", 0))
         for sid in rels.get("modules", []):
             c, p, r = objs[sid]
             assert c == "SingleSound", (name, c)
@@ -362,7 +421,8 @@ def legacy_notes(tracks):
                     env = (float(m[1].get("attackTime", 0)), float(m[1].get("releaseTime", 0)))
             out.append(dict(track=name, start=float(p.get("start", 0)), length=float(p.get("length", 1)),
                             volume=float(p.get("volume", 0)), pitch=float(p.get("pitch", 0)),
-                            file=files.get((r.get("audioFile") or [None])[0]), conds=conds, env=env))
+                            file=files.get((r.get("audioFile") or [None])[0]), conds=conds, env=env,
+                            track_db=track_db))
     return out
 
 
@@ -375,10 +435,11 @@ def _sections():
 
 
 def _legacy_conditions(conds):
-    """XML trigger conditions -> (styles, variation min, max, combo min, intensity min), or a string if one does not map.
-    Every migrated note must carry the legacy_gate.py gate (LegacyLayers in GATE); it is not part of the conditions."""
+    """XML trigger conditions -> (styles, variation min, max, combo min, intensity min, fever phases), or a string if one
+    does not map. Every migrated note must carry the legacy_gate.py gate (LegacyLayers in GATE); it is not part of the
+    conditions. FeverBuild [0, 0.5] (the kick: silent while FeverBuild is 1) = every fever phase but Build."""
     import legacy_gate
-    styles, var, combo, inten = (0, 1, 2, 3), (0, 4), 0, 0.0
+    styles, var, combo, inten, fever = (0, 1, 2, 3), (0, 4), 0, 0.0, tuple(FEVER_PHASES)
     if legacy_gate.PARAMETER not in conds:
         return f"no {legacy_gate.PARAMETER} gate (run legacy_gate.js)"
     for name, (lo, hi) in conds.items():
@@ -395,9 +456,11 @@ def _legacy_conditions(conds):
         elif name == "Intensity":
             assert abs(hi - 3) < 1e-6, conds
             inten = round(lo, 3)
+        elif name == "FeverBuild" and abs(lo) < 1e-6 and abs(hi - 0.5) < 1e-6:
+            fever = tuple(p for p in FEVER_PHASES if p != "Build")
         else:
             return f"unmapped condition {name} [{lo}, {hi}]"
-    return (styles, var[0], var[1], combo, inten)
+    return (styles, var[0], var[1], combo, inten, fever)
 
 
 def _old_shift(clip, note, bar):
@@ -422,7 +485,9 @@ def compare_legacy():
     legacy = legacy_notes(tracks)
     secs = _sections()
     rules = {"exact": 0, "volume split (NORMALIZE_DB - rms + GainDb)": 0, "onset rule": 0,
-             "ADSR as separate (instrument, bus) event": 0, "no ADSR -> event attack 0 / release 0": 0}
+             "ADSR as separate (instrument, bus) event": 0, "no ADSR -> event attack 0 / release 0": 0,
+             "track fader folded into GainDb": 0, "length 0: to the sample end": 0,
+             "length 0: event ADSR 0 / 0 (old attack <= 1 ms dropped)": 0}
     unexplained, onset_rows = [], {}
     per_section = []
     for si, (s0, bpm) in enumerate(secs):
@@ -467,14 +532,24 @@ def compare_legacy():
             used.add(best[1])
             x = new[best[1]]
             what = []
-            if abs(x["volume"] - o["volume"]) > VOLUME_EPS:
-                bad.append(f"section {si} {o['track']} beat {x['beat']}: volume {o['volume']} -> {x['volume']}")
-            elif abs(x["event_volume"] - o["volume"]) > VOLUME_EPS:
+            heard = o["volume"] + o["track_db"]   # the one-shot path has no track fader
+            if abs(x["volume"] - heard) > VOLUME_EPS:
+                bad.append(f"section {si} {o['track']} beat {x['beat']}: volume {o['volume']} (track {o['track_db']}) -> "
+                           f"{x['volume']}")
+            elif abs(x["event_volume"] - heard) > VOLUME_EPS:
                 what.append("volume split (NORMALIZE_DB - rms + GainDb)")
-            if abs(x["length"] - o["length"]) > TIME_EPS:
+            if o["track_db"] != 0:
+                what.append("track fader folded into GainDb")
+            zero = x["note"].length == 0
+            if zero:
+                what.append("length 0: to the sample end")
+            elif abs(x["length"] - o["length"]) > TIME_EPS:
                 bad.append(f"section {si} {o['track']} beat {x['beat']}: length {o['length']:.4f} s -> {x['length']:.4f} s")
             old_env = o["env"] or (0.0, 0.0)
-            if (float(x["env"][0]), float(x["env"][1])) != old_env:
+            new_env = (float(x["env"][0]), float(x["env"][1]))
+            if zero and o["env"] is not None and new_env == (0.0, 0.0) and o["env"][0] <= 1.0:
+                what.append("length 0: event ADSR 0 / 0 (old attack <= 1 ms dropped)")
+            elif new_env != old_env:
                 bad.append(f"section {si} {o['track']} beat {x['beat']}: ADSR {o['env']} -> {x['env']}")
             elif o["env"] is None:
                 what.append("no ADSR -> event attack 0 / release 0")
@@ -505,13 +580,15 @@ def compare_legacy():
 
 
 def generator_check(legacy):
-    """The old generators' build() notes on the migrated tracks are exactly the timeline notes minus Bass A / Pluck A."""
+    """The old generators' build() notes on the migrated tracks are exactly the timeline notes minus the hand-made ones
+    (Bass A / Pluck A, and the core kit, open hats and clap layer)."""
     import bed_combo
     import bed_style
     import bed_tension
     import bed_variation
     tr = {"bass": "Bass - C Am F G", "pluck": "Offbeat pluck", "pad": "Combo pad", "bells": "Combo bells",
-          "strings": "Tension strings", "sub": "Tension sub", "acid": "Tension acid bass"}
+          "strings": "Tension strings", "sub": "Tension sub", "acid": "Tension acid bass",
+          "snare": "Snare variations", "hats": "Combo hats"}
     gen = []
     for n in bed_variation.build():
         if n["track"] in tr:
@@ -571,7 +648,7 @@ def section_check(legacy):
 
 def main_compare():
     per_section, rules, unexplained, onset_rows, legacy = compare_legacy()
-    print("Migrated tracks (LEGACY_TRACKS):", ", ".join(l.legacy_track for l in collect()[0]))
+    print("Migrated tracks (LEGACY_TRACKS):", ", ".join(__getattr__("LEGACY_TRACKS")))
     print("\nTracks per section (timeline notes per 8 bars; sections equal apart from tempo; bars 1-4 == bars 5-8):")
     for track, (count, same, halves) in section_check(legacy).items():
         print(f"  {track:20s} {count:4d}   sections same: {same}   phrases same: {halves}")
@@ -587,7 +664,7 @@ def main_compare():
     for k, v in rules.items():
         print(f"    {k:45s} {v}")
     _, clips, insts = collect()
-    mx = max_instances(clips, insts)
+    mx = max_instances(clips, insts, collect()[0])
     print("\nMax Instances (rule: most simultaneous notes at 132 BPM incl. release + 4):")
     for key in sorted(mx):
         print(f"    {key[0]:10s} {key[1]:36s} {mx[key]}")

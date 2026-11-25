@@ -396,6 +396,20 @@ var BUSES = [
   ]
  ],
  [
+  "Music Bed/Layers/Latin Perc",
+  "Music Bed/Layers",
+  0.0,
+  [
+   {
+    "entity": "HighpassEffect",
+    "props": {
+     "cutoff": 90,
+     "resonance": 1
+    }
+   }
+  ]
+ ],
+ [
   "Music Bed/Harmony/Combo Pad",
   "Music Bed/Harmony",
   0.0,

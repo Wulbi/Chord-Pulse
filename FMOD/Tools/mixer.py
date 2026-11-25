@@ -137,6 +137,8 @@ SUB_BUSES = [
     ("Music Bed/Layers/Tension Strings", "Music Bed/Layers", 0.0, [_hp(140), _tension_gain("strings")]),
     ("Music Bed/Layers/Tension Sub", "Music Bed/Layers", 0.0, [_tension_gain("sub")]),
     ("Music Bed/Layers/Tension Acid", "Music Bed/Layers", 0.0, [_lp(3500), _tension_gain("acid")]),
+    # Task 12 (drums, pattern_drums.py): the Latin perc track's 90 Hz high-pass; the other drum tracks have no effect.
+    ("Music Bed/Layers/Latin Perc", "Music Bed/Layers", 0.0, [_hp(90)]),
     ("Music Bed/Harmony/Combo Pad", "Music Bed/Harmony", 0.0, [_hp(300)]),
     ("Music Bed/Harmony/Latin Marimba", "Music Bed/Harmony", 0.0, [_hp(200)]),
     ("Music Bed/Harmony/Funk Keys", "Music Bed/Harmony", 0.0, [_hp(250)]),

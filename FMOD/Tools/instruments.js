@@ -797,6 +797,117 @@ var INSTRUMENTS = [
   ]
  },
  {
+  "name": "Drums",
+  "bus": "Music Bed/Layers",
+  "busFolder": "MusicBed",
+  "max": 23,
+  "attack": 0,
+  "release": 0,
+  "notes": [
+   {
+    "midi": 36,
+    "file": "Pallor_Kick_Synthpop_v115.wav",
+    "pitch": 0,
+    "volume": -15.2,
+    "onset": 0.0
+   },
+   {
+    "midi": 38,
+    "file": "Pallor_Snare_Synthpop_v115.wav",
+    "pitch": 0,
+    "volume": -12.2,
+    "onset": 0.0
+   },
+   {
+    "midi": 39,
+    "file": "Pallor_Clap_Synthpop_v110.wav",
+    "pitch": 0,
+    "volume": -11.1,
+    "onset": 0.0
+   },
+   {
+    "midi": 42,
+    "file": "Pallor_ClosedHat_Synthpop_v110.wav",
+    "pitch": 0,
+    "volume": 1.5,
+    "onset": 0.0
+   },
+   {
+    "midi": 46,
+    "file": "Pallor_OpenHat_Synthpop_v110.wav",
+    "pitch": 0,
+    "volume": -8.0,
+    "onset": 0.0
+   },
+   {
+    "midi": 75,
+    "file": "WorldPerc/Claves1_Hit_v3_rr1_Mid.wav",
+    "pitch": 0,
+    "volume": 10.0,
+    "onset": 0.009
+   },
+   {
+    "midi": 82,
+    "file": "Pallor_Shaker_Synthpop_v110.wav",
+    "pitch": 0,
+    "volume": -5.4,
+    "onset": 0.0
+   }
+  ]
+ },
+ {
+  "name": "Drums",
+  "bus": "Music Bed/Layers/Latin Perc",
+  "busFolder": "LatinPerc",
+  "max": 17,
+  "attack": 0,
+  "release": 0,
+  "notes": [
+   {
+    "midi": 56,
+    "file": "WorldPerc/Cowbell2_Normal_v3_rr1_Mid.wav",
+    "pitch": 0,
+    "volume": -5.2,
+    "onset": 0.01
+   },
+   {
+    "midi": 60,
+    "file": "WorldPerc/BongoH_Hit1_v3_rr1_Mid.wav",
+    "pitch": 0,
+    "volume": 0.5,
+    "onset": 0.009
+   },
+   {
+    "midi": 61,
+    "file": "WorldPerc/BongoL_Hit1_v3_rr1_Mid.wav",
+    "pitch": 0,
+    "volume": -0.8,
+    "onset": 0.011
+   },
+   {
+    "midi": 62,
+    "file": "WorldPerc/Quinto_HitN_v3_rr1_Sum.wav",
+    "pitch": 0,
+    "volume": -1.0,
+    "onset": 0.001
+   },
+   {
+    "midi": 63,
+    "file": "WorldPerc/Conga_HitN_v3_rr1_Sum.wav",
+    "pitch": 0,
+    "volume": 1.5,
+    "onset": 0.001
+   },
+   {
+    "midi": 75,
+    "file": "WorldPerc/Claves1_Hit_v3_rr1_Mid.wav",
+    "pitch": 0,
+    "volume": 10.0,
+    "onset": 0.009
+   }
+  ]
+ },
+ {
   "name": "Glass",
   "bus": "Kill Chords",
   "busFolder": "KillChords",

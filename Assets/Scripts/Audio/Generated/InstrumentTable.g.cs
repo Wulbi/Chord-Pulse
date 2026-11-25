@@ -10,6 +10,7 @@ public enum Instrument
     Choir,
     Clav,
     ClavHigh,
+    Drums,
     Glass,
     GlassPad,
     Glock,
@@ -39,6 +40,7 @@ public enum OutputBus
     TensionStrings,
     TensionSub,
     TensionAcid,
+    LatinPerc,
     ComboPad,
     LatinMarimba,
     FunkKeys,
@@ -62,6 +64,7 @@ public static class InstrumentTable
             case OutputBus.TensionStrings: return "bus:/Music Bed/Layers/Tension Strings";
             case OutputBus.TensionSub: return "bus:/Music Bed/Layers/Tension Sub";
             case OutputBus.TensionAcid: return "bus:/Music Bed/Layers/Tension Acid";
+            case OutputBus.LatinPerc: return "bus:/Music Bed/Layers/Latin Perc";
             case OutputBus.ComboPad: return "bus:/Music Bed/Harmony/Combo Pad";
             case OutputBus.LatinMarimba: return "bus:/Music Bed/Harmony/Latin Marimba";
             case OutputBus.FunkKeys: return "bus:/Music Bed/Harmony/Funk Keys";
@@ -86,6 +89,8 @@ public static class InstrumentTable
         if (instrument == Instrument.Choir && bus == OutputBus.DreamyChoir) return "event:/Inst/DreamyChoir/Choir";
         if (instrument == Instrument.Clav && bus == OutputBus.KillChords) return "event:/Inst/KillChords/Clav";
         if (instrument == Instrument.ClavHigh && bus == OutputBus.FunkKeys) return "event:/Inst/FunkKeys/ClavHigh";
+        if (instrument == Instrument.Drums && bus == OutputBus.MusicBed) return "event:/Inst/MusicBed/Drums";
+        if (instrument == Instrument.Drums && bus == OutputBus.LatinPerc) return "event:/Inst/LatinPerc/Drums";
         if (instrument == Instrument.Glass && bus == OutputBus.KillChords) return "event:/Inst/KillChords/Glass";
         if (instrument == Instrument.GlassPad && bus == OutputBus.ComboPad) return "event:/Inst/ComboPad/GlassPad";
         if (instrument == Instrument.Glock && bus == OutputBus.KillChords) return "event:/Inst/KillChords/Glock";
@@ -283,6 +288,33 @@ public static class InstrumentTable
                 case 77: return true;
                 case 79: return true;
                 case 81: return true;
+            }
+            return false;
+        }
+        if (instrument == Instrument.Drums && bus == OutputBus.MusicBed)
+        {
+            switch (midi)
+            {
+                case 36: return true;
+                case 38: return true;
+                case 39: return true;
+                case 42: return true;
+                case 46: return true;
+                case 75: return true;
+                case 82: return true;
+            }
+            return false;
+        }
+        if (instrument == Instrument.Drums && bus == OutputBus.LatinPerc)
+        {
+            switch (midi)
+            {
+                case 56: return true;
+                case 60: return true;
+                case 61: return true;
+                case 62: return true;
+                case 63: return true;
+                case 75: return true;
             }
             return false;
         }
@@ -636,6 +668,8 @@ public static class InstrumentTable
         if (instrument == Instrument.Choir && bus == OutputBus.DreamyChoir) return 0.005;
         if (instrument == Instrument.Clav && bus == OutputBus.KillChords) return 0.12;
         if (instrument == Instrument.ClavHigh && bus == OutputBus.FunkKeys) return 0.005;
+        if (instrument == Instrument.Drums && bus == OutputBus.MusicBed) return 0.005;
+        if (instrument == Instrument.Drums && bus == OutputBus.LatinPerc) return 0.005;
         if (instrument == Instrument.Glass && bus == OutputBus.KillChords) return 0.12;
         if (instrument == Instrument.GlassPad && bus == OutputBus.ComboPad) return 0.005;
         if (instrument == Instrument.Glock && bus == OutputBus.KillChords) return 0.12;
@@ -783,6 +817,23 @@ public static class InstrumentTable
                     case 77: return 0.002247;
                     case 79: return 0.002002;
                     case 81: return 0.001784;
+                }
+                break;
+            case Instrument.Drums:
+                switch (midi)
+                {
+                    case 36: return 0.0;
+                    case 38: return 0.0;
+                    case 39: return 0.0;
+                    case 42: return 0.0;
+                    case 46: return 0.0;
+                    case 56: return 0.01;
+                    case 60: return 0.009;
+                    case 61: return 0.011;
+                    case 62: return 0.001;
+                    case 63: return 0.001;
+                    case 75: return 0.009;
+                    case 82: return 0.0;
                 }
                 break;
             case Instrument.Glass:

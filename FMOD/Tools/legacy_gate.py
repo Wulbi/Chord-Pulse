@@ -5,7 +5,7 @@ one-shots (SoundManager.legacyLayers false) and 1 to hear the old timeline path.
 
 Writes legacy_gate.js next to this file. Run order (Docs/AdaptiveAudioPlan.md 8-10): ... bed_* -> instruments.js ->
 mixer.js (creates LegacyLayers) -> kill_oneshots.js -> legacy_gate.js, FMOD Studio closed, then build as a SEPARATE
-command (the CLI can crash after saving a big script; this one touches about 3,100 notes):
+command (the CLI can crash after saving a big script; this one touches about 6,300 notes):
     python -I FMOD/Tools/legacy_gate.py
     fmodstudiocl.exe -script FMOD/Tools/legacy_gate.js FMOD/ChordPulse/ChordPulse.fspro
     fmodstudiocl.exe -script FMOD/Tools/legacy_gate.js FMOD/ChordPulse/ChordPulse.fspro   # check: all counters 0
@@ -13,7 +13,7 @@ command (the CLI can crash after saving a big script; this one touches about 3,1
 Any bed_* script that re-creates the migrated notes drops their gate: run legacy_gate.js again after it.
 
 The gate is ADDED to each note's conditions (style / variation / combo / intensity stay); only the tracks in
-LEGACY_TRACKS are touched (drums, feature, fever, Spike ref and everything else are left alone). Idempotent: a note that
+LEGACY_TRACKS are touched (feature, fever, Spike ref and everything else are left alone). Idempotent: a note that
 already has exactly GATE is unchanged; one with another LegacyLayers range gets it replaced. A second run logs
 added 0, replaced 0 and does not save.
 
@@ -36,16 +36,19 @@ import patterns  # noqa: E402
 JS_PATH = os.path.join(HERE, "legacy_gate.js")
 PARAMETER = "LegacyLayers"
 GATE = (0.5, 1.0)
-# The 13 tracks of the Task 11 brief; LEGACY_TRACKS (one per pattern layer) must name exactly these.
+# The 13 tracks of the Task 11 brief and the 10 drum tracks of Task 12 (the three core tracks included; Eighth-note hats
+# holds both Core hat and Open hat); LEGACY_TRACKS (each migrated track once) must name exactly these.
 EXPECTED_TRACKS = {
     "Bass - C Am F G", "Offbeat pluck", "Combo pad", "Combo bells", "Tension strings", "Tension sub",
     "Tension acid bass", "Latin marimba", "Funk keys", "Funk guitar", "Dreamy choir", "Dreamy bells", "Dreamy sub",
+    "Kick - beats 1 and 3", "Snare - beats 2 and 4", "Eighth-note hats", "Clap layer", "Snare variations", "Combo hats",
+    "Latin perc", "Latin shaker", "Funk drums", "Dreamy perc",
 }
 
 
 def tracks():
     names = patterns.LEGACY_TRACKS
-    assert len(names) == len(set(names)) == 13 and set(names) == EXPECTED_TRACKS, names
+    assert len(names) == len(set(names)) == len(EXPECTED_TRACKS) and set(names) == EXPECTED_TRACKS, names
     return names
 
 
