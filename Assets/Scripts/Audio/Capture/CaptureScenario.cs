@@ -75,6 +75,11 @@ public sealed class CaptureScenario : MonoBehaviour
     [Tooltip(">= 0: SoundManager.Intensity for the take (the off-beat pluck plays from 1, funk guitar from 2; it also " +
              "steers the section choice). -1 = leave it (0 after StartMusic; duck sets 3).")]
     [SerializeField] int intensity = -1;
+    [Tooltip("Comma-separated PatternTable.LayerNames: only these pattern layers are scheduled (one-shot path; sets the " +
+             "PatternScheduler layer mask). Empty = all.")]
+    [SerializeField] string patternLayers = "";
+    [Tooltip("Music parameter SpikeRef = 1 in any scenario: the timeline's 1 kHz click on every beat (attack reference).")]
+    [SerializeField] bool spikeRefClicks;
 
     [Header("duck (kill-chord ducking of the Harmony group)")]
     [Tooltip("Off = the same take without kills, the reference the ducked take is compared with.")]
@@ -206,6 +211,19 @@ public sealed class CaptureScenario : MonoBehaviour
             sound.MusicMix = 0f; // kill chords alone: the bed would differ between styles
         if (intensity >= 0)
             sound.Intensity = intensity;
+        if (!string.IsNullOrWhiteSpace(patternLayers) && _patternsField.GetValue(sound) is PatternScheduler mask)
+        {
+            ulong bits = 0;
+            foreach (var name in patternLayers.Split(','))
+            {
+                int layer = Array.IndexOf(PatternTable.LayerNames, name.Trim());
+                if (layer < 0)
+                    Debug.LogError("[CaptureScenario] unknown pattern layer " + name);
+                else
+                    bits |= 1UL << layer;
+            }
+            typeof(PatternScheduler).GetField("_layerMask", BindingFlags.Instance | BindingFlags.NonPublic).SetValue(mask, bits);
+        }
         SubscribeShots(sound);
         ApplySolo(sound);
         sound.Danger = forceDanger; // applied after StartMusic, which resets it
@@ -272,6 +290,8 @@ public sealed class CaptureScenario : MonoBehaviour
         }
         if (scenario == Scenario.spike)
             UpdateSpike(sound);
+        else if (spikeRefClicks)
+            SetSpikeRef(sound);
         if (scenario == Scenario.styles)
             ForceStyle(sound);
         SubscribeShots(sound);
@@ -376,15 +396,19 @@ public sealed class CaptureScenario : MonoBehaviour
             ScheduleClick(target, LongLead);
     }
 
+    void SetSpikeRef(SoundManager sound)
+    {
+        if (_spikeRefSet)
+            return;
+        var music = (FMOD.Studio.EventInstance)typeof(SoundManager)
+            .GetField("_music", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(sound);
+        if (music.isValid() && music.setParameterByName("SpikeRef", 1f, true) == FMOD.RESULT.OK)
+            _spikeRefSet = true;
+    }
+
     void UpdateSpike(SoundManager sound)
     {
-        if (!_spikeRefSet)
-        {
-            var music = (FMOD.Studio.EventInstance)typeof(SoundManager)
-                .GetField("_music", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(sound);
-            if (music.isValid() && music.setParameterByName("SpikeRef", 1f, true) == FMOD.RESULT.OK)
-                _spikeRefSet = true;
-        }
+        SetSpikeRef(sound);
         // R11 (SetTempoFrom with the next section's BPM) is fed by SoundManager.Update every frame.
         _scheduler.Update();
         _backend.Update();
