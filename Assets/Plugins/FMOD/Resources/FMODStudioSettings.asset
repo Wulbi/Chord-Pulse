@@ -44,11 +44,11 @@ MonoBehaviour:
       Value: 0
       HasValue: 0
     VirtualChannelCount:
-      Value: 0
-      HasValue: 0
+      Value: 1024
+      HasValue: 1
     RealChannelCount:
-      Value: 0
-      HasValue: 0
+      Value: 256
+      HasValue: 1
     DSPBufferLength:
       Value: 0
       HasValue: 0
@@ -554,7 +554,7 @@ MonoBehaviour:
       Value: 0
       HasValue: 0
     BuildDirectory:
-      Value: 
+      Value:
       HasValue: 0
     SpeakerMode:
       Value: 0
@@ -580,15 +580,19 @@ MonoBehaviour:
     CallbackHandler:
       Value: {fileID: 0}
       HasValue: 0
-  OutputTypeName: 
+  OutputTypeName:
   threadAffinities:
     Value: []
     HasValue: 0
   displaySortOrder: 0
   childIdentifiers: []
   codecChannels:
-    Value: []
-    HasValue: 0
+    Value:
+    - format: 0
+      channels: 0
+    - format: 1
+      channels: 256
+    HasValue: 1
 --- !u!114 &1078070054940464982
 MonoBehaviour:
   m_ObjectHideFlags: 0
