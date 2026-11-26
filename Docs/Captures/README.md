@@ -3004,8 +3004,8 @@ Channel counts (FMOD for Unity settings, read in the Editor through `Settings.Fi
 
 Measured peaks (`.cpu.txt` CHANNELS): the Editor heavy take plays up to 91 channels, all 91 real. The standalone
 heavy take plays the same 91, **real pinned at 32** (the after-take's `Player.log` shows `SystemI::updateChannels :
-Channel ... Stolen`; the before-take's log was overwritten by it). The hypothesis
-"over 32 voices the player virtualises the quietest" is shown by the peaks.
+Channel ... Stolen`; the before-take's log was overwritten by it). What was measured: the player's real channel peak
+is pinned at 32 (Editor 91); which voices the player virtualises was not measured.
 
 Trial: the Default platform's real / virtual set to 256 / 1024 (`HasValue` 1), only those fields; the Editor read back
 256 / 1024 for Default and Windows. Rebuilt, take `heavy_seed7_s9f_standalone_after`:
@@ -3026,9 +3026,53 @@ codec count is 32 (the Editor's is 256) and the banks' encoding setting is forma
 not tried (this wave allowed only the channel-count fields). The standalone heavy level and the remaining silences:
 cause not shown.
 
+### Final fix wave — M1 follow-up (Vorbis codec count)
+
+The player has two caps of 32: `RuntimeManager` sets `realChannels` from the platform's `RealChannelCount` (default 32)
+and `advancedSettings.maxVorbisCodecs` from the platform's Vorbis codec count (`PlatformWindows` default 32; Play In
+Editor 256). The Desktop bank is Vorbis-encoded. Codec counts are per platform object, not inherited from Default.
+
+What was changed (`Assets/Plugins/FMOD/Resources/FMODStudioSettings.asset`, text edit, only these fields):
+- Default platform: `VirtualChannelCount` 1024, `RealChannelCount` 256 (`HasValue` 1).
+- Windows platform: `codecChannels` = FADPCM 0, Vorbis 256 (`HasValue` 1).
+
+The Editor read back (`Settings.FindPlatform`): Default 256 / 1024, FADPCM 32 / Vorbis 0; Windows 256 / 1024,
+FADPCM 0 / Vorbis 256; Play In Editor unchanged. Unity did not re-serialise the asset: after the refresh and both builds
+its `git diff` was byte-identical to the hand edit. ProjectSettings MD5s identical before and after the builds.
+
+Builds: the Task 8 recipe (temporary copy of `AudioCapture.unity`, `targetFps` 60, `logOneShots`, `scheduleOffsetSamples`
+0, `BuildOptions.Development`, StandaloneWindows64; copies and `.meta` deleted afterwards), output in
+`Builds/Capture/heavy_s9g/` and `baseline_s9g/`. Analysis with the Python 3.10 install (`python -I`; it has numpy in its
+own site-packages).
+
+| take | unforced stalls | Studio avg / max % | Core dsp avg / max % | ONESHOTS | CHANNELS | `.losses.csv` | valid |
+|---|---:|---|---|---|---|---|---|
+| `heavy_seed7_s9g_standalone` | 0 | 1.17 / 1.60 | 5.21 / 6.64 | 4678 / 0 / 0 / 7 | 91 / **91** | empty | yes |
+| `baseline_seed7_s9g_standalone` | 0 | 0.54 / 0.78 | 1.15 / 2.45 | 1413 / 0 / 0 / 6 | 33 / 29 | empty | yes |
+
+No take was invalid. RESYNCED and dsp-to-frame mismatches 0 in both.
+
+| criterion | `heavy_seed7_s9g_standalone` | verdict |
+|---|---|---|
+| real channel peak clearly above 32 | 91 (= Editor `heavy_seed7_s9f`) | met |
+| `rms --compare` against `heavy_seed7_s9f` (Editor) within ±1 dB | max \|diff\| **0.001 dB** over 31 windows (was 3.484 / 3.911) | met |
+| no boundary silence the Editor take lacks (`landings`) | none; every row (delay, first / next half, prev phrase) equal to `heavy_seed7_s9f` | met |
+| late 0 / dropped 0 | 0 / 0 | met |
+| Core dsp avg ≤ 12 % | 5.21 % (Editor 5.09 %) | met |
+
+| criterion | `baseline_seed7_s9g_standalone` | verdict |
+|---|---|---|
+| `rms --compare` against `baseline_seed7_s9f` (Editor) within ±1 dB | max \|diff\| **0.000 dB** over 31 windows | met |
+| late 0 / dropped 0 | 0 / 0 | met |
+| `landings` | 64: 320+95, 80: 320+95, 112: 475+40, the same rows as `baseline_seed7_s9f` | (unchanged) |
+
+Verdict: met. The setting was kept and committed. The Core dsp avg of the standalone heavy take rose from 2.70-2.82 %
+to 5.21 %, the Editor's level, consistent with 91 real voices being mixed instead of 32.
+
 ### NOT met / open after this wave
 
 - Standalone heavy: about 2.75-2.98 dB quieter than the Editor (31 of 31 windows outside ±1 dB) and 2-9 boundary
-  silences; real channels pinned at 32 in the player even with 256 / 1024 channel counts. Not fixed.
+  silences; real channels pinned at 32 in the player even with 256 / 1024 channel counts. Not fixed in this wave.
+  (Later: fixed, see "Final fix wave — M1 follow-up (Vorbis codec count)".)
 - Feature bus onset: 0 by construction, not measured.
 - `FmodClock` last-good-value path: no test.
