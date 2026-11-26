@@ -20,6 +20,8 @@ public struct ArrangementInputs
     public int AppliedCombo, ComboBar;
     /// <summary>First step of fever (-1: none queued); its build-up bar is the bar before.</summary>
     public int FeverStart;
+    /// <summary>Fever bed variant of the queued fever (FeverSelector), and its fever guest loop id (0 = none).</summary>
+    public int FeverVariant, FeverGuest;
 }
 
 /// <summary>
@@ -68,12 +70,13 @@ public static class ArrangementTimeline
 
     /// <summary>
     /// Feature loop that plays at a step (step function, no lead): the phrase's loop, switched exactly on the phrase
-    /// boundary; 0 over fever and its build-up bar (fever is the highlight, no guest loop plays over any of it).
+    /// boundary. No ordinary guest loop plays over fever or its build-up bar; the fever phrase itself (Impact, Fever,
+    /// Outro) plays the fever's own guest loop (<see cref="ArrangementInputs.FeverGuest"/>, 0 = none).
     /// </summary>
     public static int FeatureLoopAt(int step, in ArrangementInputs x)
     {
         if (FeverZone(step, in x))
-            return 0;
+            return FeverPhase(step, in x) == FeverPhaseMask.Build ? 0 : x.FeverGuest;
         return step >= x.PhraseStartStep + StepsPerPhrase ? x.FeatureNext : x.FeatureCurrent;
     }
 
@@ -94,12 +97,14 @@ public static class ArrangementTimeline
             Fever = phase,
             FeatureLoop = FeatureLoopAt(step, in x),
             SectionPhrase = next ? x.SectionPhraseNext : x.SectionPhraseCurrent,
+            FeverVariant = zone ? x.FeverVariant : 0,
         };
     }
 
     static bool Same(in ArrangementState a, in ArrangementState b) =>
         a.Style == b.Style && a.Variation == b.Variation && a.Combo == b.Combo && a.Intensity == b.Intensity &&
-        a.Fever == b.Fever && a.FeatureLoop == b.FeatureLoop && a.SectionPhrase == b.SectionPhrase;
+        a.Fever == b.Fever && a.FeatureLoop == b.FeatureLoop && a.SectionPhrase == b.SectionPhrase &&
+        a.FeverVariant == b.FeverVariant;
 
     /// <summary>First step in [fromStep, toStep] whose state differs between the two decision sets, or -1.</summary>
     public static int FirstDifferentStep(in ArrangementInputs before, in ArrangementInputs after, int fromStep, int toStep)

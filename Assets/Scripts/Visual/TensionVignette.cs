@@ -30,6 +30,9 @@ public sealed class TensionVignette : MonoBehaviour
     Vector3 _cameraHome;
     float _lastHurt;
     float _previousHurt;
+    float _tension;
+    float _danger;
+    bool _shaking;
 
     public void Init(Camera playCamera, ArenaStage stage, float arenaRadius)
     {
@@ -48,6 +51,7 @@ public sealed class TensionVignette : MonoBehaviour
     public void ResetVisuals()
     {
         _lastHurt = 0f;
+        _shaking = false;
         if (_camera != null)
             _camera.transform.localPosition = _cameraHome;
         if (_vignette != null)
@@ -80,10 +84,14 @@ public sealed class TensionVignette : MonoBehaviour
 
     void Update()
     {
+        using var profile = VisualProfiler.TensionUpdate.Auto();
         if (_sound == null || _stage == null)
             return;
-        float tension = _sound.HeardTension;
-        float danger = _sound.HeardDanger;
+        // Read FMOD once per frame (each read is a native call); LateUpdate reuses these.
+        _tension = _sound.HeardTension;
+        _danger = _sound.HeardDanger;
+        float tension = _tension;
+        float danger = _danger;
         float hurt = _sound.HeardHurt;
 
         // Requests for the shared ring and background (applied by MusicReactiveVisuals this frame).
@@ -100,10 +108,11 @@ public sealed class TensionVignette : MonoBehaviour
 
     void LateUpdate()
     {
+        using var profile = VisualProfiler.TensionLate.Auto();
         if (_sound == null || _vignette == null)
             return;
-        float tension = _sound.HeardTension;
-        float danger = _sound.HeardDanger;
+        float tension = _tension;
+        float danger = _danger;
 
         // Sub pulse on the off-beat 8ths from 0.45: the vignette breathes in between the kicks.
         float pulse = 0f;
@@ -118,7 +127,12 @@ public sealed class TensionVignette : MonoBehaviour
         float alpha = 0.55f * strength + 0.2f * danger + 0.08f * pulse;
         var c = Color.Lerp(Calm, Tense, strength);
         c.a = Mathf.Clamp01(alpha);
-        _vignette.color = c;
+        // Calm play: switch the full-screen sprite off instead of drawing it transparent (saves fill rate).
+        bool visible = c.a > 0.003f;
+        if (_vignette.enabled != visible)
+            _vignette.enabled = visible;
+        if (visible)
+            _vignette.color = c;
         // Closing in = shrinking the sprite, which shrinks its clear centre. The texture is 15% larger than the
         // screen, so down to ~0.87 it still covers every edge.
         float scale = 1f - 0.1f * danger - 0.03f * pulse;
@@ -131,9 +145,14 @@ public sealed class TensionVignette : MonoBehaviour
         {
             float k = 0.12f * (1f - sinceHurt / 0.15f);
             _camera.transform.localPosition = _cameraHome + new Vector3(Random.Range(-k, k), Random.Range(-k, k), 0f);
+            _shaking = true;
         }
-        else
+        else if (_shaking)
+        {
+            // Put the camera back once; do not rewrite its transform every frame.
             _camera.transform.localPosition = _cameraHome;
+            _shaking = false;
+        }
     }
 
     void OnDestroy()

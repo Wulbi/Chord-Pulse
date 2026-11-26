@@ -18,6 +18,7 @@ public sealed class RimOrbitStyle : FeatureVisualStyle
     {
         color = new Color(1f, 0.7f, 0.5f, 0.85f);
         seconds = 0.5f;
+        prewarm = 20;
         size = 0.16f;
     }
 
@@ -83,6 +84,13 @@ public sealed class RimOrbitEmitter : IFeatureEmitter
             c.a *= dot.Strength * (1f - t);
             dot.Renderer.color = c;
         }
+    }
+
+    public void Prewarm(int count)
+    {
+        while (_dots.Count < count)
+            Take().Active = true;
+        Clear();
     }
 
     public void Clear()

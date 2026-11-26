@@ -102,7 +102,9 @@ public class InstrumentCoverageTests
     [Test]
     public void FeatureLoopNotes_MatchPatternData()
     {
-        Assert.AreEqual(12, FeatureLoopNotes.Loops.Length);
+        Assert.AreEqual(18, FeatureLoopNotes.Loops.Length); // 12 phrase loops + 6 fever guests (ids 13-18)
+        for (int id = 1; id <= FeatureLoopNotes.Loops.Length; id++)
+            Assert.AreEqual(id > 12, FeatureLoopNotes.Loops[id - 1].Fever, $"loop {id} fever flag");
         for (int id = 1; id <= FeatureLoopNotes.Loops.Length; id++)
         {
             var onsets = new SortedDictionary<(float beat, int flag), (int midi, int voices)>();
@@ -143,8 +145,9 @@ public class InstrumentCoverageTests
     }
 
     /// <summary>
-    /// The eight fever tracks (FMOD/Tools/pattern_fever.py): one layer and one clip each, in the phase of its old condition
-    /// (FeverBuild / FeverImpact / Fever = the whole fever phrase / FeverOutro), and every note voiced.
+    /// The eight fever tracks (FMOD/Tools/pattern_fever.py): one layer and, in the original fever (bed variant 0), one clip
+    /// each, in the phase of its old condition (FeverBuild / FeverImpact / Fever = the whole fever phrase / FeverOutro),
+    /// and every note voiced. Variants 1-3 add their own clips to the lead / shaker / bass layers.
     /// </summary>
     [TestCase("Fever lead", "FeverLead", FeverPhaseMask.Impact | FeverPhaseMask.Fever | FeverPhaseMask.Outro, 20)]
     [TestCase("Fever shaker", "FeverShaker", FeverPhaseMask.Impact | FeverPhaseMask.Fever | FeverPhaseMask.Outro, 32)]
@@ -161,9 +164,9 @@ public class InstrumentCoverageTests
         Assert.AreEqual(0UL, PatternTable.CoreLayerMask & (1UL << layerIndex), "fever layers are not core layers");
         int clips = 0;
         foreach (var c in PatternTable.Clips)
-            if (c.Layer == layerIndex)
+            if (c.Layer == layerIndex && (c.FeverVariantMask & 1) != 0)
                 clips++;
-        Assert.AreEqual(1, clips, $"clips of {layer}");
+        Assert.AreEqual(1, clips, $"variant-0 clips of {layer}");
         var clip = PatternTable.Clips[System.Array.IndexOf(PatternTable.ClipNames, clipName)];
         Assert.AreEqual(layerIndex, clip.Layer);
         Assert.AreEqual(phases, clip.Fever);

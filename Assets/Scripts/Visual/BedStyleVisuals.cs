@@ -70,6 +70,20 @@ public sealed class BedStyleVisuals : MonoBehaviour
     int _lastKickBeat = -1;
     int _lastClave = -1;
 
+    // Parents that move whole groups, so their line geometry is written only once.
+    Transform _segmentRoot;
+    Transform _gridRoot;
+    Transform _rayRoot;
+    float _gridSpacing;
+    float _baseHalfWidth;
+    float _baseHalfHeight;
+    // Which groups are currently shown, and the last colour state written, to skip redundant writes.
+    bool _beadsShown, _segmentsShown, _gridShown, _raysShown, _stripesShown, _motesShown;
+    float _gridAlpha = -1f, _rayAlpha = -1f, _stripeAlpha = -1f;
+    int _lastStripeStep = int.MinValue;
+    float _lastDesaturate = -1f, _lastDim = -1f;
+    bool _drainChanged;
+
     public void Init(Camera playCamera, ArenaStage stage, Material material)
     {
         _sound = SoundManager.Instance;
@@ -77,11 +91,30 @@ public sealed class BedStyleVisuals : MonoBehaviour
         _stage = stage;
         _material = material;
         _dot = CreateDot();
+        // Measured before any fever zoom, so the motif layout stays fixed.
+        _baseHalfHeight = playCamera.orthographicSize;
+        _baseHalfWidth = _baseHalfHeight * playCamera.aspect;
+        _segmentRoot = Root("Style Segments");
+        _gridRoot = Root("Motif Grid");
+        _rayRoot = Root("Motif Rays");
 
         for (int i = 0; i < Beads; i++)
             _beads.Add(MakeSprite("Style Bead", RingOrder));
-        for (int i = 0; i < Segments; i++)
-            _segments.Add(Line("Style Segment", SegmentPoints, RingOrder));
+        // Funk segments on a unit circle; the root is scaled to the ring radius every frame.
+        const float gap = 0.25f;   // fraction of each segment left open
+        float span = 2f * Mathf.PI / Segments;
+        for (int k = 0; k < Segments; k++)
+        {
+            var seg = Line("Style Segment", SegmentPoints, RingOrder, _segmentRoot);
+            float start = Mathf.PI * 0.5f - k * span - span * gap * 0.5f;
+            for (int p = 0; p < SegmentPoints; p++)
+            {
+                float a = start - span * (1f - gap) * p / (SegmentPoints - 1);
+                seg.SetPosition(p, new Vector3(Mathf.Cos(a), Mathf.Sin(a), 0f));
+            }
+            seg.startWidth = seg.endWidth = 0.045f;
+            _segments.Add(seg);
+        }
         _dreamRing = Line("Style Dream Ring", 64, RingOrder);
         _dreamRing.loop = true;
         for (int i = 0; i < 64; i++)
@@ -89,12 +122,38 @@ public sealed class BedStyleVisuals : MonoBehaviour
             float a = i * (2f * Mathf.PI / 64);
             _dreamRing.SetPosition(i, new Vector3(Mathf.Cos(a), Mathf.Sin(a), 0f));
         }
-        for (int i = 0; i < GridLines * 2; i++)
-            _grid.Add(Line("Motif Grid", 2, MotifOrder));
+        // Grid rows in both side bands, laid out once with a spare row above and below; scrolling moves the root.
+        float inner = stage.BaseRadius + 0.4f;
+        _gridSpacing = 2f * _baseHalfHeight / GridLines;
+        for (int side = -1; side <= 1; side += 2)
+            for (int row = -1; row <= GridLines; row++)
+            {
+                var line = Line("Motif Grid", 2, MotifOrder, _gridRoot);
+                float y = _baseHalfHeight - row * _gridSpacing;
+                line.SetPosition(0, new Vector3(side * inner, y, 0f));
+                line.SetPosition(1, new Vector3(side * (_baseHalfWidth * 1.1f + 0.3f), y, 0f));
+                line.startWidth = line.endWidth = 0.02f;
+                _grid.Add(line);
+            }
+        // Sun rays from just outside the arena to beyond the corners; the root turns on the clave.
+        float outer = Mathf.Sqrt(_baseHalfWidth * _baseHalfWidth + _baseHalfHeight * _baseHalfHeight) * 1.1f;
         for (int i = 0; i < Rays; i++)
-            _rays.Add(Line("Motif Ray", 2, MotifOrder));
+        {
+            var ray = Line("Motif Ray", 2, MotifOrder, _rayRoot);
+            float a = i * (2f * Mathf.PI / Rays);
+            var dir = new Vector3(Mathf.Cos(a), Mathf.Sin(a), 0f);
+            ray.SetPosition(0, dir * inner);
+            ray.SetPosition(1, dir * outer);
+            ray.startWidth = 0.05f;
+            ray.endWidth = 0.6f;
+            _rays.Add(ray);
+        }
         for (int i = 0; i < Stripes * 2; i++)
-            _stripes.Add(Line("Motif Stripe", 2, MotifOrder));
+        {
+            var stripe = Line("Motif Stripe", 2, MotifOrder);
+            stripe.startWidth = stripe.endWidth = 0.08f;
+            _stripes.Add(stripe);
+        }
         for (int i = 0; i < Motes; i++)
         {
             _motes.Add(MakeSprite("Motif Mote", MotifOrder));
@@ -113,6 +172,7 @@ public sealed class BedStyleVisuals : MonoBehaviour
 
     void Update()
     {
+        using var profile = VisualProfiler.StyleUpdate.Auto();
         if (_sound == null || _stage == null)
             return;
         UpdateWeights();
@@ -155,12 +215,20 @@ public sealed class BedStyleVisuals : MonoBehaviour
 
     void LateUpdate()
     {
+        using var profile = VisualProfiler.StyleLate.Auto();
         if (_sound == null || _stage == null)
             return;
         double beat = Mathf.Max(0f, (float)_sound.BeatPosition);
         bool running = _sound.BeatPosition >= 0;
         // Guests take the foreground: the motif steps back while one plays (plan 3-4).
         float motif = MotifAlpha * (_sound.FeatureSounding ? 0.5f : 1f);
+        // Danger drains colour: cached line colours must be rewritten only when the drain moves.
+        _drainChanged = Mathf.Abs(_stage.AppliedDesaturate - _lastDesaturate) > 0.01f || Mathf.Abs(_stage.AppliedDim - _lastDim) > 0.01f;
+        if (_drainChanged)
+        {
+            _lastDesaturate = _stage.AppliedDesaturate;
+            _lastDim = _stage.AppliedDim;
+        }
 
         DrawBeads(_weight[SoundManager.StyleLatin], beat, running);
         DrawSegments(_weight[SoundManager.StyleFunk], beat, running);
@@ -172,13 +240,17 @@ public sealed class BedStyleVisuals : MonoBehaviour
     }
 
     // ---- Ring shapes ----
+    // Performance: line geometry is written once in Init and moved with a parent transform (scale / rotation /
+    // offset), colours are written only when they change, and a hidden group is skipped after hiding it once.
+    // Every LineRenderer property write rebuilds that line's mesh, which showed up as frame spikes.
 
     void DrawBeads(float weight, double beat, bool running)
     {
-        bool on = weight > 0.01f;
+        if (!SetGroup(_beads, ref _beadsShown, weight > 0.01f))
+            return;
         float claveAge = 99f;
         int claveIndex = -1;
-        if (on && running)
+        if (running)
         {
             float inTwoBars = (float)(beat % 8.0);
             for (int i = Clave.Length - 1; i >= 0; i--)
@@ -193,9 +265,6 @@ public sealed class BedStyleVisuals : MonoBehaviour
         for (int i = 0; i < Beads; i++)
         {
             var bead = _beads[i];
-            bead.gameObject.SetActive(on);
-            if (!on)
-                continue;
             float a = Mathf.PI * 0.5f - i * (2f * Mathf.PI / Beads);
             // Each clave hit swells the beads around its own fifth of the circle.
             float swell = 0f;
@@ -215,7 +284,8 @@ public sealed class BedStyleVisuals : MonoBehaviour
 
     void DrawSegments(float weight, double beat, bool running)
     {
-        bool on = weight > 0.01f;
+        if (!SetGroup(_segments, ref _segmentsShown, weight > 0.01f))
+            return;
         float inBar = (float)(beat % SoundManager.BeatsPerBar);
         int lit = Mathf.FloorToInt(inBar * 4f) % Segments;
         float litAge = inBar * 4f - Mathf.Floor(inBar * 4f);
@@ -227,34 +297,29 @@ public sealed class BedStyleVisuals : MonoBehaviour
             if (beatInBar % 2 == 1)
                 chop = Mathf.Exp(-10f * (inBar - beatInBar));
         }
+        // The segments sit on a unit circle; the root follows the ring's pulse.
         float radius = _stage.RingRadius;
-        const float gap = 0.25f;   // fraction of each segment left open
+        _segmentRoot.localScale = new Vector3(radius, radius, 1f);
         for (int k = 0; k < Segments; k++)
         {
-            var seg = _segments[k];
-            seg.gameObject.SetActive(on);
-            if (!on)
-                continue;
-            float span = 2f * Mathf.PI / Segments;
-            float start = Mathf.PI * 0.5f - k * span - span * gap * 0.5f;
-            for (int p = 0; p < SegmentPoints; p++)
-            {
-                float a = start - span * (1f - gap) * p / (SegmentPoints - 1);
-                seg.SetPosition(p, new Vector3(Mathf.Cos(a) * radius, Mathf.Sin(a) * radius, 0f));
-            }
-            float glow = k == lit ? 1f - litAge : 0f;
-            glow = Mathf.Max(glow, chop);
+            // Quantised so a segment is only rebuilt when its look really changes.
+            float glow = Mathf.Round(Mathf.Max(k == lit ? 1f - litAge : 0f, chop) * 12f) / 12f;
             var c = _stage.Drain(Color.Lerp(FunkPurple, FunkOrange, glow));
-            c.a = weight * (0.55f + 0.45f * glow);
-            seg.startColor = seg.endColor = c;
-            seg.startWidth = seg.endWidth = _stage.RingWidth + 0.02f + 0.02f * glow;
+            c.a = Mathf.Round(weight * (0.55f + 0.45f * glow) * 40f) / 40f;
+            var seg = _segments[k];
+            if (seg.startColor != c)
+            {
+                seg.startColor = seg.endColor = c;
+                seg.startWidth = seg.endWidth = 0.045f + 0.02f * glow;
+            }
         }
     }
 
     void DrawDreamRing(float weight, double beat)
     {
         bool on = weight > 0.01f;
-        _dreamRing.gameObject.SetActive(on);
+        if (_dreamRing.gameObject.activeSelf != on)
+            _dreamRing.gameObject.SetActive(on);
         if (!on)
             return;
         // One slow breath per bar, like the choir chords.
@@ -270,12 +335,10 @@ public sealed class BedStyleVisuals : MonoBehaviour
     // ---- Motifs in the bands beside the arena ----
 
     float BandInner => _stage.BaseRadius + 0.4f;
-    float HalfWidth => _camera.orthographicSize * _camera.aspect;
-    float HalfHeight => _camera.orthographicSize;
+    bool HasBands => _baseHalfWidth > BandInner + 0.3f;
 
     void DrawGrid(float alpha, bool running)
     {
-        bool on = alpha > 0.002f && HalfWidth > BandInner + 0.3f;
         // Each kick moves the lines one half-spacing down, eased, so the grid seems to come towards you.
         int beat = _sound.CurrentBeat;
         if (running && beat != _lastKickBeat && _sound.KickOn(beat))
@@ -283,30 +346,16 @@ public sealed class BedStyleVisuals : MonoBehaviour
             _lastKickBeat = beat;
             _gridOffset += 0.5f;
         }
-        float spacing = 2f * HalfHeight / GridLines;
+        if (!SetGroup(_grid, ref _gridShown, alpha > 0.002f && HasBands))
+            return;
+        // Rows are laid out once (one spare row); scrolling just moves the root by less than one spacing.
         float shown = Mathf.Repeat(_gridOffset - 0.5f * _stage.BeatImpact, 1f);
-        for (int i = 0; i < _grid.Count; i++)
-        {
-            var line = _grid[i];
-            line.gameObject.SetActive(on);
-            if (!on)
-                continue;
-            int side = i < GridLines ? -1 : 1;
-            int row = i % GridLines;
-            float y = HalfHeight - (row + shown) * spacing;
-            float depth = 1f - Mathf.Abs(y) / HalfHeight;   // brighter towards the middle
-            line.SetPosition(0, new Vector3(side * BandInner, y, 0f));
-            line.SetPosition(1, new Vector3(side * (HalfWidth + 0.2f), y, 0f));
-            line.startWidth = line.endWidth = 0.02f;
-            var c = _stage.Drain(GridColor);
-            c.a = alpha * (0.4f + 0.6f * depth);
-            line.startColor = line.endColor = c;
-        }
+        _gridRoot.localPosition = new Vector3(0f, -shown * _gridSpacing, 0f);
+        SetColors(_grid, GridColor, alpha * 0.7f, ref _gridAlpha);
     }
 
     void DrawRays(float alpha, double beat, bool running)
     {
-        bool on = alpha > 0.002f;
         if (running)
         {
             int clave = -1;
@@ -319,68 +368,73 @@ public sealed class BedStyleVisuals : MonoBehaviour
                 _sunAngle += 360f / Rays / 2f;   // half a ray per clave hit
             }
         }
-        float outer = Mathf.Sqrt(HalfWidth * HalfWidth + HalfHeight * HalfHeight);
-        for (int i = 0; i < Rays; i++)
+        if (!SetGroup(_rays, ref _raysShown, alpha > 0.002f))
+            return;
+        _rayRoot.localRotation = Quaternion.Euler(0f, 0f, _sunAngle);
+        // Rays fade towards their tips, so only the start colour carries the alpha.
+        float a = Mathf.Round(alpha * 400f) / 400f;
+        if (Mathf.Abs(a - _rayAlpha) < 0.0001f && !_drainChanged)
+            return;
+        _rayAlpha = a;
+        var c = _stage.Drain(SunColor);
+        c.a = a;
+        var tip = c;
+        tip.a = 0f;
+        foreach (var ray in _rays)
         {
-            var ray = _rays[i];
-            ray.gameObject.SetActive(on);
-            if (!on)
-                continue;
-            float a = (_sunAngle + i * 360f / Rays) * Mathf.Deg2Rad;
-            var dir = new Vector3(Mathf.Cos(a), Mathf.Sin(a), 0f);
-            ray.SetPosition(0, dir * BandInner);
-            ray.SetPosition(1, dir * outer);
-            ray.startWidth = 0.05f;
-            ray.endWidth = 0.6f;
-            var c = _stage.Drain(SunColor);
-            c.a = alpha;
             ray.startColor = c;
-            c.a = 0f;
-            ray.endColor = c;
+            ray.endColor = tip;
         }
     }
 
     void DrawStripes(float alpha, double beat)
     {
-        bool on = alpha > 0.002f && HalfWidth > BandInner + 0.3f;
-        float band = HalfWidth - BandInner;
+        if (!SetGroup(_stripes, ref _stripesShown, alpha > 0.002f && HasBands))
+            return;
+        float band = _baseHalfWidth - BandInner;
         float spacing = band / Stripes * 2f;
-        float slide = Mathf.Floor((float)(beat * 4.0)) * spacing * 0.25f;   // jumps every 16th
+        int sixteenth = Mathf.FloorToInt((float)(beat * 4.0));
+        // Positions change only on a 16th, so rebuild the lines then and not every frame.
+        if (sixteenth != _lastStripeStep)
+        {
+            _lastStripeStep = sixteenth;
+            float slide = sixteenth * spacing * 0.25f;
+            float h = _baseHalfHeight * 1.1f + 0.5f;
+            for (int i = 0; i < _stripes.Count; i++)
+            {
+                int side = i < Stripes ? -1 : 1;
+                int k = i % Stripes;
+                float x = BandInner + Mathf.Repeat(k * spacing + slide, band + spacing) - spacing * 0.5f;
+                _stripes[i].SetPosition(0, new Vector3(side * Mathf.Max(BandInner, x - 0.8f), -h, 0f));
+                _stripes[i].SetPosition(1, new Vector3(side * Mathf.Max(BandInner, x + 0.8f), h, 0f));
+            }
+        }
+        float a = Mathf.Round(alpha * 400f) / 400f;
+        if (Mathf.Abs(a - _stripeAlpha) < 0.0001f && !_drainChanged)
+            return;
+        _stripeAlpha = a;
         for (int i = 0; i < _stripes.Count; i++)
         {
-            var stripe = _stripes[i];
-            stripe.gameObject.SetActive(on);
-            if (!on)
-                continue;
-            int side = i < Stripes ? -1 : 1;
-            int k = i % Stripes;
-            float x = BandInner + Mathf.Repeat(k * spacing + slide, band + spacing) - spacing * 0.5f;
-            float h = HalfHeight + 0.5f;
-            stripe.SetPosition(0, new Vector3(side * Mathf.Max(BandInner, x - 0.8f), -h, 0f));
-            stripe.SetPosition(1, new Vector3(side * Mathf.Max(BandInner, x + 0.8f), h, 0f));
-            stripe.startWidth = stripe.endWidth = 0.08f;
-            var c = _stage.Drain(k % 2 == 0 ? FunkPurple : FunkOrange);
-            c.a = alpha;
-            stripe.startColor = stripe.endColor = c;
+            var c = _stage.Drain((i % Stripes) % 2 == 0 ? FunkPurple : FunkOrange);
+            c.a = a;
+            _stripes[i].startColor = _stripes[i].endColor = c;
         }
     }
 
     void DrawMotes(float alpha)
     {
-        bool on = alpha > 0.002f && HalfWidth > BandInner + 0.3f;
-        float band = HalfWidth - BandInner;
+        if (!SetGroup(_motes, ref _motesShown, alpha > 0.002f && HasBands))
+            return;
+        float band = _baseHalfWidth - BandInner;
         float t = Time.time * 0.08f;
         for (int i = 0; i < Motes; i++)
         {
             var mote = _motes[i];
-            mote.gameObject.SetActive(on);
-            if (!on)
-                continue;
             float seed = _moteSeed[i];
             int side = i % 2 == 0 ? -1 : 1;
             float rise = Mathf.Repeat(seed + t * (0.6f + seed * 0.5f), 1f);
             float x = side * (BandInner + band * Mathf.Repeat(seed * 7.3f + Mathf.Sin(t * 3f + seed * 10f) * 0.05f, 1f));
-            mote.transform.localPosition = new Vector3(x, Mathf.Lerp(-HalfHeight, HalfHeight, rise), 0f);
+            mote.transform.localPosition = new Vector3(x, Mathf.Lerp(-_baseHalfHeight, _baseHalfHeight, rise), 0f);
             mote.transform.localScale = Vector3.one * (0.12f + 0.1f * seed);
             var c = _stage.Drain(DreamColor);
             c.a = alpha * Mathf.Sin(rise * Mathf.PI) * 3f;
@@ -388,12 +442,44 @@ public sealed class BedStyleVisuals : MonoBehaviour
         }
     }
 
+    /// <summary>Shows or hides a whole group, touching GameObjects only when the state flips.</summary>
+    static bool SetGroup<T>(List<T> items, ref bool shown, bool on) where T : Component
+    {
+        if (on != shown)
+        {
+            shown = on;
+            foreach (var item in items)
+                item.gameObject.SetActive(on);
+        }
+        return on;
+    }
+
+    /// <summary>Writes one flat colour to a group of lines, only when its (quantised) alpha or the drain changed.</summary>
+    void SetColors(List<LineRenderer> lines, Color color, float alpha, ref float lastAlpha)
+    {
+        float a = Mathf.Round(alpha * 400f) / 400f;
+        if (Mathf.Abs(a - lastAlpha) < 0.0001f && !_drainChanged)
+            return;
+        lastAlpha = a;
+        var c = _stage.Drain(color);
+        c.a = a;
+        foreach (var line in lines)
+            line.startColor = line.endColor = c;
+    }
+
     // ---- Helpers ----
 
-    LineRenderer Line(string objectName, int points, int order)
+    Transform Root(string objectName)
+    {
+        var root = new GameObject(objectName).transform;
+        root.SetParent(transform, false);
+        return root;
+    }
+
+    LineRenderer Line(string objectName, int points, int order, Transform parent = null)
     {
         var line = new GameObject(objectName).AddComponent<LineRenderer>();
-        line.transform.SetParent(transform, false);
+        line.transform.SetParent(parent != null ? parent : transform, false);
         line.useWorldSpace = false;
         line.positionCount = points;
         line.sharedMaterial = _material;

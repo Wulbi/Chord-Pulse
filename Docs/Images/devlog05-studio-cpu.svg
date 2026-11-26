@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="360" viewBox="0 0 960 360" font-family="Malgun Gothic, Apple SD Gothic Neo, sans-serif">
+<rect width="960" height="360" fill="#fcfcfb"/>
+<text x="40" y="34" font-size="20" font-weight="700" fill="#0b0b0b">FMOD Studio 업데이트 CPU 평균</text>
+<text x="40" y="56" font-size="13" fill="#52514e">음악 재생 중 Studio 업데이트 스레드 사용률(%) · 낮을수록 좋음</text>
+<line x1="300.0" x2="300.0" y1="82" y2="296" stroke="#52514e" stroke-width="0.5" opacity="0.25"/>
+<text x="300.0" y="314" font-size="12" fill="#52514e" text-anchor="middle">0%</text>
+<line x1="442.5" x2="442.5" y1="82" y2="296" stroke="#52514e" stroke-width="0.5" opacity="0.25"/>
+<text x="442.5" y="314" font-size="12" fill="#52514e" text-anchor="middle">25%</text>
+<line x1="585.0" x2="585.0" y1="82" y2="296" stroke="#52514e" stroke-width="0.5" opacity="0.25"/>
+<text x="585.0" y="314" font-size="12" fill="#52514e" text-anchor="middle">50%</text>
+<line x1="727.5" x2="727.5" y1="82" y2="296" stroke="#52514e" stroke-width="0.5" opacity="0.25"/>
+<text x="727.5" y="314" font-size="12" fill="#52514e" text-anchor="middle">75%</text>
+<line x1="870.0" x2="870.0" y1="82" y2="296" stroke="#52514e" stroke-width="0.5" opacity="0.25"/>
+<text x="870.0" y="314" font-size="12" fill="#52514e" text-anchor="middle">100%</text>
+<text x="288" y="112.0" font-size="14" fill="#0b0b0b" text-anchor="end">처음 (타임라인 노트 22,616개)</text>
+<path d="M300,90 h506.15 a4,4 0 0 1 4,4 v26 a4,4 0 0 1 -4,4 h-506.15 z" fill="#2a78d6"/>
+<text x="818.1" y="112.0" font-size="14" font-weight="700" fill="#0b0b0b">89.5%</text>
+<text x="288" y="168.0" font-size="14" fill="#0b0b0b" text-anchor="end">스타일별 처치 화음 트랙 제거</text>
+<path d="M300,146 h59.27 a4,4 0 0 1 4,4 v26 a4,4 0 0 1 -4,4 h-59.27 z" fill="#2a78d6"/>
+<text x="371.3" y="168.0" font-size="14" font-weight="700" fill="#0b0b0b">11.1%</text>
+<text x="288" y="224.0" font-size="14" fill="#0b0b0b" text-anchor="end">모든 레이어를 원샷으로</text>
+<path d="M300,202 h23.645 a4,4 0 0 1 4,4 v26 a4,4 0 0 1 -4,4 h-23.645 z" fill="#2a78d6"/>
+<text x="335.6" y="224.0" font-size="14" font-weight="700" fill="#0b0b0b">4.85%</text>
+<text x="288" y="280.0" font-size="14" fill="#0b0b0b" text-anchor="end">시계를 Unity로, 음악 이벤트 삭제</text>
+<path d="M300,258 h0 a4,4 0 0 1 4,4 v26 a4,4 0 0 1 -4,4 h-0 z" fill="#2a78d6"/>
+<text x="312.0" y="280.0" font-size="14" font-weight="700" fill="#0b0b0b">0.67%</text>
+<text x="40" y="346" font-size="12" fill="#52514e">첫 두 값은 프로젝트 사본으로 잰 값, 뒤 두 값은 baseline 시나리오(seed 7) 녹음에서 잰 값이라 조건이 조금 다르다.</text>
+</svg>

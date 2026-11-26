@@ -10,6 +10,8 @@ public struct ArrangementState
     public int FeatureLoop;
     /// <summary>1 = the first phrase of a section's 8 bars, 2 = the second (see <see cref="PatternClip.SectionPhrase"/>).</summary>
     public int SectionPhrase;
+    /// <summary>Fever bed variant (pattern_fever.py VARIANTS) in the fever zone; 0 elsewhere.</summary>
+    public int FeverVariant;
 }
 
 /// <summary>The state that should sound at a step, without lookahead. Implemented by SoundManager.</summary>
@@ -32,6 +34,8 @@ public static class PatternMatch
         if ((c.Fever & fever) == 0)
             return false;
         if (c.FeatureLoop != 0 && c.FeatureLoop != s.FeatureLoop)
+            return false;
+        if (s.FeverVariant < 0 || s.FeverVariant > 7 || (c.FeverVariantMask & (1 << s.FeverVariant)) == 0)
             return false;
         return c.SectionPhrase == 0 || c.SectionPhrase == s.SectionPhrase;
     }

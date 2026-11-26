@@ -11,6 +11,8 @@ public abstract class FeatureVisualStyle : ScriptableObject
     public Vector2Int midiRange = new Vector2Int(62, 98);
     [Min(0.05f)] public float seconds = 1f;
     [Min(0.01f)] public float size = 0.25f;
+    [Tooltip("Pooled objects created when the game starts (about the most that are on screen at once).")]
+    [Min(0)] public int prewarm = 8;
 
     public abstract IFeatureEmitter CreateEmitter(FeatureVisualContext context);
 

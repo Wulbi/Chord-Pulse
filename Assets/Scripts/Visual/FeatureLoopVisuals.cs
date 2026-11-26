@@ -39,6 +39,24 @@ public sealed class FeatureLoopVisuals : MonoBehaviour
             SortingOrder = SortingOrder,
         };
         _sparkles = new SparkleEmitter(_context);
+        Prewarm();
+    }
+
+    // Build every style's emitter and pool now, so the first notes of a guest loop (or the first fever) do not
+    // create GameObjects and renderers mid-song, which showed up as frame spikes.
+    void Prewarm()
+    {
+        var styles = new HashSet<FeatureVisualStyle> { _library.fallbackStyle, _library.feverStyle };
+        foreach (var voice in _library.voiceDefaults)
+            styles.Add(voice.style);
+        foreach (var data in _library.loops)
+            if (data != null)
+                foreach (var voice in data.voices)
+                    styles.Add(voice.style);
+        foreach (var style in styles)
+            if (style != null)
+                EmitterFor(style).Prewarm(style.prewarm);
+        _sparkles.Prewarm();
     }
 
     public void ResetVisuals()
@@ -53,6 +71,7 @@ public sealed class FeatureLoopVisuals : MonoBehaviour
 
     void Update()
     {
+        using var profile = VisualProfiler.FeatureUpdate.Auto();
         if (_sound == null || _context == null)
             return;
         SpawnFromMusic();

@@ -22,6 +22,7 @@ public sealed class CometStyle : FeatureVisualStyle
     {
         color = new Color(1f, 0.9f, 0.62f, 0.75f);
         seconds = 1.1f;
+        prewarm = 16;
         size = 0.24f;
     }
 
@@ -100,6 +101,13 @@ public sealed class CometEmitter : IFeatureEmitter
             c.a = _style.color.a * Mathf.Clamp01((1f - t) * 4f);
             comet.Head.color = c;
         }
+    }
+
+    public void Prewarm(int count)
+    {
+        while (_comets.Count < count)
+            Take().Active = true;
+        Clear();
     }
 
     public void Clear()

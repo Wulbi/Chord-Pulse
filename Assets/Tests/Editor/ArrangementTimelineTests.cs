@@ -128,6 +128,71 @@ public class ArrangementTimelineTests
     }
 
     [Test]
+    public void FeverGuestAndVariant_OnlyOverTheFeverPhrase_NotTheBuildUpBar()
+    {
+        var x = Inputs(); // next phrase from step 64 plays loop 6
+        x.FeverStart = 96; // build-up bar 88..95, fever 96..127
+        x.FeverGuest = 14;
+        x.FeverVariant = 2;
+        Assert.AreEqual(6, ArrangementTimeline.FeatureLoopAt(87, in x));
+        Assert.AreEqual(0, ArrangementTimeline.FeatureLoopAt(88, in x));  // build-up bar: no guest
+        Assert.AreEqual(14, ArrangementTimeline.FeatureLoopAt(96, in x)); // impact
+        Assert.AreEqual(14, ArrangementTimeline.FeatureLoopAt(127, in x)); // outro
+        Assert.AreEqual(6, ArrangementTimeline.FeatureLoopAt(128, in x));
+        Assert.AreEqual(0, ArrangementTimeline.At(87, in x).FeverVariant);
+        Assert.AreEqual(2, ArrangementTimeline.At(88, in x).FeverVariant);
+        Assert.AreEqual(2, ArrangementTimeline.At(127, in x).FeverVariant);
+        Assert.AreEqual(0, ArrangementTimeline.At(128, in x).FeverVariant);
+    }
+
+    [Test]
+    public void PatternMatch_FeverVariantMask_SelectsTheVariantsClips()
+    {
+        var only2 = new PatternClip(0, 1, 0, 4, 0, 0f, FeverPhaseMask.Fever, 0, 0, 0, 0, 1 << 2);
+        var any = new PatternClip(0, 1, 0, 4, 0, 0f, FeverPhaseMask.Fever, 0, 0, 0, 0);
+        var s = new ArrangementState { Fever = FeverPhaseMask.Fever, FeverVariant = 2 };
+        Assert.IsTrue(PatternMatch.Matches(in only2, in s));
+        Assert.IsTrue(PatternMatch.Matches(in any, in s));
+        s.FeverVariant = 1;
+        Assert.IsFalse(PatternMatch.Matches(in only2, in s));
+        Assert.IsTrue(PatternMatch.Matches(in any, in s));
+    }
+
+    [Test]
+    public void FeatureSelector_NeverPicksAFeverGuest_ForAnOrdinaryPhrase()
+    {
+        var selector = new FeatureSelector(1234);
+        var phrase = new SectionSelector.Phrase();
+        for (int i = 0; i < 2000; i++)
+        {
+            var loop = selector.Advance(phrase, 3, allowed: true);
+            Assert.IsTrue(loop == null || !loop.Fever, $"phrase {i}: {loop?.Name}");
+        }
+    }
+
+    [Test]
+    public void FeverSelector_PicksAGuestOfFeverLoops_NeverTheSameTwiceInARow()
+    {
+        var selector = new FeverSelector(99);
+        int lastVariant = -1, lastGuest = 0, guests = 0;
+        for (int i = 0; i < 400; i++)
+        {
+            selector.Choose();
+            Assert.That(selector.Variant, Is.InRange(0, PatternTable.FeverVariantCount - 1));
+            Assert.AreNotEqual(lastVariant, selector.Variant, $"fever {i}: variant repeated");
+            if (selector.Guest != null)
+            {
+                guests++;
+                Assert.IsTrue(selector.Guest.Fever, selector.Guest.Name);
+                Assert.AreNotEqual(lastGuest, selector.Guest.Id, $"fever {i}: guest repeated");
+            }
+            lastVariant = selector.Variant;
+            lastGuest = selector.Guest != null ? selector.Guest.Id : 0;
+        }
+        Assert.That(guests, Is.InRange(300, 380)); // about 85 %
+    }
+
+    [Test]
     public void FirstDifferentStep_NoChange_IsMinus1()
     {
         var a = Inputs();

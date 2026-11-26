@@ -12,6 +12,10 @@ public sealed class SoundManager : SingletonBehaviour<SoundManager>, IKillBedSta
     public const int StepsPerBar = BeatsPerBar * StepsPerBeat;
 
     const string BankName = "ChordPulse";
+    // WebGL / Android fetch banks over HTTP; give a slow connection time before reporting failure.
+    const float BankLoadTimeoutSeconds = 30f;
+    // If the mixer clock has not started after this long (browser audio still locked), log a hint once.
+    const float AudioStartHintSeconds = 3f;
     const int FeverSteps = 4 * StepsPerBar;
     const int FeverBuildSteps = StepsPerBar;
 
@@ -65,6 +69,8 @@ public sealed class SoundManager : SingletonBehaviour<SoundManager>, IKillBedSta
 
     SectionSelector _sections = new SectionSelector(0);
     FeatureSelector _features = new FeatureSelector(0);
+    // Variant and guest loop of the queued / playing fever (chosen when fever is queued).
+    FeverSelector _fever = new FeverSelector(0);
     float _tension;
     bool _danger;
     float _appliedTension = -1f;
@@ -156,11 +162,14 @@ public sealed class SoundManager : SingletonBehaviour<SoundManager>, IKillBedSta
     /// <summary>Already-decided phrase that starts at <see cref="NextPhraseStep"/>.</summary>
     public SectionSelector.Phrase UpcomingPhrase => _sections.Next;
     /// <summary>
-    /// Guest trumpet/whistle loop of the phrase being heard (null = none, or cut off by fever).
+    /// Guest loop of the phrase being heard (null = none): the phrase's feature loop, or over fever the fever's guest loop
+    /// (none in the build-up bar).
     /// It only sounds in <see cref="FeatureSelector.Loop.PlaysInBar"/> bars of the phrase; see <see cref="FeatureSounding"/>.
     /// </summary>
     public FeatureSelector.Loop CurrentFeature =>
-        Running && !FeverActive && !FeverBuilding ? _features.Current : null;
+        !Running || FeverBuilding ? null : FeverActive ? _fever.Guest : _features.Current;
+    /// <summary>Name of the fever bed variant playing (null outside fever).</summary>
+    public string CurrentFeverVariant => FeverActive ? FeverSelector.VariantName(_fever.Variant) : null;
     /// <summary>Loop already chosen for the phrase starting at <see cref="NextPhraseStep"/> (null = none or fever).</summary>
     public FeatureSelector.Loop UpcomingFeature =>
         Running && !FeverOverlaps(NextPhraseStep, NextPhraseStep + StepsPerPhrase) ? _features.Next : null;
@@ -271,6 +280,7 @@ public sealed class SoundManager : SingletonBehaviour<SoundManager>, IKillBedSta
         _appliedIntensity = -1;
         _sections = new SectionSelector(sectionSeed);
         _features = new FeatureSelector(sectionSeed);
+        _fever = new FeverSelector(sectionSeed);
         _variationRandom = sectionSeed == 0 ? new System.Random() : new System.Random(unchecked(sectionSeed * 31 + 5));
         _variationCurrent = _variationNext = 0;
         _combo = 0;
@@ -309,6 +319,25 @@ public sealed class SoundManager : SingletonBehaviour<SoundManager>, IKillBedSta
         catch (Exception exception)
         {
             ReportFailure(exception.Message);
+            yield break;
+        }
+
+        // On WebGL and Android, LoadBank downloads the bank from StreamingAssets in the background
+        // (RuntimeManager.loadFromWeb); asking for it before it arrives fails and used to stop the music for good.
+        // On desktop it is already loaded, so this loop exits at once.
+        float loadDeadline = Time.realtimeSinceStartup + BankLoadTimeoutSeconds;
+        while (!RuntimeManager.HaveAllBanksLoaded)
+        {
+            if (Time.realtimeSinceStartup > loadDeadline)
+            {
+                ReportFailure("Timed out loading bank '" + BankName + "' (check StreamingAssets holds this platform's banks).");
+                yield break;
+            }
+            yield return null;
+        }
+        if (!RuntimeManager.HasBankLoaded(BankName))
+        {
+            ReportFailure("Bank '" + BankName + "' failed to load (wrong platform's banks in StreamingAssets?).");
             yield break;
         }
 
@@ -366,11 +395,19 @@ public sealed class SoundManager : SingletonBehaviour<SoundManager>, IKillBedSta
             ReportFailure("FMOD mixer sample rate unavailable.");
             yield break;
         }
-        ulong startDsp = FmodClock.MasterDsp();
-        if (startDsp == 0)
+        // On WebGL the FMOD mixer only runs once the browser has unlocked audio (first click / key press), and its DSP
+        // clock stays 0 until it has mixed its first block. 0 means "not started yet" there, not a failure - this used
+        // to stop the music for good on itch.io. Wait for the clock; on desktop it is already running.
+        ulong startDsp;
+        float hintTime = Time.realtimeSinceStartup + AudioStartHintSeconds;
+        while ((startDsp = FmodClock.MasterDsp()) == 0)
         {
-            ReportFailure("FMOD mixer clock unavailable.");
-            yield break;
+            if (hintTime > 0f && Time.realtimeSinceStartup > hintTime)
+            {
+                Debug.Log("[SoundManager / FMOD] Waiting for the audio device to start (in a browser: click or press a key).", this);
+                hintTime = -1f;
+            }
+            yield return null;
         }
         _clock.Reset(rate);
         _dspSmoother.Reset(rate);
@@ -417,6 +454,7 @@ public sealed class SoundManager : SingletonBehaviour<SoundManager>, IKillBedSta
         if (feverStart - FeverBuildSteps < earliest || loopInBuildBar)
             feverStart += StepsPerPhrase;
         _feverStart = feverStart;
+        _fever.Choose();
 
         // Kill beats already queued from the build-up bar on were voiced for the old bed; re-voice them as fever's sound.
         {
@@ -524,6 +562,8 @@ public sealed class SoundManager : SingletonBehaviour<SoundManager>, IKillBedSta
             AppliedCombo = _appliedCombo,
             ComboBar = _comboBar,
             FeverStart = _feverStart,
+            FeverVariant = _feverStart >= 0 ? _fever.Variant : 0,
+            FeverGuest = _feverStart >= 0 && _fever.Guest != null ? _fever.Guest.Id : 0,
         };
     }
 

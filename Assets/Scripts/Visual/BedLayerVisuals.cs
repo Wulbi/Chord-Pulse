@@ -114,6 +114,7 @@ public sealed class BedLayerVisuals : MonoBehaviour
 
     void Update()
     {
+        using var profile = VisualProfiler.LayerUpdate.Auto();
         if (_sound == null || _stage == null)
             return;
         float dt = Time.deltaTime;
@@ -218,6 +219,7 @@ public sealed class BedLayerVisuals : MonoBehaviour
 
     void LateUpdate()
     {
+        using var profile = VisualProfiler.LayerLate.Auto();
         if (_sound == null || _stage == null)
             return;
         float radius = _stage.RingRadius;
@@ -259,7 +261,8 @@ public sealed class BedLayerVisuals : MonoBehaviour
 
         // Combo 2: glass halo breathing once a bar.
         bool halo = _combo[2] > 0.01f;
-        _halo.gameObject.SetActive(halo);
+        if (_halo.gameObject.activeSelf != halo)
+            _halo.gameObject.SetActive(halo);
         if (halo)
         {
             float breath = 0.5f - 0.5f * Mathf.Cos((float)(beat % SoundManager.BeatsPerBar) / SoundManager.BeatsPerBar * 2f * Mathf.PI);
@@ -284,7 +287,9 @@ public sealed class BedLayerVisuals : MonoBehaviour
     void Place(SpriteRenderer sprite, float angle, float radius, float size, Color color, float alpha)
     {
         bool on = alpha > 0.005f;
-        sprite.gameObject.SetActive(on);
+        // Only touch the GameObject when visibility flips (SetActive every frame for ~45 sprites adds up).
+        if (sprite.gameObject.activeSelf != on)
+            sprite.gameObject.SetActive(on);
         if (!on)
             return;
         sprite.transform.localPosition = new Vector3(Mathf.Cos(angle) * radius, Mathf.Sin(angle) * radius, 0f);

@@ -19,6 +19,7 @@ public sealed class ChimeStyle : FeatureVisualStyle
         color = new Color(1f, 0.8f, 0.5f, 0.85f);
         midiRange = new Vector2Int(79, 100);
         seconds = 0.45f;
+        prewarm = 20;
         size = 0.22f;
     }
 
@@ -87,6 +88,13 @@ public sealed class ChimeEmitter : IFeatureEmitter
             c.a *= (1f - t) * (1f - t);
             chime.Renderer.color = c;
         }
+    }
+
+    public void Prewarm(int count)
+    {
+        while (_chimes.Count < count)
+            Take().Active = true;
+        Clear();
     }
 
     public void Clear()

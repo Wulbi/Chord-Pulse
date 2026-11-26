@@ -24,6 +24,7 @@ public sealed class EdgeRippleStyle : FeatureVisualStyle
         color = new Color(1f, 0.45f, 0.85f, 0.8f);
         midiRange = new Vector2Int(62, 84);
         seconds = 0.4f;
+        prewarm = 6;
         size = 1f;
     }
 
@@ -112,6 +113,13 @@ public sealed class EdgeRippleEmitter : IFeatureEmitter
         // Gated: stays bright for the first half, then cuts away fast.
         c.a *= t < 0.5f ? 1f : Mathf.Clamp01((1f - t) * 2f);
         ripple.Line.startColor = ripple.Line.endColor = c;
+    }
+
+    public void Prewarm(int count)
+    {
+        while (_ripples.Count < count)
+            Take().Active = true;
+        Clear();
     }
 
     public void Clear()

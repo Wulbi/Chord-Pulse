@@ -7,11 +7,12 @@ public sealed class ChordPulsePrototype : MonoBehaviour
 {
     const string EnemyPoolKey = "ChordPulseEnemy";
     const float CoreRadius = 0.42f;
-    const float EnemyHalfSize = 0.21f;
     const float WaveWidth = 0.028f;
-    const float WaveHitPadding = 0.0275f;
-    const float SimultaneousContactTolerance = 0.01f;
     const int CircleSegments = 96;
+    // Pulse cooldown arc inside the core, and the current color's shape at its center.
+    const float CooldownArcRadius = CoreRadius - 0.1f;
+    const float CooldownArcWidth = 0.04f;
+    const float CoreIconSize = CoreRadius * 0.8f;
     static readonly Color BoundaryColor = new Color(0.27f, 0.34f, 0.46f);
 
     static readonly Color[] Colors =
@@ -22,50 +23,142 @@ public sealed class ChordPulsePrototype : MonoBehaviour
     };
 
     const int MaxHealth = 3;
-    const float HiddenEnemyStart = 30f;
     static readonly Color HiddenColor = new Color(0.62f, 0.65f, 0.71f);
 
-    const float EnemySpeed = 0.65f;
+    // Chord pair layout, in the enemy root's local space (one unit = one basic enemy across).
+    // Centers sit this many shape diameters apart, so the two shapes never touch.
+    const float ChordShapeSpacing = 1.15f;
+    // Bar thickness in world units; it sits slightly behind the shapes so it never cuts across them.
+    const float ChordBarThickness = 0.035f;
+    const float ChordBarDepth = 0.05f;
+    // Neutral, not a color: the bar only says "pair".
+    static readonly Color ChordBarColor = new Color(0.9f, 0.92f, 0.95f);
+    // Child order on the enemy template (see CreateChordParts).
+    const int ChordLeftChild = 0;
+    const int ChordRightChild = 1;
+    const int ChordBarChild = 2;
+
+    // Splitter: a hollow outline of its color's shape, with two small filled copies side by side inside.
+    // Layout in the enemy root's local space (one unit = the splitter across). The triangle's inside is
+    // wider near its base, so its pair sits lower.
+    const float SplitterInnerScale = 0.3f;
+    static readonly float[] SplitterInnerSpacing = { 0.15f, 0.19f, 0.19f };
+    static readonly float[] SplitterInnerHeight = { -0.17f, 0f, 0f };
+    // Outline stroke, in shape half-widths (a shape spans -1..1).
+    const float OutlineThickness = 0.15f;
+    // Split children end up this far (world units) to either side of the parent's line.
+    const float SplitSpreadOffset = 0.22f;
+
+    // Charger: its color's shape squeezed across and stretched along the direction of travel,
+    // with two faint afterimages behind it (away from the core).
+    const float ChargerWidth = 0.65f;
+    const float ChargerLength = 1.1f;
+    // Afterimage layout in the root's local space (one unit = the charger's length).
+    const float TrailSpacing = 0.8f;
+    const float TrailDepth = 0.05f;
+    static readonly float[] TrailAlpha = { 0.4f, 0.18f };
+    static readonly float[] TrailWidth = { 0.85f, 0.7f };
+    // Each boost spreads the afterimages and stretches them by this much more.
+    const float TrailBoostGrowth = 0.45f;
+    // Boosted chargers tremble sideways; amplitude (world units) per boost, frequencies in radians per second.
+    const float ShakePerBoost = 0.018f;
+    const float ShakeFrequencyA = 71f;
+    const float ShakeFrequencyB = 113f;
+    const int SplitterInnerLeftChild = 3;
+    const int SplitterInnerRightChild = 4;
+    const int TrailNearChild = 5;
+    const int TrailFarChild = 6;
+
     // A pulse crosses from the core to the arena edge in this many beats, at any tempo,
     // so one press resolves inside a single beat and its kills share one chord.
     const float PulseBeats = 0.75f;
     const float ArenaInset = 0.45f;
-    const float SameColorChance = 0.8f;
-    const int FeverThreshold = 8;
-    // Music tension starts once the nearest enemy is inside this fraction of the arena radius.
-    const float TensionOuterRadius = 0.55f;
-    // Kills in a row (without being hit) for each music combo level 1..3.
-    static readonly int[] ComboThresholds = { 4, 8, 12 };
-    // Survival seconds at which difficulty steps up (same timing as the original 8-bar tempo stages).
-    static readonly double[] DifficultyThresholds = { 17.8, 34.3, 49.8 };
+    // Fever charge: pulses in a row that kill something (outside fever); reaching it queues fever for the next loop.
+    const int PulseComboForFever = 10;
+    // Music layer levels 1..3 (SoundManager.Combo): enemies killed in a row without the core being hit.
+    // Separate from the pulse combo, which charges fever.
+    static readonly int[] KillStreakLayerThresholds = { 4, 8, 12 };
 
     [SerializeField] Camera playCamera;
     [SerializeField] GamePanel gamePanel;
 
-    static readonly string[] ColorNames = { "Red", "Blue", "Yellow" };
 
     sealed class Enemy
     {
+        public EnemyState State;
         public GameObject Instance;
-        public int ColorIndex;
-        public float Distance;
-        public bool IsHidden;
+        /// <summary>Unit vector from the core toward the spawn point.</summary>
+        public Vector2 Direction;
+        public SpriteRenderer Body;
+        public SpriteRenderer LeftShape;
+        public SpriteRenderer RightShape;
+        public SpriteRenderer Bar;
+        public SpriteRenderer InnerLeft;
+        public SpriteRenderer InnerRight;
+        public SpriteRenderer TrailNear;
+        public SpriteRenderer TrailFar;
+        /// <summary>Phase of a boosted charger's tremble, so chargers do not shake in step.</summary>
+        public float ShakePhase;
+        /// <summary>Chord pair: the color drawn on the left shape (-1 otherwise). Tells which side a strip popped.</summary>
+        public int LeftColor = -1;
     }
 
     sealed class Wave
     {
         public LineRenderer Ring;
-        public int ColorIndex;
-        public float Radius;
-        public bool HasKill;
+        public PulseState Pulse;
         /// <summary>Beat step of this pulse's kill chord (-1 until its first kill).</summary>
         public int ChordStep = -1;
-        public bool IsFeverPulse;
     }
 
-    readonly List<Enemy> _enemies = new List<Enemy>();
-    readonly List<(Enemy Enemy, float Radius)> _contacts = new List<(Enemy, float)>();
+    /// <summary>
+    /// A killed enemy waiting for its kill chord. The kill counts at once (the rules already dropped its state:
+    /// no damage, no tension, score and combo given), but it bursts on the beat the chord sounds. Meanwhile it is
+    /// frozen, hollow and charging up, so it reads as "about to pop", never as still alive.
+    /// </summary>
+    sealed class DyingEnemy
+    {
+        public Enemy View;
+        /// <summary>Beat step the kill chord sounds on (-1 = burst at once).</summary>
+        public int BurstStep;
+        public float Age;
+        public Vector3 Origin;
+        public Vector3 BaseScale;
+        /// <summary>Shapes to shatter and their colours, captured at the kill before the look turns hollow.</summary>
+        public int Parts;
+        public readonly SpriteRenderer[] PartRenderers = new SpriteRenderer[2];
+        public readonly Color[] PartColors = new Color[2];
+    }
+
+    // Kill → burst timing and look.
+    const float DyingPushDistance = 0.12f;   // nudged outward along its path by the pulse, so it visibly stops coming
+    const float DyingPushSeconds = 0.12f;
+    const float DyingFlashSeconds = 0.07f;
+    const float DyingMaxWait = 1.2f;         // safety: never hang around longer than this, whatever the clock says
+    const float DyingSqueeze = 0.18f;        // shrinks this much as the beat approaches...
+    const float DyingTremble = 0.035f;       // ...and trembles harder
+    readonly List<DyingEnemy> _dying = new List<DyingEnemy>();
+    readonly Stack<DyingEnemy> _dyingPool = new Stack<DyingEnemy>();
+
+    // Rules see only the states; each state maps back to its view for drawing and pooling.
+    readonly List<EnemyState> _enemyStates = new List<EnemyState>();
+    readonly Dictionary<EnemyState, Enemy> _enemyViews = new Dictionary<EnemyState, Enemy>();
     readonly List<Wave> _waves = new List<Wave>();
+    readonly List<PulseEvent> _pulseEvents = new List<PulseEvent>();
+    readonly PulseResolver _pulseResolver = new PulseResolver();
+    readonly PulseCooldown _pulseCooldown = new PulseCooldown();
+    readonly SpawnDirector _spawnDirector = new SpawnDirector(new System.Random());
+
+    // Hue wheel turns per second on the core during fever.
+    const float RainbowSpinSpeed = 1.5f;
+    static readonly GradientAlphaKey[] RainbowAlpha = { new GradientAlphaKey(1f, 0f), new GradientAlphaKey(1f, 1f) };
+    readonly GradientColorKey[] _rainbowKeys = new GradientColorKey[8];
+    readonly Gradient _rainbow = new Gradient();
+
+    // Enemies within this distance of the nearest one get marked too (the same pulse front reaches them).
+    const float SameTargetDistance = 0.06f;
+    readonly List<TargetMarkers.Target> _targets = new List<TargetMarkers.Target>();
+    TargetMarkers _targetMarkers;
 
     PoolManager _poolManager;
     GameManager _gameManager;
@@ -73,8 +166,11 @@ public sealed class ChordPulsePrototype : MonoBehaviour
     GameObject _enemyTemplate;
     Material _ringMaterial;
     Texture2D _enemyShapeTexture;
-    readonly Sprite[] _enemyShapes = new Sprite[4];
+    // Filled shapes per color, the gray square (index Colors.Length), then the hollow outlines per color.
+    readonly Sprite[] _enemyShapes = new Sprite[Colors.Length * 2 + 1];
     LineRenderer _core;
+    LineRenderer _cooldownArc;
+    SpriteRenderer _coreIcon;
     LineRenderer _boundary;
     MusicReactiveVisuals _visuals;
     BedStyleVisuals _bedStyleVisuals;
@@ -85,18 +181,16 @@ public sealed class ChordPulsePrototype : MonoBehaviour
     Mesh _shardMesh;
     float _arenaRadius;
     int _selectedColor;
-    int _spawnCount;
-    int _openingEnemiesSpawned;
-    int _groupColor;
-    int _groupSize;
     float _spawnAngle;
-    int _hits;
-    int _streak;
+    int _score;
+    int _killStreak;
     int _health;
-    int _nextSpawnStep;
+    int _pulseCombo;
     int _feverCharge;
     int _lastHudBeat;
     bool _wasFeverActive;
+    int _roundStartFrame = -1;
+    double _prevBeatPosition = double.NegativeInfinity;
 
     void Awake()
     {
@@ -124,50 +218,66 @@ public sealed class ChordPulsePrototype : MonoBehaviour
         _featureVisuals = gameObject.AddComponent<FeatureLoopVisuals>();
         _featureVisuals.Init(playCamera, _arenaRadius, _ringMaterial);
         CreateShatterEffect();
+        _targetMarkers = gameObject.AddComponent<TargetMarkers>();
+        _targetMarkers.Init(_ringMaterial);
 
         CreateEnemyShapes();
+        CreateCoreIndicators();
         _enemyTemplate = new GameObject("Chord Pulse Enemy Template");
         _enemyTemplate.transform.SetParent(transform, false);
         _enemyTemplate.SetActive(false);
-        _enemyTemplate.transform.localScale = Vector3.one * (EnemyHalfSize * 2f);
+        _enemyTemplate.transform.localScale = Vector3.one * (GameplayTuning.BaseEnemyHalfSize * 2f);
         _enemyTemplate.AddComponent<SpriteRenderer>();
+        CreateChordParts(_enemyTemplate.transform);
+        CreateKindParts(_enemyTemplate.transform);
         _enemyTemplate.AddComponent<Poolable>();
 
         _poolManager = PoolManager.Instance;
-        _poolManager.RegisterPool(EnemyPoolKey, _enemyTemplate, 12);
+        _poolManager.RegisterPool(EnemyPoolKey, _enemyTemplate, GameplayTuning.EnemyPoolSize);
 
-        StartRound();
+        // First launch only: a controls card, and the round (with its music) starts once it is dismissed.
+        var help = HelpPanel.Create(UIManager.Instance.CanvasTransform);
+        UIManager.Instance.RegisterPanel(help);
+        help.Show(StartRound);
     }
 
     void StartRound()
     {
         _poolManager.ReturnAll(EnemyPoolKey);
-        _enemies.Clear();
+        _enemyStates.Clear();
+        _enemyViews.Clear();
+        foreach (var dying in _dying)
+            _dyingPool.Push(dying);
+        _dying.Clear();
         foreach (var wave in _waves)
             Destroy(wave.Ring.gameObject);
         _waves.Clear();
-        _contacts.Clear();
+        _pulseEvents.Clear();
         _shards.Clear();
+        _spawnDirector.Reset();
+        _pulseCooldown.Reset();
+        _prevBeatPosition = double.NegativeInfinity;
 
         _selectedColor = 0;
-        _spawnCount = 0;
-        _openingEnemiesSpawned = 0;
-        _groupSize = 0;
         _spawnAngle = Random.Range(0f, 360f);
-        _hits = 0;
-        _streak = 0;
+        _score = 0;
+        _killStreak = 0;
         _health = MaxHealth;
-        _nextSpawnStep = 0;
+        _pulseCombo = 0;
         _feverCharge = 0;
         _lastHudBeat = -1;
         _wasFeverActive = false;
+        _roundStartFrame = Time.frameCount;
         _visuals.ResetVisuals();
         _bedStyleVisuals.ResetVisuals();
         _bedLayerVisuals.ResetVisuals();
         _tensionVignette.ResetVisuals();
         _featureVisuals.ResetVisuals();
         _soundManager.StartMusic();
-        _core.startColor = _core.endColor = Colors[0];
+        SetSolidColor(_core, Colors[0]);
+        _coreIcon.enabled = true;
+        ShowSelectedColor();
+        _cooldownArc.enabled = false;
         UIManager.Instance.PushPanel(UIPanelType.GAME_PANEL);
 
         UpdateHud();
@@ -176,25 +286,42 @@ public sealed class ChordPulsePrototype : MonoBehaviour
     void Update()
     {
         if (!gamePanel.IsPlaying || !_gameManager.IsPlaying)
+        {
+            if (_targetMarkers != null)
+                _targetMarkers.Hide();
             return;
+        }
 
         int beat = _soundManager.CurrentBeat;
         // The arrangement fills in as the round gets harder; slower music later can still lower density on its own.
-        _soundManager.Intensity = DifficultyLevel(_soundManager.RoundSeconds);
-        _soundManager.Tension = MusicTension();
+        _soundManager.Intensity = SpawnDirector.Difficulty(_soundManager.RoundSeconds);
+        _soundManager.Tension = TensionMeter.Compute(_enemyStates, CoreRadius, _arenaRadius, _health, MaxHealth);
         _soundManager.Danger = _health == 1;
-        _soundManager.Combo = ComboLevel(_streak);
+        _soundManager.Combo = MusicLayerLevel(_killStreak);
         int step = _soundManager.CurrentStep;
+        double beatPosition = _soundManager.BeatPosition;
+        // The music can restart mid-round (output sample rate change): the beat jumps back, so unlock the rules.
+        if (beatPosition < _prevBeatPosition)
+        {
+            _pulseCooldown.Reset();
+            _spawnDirector.Reset();
+        }
+        _prevBeatPosition = beatPosition;
         bool fever = _soundManager.FeverActive;
         if (fever != _wasFeverActive)
         {
             _wasFeverActive = fever;
-            _groupSize = 0;
-            _nextSpawnStep = step;
+            // Fever pulses kill every color, so the shape of the selected one would mislead.
+            _coreIcon.enabled = !fever;
             if (!fever)
+            {
                 _feverCharge = 0;
+                SetSolidColor(_core, Colors[_selectedColor]);
+            }
             UpdateHud();
         }
+        if (fever)
+            DrawRainbowCore();
         if (beat != _lastHudBeat)
         {
             _lastHudBeat = beat;
@@ -205,33 +332,38 @@ public sealed class ChordPulsePrototype : MonoBehaviour
         if (keyboard != null && keyboard.aKey.wasPressedThisFrame)
         {
             _selectedColor = (_selectedColor + 1) % Colors.Length;
-            _core.startColor = _core.endColor = Colors[_selectedColor];
+            if (!fever)
+                SetSolidColor(_core, Colors[_selectedColor]);
+            ShowSelectedColor();
             UpdateHud();
         }
 
-        if (keyboard != null && keyboard.spaceKey.wasPressedThisFrame)
-        {
-            _waves.Add(new Wave
-            {
-                Ring = CreateRing("Pulse", fever ? Color.white : Colors[_selectedColor], CoreRadius, WaveWidth),
-                IsFeverPulse = fever,
-                ColorIndex = _selectedColor,
-                Radius = CoreRadius
-            });
-        }
+        // The Space that closed the help card started this round; it is not a shot.
+        // Outside fever a press fires only off cooldown; one just before it ends is held and fires when it does.
+        bool fire = keyboard != null && keyboard.spaceKey.wasPressedThisFrame && Time.frameCount != _roundStartFrame
+                    && _pulseCooldown.Press(beatPosition, fever);
+        if (_pulseCooldown.Tick(beatPosition, fever))
+            fire = true;
+        if (fire)
+            FirePulse(fever);
+        DrawCooldownArc(_pulseCooldown.Progress(beatPosition, fever));
 
         float deltaTime = Time.deltaTime;
         AdvanceWaves(deltaTime);
-        for (int i = _enemies.Count - 1; i >= 0; i--)
+        UpdateDying(deltaTime);
+        for (int i = _enemyStates.Count - 1; i >= 0; i--)
         {
-            var enemy = _enemies[i];
-            enemy.Distance = Mathf.Max(0f, enemy.Distance - EnemySpeed * deltaTime);
-            if (enemy.Distance <= CoreRadius + EnemyHalfSize)
+            var state = _enemyStates[i];
+            var enemy = _enemyViews[state];
+            state.Distance = Mathf.Max(0f, state.Distance - state.Speed * deltaTime);
+            if (state.Distance <= CoreRadius + state.HalfSize)
             {
                 _poolManager.ReturnToPool(enemy.Instance);
-                _enemies.RemoveAt(i);
+                _enemyStates.RemoveAt(i);
+                _enemyViews.Remove(state);
                 _health--;
-                _streak = 0;
+                _killStreak = 0;
+                ResetPulseCombo();
                 _soundManager.Hurt();
                 UpdateHud();
                 if (_health == 0)
@@ -242,211 +374,572 @@ public sealed class ChordPulsePrototype : MonoBehaviour
                 continue;
             }
 
-            enemy.Instance.transform.position = Vector3.MoveTowards(
-                enemy.Instance.transform.position, transform.position, EnemySpeed * deltaTime);
+            var position = enemy.Direction * state.Distance;
+            // A boosted charger trembles sideways around its path; the offset is recomputed, never accumulated.
+            if (state.Boosts > 0)
+            {
+                float t = Time.time;
+                float shake = Mathf.Sin(t * ShakeFrequencyA + enemy.ShakePhase) * 0.6f
+                              + Mathf.Sin(t * ShakeFrequencyB + enemy.ShakePhase * 1.7f) * 0.4f;
+                position += new Vector2(-enemy.Direction.y, enemy.Direction.x) * (shake * ShakePerBoost * state.Boosts);
+            }
+            enemy.Instance.transform.position = transform.position + (Vector3)position;
         }
 
-        if (step >= _nextSpawnStep)
-            SpawnNextEnemy(step, fever);
-    }
-
-    // 0..1 threat for the adaptive music: the nearest enemy closing in on the core (up to 0.85 at contact),
-    // a little more for each extra enemy close by, and a floor from lost lives (0.3 with 2 left, 0.75 with 1).
-    static int ComboLevel(int streak)
-    {
-        int level = 0;
-        while (level < ComboThresholds.Length && streak >= ComboThresholds[level])
-            level++;
-        return level;
-    }
-
-    float MusicTension()
-    {
-        float contact = CoreRadius + EnemyHalfSize;
-        float outer = Mathf.Max(contact + 0.01f, _arenaRadius * TensionOuterRadius);
-        float nearest = float.MaxValue;
-        int close = 0;
-        foreach (var enemy in _enemies)
+        var spawnContext = new SpawnContext
         {
-            nearest = Mathf.Min(nearest, enemy.Distance);
-            if (enemy.Distance < outer)
-                close++;
-        }
-        float proximity = _enemies.Count == 0 ? 0f : 1f - Mathf.Clamp01((nearest - contact) / (outer - contact));
-        float crowd = Mathf.Clamp01((close - 1) * 0.15f);
-        float lives = _health <= 1 ? 0.75f : _health < MaxHealth ? 0.3f : 0f;
-        return Mathf.Max(Mathf.Clamp01(proximity * 0.85f + crowd), lives);
+            Step = step,
+            Fever = fever,
+            Breath = _soundManager.IsBreath,
+            Section = _soundManager.SectionIndex,
+            RoundSeconds = _soundManager.RoundSeconds
+        };
+        if (_spawnDirector.TryNext(spawnContext, out var order))
+            SpawnFromNewDirection(order);
+
+        UpdateTargetMarkers(fever);
     }
 
-    static int DifficultyLevel(double survivalSeconds)
+    void FirePulse(bool fever)
     {
-        int level = 0;
-        while (level < DifficultyThresholds.Length && survivalSeconds >= DifficultyThresholds[level])
-            level++;
-        return level;
-    }
-
-    static int NextDownbeat(int step) =>
-        (step / SoundManager.StepsPerBar + 1) * SoundManager.StepsPerBar;
-
-    void SpawnNextEnemy(int step, bool fever)
-    {
-        bool hidden = _soundManager.RoundSeconds >= HiddenEnemyStart && _spawnCount % 2 == 0;
+        var ring = CreateRing("Pulse", fever ? Color.white : Colors[_selectedColor], CoreRadius, WaveWidth);
         if (fever)
+            ring.colorGradient = _rainbow;
+        _waves.Add(new Wave
         {
-            SpawnFromNewDirection(Random.Range(0, Colors.Length), hidden);
-            _spawnCount++;
-            _nextSpawnStep = (step / SoundManager.StepsPerBeat + 1) * SoundManager.StepsPerBeat;
+            Ring = ring,
+            Pulse = new PulseState { ColorIndex = _selectedColor, Radius = CoreRadius, IsFever = fever }
+        });
+    }
+
+    // The core's selected color told by shape as well as by color.
+    void ShowSelectedColor()
+    {
+        _coreIcon.sprite = _enemyShapes[_selectedColor];
+        _coreIcon.color = Colors[_selectedColor];
+        _cooldownArc.startColor = _cooldownArc.endColor = Colors[_selectedColor];
+    }
+
+    // Elapsed cooldown as an open arc that grows clockwise from 12 o'clock; hidden once ready.
+    // Progress is carried by the arc's length only, never by its color.
+    void DrawCooldownArc(float progress)
+    {
+        if (progress >= 1f)
+        {
+            _cooldownArc.enabled = false;
             return;
         }
 
-        if (_groupSize == 0 && step % SoundManager.StepsPerBar != 0)
+        _cooldownArc.enabled = true;
+        int points = Mathf.Max(2, Mathf.CeilToInt(progress * CircleSegments) + 1);
+        _cooldownArc.positionCount = points;
+        float sweep = progress * 2f * Mathf.PI;
+        for (int i = 0; i < points; i++)
         {
-            _nextSpawnStep = NextDownbeat(step);
+            float angle = 0.5f * Mathf.PI - sweep * i / (points - 1);
+            _cooldownArc.SetPosition(i,
+                new Vector3(Mathf.Cos(angle) * CooldownArcRadius, Mathf.Sin(angle) * CooldownArcRadius, 0f));
+        }
+    }
+
+    // Marks the enemies the next pulse reaches first: the nearest one, plus any others close enough to be hit
+    // by the same pulse front. Hidden in fever, where every pulse kills everything.
+    void UpdateTargetMarkers(bool fever)
+    {
+        _targets.Clear();
+        if (fever || _enemyStates.Count == 0)
+        {
+            _targetMarkers.Hide();
             return;
         }
 
-        if (_openingEnemiesSpawned < Colors.Length)
+        // A pulse hits an enemy's leading edge, so "nearest" is measured to the edge, not the centre.
+        float nearest = float.MaxValue;
+        float nearestHalfSize = 0f;
+        foreach (var state in _enemyStates)
         {
-            SpawnFromNewDirection(_openingEnemiesSpawned++);
-            _nextSpawnStep = NextDownbeat(step);
-            return;
+            float edge = state.Distance - state.HalfSize;
+            if (edge < nearest)
+            {
+                nearest = edge;
+                nearestHalfSize = state.HalfSize;
+            }
+        }
+        foreach (var state in _enemyStates)
+        {
+            if (state.Distance - state.HalfSize > nearest + SameTargetDistance)
+                continue;
+            var view = _enemyViews[state];
+            // A stripped pair keeps only one shape, off to one side of the root: mark that shape.
+            Vector3 markerPosition = view.Instance.transform.position;
+            if (view.LeftShape.enabled && !view.RightShape.enabled)
+                markerPosition = view.LeftShape.transform.position;
+            else if (view.RightShape.enabled && !view.LeftShape.enabled)
+                markerPosition = view.RightShape.transform.position;
+            int markerColor = state.ColorIndex;
+            if (state.IsChordPair && state.SecondColorIndex == _selectedColor)
+                markerColor = _selectedColor;
+            _targets.Add(new TargetMarkers.Target
+            {
+                Position = markerPosition,
+                Color = state.IsHidden ? HiddenColor : Colors[markerColor],
+                // A gray enemy takes any color; others need the matching one (an intact chord pair: either of its two).
+                Ready = state.IsHidden || state.ColorIndex == _selectedColor
+                        || (state.IsChordPair && state.SecondColorIndex == _selectedColor)
+            });
         }
 
-        if (_groupSize == 0)
-            _groupColor = Random.Range(0, Colors.Length);
+        float contact = CoreRadius + nearestHalfSize;
+        float outer = Mathf.Max(contact + 0.01f, _arenaRadius * GameplayTuning.TensionOuterRadius);
+        float danger = 1f - Mathf.Clamp01((nearest + nearestHalfSize - contact) / (outer - contact));
+        int beat = _soundManager.CurrentBeat;
+        float sinceBeat = beat >= 0 ? (float)(_soundManager.BeatPosition - beat) : 1f;
+        _targetMarkers.Show(_targets, danger, sinceBeat);
+    }
 
-        SpawnFromNewDirection(_groupColor, hidden);
-        _spawnCount++;
-        _groupSize++;
+    static int MusicLayerLevel(int streak)
+    {
+        int level = 0;
+        while (level < KillStreakLayerThresholds.Length && streak >= KillStreakLayerThresholds[level])
+            level++;
+        return level;
+    }
 
-        // Difficulty follows survival time, not tempo, so calmer music sections can still be hard later on.
-        // Breath phrases (chosen by the music) are the deliberate rests: single enemies, an extra bar apart.
-        int difficulty = DifficultyLevel(_soundManager.RoundSeconds);
-        bool breath = _soundManager.IsBreath;
-        int maxGroupSize = breath ? 1 : difficulty == 0 ? 2 : 3;
-        if (_groupSize < maxGroupSize && Random.value < SameColorChance)
+    // Two counters move together but are separate:
+    // - pulse combo (shown on screen): +1 for every pulse that kills, fever pulses included; never touched by fever.
+    // - fever charge: the same count, but only outside fever. Reaching PulseComboForFever queues fever; it is frozen
+    //   while fever is queued or playing and starts again from 0 once fever ends.
+    void AddPulseCombo(bool feverPulse)
+    {
+        _pulseCombo++;
+        if (!feverPulse && !_soundManager.FeverActive && !_soundManager.FeverPending &&
+            ++_feverCharge >= PulseComboForFever)
+            _soundManager.QueueFever();
+    }
+
+    void ResetPulseCombo()
+    {
+        _pulseCombo = 0;
+        if (!_soundManager.FeverActive && !_soundManager.FeverPending)
+            _feverCharge = 0;
+        UpdateHud();
+    }
+
+    // Fever: the core turns into a full hue wheel that spins around the ring.
+    void DrawRainbowCore()
+    {
+        float phase = Mathf.Repeat(Time.time * RainbowSpinSpeed, 1f);
+        for (int i = 0; i < _rainbowKeys.Length; i++)
         {
-            bool halfBeat = difficulty >= 2 && Random.value < 0.45f;
-            _nextSpawnStep = step + (halfBeat ? 1 : SoundManager.StepsPerBeat);
+            float t = i / (_rainbowKeys.Length - 1f);
+            _rainbowKeys[i] = new GradientColorKey(Color.HSVToRGB(Mathf.Repeat(phase + t, 1f), 0.75f, 1f), t);
         }
-        else
-        {
-            _groupSize = 0;
-            _nextSpawnStep = NextDownbeat(step) + (breath ? SoundManager.StepsPerBar : 0);
-        }
+        _rainbow.SetKeys(_rainbowKeys, RainbowAlpha);
+        _core.colorGradient = _rainbow;
+    }
+
+    // startColor/endColor only recolor a gradient's first and last keys, so after the rainbow they would
+    // leave its middle keys showing. Replace the whole gradient instead.
+    static void SetSolidColor(LineRenderer ring, Color color)
+    {
+        var solid = new Gradient();
+        solid.SetKeys(
+            new[] { new GradientColorKey(color, 0f), new GradientColorKey(color, 1f) },
+            new[] { new GradientAlphaKey(color.a, 0f), new GradientAlphaKey(color.a, 1f) });
+        ring.colorGradient = solid;
     }
 
     void AdvanceWaves(float deltaTime)
     {
-        float tolerance = EnemyHalfSize + WaveHitPadding;
-        float maxRadius = _arenaRadius + EnemyHalfSize + WaveHitPadding * 2f;
+        float maxRadius = _arenaRadius + GameplayTuning.BaseEnemyHalfSize + PulseResolver.WaveHitPadding * 2f;
         float waveSpeed = (maxRadius - CoreRadius) / (PulseBeats * (float)_soundManager.BeatSeconds);
 
         for (int i = 0; i < _waves.Count;)
         {
             var wave = _waves[i];
-            float nextRadius = Mathf.Min(maxRadius, wave.Radius + waveSpeed * deltaTime);
-            _contacts.Clear();
+            var pulse = wave.Pulse;
+            _pulseEvents.Clear();
+            var outcome = _pulseResolver.Advance(pulse, _enemyStates, waveSpeed, maxRadius, deltaTime, _pulseEvents);
 
-            foreach (var enemy in _enemies)
+            for (int e = 0; e < _pulseEvents.Count; e++)
             {
-                if (enemy.Distance + tolerance < wave.Radius)
-                    continue;
-
-                // Both move during the frame. Solve for when their leading edges meet.
-                float contactTime = Mathf.Max(0f, enemy.Distance - tolerance - wave.Radius)
-                    / (waveSpeed + EnemySpeed);
-                float contactRadius = wave.Radius + waveSpeed * contactTime;
-                if (contactRadius <= nextRadius + SimultaneousContactTolerance)
-                    _contacts.Add((enemy, contactRadius));
-            }
-
-            _contacts.Sort((a, b) => a.Radius.CompareTo(b.Radius));
-
-            bool blocked = false;
-            float contactLimit = nextRadius;
-            foreach (var contact in _contacts)
-            {
-                if (contact.Radius > contactLimit)
-                    break;
-
-                if (!wave.IsFeverPulse && contact.Enemy.ColorIndex != wave.ColorIndex)
+                var pulseEvent = _pulseEvents[e];
+                if (pulseEvent.Type == PulseEventType.Split)
                 {
-                    if (contact.Enemy.IsHidden)
-                    {
-                        contact.Enemy.IsHidden = false;
-                        ApplyEnemyAppearance(contact.Enemy);
-                    }
-                    // Resolve the whole contact band before ending the wave.
-                    if (!blocked)
-                    {
-                        blocked = true;
-                        contactLimit = contact.Radius + SimultaneousContactTolerance;
-                    }
+                    // The resolver already added the child state; it needs a view. The parent's Kill comes after
+                    // both Splits, so its view still holds the direction. No kill sound, score or combo here.
+                    // The two Splits of one parent come back to back: the first child goes one way, the second the other.
+                    bool second = e > 0 && _pulseEvents[e - 1].Type == PulseEventType.Split
+                                        && _pulseEvents[e - 1].Parent == pulseEvent.Parent;
+                    SpawnSplitChild(pulseEvent.Enemy, _enemyViews[pulseEvent.Parent], second ? -1f : 1f);
+                    continue;
+                }
+                var enemy = _enemyViews[pulseEvent.Enemy];
+                if (pulseEvent.Type == PulseEventType.Boost)
+                {
+                    // A wrong color sped a charger up (the resolver already raised Speed and Boosts):
+                    // longer afterimages here, the tremble in Update. Its color never changes.
+                    ApplyEnemyAppearance(enemy);
+                    continue;
+                }
+                if (pulseEvent.Type == PulseEventType.Reveal)
+                {
+                    // A gray enemy has two hits: a colored pulse only strips the gray and shows its real color.
+                    ApplyEnemyAppearance(enemy);
+                    continue;
+                }
+                if (pulseEvent.Type == PulseEventType.Strip)
+                {
+                    // One half of a chord pair pops: no kill sound, score or combo; the other shape stays where it is.
+                    // The resolver already moved the survivor into ColorIndex and the popped color into StrippedColorIndex.
+                    int popped = pulseEvent.Enemy.StrippedColorIndex;
+                    var poppedShape = popped == enemy.LeftColor ? enemy.LeftShape : enemy.RightShape;
+                    Shatter(poppedShape.transform.position, Colors[popped]);
+                    ApplyEnemyAppearance(enemy);
                     continue;
                 }
 
-                Shatter(contact.Enemy.Instance.transform.position, Colors[contact.Enemy.ColorIndex]);
-                _poolManager.ReturnToPool(contact.Enemy.Instance);
-                _enemies.Remove(contact.Enemy);
+                // The resolver already removed the state from _enemyStates.
+                _enemyViews.Remove(pulseEvent.Enemy);
                 // Every kill of this pulse joins the chord of its first kill: one press, one chord.
-                int chordStep = _soundManager.QueueKillChord(contact.Enemy.ColorIndex, wave.ChordStep);
+                int chordStep = _soundManager.QueueKillChord(enemy.State.ColorIndex, wave.ChordStep);
                 if (wave.ChordStep < 0)
                     wave.ChordStep = chordStep;
-                if (!wave.IsFeverPulse && !wave.HasKill)
-                {
-                    wave.HasKill = true;
-                    if (!_soundManager.FeverActive && !_soundManager.FeverPending &&
-                        ++_feverCharge == FeverThreshold)
-                        _soundManager.QueueFever();
-                }
-                _hits++;
-                _streak++;
+                // It bursts on that chord's beat, not now (frozen and hollow until then).
+                StartDying(enemy, wave.ChordStep);
+                // A chord pair's finish (or a fever kill of an intact one) sounds both of its colors in that chord.
+                int partnerColor = enemy.State.IsChordPair ? enemy.State.SecondColorIndex : enemy.State.StrippedColorIndex;
+                if (partnerColor >= 0)
+                    _soundManager.QueueKillChord(partnerColor, wave.ChordStep);
+                // The n-th kill of one pulse is worth n points.
+                _score += pulseEvent.Points;
+                _killStreak++;
+                if (pulseEvent.Points == 1)
+                    AddPulseCombo(pulse.IsFever);
                 UpdateHud();
             }
 
-            if (blocked || nextRadius >= maxRadius)
+            if (outcome != PulseOutcome.Travelling)
             {
+                // Pulse combo: a pulse that killed something already scored +1. One that only revealed gray enemies
+                // keeps the combo, and so does one that only stripped a half off a chord pair; one that hit a wrong
+                // color or reached the edge without a kill breaks it.
+                // A fever pulse that kills nothing keeps it too.
+                bool onlyRevealed = outcome == PulseOutcome.Blocked && !pulse.HitWrongColor;
+                if (!pulse.IsFever && pulse.Kills == 0 && !onlyRevealed)
+                    ResetPulseCombo();
                 Destroy(wave.Ring.gameObject);
                 _waves.RemoveAt(i);
             }
             else
             {
-                wave.Radius = nextRadius;
-                DrawCircle(wave.Ring, nextRadius);
+                DrawCircle(wave.Ring, pulse.Radius);
+                // Fever pulses spin the same hue wheel as the core.
+                if (pulse.IsFever)
+                    wave.Ring.colorGradient = _rainbow;
                 i++;
             }
         }
     }
 
-    void SpawnFromNewDirection(int colorIndex, bool hidden = false)
+    void SpawnFromNewDirection(SpawnOrder order)
     {
         // Keep consecutive spawns at least 60 degrees apart, including within a color group.
         _spawnAngle = Mathf.Repeat(_spawnAngle + Random.Range(60f, 300f), 360f);
         float radians = _spawnAngle * Mathf.Deg2Rad;
         var direction = new Vector2(Mathf.Cos(radians), Mathf.Sin(radians));
-        float distance = _arenaRadius;
+        bool chordPair = order.SecondColorIndex >= 0;
+        float halfSize = GameplayTuning.BaseEnemyHalfSize;
+        if (chordPair)
+            halfSize *= GameplayTuning.ChordShapeScale;
+        else if (order.Kind == EnemyKind.Splitter)
+            halfSize *= GameplayTuning.SplitterScale;
+        else if (order.Kind == EnemyKind.Charger)
+            halfSize *= GameplayTuning.ChargerScale;
+        var state = new EnemyState
+        {
+            Kind = order.Kind,
+            ColorIndex = order.ColorIndex,
+            SecondColorIndex = order.SecondColorIndex,
+            Distance = _arenaRadius,
+            Speed = order.Speed,
+            HalfSize = halfSize,
+            IsHidden = order.Hidden
+        };
+        CreateEnemyView(state, direction);
+        _enemyStates.Add(state);
+    }
+
+    // A split child: its state is already in _enemyStates (added by the resolver) at the parent's distance.
+    // It heads in along the parent's direction turned a little to one side (side = +1 or -1).
+    void SpawnSplitChild(EnemyState child, Enemy parent, float side)
+    {
+        float spreadAngle = Mathf.Asin(Mathf.Clamp01(SplitSpreadOffset / Mathf.Max(child.Distance, 0.0001f))) * Mathf.Rad2Deg;
+        var direction = (Vector2)(Quaternion.Euler(0f, 0f, side * spreadAngle) * parent.Direction);
+        CreateEnemyView(child, direction);
+    }
+
+    // Takes an object from the pool, places it at the state's distance facing the core, and draws it from the state.
+    void CreateEnemyView(EnemyState state, Vector2 direction)
+    {
         float angle = Vector2.SignedAngle(Vector2.up, -direction);
         var rotation = Quaternion.Euler(0f, 0f, angle);
         var instance = _poolManager.GetFromPool(EnemyPoolKey,
-            transform.position + (Vector3)(direction * distance), rotation);
+            transform.position + (Vector3)(direction * state.Distance), rotation);
+        var root = instance.transform;
         var enemy = new Enemy
         {
+            State = state,
             Instance = instance,
-            ColorIndex = colorIndex,
-            Distance = distance,
-            IsHidden = hidden
+            Direction = direction,
+            Body = instance.GetComponent<SpriteRenderer>(),
+            LeftShape = root.GetChild(ChordLeftChild).GetComponent<SpriteRenderer>(),
+            RightShape = root.GetChild(ChordRightChild).GetComponent<SpriteRenderer>(),
+            Bar = root.GetChild(ChordBarChild).GetComponent<SpriteRenderer>(),
+            InnerLeft = root.GetChild(SplitterInnerLeftChild).GetComponent<SpriteRenderer>(),
+            InnerRight = root.GetChild(SplitterInnerRightChild).GetComponent<SpriteRenderer>(),
+            TrailNear = root.GetChild(TrailNearChild).GetComponent<SpriteRenderer>(),
+            TrailFar = root.GetChild(TrailFarChild).GetComponent<SpriteRenderer>(),
+            ShakePhase = Random.Range(0f, Mathf.PI * 2f),
+            LeftColor = state.IsChordPair ? state.ColorIndex : -1
         };
         ApplyEnemyAppearance(enemy);
-        _enemies.Add(enemy);
+        _enemyViews.Add(state, enemy);
     }
 
+    // Redraws every part from the state, so a pooled object never keeps a previous enemy's look.
+    // A chord pair: two small shapes side by side across the direction of travel, joined by a neutral bar.
+    // Once one half is stripped, only the survivor stays, in its own place.
     void ApplyEnemyAppearance(Enemy enemy)
     {
-        var renderer = enemy.Instance.GetComponent<SpriteRenderer>();
-        renderer.sprite = _enemyShapes[enemy.IsHidden ? Colors.Length : enemy.ColorIndex];
-        renderer.color = enemy.IsHidden ? HiddenColor : Colors[enemy.ColorIndex];
+        var state = enemy.State;
+        bool intactPair = state.IsChordPair;
+        bool strippedPair = !intactPair && state.StrippedColorIndex >= 0;
+        bool single = !intactPair && !strippedPair;
+        bool splitter = single && state.Kind == EnemyKind.Splitter && !state.IsHidden;
+        bool charger = single && state.Kind == EnemyKind.Charger;
+
+        // Root scale: a chord pair keeps the layout space of one basic enemy; everything else is drawn at its
+        // HalfSize (basic, split child, splitter), a charger squeezed across and stretched along its path.
+        float size = state.HalfSize * 2f;
+        float layout = GameplayTuning.BaseEnemyHalfSize * 2f;
+        enemy.Instance.transform.localScale = !single ? new Vector3(layout, layout, layout)
+            : charger ? new Vector3(size * ChargerWidth, size * ChargerLength, size)
+            : new Vector3(size, size, size);
+
+        enemy.Body.enabled = single;
+        if (single)
+        {
+            int shape = state.IsHidden ? Colors.Length : state.ColorIndex;
+            enemy.Body.sprite = _enemyShapes[splitter ? OutlineShape(shape) : shape];
+            enemy.Body.color = state.IsHidden ? HiddenColor : Colors[state.ColorIndex];
+        }
+
+        // Splitter: two small filled shapes inside the outline.
+        enemy.InnerLeft.enabled = splitter;
+        enemy.InnerRight.enabled = splitter;
+        if (splitter)
+        {
+            float height = SplitterInnerHeight[state.ColorIndex];
+            float spacing = SplitterInnerSpacing[state.ColorIndex];
+            SetKindPart(enemy.InnerLeft, state.ColorIndex, 1f,
+                new Vector3(-spacing, height, 0f), new Vector3(SplitterInnerScale, SplitterInnerScale, 1f));
+            SetKindPart(enemy.InnerRight, state.ColorIndex, 1f,
+                new Vector3(spacing, height, 0f), new Vector3(SplitterInnerScale, SplitterInnerScale, 1f));
+        }
+
+        // Charger: two fading afterimages behind it; each boost spreads and stretches them further.
+        enemy.TrailNear.enabled = charger;
+        enemy.TrailFar.enabled = charger;
+        if (charger)
+        {
+            int shape = state.IsHidden ? Colors.Length : state.ColorIndex;
+            float growth = 1f + TrailBoostGrowth * state.Boosts;
+            SetTrail(enemy.TrailNear, shape, 0, growth);
+            SetTrail(enemy.TrailFar, shape, 1, growth);
+        }
+
+        bool leftShown = intactPair || (strippedPair && state.ColorIndex == enemy.LeftColor);
+        bool rightShown = intactPair || (strippedPair && state.ColorIndex != enemy.LeftColor);
+        enemy.LeftShape.enabled = leftShown;
+        enemy.RightShape.enabled = rightShown;
+        enemy.Bar.enabled = intactPair;
+        if (leftShown)
+            SetShape(enemy.LeftShape, enemy.LeftColor);
+        if (rightShown)
+            SetShape(enemy.RightShape, intactPair ? state.SecondColorIndex : state.ColorIndex);
+    }
+
+    void SetShape(SpriteRenderer renderer, int colorIndex)
+    {
+        renderer.sprite = _enemyShapes[colorIndex];
+        renderer.color = Colors[colorIndex];
+    }
+
+    // Index of the hollow outline of a filled shape in _enemyShapes.
+    static int OutlineShape(int shape) => Colors.Length + 1 + shape;
+
+    void SetKindPart(SpriteRenderer renderer, int shape, float alpha, Vector3 localPosition, Vector3 localScale)
+    {
+        renderer.sprite = _enemyShapes[shape];
+        var color = shape < Colors.Length ? Colors[shape] : HiddenColor;
+        color.a = alpha;
+        renderer.color = color;
+        renderer.transform.localPosition = localPosition;
+        renderer.transform.localScale = localScale;
+    }
+
+    // One charger afterimage (index 0 = near, 1 = far), in the root's local space where one unit is its length.
+    void SetTrail(SpriteRenderer renderer, int shape, int index, float growth)
+    {
+        float behind = -TrailSpacing * (index + 1) * growth;
+        SetKindPart(renderer, shape, TrailAlpha[index],
+            new Vector3(0f, behind, TrailDepth), new Vector3(TrailWidth[index], growth, 1f));
+    }
+
+    // Kill confirmed: the enemy stops, flashes white and turns into a hollow outline of its colour(s), then charges
+    // up (shrinks, trembles, brightens) until the kill chord's beat, where it shatters. Its parts and colours are
+    // captured now because the look changes.
+    void StartDying(Enemy enemy, int burstStep)
+    {
+        var dying = _dyingPool.Count > 0 ? _dyingPool.Pop() : new DyingEnemy();
+        dying.View = enemy;
+        dying.BurstStep = burstStep;
+        dying.Age = 0f;
+        dying.Origin = enemy.Instance.transform.position;
+        dying.BaseScale = enemy.Instance.transform.localScale;
+        dying.Parts = 0;
+        var state = enemy.State;
+        if (enemy.Body.enabled)
+            AddDyingPart(dying, enemy.Body, state.ColorIndex);
+        else
+        {
+            // Same colour rule as ApplyEnemyAppearance: an intact pair shows LeftColor and SecondColorIndex,
+            // a stripped one only its survivor (ColorIndex) on its own side.
+            if (enemy.LeftShape.enabled)
+                AddDyingPart(dying, enemy.LeftShape, enemy.LeftColor);
+            if (enemy.RightShape.enabled)
+                AddDyingPart(dying, enemy.RightShape, state.IsChordPair ? state.SecondColorIndex : state.ColorIndex);
+        }
+        // Everything that suggests motion or a living enemy goes at once.
+        enemy.Bar.enabled = false;
+        enemy.InnerLeft.enabled = false;
+        enemy.InnerRight.enabled = false;
+        enemy.TrailNear.enabled = false;
+        enemy.TrailFar.enabled = false;
+        _dying.Add(dying);
+    }
+
+    void AddDyingPart(DyingEnemy dying, SpriteRenderer part, int colorIndex)
+    {
+        int i = dying.Parts++;
+        dying.PartRenderers[i] = part;
+        dying.PartColors[i] = Colors[colorIndex];
+        part.sprite = _enemyShapes[OutlineShape(colorIndex)];
+        part.color = Color.white;
+    }
+
+    void UpdateDying(float deltaTime)
+    {
+        double beat = _soundManager.BeatPosition;
+        double heardStep = beat * SoundManager.StepsPerBeat;
+        float secondsPerStep = (float)_soundManager.BeatSeconds / SoundManager.StepsPerBeat;
+        for (int i = _dying.Count - 1; i >= 0; i--)
+        {
+            var dying = _dying[i];
+            dying.Age += deltaTime;
+            // Burst when the chord is heard; at once if there is no chord (music off) or it is somehow overdue.
+            bool burst = dying.BurstStep < 0 || beat < 0 || heardStep >= dying.BurstStep || dying.Age >= DyingMaxWait;
+            if (burst)
+            {
+                Burst(dying);
+                _dying.RemoveAt(i);
+                continue;
+            }
+
+            // 0 at the kill, 1 on the beat: drives the charge-up.
+            float remaining = (float)(dying.BurstStep - heardStep) * secondsPerStep;
+            float charge = Mathf.Clamp01(dying.Age / Mathf.Max(0.01f, dying.Age + remaining));
+            var root = dying.View.Instance.transform;
+            float push = Mathf.SmoothStep(0f, 1f, Mathf.Clamp01(dying.Age / DyingPushSeconds)) * DyingPushDistance;
+            float tremble = DyingTremble * charge * charge;
+            var jitter = new Vector3(Mathf.Sin(dying.Age * 61f), Mathf.Sin(dying.Age * 47f + 1.3f), 0f) * tremble;
+            root.position = dying.Origin + (Vector3)(dying.View.Direction * push) + jitter;
+            float squeeze = 1f - DyingSqueeze * charge;
+            for (int p = 0; p < dying.Parts; p++)
+            {
+                var part = dying.PartRenderers[p];
+                // White flash first, then its own colour coming back brighter as the burst nears.
+                var target = Color.Lerp(dying.PartColors[p], Color.white, 0.35f * charge);
+                var c = dying.Age < DyingFlashSeconds ? Color.white : target;
+                c.a = 0.55f + 0.45f * charge;
+                part.color = c;
+            }
+            root.localScale = dying.BaseScale * squeeze;
+        }
+    }
+
+    // The kill chord sounds now: shatter every captured part in its own colour and return the object.
+    void Burst(DyingEnemy dying)
+    {
+        for (int p = 0; p < dying.Parts; p++)
+            Shatter(dying.PartRenderers[p].transform.position, dying.PartColors[p]);
+        _poolManager.ReturnToPool(dying.View.Instance);
+        dying.View = null;
+        _dyingPool.Push(dying);
+    }
+
+    // Chord pair parts on the enemy template, hidden until ApplyEnemyAppearance shows them.
+    // Children use the root's local space, where one unit is one basic enemy across.
+    void CreateChordParts(Transform root)
+    {
+        float scale = GameplayTuning.ChordShapeScale;
+        float offset = scale * ChordShapeSpacing * 0.5f;
+        CreateChordPart(root, "Chord Left", new Vector3(-offset, 0f, 0f), Vector3.one * scale);
+        CreateChordPart(root, "Chord Right", new Vector3(offset, 0f, 0f), Vector3.one * scale);
+        var bar = CreateChordPart(root, "Chord Bar", new Vector3(0f, 0f, ChordBarDepth),
+            new Vector3(offset * 2f, ChordBarThickness / (GameplayTuning.BaseEnemyHalfSize * 2f), 1f));
+        bar.sprite = _enemyShapes[Colors.Length];
+        bar.color = ChordBarColor;
+    }
+
+    // Splitter and charger parts on the enemy template, hidden until ApplyEnemyAppearance places and shows them.
+    // Children 3..6 (after the chord parts): splitter inner left, inner right, charger near and far afterimage.
+    static void CreateKindParts(Transform root)
+    {
+        CreateChordPart(root, "Splitter Inner Left", Vector3.zero, Vector3.one);
+        CreateChordPart(root, "Splitter Inner Right", Vector3.zero, Vector3.one);
+        CreateChordPart(root, "Charger Trail Near", Vector3.zero, Vector3.one);
+        CreateChordPart(root, "Charger Trail Far", Vector3.zero, Vector3.one);
+    }
+
+    static SpriteRenderer CreateChordPart(Transform root, string objectName, Vector3 localPosition, Vector3 localScale)
+    {
+        var part = new GameObject(objectName).AddComponent<SpriteRenderer>();
+        part.transform.SetParent(root, false);
+        part.transform.localPosition = localPosition;
+        part.transform.localScale = localScale;
+        part.enabled = false;
+        return part;
+    }
+
+    // Cooldown arc and selected-color shape, both inside the core ring.
+    void CreateCoreIndicators()
+    {
+        _cooldownArc = new GameObject("Pulse Cooldown").AddComponent<LineRenderer>();
+        _cooldownArc.transform.SetParent(transform, false);
+        _cooldownArc.useWorldSpace = false;
+        _cooldownArc.loop = false;
+        _cooldownArc.startWidth = _cooldownArc.endWidth = CooldownArcWidth;
+        _cooldownArc.sharedMaterial = _ringMaterial;
+        _cooldownArc.sortingOrder = 1;
+        _cooldownArc.enabled = false;
+
+        _coreIcon = new GameObject("Core Color Shape").AddComponent<SpriteRenderer>();
+        _coreIcon.transform.SetParent(transform, false);
+        // Shape sprites are one world unit across.
+        _coreIcon.transform.localScale = Vector3.one * CoreIconSize;
+        _coreIcon.sortingOrder = 1;
     }
 
     void CreateEnemyShapes()
@@ -461,19 +954,24 @@ public sealed class ChordPulsePrototype : MonoBehaviour
 
         for (int shape = 0; shape < _enemyShapes.Length; shape++)
         {
+            // Past the gray square come the outlines: the same shapes, keeping only a band inside their edge.
+            bool outline = shape > Colors.Length;
+            int outlineOf = outline ? shape - Colors.Length - 1 : shape;
             for (int y = 0; y < size; y++)
             {
                 float v = (y + 0.5f) * 2f / size - 1f;
                 for (int x = 0; x < size; x++)
                 {
                     float u = (x + 0.5f) * 2f / size - 1f;
-                    float edge = shape switch
+                    float edge = outlineOf switch
                     {
                         0 => Mathf.Min(v + 0.9f, (0.9f - v) * 0.53f - Mathf.Abs(u)),
                         1 => 0.94f - Mathf.Sqrt(u * u + v * v),
                         2 => 0.97f - Mathf.Abs(u) - Mathf.Abs(v),
                         _ => 0.96f - Mathf.Max(Mathf.Abs(u), Mathf.Abs(v))
                     };
+                    if (outline)
+                        edge = Mathf.Min(edge, OutlineThickness - edge);
                     byte alpha = (byte)Mathf.RoundToInt(255f * Mathf.Clamp01(edge * size * 0.5f + 0.5f));
                     pixels[y * width + shape * size + x] = new Color32(255, 255, 255, alpha);
                 }
@@ -578,16 +1076,7 @@ public sealed class ChordPulsePrototype : MonoBehaviour
 
     void UpdateHud()
     {
-        bool fever = _soundManager.FeverActive;
-        string feverText = fever ? "FEVER!  Press Space" : _soundManager.FeverBuilding
-            ? "FEVER INCOMING..."
-            : _soundManager.FeverPending
-            ? "FEVER READY"
-            : $"Fever: {_feverCharge}/{FeverThreshold}";
-        gamePanel.SetStatus(fever ? "All colors" : ColorNames[_selectedColor],
-            fever ? Color.white : Colors[_selectedColor], _hits, _health, MaxHealth,
-            $"{_soundManager.CurrentBpm} BPM{(_soundManager.IsBreath ? "  ~breathe~" : "")}" +
-            $"{(_soundManager.FeatureSounding ? "  + " + _soundManager.CurrentFeature.Name : "")}     {feverText}");
+        gamePanel.SetStatus(_health, MaxHealth, _soundManager.CurrentBpm, _pulseCombo, _score);
     }
 
     void OnDestroy()

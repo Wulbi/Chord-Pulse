@@ -64,6 +64,14 @@ public sealed class SparkleEmitter
         }
     }
 
+    /// <summary>Creates one cue's worth of sparkles up front.</summary>
+    public void Prewarm()
+    {
+        while (_sparkles.Count < PerSide * 2)
+            Take().Active = true;
+        Clear();
+    }
+
     public void Clear()
     {
         foreach (var sparkle in _sparkles)

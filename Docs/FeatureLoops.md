@@ -87,6 +87,39 @@
 
 ---
 
+## 3차: 피버 전용 — 피버 배경 변형 4종 + 피버 게스트 루프 6종 (2026-11-27)
+
+피버가 매번 같은 리드·셰이커·베이스였던 것을 바꿨다. 피버를 예약하는 순간 Unity의 `FeverSelector`가 **배경 변형 1개**와 (85% 확률로) **게스트 루프 1개**를 골라 피버 프레이즈 전체(임팩트~아웃트로)에 깐다. 같은 변형·같은 게스트는 두 번 연속 나오지 않는다. 빌드업 마디·임팩트 히트·아웃트로 하강·스네어는 모든 변형이 공유하고, 코어 드럼과 배경(신스팝, Intensity 3)도 그대로 깔린다.
+
+- 모든 음이 그 마디 코드음(C–Am–F–G)이라 **어떤 변형 위에 어떤 게스트가 와도** 부딪히지 않는다 (생성 후 검사: 코드 밖 음 0개).
+- 게스트는 빌드업 마디에는 나오지 않고, 프레이즈 마지막 16분에는 음이 없다.
+- 레벨: 피버 믹스 전체 RMS가 변형·게스트 조합마다 -29.6 ~ -31.2 dB (오프라인 렌더, 124 BPM). 게스트 파트는 단독 -36 ~ -38 dB로 맞췄다 (`FEVER_GUEST_DB`).
+
+### 피버 배경 변형 (`pattern_fever.py` `VARIANTS`, `ArrangementState.FeverVariant`)
+
+| # | 이름 | 리드 (`FeverLead`) | 베이스 | 타악기 | 의도 |
+|---|---|---|---|---|---|
+| 0 | Fever Classic | 원래 아르페지오 리드 | 2·4박 5도 | 16분 오프비트 셰이커 | 기존 피버 그대로 |
+| 1 | Disco Drive | 한 옥타브 위 싱코페이션 훅 | 8분 옥타브 바운스 | 오프비트 오픈햇 | 디스코처럼 몸이 들썩이는 피버 |
+| 2 | Anthem | 2분음표 위주로 길게 노래하는 리드 | 8분 근음 드라이브 | 매 박 클랩 | 떼창 같은 크고 넓은 피버 |
+| 3 | Arp Rush | 없음 (아르페지오가 리드) | 싱코페이션 + 5도 | 16분 셰이커 | 16분 플럭 아르페지오가 2옥타브를 질주, 게스트 멜로디에 자리를 비워 줌 |
+
+### 피버 게스트 루프 (ID 13~18, `fever=True`)
+
+| ID | 이름 | 악기 | 내용 · 의도 |
+|---|---|---|---|
+| 13 | Fever Fanfare | 트럼펫 | 매 코드 3화음 스탭 + G7 상행 런, 마지막 마디 더블 히트. 승리 팡파르 |
+| 14 | Fever Whistle | 휘파람 | 높은 음역 오프비트 카운터 라인 — 정박은 피버 리드에 양보 |
+| 15 | Fever Glock Shower | 글로켄 | 마디마다 코드를 위에서 16분으로 쏟아붓고 두 번 반짝임 (비주얼: 루프 9와 같은 차가운 차임) |
+| 16 | Fever Scream | 스크림 신스 리드 | 코드음 위주의 긴 음으로 치솟는 솔로 |
+| 17 | Fever Power Drive | 파워 코드 기타 | 피버 전체를 8분 파워 코드로 밀어붙임, 정박 강세 + 오프비트 짧게 |
+| 18 | Fever Carnival | 라틴 타악기 | 카우벨 8분, 2·4박 툼바, 아고고 패턴, 마지막 마디 봉고/콩가 필 |
+
+- 일반 프레이즈의 `FeatureSelector`는 ID 13~18을 절대 고르지 않는다 (`Loop.Fever`, 테스트 있음).
+- HUD는 피버 중 게스트 이름을 보여 준다 (`SoundManager.CurrentFeature`). 변형 이름은 `SoundManager.CurrentFeverVariant`.
+
+---
+
 ## 한눈에 보기
 
 | ID | 이름 | 마디 | 길이 | 악기 | 성격 |
@@ -126,11 +159,11 @@ Mallet Hook    ████   ████
 
 ## 수정·추가하는 방법
 
-1. [feature_loops.py](../FMOD/Tools/feature_loops.py)의 `LOOPS`를 고친다 (박은 프레이즈 기준 0~16, MIDI 60 = C4). 악기는 `T`(트럼펫)·`W`(휘파람)·`M`(말렛)·`P`(타악기)·`S`(신스)·`G`(기타) 헬퍼로 적는다.
-2. `python FMOD/Tools/feature_loops.py` → `feature_loops.js`와 Unity용 `Assets/Scripts/Audio/FeatureLoopNotes.g.cs`가 생성된다.
-3. FMOD Studio를 닫고 `fmodstudiocl.exe -script FMOD/Tools/feature_loops.js FMOD/ChordPulse/ChordPulse.fspro` → 이전 `Feature*` 트랙을 지우고 다시 만든다 (몇 번 돌려도 같은 결과).
-4. `fmodstudiocl.exe -build FMOD/ChordPulse/ChordPulse.fspro` 후 `Build/Desktop`의 두 뱅크를 `Assets/StreamingAssets`로 복사.
-5. 새 루프를 추가했다면 [FeatureSelector.cs](../Assets/Scripts/Audio/FeatureSelector.cs)의 `Loops` 표에 같은 ID·위치·길이를 추가하고, 이 문서에도 설명을 적는다.
+1. 루프 데이터: 일반·피버 게스트 루프는 [pattern_feature.py](../FMOD/Tools/pattern_feature.py)의 `LOOPS` / `FEVER_LOOPS` (박은 프레이즈 기준 0~16, MIDI 60 = C4; 헬퍼 `T` 트럼펫 · `W` 휘파람 · `M` 말렛 · `P` 타악기 · `S` 신스 · `G` 기타). 피버 배경 변형은 [pattern_fever.py](../FMOD/Tools/pattern_fever.py)의 `VARIANTS` 부분 (변형을 늘리면 `patterns.FEVER_VARIANT_COUNT`와 `FeverSelector.VariantNames`도).
+2. `python -I FMOD/Tools/feature_loops.py` → `Assets/Scripts/Audio/FeatureLoopNotes.g.cs` (루프 표·음 위치, 선택과 비주얼이 읽음).
+3. `python -I FMOD/Tools/instruments.py` → `instruments.js`, `InstrumentTable.g.cs`, `PatternTable.g.cs`.
+4. FMOD Studio를 닫고 `fmodstudiocl.exe -script FMOD/Tools/instruments.js FMOD/ChordPulse/ChordPulse.fspro`, 그 다음 **별도 명령으로** `fmodstudiocl.exe -build FMOD/ChordPulse/ChordPulse.fspro`. 뱅크는 손으로 복사하지 않는다 (에디터는 FMOD 빌드 폴더를 읽고, 플레이어 빌드 때 FMOD가 복사).
+5. 이 문서에 설명을 적는다.
 
-- 음량 조정: FMOD Studio에서 `Feature trumpet / whistle / mallets / perc / synth / guitar` 트랙 페이더, 또는 생성기의 `INSTRUMENTS` 목표 dB.
+- 음량 조정: `pattern_feature.py`의 `INSTRUMENTS` 목표 dB, 피버 게스트는 `FEVER_GUEST_DB`.
 - 음높이 기준: 샘플 표의 두 번째 값이 **측정한** 기음 (파일명 아님). 새 샘플을 넣을 때는 꼭 측정할 것.

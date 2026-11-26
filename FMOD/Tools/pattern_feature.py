@@ -1,5 +1,6 @@
 """
-Pattern data: the 12 feature loops (guest trumpet, whistle, mallets, latin percussion, synth lead, guitar), for the
+Pattern data: the 12 feature loops (guest trumpet, whistle, mallets, latin percussion, synth lead, guitar) and the 6
+fever guest loops (ids 13-18, fever=True, 2026-11-27), for the
 PatternScheduler (Task 13), and the one place a loop is defined (feature_loops.py writes FeatureLoopNotes.g.cs from LOOPS).
 
 Music rules (Docs/AdaptiveAudioPlan.md section 7):
@@ -19,6 +20,11 @@ SUB_BUSES). One clip per (loop, layer). Same sound as the old feature_loops.py p
 - Onset: the old placement started every note but a phrase's first beat early by the sample onset; the scheduler starts
   every note early (legacy_shift "onset_not_beat0").
 - ADSR attack 2 ms / release 70 ms on every note (the old tracks' envelope).
+
+Fever guest loops (fever=True): play only over the fever phrase (Impact + Fever + Outro, never its build-up bar), picked
+per fever by Unity's FeverSelector (FeatureSelector never picks them for an ordinary phrase). They run all 4 bars and use
+only chord tones (or percussion), so they fit any fever bed variant (pattern_fever.py VARIANTS). Nothing on the
+phrase's last 16th.
 Data only.
 """
 import samples
@@ -91,11 +97,12 @@ def G(beat, root, length=0.3, vol=0.0):
     return [("guitar", beat, root, length, vol, False)]
 
 
-def loop(id_, name, start_bar, bars, *events):
+def loop(id_, name, start_bar, bars, *events, fever=False):
     notes = [n for e in events for n in e]
     for inst, beat, *_ in notes:
         assert start_bar * 4 <= beat < (start_bar + bars) * 4, (name, beat)
-    return {"id": id_, "name": name, "startBar": start_bar, "bars": bars, "notes": notes}
+        assert not fever or beat < 15.75, (name, beat)   # nothing on the fever phrase's last 16th
+    return {"id": id_, "name": name, "startBar": start_bar, "bars": bars, "notes": notes, "fever": fever}
 
 
 LOOPS = [
@@ -186,6 +193,98 @@ LOOPS = [
          M(6.0, E6, "xylo"), M(6.5, D6, "xylo"), M(7.0, C6, "xylo"), M(7.5, E6, "xylo"),
          *[P(float(b), "cowbell_mute", vol=0.0 if b % 2 == 0 else -4.0) for b in range(8)]),
 ]
+
+
+def _fever_glock():
+    """16th glockenspiel shower down each chord from the top, then two sparkles."""
+    events = []
+    tops = [(C7, G6, E6, C6), (C7, A6, E6, C6), (C7, A6, F6, C6), (B6, G6, D6, B5)]
+    for bar, t in enumerate(tops):
+        down = list(t) + [x - 12 for x in t]
+        for i, m in enumerate(down):
+            events.append(M(bar * 4 + i * 0.25, m, "glock", vol=0.0 if i == 0 else -3.0))
+        events.append(M(bar * 4 + 2.5, t[0], "glock", vol=-1.0))
+        events.append(M(bar * 4 + 3.0, t[1], "glock", vol=-3.0))
+    return events
+
+
+def _fever_power():
+    """8th power chords, accents on the beats, chopped off-beats; a last-bar push."""
+    roots = [48, 45, 41, 43]   # C3, A2, F2, G2
+    events = []
+    for bar, r in enumerate(roots):
+        for i in range(8):
+            if bar == 3 and i >= 6:
+                continue
+            events.append(G(bar * 4 + i * 0.5, r, length=0.35 if i % 2 == 0 else 0.18, vol=0.0 if i % 2 == 0 else -4.0))
+    events.append(G(15.0, 43, length=0.25, vol=1.0))
+    events.append(G(15.5, 43, length=0.2, vol=1.5))
+    return events
+
+
+def _fever_carnival():
+    """Samba-ish percussion: cowbell 8ths, tumba on 2 and 4, agogo bell pattern, bongo / conga fill."""
+    events = []
+    for bar in range(4):
+        o = bar * 4
+        for i in range(8):
+            if bar == 3 and i >= 6:
+                continue
+            events.append(P(o + i * 0.5, "cowbell" if i % 2 == 0 else "cowbell_mute", vol=-1.0 if i % 2 == 0 else -3.0))
+        events.append(P(o + 1.0, "tumba", vol=1.0))
+        events.append(P(o + 3.0, "tumba", vol=1.0))
+        if bar < 3:
+            events.append(P(o + 0.75, "agogo_hi") + P(o + 1.5, "agogo_lo") + P(o + 2.75, "agogo_hi")
+                          + P(o + 3.5, "agogo_lo"))
+            events.append(P(o + 2.25, "conga", vol=-3.0) + P(o + 2.5, "conga_slap", vol=-1.0))
+    events.append(P(14.0, "bongo_hi") + P(14.25, "bongo_hi", vol=-3.0) + P(14.5, "bongo_lo")
+                  + P(14.75, "bongo_lo", vol=-3.0) + P(15.0, "conga_slap", vol=1.0) + P(15.25, "conga")
+                  + P(15.5, "tumba", vol=1.0))
+    return events
+
+
+FEVER_LOOPS = [
+    # Trumpet section stabs on every chord with a G7 run into the last bar's double hit.
+    loop(13, "Fever Fanfare", 0, 4,
+         T(0.0, C5, E5, G5, vol=1.5), T(1.5, C5, E5, G5), T(2.5, G5), T(3.0, E5), T(3.5, G5),
+         T(4.0, C5, E5, A5, vol=1.5), T(5.5, C5, E5, A5), T(6.5, A5), T(7.0, E5), T(7.5, A5),
+         T(8.0, C5, F5, A5, vol=1.5), T(9.5, C5, F5, A5), T(10.5, A5), T(11.0, F5), T(11.5, C6),
+         T(12.0, G4), T(12.5, B4), T(13.0, D5), T(13.5, G5), T(14.0, B4, D5, G5, vol=1.0),
+         T(15.0, B4, D5, G5, vol=1.5), T(15.5, B4, D5, G5), fever=True),
+
+    # High whistle counter-line on the off-beats, leaving the downbeats to the fever lead.
+    loop(14, "Fever Whistle", 0, 4,
+         W(0.5, G6), W(1.0, C7, vol=1.0), W(1.5, G6), W(2.5, E6), W(3.0, G6), W(3.5, C7),
+         W(4.5, A6), W(5.0, C7, vol=1.0), W(5.5, A6), W(6.5, E6), W(7.0, A6), W(7.5, C7),
+         W(8.5, A6), W(9.0, C7, vol=1.0), W(9.5, A6), W(10.5, F6), W(11.0, A6), W(11.5, C7),
+         W(12.5, B6), W(13.0, D7, vol=1.0), W(13.5, B6), W(14.0, G6), W(14.5, B6), W(15.0, D7, vol=1.0),
+         W(15.5, B6), fever=True),
+
+    # Glockenspiel showers falling down each chord.
+    loop(15, "Fever Glock Shower", 0, 4, *_fever_glock(), fever=True),
+
+    # Synth scream lead: a soaring line in long notes on the chord tones.
+    loop(16, "Fever Scream", 0, 4,
+         S(0.0, G5, length=1.4), S(1.5, E5, length=0.45), S(2.0, G5, length=0.9), S(3.0, C5, length=0.45),
+         S(3.5, E5, length=0.45),
+         S(4.0, A5, length=1.4), S(5.5, E5, length=0.45), S(6.0, A5, length=0.9), S(7.0, C5, length=0.45),
+         S(7.5, E5, length=0.45),
+         S(8.0, A5, length=1.4), S(9.5, F5, length=0.45), S(10.0, A5, length=0.9), S(11.0, C5, length=0.45),
+         S(11.5, F5, length=0.45),
+         S(12.0, G5, length=1.4), S(13.5, D5, length=0.45), S(14.0, G5, length=0.9), S(15.0, B4, length=0.45),
+         S(15.5, D5, length=0.2), fever=True),
+
+    # Rock power chords: driving 8ths under the whole fever.
+    loop(17, "Fever Power Drive", 0, 4, *_fever_power(), fever=True),
+
+    # Carnival percussion: cowbells, tumba, agogo and a bongo / conga fill.
+    loop(18, "Fever Carnival", 0, 4, *_fever_carnival(), fever=True),
+]
+LOOPS += FEVER_LOOPS
+# Fever guests play over the densest bed (intensity 3 + a fever variant): per-loop trim (dB) so each part sits near
+# -36 dB RMS on its own (offline renders at 124 BPM, 2026-11-27: whistle -33, fanfare / carnival -37, glock / scream /
+# power chords -40 before the trim).
+FEVER_GUEST_DB = {13: 1.0, 14: -2.5, 15: 4.0, 16: 3.5, 17: 3.5, 18: 1.0}
 assert [l["id"] for l in LOOPS] == list(range(1, len(LOOPS) + 1)), "loop ids must be 1..N"
 
 LAYER_ORDER = ["Feature trumpet", "Feature whistle", "Feature mallets", "Feature perc", "Feature synth", "Feature guitar"]
@@ -193,8 +292,8 @@ LAYERS = [Layer(name, name) for name in LAYER_ORDER]
 LOW_CLAMPED = []   # notes the old [-30, 10] clamp raised (patterns.py warns about the upper clamp itself)
 
 
-def note(inst_key, beat, midi, length, vol, hold):
-    """One old loop note as a pattern note (and its layer)."""
+def note(inst_key, beat, midi, length, vol, hold, trim=0.0):
+    """One old loop note as a pattern note (and its layer); trim = a fever guest's level offset (dB)."""
     layer, inst, target, gated, cap = INSTRUMENTS[inst_key]
     if inst_key == "trumpet" and hold:
         inst = TRUMPET_SUSTAIN
@@ -202,7 +301,7 @@ def note(inst_key, beat, midi, length, vol, hold):
         midi = PERC[midi]
     s, pitch = inst.sample(midi)
     ratio = 2 ** (pitch / 12.0)
-    raw = target - s[2] + vol
+    raw = target - s[2] + vol + trim
     if raw < VOLUME_CLAMP[0]:
         LOW_CLAMPED.append((inst_key, beat, midi, raw))
     volume = max(VOLUME_CLAMP[0], raw)
@@ -216,12 +315,14 @@ def _clips():
     for lp in LOOPS:
         per_layer = {}
         for n in lp["notes"]:
-            layer, pn = note(*n)
+            layer, pn = note(*n, trim=FEVER_GUEST_DB.get(lp["id"], 0.0))
             per_layer.setdefault(layer, []).append(pn)
         for layer in LAYER_ORDER:
             if layer in per_layer:
                 name = f"Loop{lp['id']:02d}{layer.split()[1].capitalize()}"
-                out.append(Clip(name, layer, per_layer[layer], feature_loop=lp["id"], legacy_shift="onset_not_beat0"))
+                fever = ("Impact", "Fever", "Outro") if lp["fever"] else ("None", "Build", "Impact", "Fever", "Outro")
+                out.append(Clip(name, layer, per_layer[layer], feature_loop=lp["id"], legacy_shift="onset_not_beat0",
+                                fever=fever))
     return out
 
 

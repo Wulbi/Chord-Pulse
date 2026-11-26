@@ -45,6 +45,9 @@ public sealed class MusicReactiveVisuals : MonoBehaviour
     Color _rippleColor;
     bool _wasFever;
     Vector3[] _circle;
+    Vector3[] _wobbleBuffer;
+    float _wobblePhase = float.NaN;
+    float _wobbleAmount = float.NaN;
     bool _wobbled;
 
     public void Init(Camera playCamera, LineRenderer boundary, Color boundaryColor, float arenaRadius, Material lineMaterial)
@@ -85,6 +88,7 @@ public sealed class MusicReactiveVisuals : MonoBehaviour
 
     void LateUpdate()
     {
+        using var profile = VisualProfiler.ReactiveLate.Auto();
         if (_sound == null || _camera == null)
             return;
 
@@ -198,18 +202,29 @@ public sealed class MusicReactiveVisuals : MonoBehaviour
             {
                 _boundary.SetPositions(_circle);
                 _wobbled = false;
+                _wobblePhase = _wobbleAmount = float.NaN;
             }
             return;
         }
         _wobbled = true;
+        // The shape only changes on an 8th note (phase) or a visible step in amount: rebuild the line then,
+        // in one SetPositions call, instead of every vertex every frame.
         float phase = Mathf.Floor((float)(beatPosition * 2.0)) * 0.9f;
+        float step = Mathf.Round(amount * 2000f) / 2000f;
+        if (phase == _wobblePhase && step == _wobbleAmount)
+            return;
+        _wobblePhase = phase;
+        _wobbleAmount = step;
         int count = _circle.Length;
+        if (_wobbleBuffer == null || _wobbleBuffer.Length != count)
+            _wobbleBuffer = new Vector3[count];
         for (int i = 0; i < count; i++)
         {
             float a = i * (2f * Mathf.PI / count);
-            float r = 1f + amount * (0.6f * Mathf.Sin(a * 5f + phase) + 0.4f * Mathf.Sin(a * 3f - phase * 1.7f));
-            _boundary.SetPosition(i, _circle[i] * r);
+            float r = 1f + step * (0.6f * Mathf.Sin(a * 5f + phase) + 0.4f * Mathf.Sin(a * 3f - phase * 1.7f));
+            _wobbleBuffer[i] = _circle[i] * r;
         }
+        _boundary.SetPositions(_wobbleBuffer);
     }
 
     void StartRipple(Color color)

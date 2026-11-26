@@ -19,6 +19,7 @@ public sealed class ShockStyle : FeatureVisualStyle
     {
         color = new Color(1f, 0.58f, 0.3f, 0.8f);
         seconds = 0.4f;
+        prewarm = 6;
         size = 1f;
     }
 
@@ -84,6 +85,13 @@ public sealed class ShockEmitter : IFeatureEmitter
         var c = _style.color;
         c.a *= 1f - t;
         band.Line.startColor = band.Line.endColor = c;
+    }
+
+    public void Prewarm(int count)
+    {
+        while (_bands.Count < count)
+            Take().Active = true;
+        Clear();
     }
 
     public void Clear()

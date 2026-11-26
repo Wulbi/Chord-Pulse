@@ -8,14 +8,16 @@
 
 | 단계 | 상태 | 구현 위치 |
 |---|---|---|
-| 1. 박자 동기화 | ✅ 완료 (2026-11-24) | `Audio/MusicConductor.cs` — FMOD `TIMELINE_BEAT`/`TIMELINE_MARKER` 콜백으로 박을 직접 셈. `SoundManager`의 하드코딩 템포 표·타임라인 보정 제거. 난이도는 `ChordPulsePrototype.DifficultyLevel(생존 시간)`으로 분리 |
+| 1. 박자 동기화 | ✅ 완료 (2026-11-24) → **대체됨** (2026-11-26, 11장: 시계는 Unity `MusicTransport`) | `Audio/MusicConductor.cs` — FMOD `TIMELINE_BEAT`/`TIMELINE_MARKER` 콜백으로 박을 직접 셈. `SoundManager`의 하드코딩 템포 표·타임라인 보정 제거. 난이도는 `ChordPulsePrototype.DifficultyLevel(생존 시간)`으로 분리 |
 | 2. 반주·처치 화음 믹싱 | ✅ 완료 (2026-11-24) | FMOD `ChordPulseGame` 이벤트 내부 그룹 트랙 + `SoundManager.MusicMix / KillChordMix` |
 | 3. 구간별 편곡·피버 | ✅ 완료 (2026-11-24) | 피버 빌드업·임팩트·아웃트로 트랙 + `Intensity` 파라미터로 일반 구간 밀도 조절 (`SoundManager.Intensity`, 현재는 난이도 단계와 연동) |
-| 4. 랜덤 패턴·BPM | ✅ 1차 완료 (2026-11-24) | 4개 템포 구간을 4마디 프레이즈 단위로 점프 (FMOD 전환 마커 25개 + `NextSection`), `Audio/SectionSelector.cs`가 시드 기반으로 한 프레이즈 앞서 선택, 숨 돌리기 프레이즈 |
+| 4. 랜덤 패턴·BPM | ✅ 1차 완료 (2026-11-24); 점프 방식은 **대체됨** (2026-11-26, 11장) | 4개 템포 구간을 4마디 프레이즈 단위로 점프 (FMOD 전환 마커 25개 + `NextSection`), `Audio/SectionSelector.cs`가 시드 기반으로 한 프레이즈 앞서 선택, 숨 돌리기 프레이즈 |
 | 5. 음악 연동 시각 연출 | ✅ 1차 완료 (2026-11-24) | `Visual/MusicReactiveVisuals.cs` — 루프가 아닌 음악 의미(킥·스네어·코드·에너지·빌드업·피버·숨돌리기·구간 전환)에 반응 |
 | 6. 랜덤 특색 루프 (기본 루프 위 레이어) | ✅ 1차 완료 (2026-11-24) — 트럼펫·휘파람 루프 6종 + 음표별 날아다니는 연출 (7-7 참고) | 트럼펫처럼 개성 있는 루프가 가끔 끼어들고, 루프마다 전용 화면 연출(무언가 날아다니는 등)이 함께 등장. 설계는 아래 [7장](#7-다음-단계-랜덤-특색-루프-feature-loop) |
 
 ### 2단계 믹싱 구조 (FMOD 이벤트 내부)
+
+> **대체됨** (2026-11-26, unity-music-clock Task 8): 이 그림의 음악 이벤트 `event:/Music/ChordPulseGame`은 삭제됐다. 같은 처리는 `mixer.py`가 만드는 전역 버스(`bus:/Music Bed`·`bus:/Kill Chords`·`bus:/Feature` 등)에 있고, 모든 음은 `event:/Inst/*` 원샷이다. 시계는 11장.
 
 ```
 Event Master  [Limiter ceiling -1 dB]
@@ -65,6 +67,8 @@ QueueFever (8킬 달성) → "FEVER READY"로 대기
 - 현재는 `ChordPulsePrototype`이 난이도 단계를 그대로 넣는다. 4단계(랜덤 셀 선택)에서 셀의 `energy` 값이나 "숨 돌리는 구간"이 이 값을 직접 정하도록 바꾸면 된다.
 
 ### 4단계 구간 선택 구조
+
+> **대체됨** (2026-11-26, unity-music-clock Task 8): FMOD 전환 마커와 `NextSection` 파라미터는 음악 이벤트와 함께 삭제됐다. 구간 선택 규칙(`SectionSelector`, 피버 중 BPM 고정, 숨 돌리기)은 그대로이고, 템포 전환은 `MusicTransport`가 프레이즈 경계의 정수 DSP 샘플에서 한다 (11장). 아래 그림의 `setParameter("NextSection")` → 점프 경로는 더 없다.
 
 ```
 [Unity] 프레이즈(4마디) 시작마다
@@ -116,6 +120,8 @@ QueueFever (8킬 달성) → "FEVER READY"로 대기
 ---
 
 ## 1. 박자·구간 정보를 FMOD 기준으로 통일
+
+> **대체됨** (2026-11-26, unity-music-clock Task 8): 시계는 이제 Unity다 (`MusicTransport`, FMOD 마스터 DSP 클럭 위의 프레이즈 시계). 타임라인 콜백(`TIMELINE_BEAT`/`TIMELINE_MARKER`)과 음악 이벤트는 쓰지 않는다. 아래는 당시 설계 기록이다 (11장).
 
 **원칙: 시계는 하나. FMOD가 "지금 몇 마디 몇 박인지"를 알려주고, Unity는 그것만 믿는다.**
 
@@ -402,6 +408,8 @@ flowchart LR
 
 ## 8. 다음 단계: 적응형 배경 루프 (Adaptive Bed)
 
+> **원샷으로 대체됨** (2026-11-26, stages 3-8 Task 15b): 이 장이 설명하는 음악 이벤트 안 타임라인 트랙(위기감·패턴 변형·콤보·스타일)과 이벤트 파라미터 `BedStyle`·`Variation`·`Combo`·`Intensity`·`MusicMix`는 삭제됐다 (`cleanup_music.py`, 지금은 `FMOD/Tools/retired/`). 같은 음은 `pattern_bed.py`·`pattern_drums.py`의 패턴으로 `event:/Inst/*` 원샷이 울리고, `Tension`·`Danger`·`Hurt`는 전역 버스(`mixer.py`)에 남았다.
+
 > 특색 루프가 "가끔 오는 손님"이라면, 배경 루프는 **게임 상태를 계속 반영하는 바탕**이다. 네 축을 모두 만들되, 서로 다른 시간 단위로 움직이게 해서 겹쳐도 어지럽지 않게 한다.
 
 | 축 | 파라미터 | 바뀌는 단위 | 입력 (Unity) |
@@ -536,25 +544,35 @@ flowchart LR
 
 ### 8-10. FMOD 생성기 실행 순서
 
-여러 생성기가 같은 이벤트를 고치므로 아래 순서로 실행한다 (전체를 다시 돌려도 이벤트 구조·노트는 같지만, `instruments.js`가 `event:/Inst/*` 이벤트를 매번 새로 만들어 GUID가 바뀐다 — 아래 참고). FMOD Studio는 닫아 둘 것.
+여러 생성기가 같은 프로젝트를 고치므로 아래 순서로 실행한다. FMOD Studio는 닫아 둘 것. (2026-11-26 stages 3-8 Task 15b부터: 모든 음악 레이어는 원샷 `event:/Inst/*`이고, 옛 타임라인 생성기 `bed_tension`·`bed_variation`·`bed_combo`·`bed_style`·`legacy_gate`의 `.js`와 `bed_style.py`·`legacy_gate.py`, `patterns.py --compare-legacy`는 삭제됐다. `bed_tension.py`·`bed_combo.py`(`mixer.py`가 Tension 곡선·Danger·Hurt 값을 읽음)와 `bed_variation.py`(`bed_notes.py`가 읽음)는 **데이터 모듈**로만 남았다 — 직접 실행하면 아무것도 쓰지 않고 종료한다.)
 
 ```
-fmodstudiocl.exe -script FMOD/Tools/feature_loops.js  FMOD/ChordPulse/ChordPulse.fspro
-fmodstudiocl.exe -script FMOD/Tools/bed_tension.js    FMOD/ChordPulse/ChordPulse.fspro
-fmodstudiocl.exe -script FMOD/Tools/bed_variation.js  FMOD/ChordPulse/ChordPulse.fspro
-fmodstudiocl.exe -script FMOD/Tools/bed_combo.js      FMOD/ChordPulse/ChordPulse.fspro
-fmodstudiocl.exe -script FMOD/Tools/bed_style.js      FMOD/ChordPulse/ChordPulse.fspro
+python -I FMOD/Tools/instruments.py   # instruments.js, kill_oneshots.js, InstrumentTable.g.cs, KillChordTable.g.cs, PatternTable.g.cs
+python -I FMOD/Tools/mixer.py         # mixer.js
 fmodstudiocl.exe -script FMOD/Tools/instruments.js    FMOD/ChordPulse/ChordPulse.fspro   # 악기 원샷 이벤트 event:/Inst/* (10-4)
-fmodstudiocl.exe -script FMOD/Tools/kill_oneshots.js  FMOD/ChordPulse/ChordPulse.fspro   # 옛 처치 화음 트랙·파라미터 제거, Kill Chords 버스·덕킹 리턴 (10-4)
-fmodstudiocl.exe -build FMOD/ChordPulse/ChordPulse.fspro                                   # 반드시 따로 실행 (10-6)
-→ Build/Desktop의 ChordPulse.bank, ChordPulse.strings.bank를 Assets/StreamingAssets로 복사
+fmodstudiocl.exe -script FMOD/Tools/mixer.js          FMOD/ChordPulse/ChordPulse.fspro   # 전역 버스·덕킹, 전역 Tension/Danger/Hurt (mixer.py)
+fmodstudiocl.exe -build FMOD/ChordPulse/ChordPulse.fspro                                   # 반드시 따로 실행 (10-6), 모든 플랫폼 뱅크 생성
 ```
 
-- `instruments.js`·`kill_oneshots.js`·`InstrumentTable.g.cs`·`KillChordTable.g.cs`는 `python FMOD/Tools/instruments.py` 한 번으로 다시 생성된다.
+**뱅크를 손으로 `Assets/StreamingAssets`에 복사하지 않는다** (2026-11-27 수정). FMOD Unity 통합이 플레이어 빌드를 시작할 때 **그 순간의 활성 플랫폼**에 맞는 폴더(`Build/Desktop`, `Build/HTML5` …)의 뱅크를 StreamingAssets로 자동 복사한다(`EventManager.CopyToStreamingAssets`). 예전 이 자리의 "Build/Desktop을 복사" 단계 때문에 웹 빌드에 Windows용 뱅크가 들어가 음악이 나오지 않았다.
+
+| 빌드 | Unity 활성 플랫폼 (Build Profiles → Switch Platform) | FMOD 뱅크 폴더 |
+|---|---|---|
+| 웹 | Web | `Build/HTML5` |
+| Windows / Mac / Linux exe | 해당 Standalone | `Build/Desktop` |
+| Android / iOS | Android / iOS | `Build/Mobile` — **아직 없음**: FMOD Studio에 Mobile 플랫폼을 추가해야 함 (12장) |
+
+- 빌드 전에 **반드시 Switch Platform**으로 활성 플랫폼을 바꾼다. 선택만 하고 전환하지 않으면 이전 플랫폼의 뱅크가 들어간다.
+- 빌드 후 확인: 빌드 폴더의 `StreamingAssets/ChordPulse.bank`가 해당 `FMOD/ChordPulse/Build/<플랫폼>/ChordPulse.bank`와 크기가 같아야 한다.
+- 웹·Android는 뱅크를 비동기로 받는다 → `SoundManager.LoadAndStartMusic`이 `RuntimeManager.HaveAllBanksLoaded`를 기다린 뒤 진행한다(최대 30초, 실패 시 콘솔에 원인 로그).
+
+- `mixer.js`는 Task 15b부터 `LegacyLayers`·Duck 리턴을 만들지 않고 이벤트 안 그룹도 건드리지 않으며, 2026-11-26 unity-music-clock Task 8부터 음악 이벤트의 출력 연결도 하지 않는다 (이벤트가 없다). 정리된 프로젝트에서 실행하면 "created 0, updated 0, added 0, removed 0 / nothing to do"이고 저장하지 않는다.
+- 음악 이벤트를 다루던 정리 스크립트는 이미 적용됐고 위 순서에서 뺐다: `cleanup_music.py/.js`(Task 15b, 옛 타임라인 레이어 삭제)와 `remove_music_event.py/.js`(Task 8, `event:/Music/ChordPulseGame`과 `NextSection`·`SpikeRef` 삭제). 2026-11-26 final fix wave부터 이 두 쌍과 `extract_fever.py`(피버 트랙을 이벤트 XML에서 한 번 읽은 도구)는 `FMOD/Tools/retired/`에 있고 실행 순서에 들지 않는다 (이벤트가 없으므로 `cleanup_music.js`는 "not found"로 멈춘다). `extract_fever.py`가 쓰던 `patterns.py`의 타임라인 읽기 코드(`legacy_notes`)는 삭제됐다 — 기록으로만 남는다. `spike_click.py`는 `Spike ref` 트랙을 더 만들지 않고 `click_3k.wav`만 쓴다.
+
+- `instruments.js`·`kill_oneshots.js`·`InstrumentTable.g.cs`·`KillChordTable.g.cs`는 `python FMOD/Tools/instruments.py` 한 번으로, `mixer.js`는 `python FMOD/Tools/mixer.py`로 다시 생성된다 (둘 다 내용이 같으면 파일을 쓰지 않는다).
 - 처치 화음은 원샷으로 바뀌어 (10-4) 옛 생성기는 쓰지 않는다: `kill_voices.py/.js`는 저장소에서 삭제됐고, `kill_bus_sidechain.js`는 `FMOD/Tools/retired/`로 옮겼으며 (실행하면 "superseded" 오류만 냄), `kill_parity.js`·`kill_voices_remove.js`는 커밋하지 않은 채 `FMOD/Tools/retired/`에 보관 중이다. `kill_oneshots.js`가 남은 `Kill *` 트랙·패리티 파라미터도 지운다.
-- 위 순서 전체를 다시 돌리면 노트·버스·리턴 구조는 같다 (2026-11-24 Task 6 fix에서 한 번 전체 실행해 확인: 노트 10,456개, 버스·리턴 구조 동일). 단 `instruments.js`는 악기 이벤트를 매번 지우고 다시 만들어 **이벤트 GUID가 실행할 때마다 바뀐다**. 그래서 새 뱅크를 Unity에 넣으면 FMOD 통합이 "Events Renamed" 대화상자 (Update Event References?)를 띄우는데, 코드는 경로(`event:/Inst/*`)로 이벤트를 찾으므로 **No**로 답한다. `feature_loops.js`는 이벤트 안 `Kill Chords` 그룹이 없으면 `Feature` 덕킹 컴프레서를 만들지 않고, 그 뒤의 `kill_oneshots.js`가 `Feature`·`Harmony`를 리턴(`Feature Duck`·`Harmony Duck`)으로 다시 연결한다 → **`feature_loops`·`bed_*`를 따로 다시 돌렸다면 `kill_oneshots.js`도 다시 돌릴 것**.
-- `bed_style`은 다른 생성기가 만든 음에도 스타일 조건을 거므로, `bed_variation` / `bed_combo`를 다시 돌렸다면 `bed_style`도 다시 돌린다.
-- 각 `.js`는 같은 이름의 `.py`를 실행하면 다시 생성된다 (`python FMOD/Tools/<name>.py`).
+- (Task 15b 이전 기록) 위 순서는 옛 `bed_*`·`legacy_gate` 생성기를 포함했었다 — 2026-11-24 Task 6 fix에서 전체를 한 번 다시 돌려 노트 10,456개·버스·리턴 구조가 같음을 확인했다. 지금도 `instruments.js`는 악기 이벤트(`event:/Inst/<BusFolder>/<Name>`)를 **제자리에서 갱신**해 GUID가 바뀌지 않으므로, 같은 입력으로 두 번 돌리면 `FMOD/ChordPulse/Metadata`가 바이트 단위로 같고 "Events Renamed" 대화상자가 뜨지 않는다 (뜨면 이상 신호; 코드는 경로로 이벤트를 찾으므로 **No**). `kill_oneshots.js`(옛 처치 화음 트랙 제거)는 이미 적용된 정리 스크립트라 위 순서에 없다.
+- 각 `.js`는 같은 이름의 `.py`를 실행하면 다시 생성된다 (`python FMOD/Tools/<name>.py`; `instruments.js`·`kill_oneshots.js`는 `instruments.py`가 쓴다).
 
 ### 8-11. 8-4 스타일 전환 — 펑크·드리미 추가 (2026-11-24)
 
@@ -589,6 +607,8 @@ fmodstudiocl.exe -build FMOD/ChordPulse/ChordPulse.fspro                        
 - 남은 것: 스타일별 배경 팔레트(`MusicReactiveVisuals`), 라틴·펑크용 패턴 변형, 스타일 전환 직전 필.
 
 ## 9. 적응형 배경을 따라 바뀌는 처치 화음 (2026-11-24 구현 → 같은 날 제거, 10-5)
+
+> **원샷으로 대체됨** (2026-11-26, stages 3-8 Task 15b): 이 장의 타임라인 처치 트랙과 그것이 조건으로 쓰던 `BedStyle`·`Combo` 파라미터는 음악 이벤트에서 모두 삭제됐다. 처치 화음은 `KillChordTable.g.cs`(`kill_oneshots.py`)의 원샷이다 (10-4).
 
 > **제거됨**: 이 장의 스타일별 처치 트랙(노트 10,368개)이 FMOD Studio 업데이트 스레드를 90%+로 과부하시켜 음악이 끊겼다(10-5). `FMOD/Tools/kill_voices_remove.js`로 제거했고, 원래 처치 화음이 모든 스타일에서 울린다. 스타일별 음색은 B안(10-4)으로 다시 구현할 계획 — 아래는 그때 참고할 원래 설계.
 
@@ -675,6 +695,8 @@ fmodstudiocl.exe -build FMOD/ChordPulse/ChordPulse.fspro                        
 
 ## 10. 피버 전후 타이밍 문제와 크래시 조사 (2026-11-24)
 
+> **원샷으로 대체됨** (2026-11-26, stages 3-8 Task 15b): 10-1~10-3·10-5가 다루는 타임라인 노트와 편성 파라미터(`Fever`·`FeverBuild`·`FeverImpact`·`FeverOutro`·`Intensity`·`FeatureLoop` 등)는 음악 이벤트에서 삭제됐고, 피버·특색 루프·처치 화음은 모두 Unity 시계로 예약하는 `event:/Inst/*` 원샷이다. 음악 이벤트에는 측정용 `Spike ref` 트랙(128노트)과 `NextSection`만 남았다 — 그 이벤트도 2026-11-26 unity-music-clock Task 8에서 삭제됐다 (11장). 10-6(CLI 크래시)은 그대로 유효하다.
+
 ### 10-1. 증상과 원인 (기록으로 확정)
 - **처치음이 두 번 울림**: 처치 화음 파라미터(`RedKills` 등)를 박 0.09초 전에 켜고, **다음 박 0.09초 전까지 켜 둔다.** FMOD는 박의 악기를 울릴지 그보다 이르게(약 0.15초 이상 전, 믹서 버퍼 1024×4=85ms + Studio 업데이트 20ms + 1프레임) 결정하므로, 다음 박 화음도 켜진 것으로 보고 **한 번 더 울린다.**
   - 측정: 4박마다 1번 처치 → 처치 10번에 화음 16번, 그중 6번이 정확히 1박 뒤 반복.
@@ -698,7 +720,7 @@ fmodstudiocl.exe -build FMOD/ChordPulse/ChordPulse.fspro                        
 - **검증**: FMOD 과부하(10-5)를 없앤 뒤 처치 9번→화음 9번, 37번→37번, 피버 포함 34번→34번(모두 정확히 1박 간격). 그 전의 누락·엇박(처치 7/17/30번 → 화음 6/13/24번)은 과부하로 Unity 프레임이 0.2~0.4박 밀렸기 때문.
 - 남은 약점: 켜고 끄는 시점이 1/4박 단위라 큰 프레임 히치(수백 ms)에는 여전히 약하다 → 완전한 해결은 B.
 - 제약: 같은 홀짝의 2박 전 노트 영역 안에서 값이 바뀌면 그 노트가 잘리거나 엇박으로 울린다 → 처치 화음 노트 영역은 **최대 1.45박**으로 제한(`Kill combo`·`Kill dreamy` 2박→1.45박, `Kill latin` 1.5박→1.45박; 끝은 120ms 릴리즈로 페이드).
-- 실행 순서: (다른 생성기들) → `kill_parity.js` → `-build`(따로 실행, 10-6) → 뱅크를 `Assets/StreamingAssets`로 복사(8-10).
+- 실행 순서: (다른 생성기들) → `kill_parity.js` → `-build`(따로 실행, 10-6) (StreamingAssets 복사는 빌드 때 FMOD가 활성 플랫폼 기준으로 자동, 8-10).
 
 ### 10-4. B. 처치 화음을 원샷 이벤트로 (계획 → **구현됨** 2026-11-24, 아래 원래 계획은 참고용)
 > 구현: `Docs/superpowers/plans/2026-11-24-fmod-scheduled-kill-chords.md`. 악기별 원샷 이벤트 `event:/Inst/<악기>`(`Note` 파라미터, `instruments.py`) → `bus:/Kill Chords`(사이드체인·컴프·리미터·-8 dB = 옛 이벤트 마스터 레벨). `SoundManager.QueueKillChord`가 목표 박(DSP 시계 기준, 0.4박 규칙)에 `KillChordVoicer`로 음을 골라 `OneShotScheduler`로 예약(`ChannelGroup.setDelay` + 120ms 페이드아웃). 각 음은 샘플 어택(`InstrumentTable.OnsetSeconds`)만큼 일찍 시작해 어택이 박에 맞는다 — 프레이즈 첫 박(구간 점프 착지)도 포함 (옛 타임라인 노트의 "첫 박 제외" 규칙은 점프 앞에 노트를 둘 수 없어서였고, DSP 예약 원샷에는 필요 없다). 같은 박 추가 처치는 늘어난 음만 예약, 피버·빌드업 박은 스타일·콤보·긴장도 0. `KillChordMix`는 버스 볼륨. 덕킹: 버스→이벤트 안 컴프 사이드체인은 런타임에 안 걸려서(Task 3), `Harmony`/`Feature` 그룹을 프리페이더 Send로 리턴 `Harmony Duck`/`Feature Duck`(버스 키 컴프)에 보내고 그룹 페이더는 -80 dB. 리턴 버스는 전역 파라미터로만 자동화되므로 `Harmony`가 받던 Music Bed 처리(MusicMix 볼륨, Danger 로우패스, Hurt EQ·게인)는 Send 앞 `Harmony` 그룹 안에 같은 커브로 복제했다. 측정: `Docs/Captures/README.md` "Task 6".
@@ -709,6 +731,8 @@ fmodstudiocl.exe -build FMOD/ChordPulse/ChordPulse.fspro                        
 - **장점**: 노트 길이 제한이 없고(자연 감쇠), 화음 코드(C·Am·F·G)를 이벤트 파라미터로 넘기므로 타임라인에 12,288개 노트를 깔 필요가 없다. 처치마다 패닝·피치·스트럼(같은 박 안의 16분 아르페지오, 3장 후보 5번)도 쉽다.
 - **비용**: DSP 시각 계산·지연 보정 코드, 인스턴스 수 관리(동시 처치 상한·스틸링), 믹싱 버스/사이드체인 재연결, `kill_voices.py` 대체.
 - **언제**: 처치음에 스트럼·자연 감쇠·위치감 같은 표현이 필요해지거나, 1.45박 제한이 소리를 해칠 때.
+
+- **수정 (2026-11-25) — 처치 화음 불협화음**: `event:/Inst/*`의 `Note`가 이산(UserDiscrete) 파라미터라 각 음의 조건 [m-0.4, m+0.4]가 m+1까지 넓어져, Note 60이 59 음도 같은 크기로 울렸다 → C·Am·F 화음마다 B+C, E+F 반음 군집(G만 깨끗). `Note`를 연속 파라미터로 바꿔 한 음만 울린다 (`instruments.py`). 같이 발견: 10초 넘는 비브라폰·하프 샘플 7개가 스트리밍이라 0.3~1.2초 늦게 시작(스케줄러가 버리거나 다음 코드에 얹힘) → 인스트루먼트 이벤트가 쓰는 파일은 스트리밍 끔. 188음을 하나씩 오프라인 렌더해 확인: 반음 이웃이 같은 크기로 울리는 음 0개, 모두 제때 시작.
 
 ### 10-5. 음악 끊김·`Loading delay exceeded`의 진짜 원인: FMOD Studio 업데이트 과부하 (2026-11-24 측정)
 - `StudioSystem.getCPUUsage`로 재보니 음악 재생 중 **Studio 업데이트 스레드가 100~150%** (실제 소리 나는 채널은 7~14개, DSP는 1%). 타임라인 처리가 제시간에 끝나지 않아 노트가 늦게 시작 → 경고와 끊김.
@@ -730,3 +754,56 @@ fmodstudiocl.exe -build FMOD/ChordPulse/ChordPulse.fspro                        
 - **FMOD 커맨드라인(`fmodstudiocl.exe`) 크래시**(04:35, 04:41, 12:12): 모두 `FMOD/Tools/kill_voices.js` 실행 끝, **저장 직후 스크립트 엔진(`Qt5Script.dll`)이 정리되는 중** 접근 위반(`0xc0000005`, 같은 오프셋). 1만 개 노트·수백 개 오디오 임포트처럼 큰 스크립트에서만 발생. 저장은 끝난 뒤라 프로젝트는 손상되지 않음(`-diagnostic` 통과). **주의: 같은 명령 줄에서 뒤이어 하던 뱅크 빌드가 실행되지 않는다** → 큰 스크립트 뒤에는 `-build`를 따로 돌리고 뱅크 시각을 확인할 것.
 - **Unity 에디터 크래시**(02:38, 12:04): 오디오 장치가 끊겨("Device was unplugged!") FMOD 믹서 스레드가 Unity 로그 콜백을 계속 부르는 중에 **스크립트 리로드(도메인 리로드)**가 일어나 Mono가 종료. 다른 세션이 Play 중 스크립트를 고치면 리로드가 생긴다.
   - 완화: Unity Preferences → General → **Script Changes While Playing = Recompile After Finished Playing** (현재 0 = 재생 중 재컴파일), Play 중 오디오 장치 변경 피하기.
+
+## 11. 시계는 Unity (`MusicTransport`), 음악 이벤트 없음 (2026-11-26)
+
+> 계획: `Docs/superpowers/plans/2026-11-25-unity-music-clock.md`, 스펙: `Docs/superpowers/specs/2026-11-25-unity-music-clock-design.md`. 측정: `Docs/Captures/README.md` "Clock switch — Task 6", "Task 7", "Task 8 (unity-music-clock)".
+
+- **시계**: `MusicTransport`가 FMOD 마스터 DSP 클럭(`FmodClock`) 위에서 프레이즈 경계를 정수 DSP 샘플로 정한다. 박 0은 샘플 로드 0.25초 뒤. 템포 전환은 그 경계 샘플에서 일어나고, 화면 박(`SoundManager.BeatPosition`)과 모든 원샷 예약이 같은 시계를 쓴다. DSP 클럭이 뒤로 가면 `Resynced` 후 다음 마디부터 다시 맞춘다.
+- **음악 이벤트 없음**: `event:/Music/ChordPulseGame`은 삭제됐다 (`FMOD/Tools/retired/remove_music_event.py` → `.js`; 남아 있던 것은 측정용 `Spike ref` 트랙 128노트뿐이었다). 그 이벤트만 쓰던 `NextSection`·`SpikeRef` 프리셋도 함께 지웠다. 모든 레이어(베드·드럼·특색 루프·피버·처치 화음)는 `event:/Inst/*` 원샷이고 `OneShotScheduler`로 DSP 샘플에 예약된다. `event:/Music/ChordPulsePreview`(미리듣기)는 그대로다.
+- **대체된 것**: 1장(타임라인 콜백 시계), 4단계 구간 선택의 `NextSection`·전환 마커 점프, 10장의 타임라인 노트, 옛 계획의 점프 착지 우회로 **R14**(착지 뒤 앵커 고정)·**R15**(착지 직후 1박 앞서 넘김, `KillChordPlanner.PostBoundaryDispatchBeats`). 착지 점프가 없으므로 R15는 Task 8에서 지웠다: 모든 박이 반 박(`OneShotScheduler.DispatchWindowBeats`) 앞서 넘겨진다. heavy seed 33에서 경계 뒤 늦은·버린 노트 0으로 확인 (`heavy_seed33_s8c_step1`).
+- **그대로인 것**: `SectionSelector` 규칙, 피버 정렬(빌드업~피버 끝 BPM 고정), 편성 결정, 전역 `Tension`·`Danger`·`Hurt`(`mixer.py`).
+- **원샷 규칙**: 시작 시각이 지난 노트는 버린다 (늦게 울리지 않음). 일찍 울리는 노트도 0 (인스턴스를 멈춘 채 만들고 지연을 건 뒤 재개).
+
+---
+
+## 12. 플랫폼별 빌드 계획 (웹 → exe → 모바일, 2026-11-27)
+
+지금은 웹 빌드가 우선이고, 나중에 Windows exe와 모바일(Android/iOS)로 넓힌다. 플랫폼마다 다른 것은 **뱅크 폴더, 뱅크 로딩 방식, 오디오 지연·CPU 여유** 세 가지다.
+
+| | 웹 (WebGL) | Windows exe | Android / iOS |
+|---|---|---|---|
+| FMOD 뱅크 폴더 | `Build/HTML5` | `Build/Desktop` | `Build/Mobile` (만들어야 함) |
+| 뱅크 로딩 | HTTP 비동기 (`loadFromWeb`) | 동기 (파일) | Android 비동기(APK 안), iOS 동기 |
+| 소리 시작 | **첫 클릭/키 입력 전엔 막힘** (브라우저 자동재생 정책) | 바로 | 바로 |
+| 오디오 지연 | 큼 (브라우저 오디오 버퍼) | 작음 | 기기마다 큼 (특히 Android) |
+| CPU 여유 | 단일 스레드 → Studio 업데이트가 메인 스레드와 경쟁 | 넉넉 | 약함 |
+
+### 12-1. 지금 해둘 것 (모든 플랫폼 공통)
+- **뱅크는 FMOD가 빌드 때 자동 복사** (8-10). 손 복사 금지, 빌드 전 Switch Platform, 빌드 후 크기 확인.
+- **뱅크 로딩 대기**: `SoundManager`가 `HaveAllBanksLoaded`를 기다림(웹·Android 대응 완료).
+- **빌드 검사기 추가 권장**: `IPreprocessBuildWithReport`로 빌드 직전 StreamingAssets 뱅크가 대상 플랫폼 폴더의 뱅크와 같은지 확인해, 다르면 빌드를 멈추고 이유를 알려 준다 (이번 웹 사고 재발 방지).
+- **오디오 지연 보정 값**: `visualLatencyMs`(연출)와 입력 판정을 플랫폼별로 따로 둘 수 있게 설정 에셋으로 분리. 웹·Android는 지연이 커서 박에 맞춰 누르는 감각이 달라진다.
+
+### 12-2. 웹 전용
+- **첫 입력 전 대기 화면**: "클릭해서 시작" 화면을 두고, 클릭 후에 음악을 시작한다. 자동재생 정책 때문에 그 전에 시작한 소리는 들리지 않는다.
+- 뱅크 크기 = 첫 로딩 시간. 웹 인코딩은 Vorbis 유지(PCM은 5배 이상 커짐, 10-5 실험).
+- 서버가 Brotli(`.br`)를 지원하지 않으면 Player Settings → Publishing → Decompression Fallback을 켠다.
+
+### 12-3. Windows exe
+- 가장 쉬움: Switch Platform → 빌드. `Build/Desktop` 뱅크가 자동으로 들어간다.
+- FMOD 설정의 Windows 실채널·Vorbis 코덱 수는 256으로 이미 늘려 둠(커밋 4ef3328).
+
+### 12-4. 모바일 (Android / iOS)
+1. **FMOD Studio에 Mobile 플랫폼 추가** (Edit → Preferences → Build → 플랫폼): 인코딩은 FADPCM 또는 낮은 품질 Vorbis, 샘플레이트를 낮춰 메모리·CPU 절약. 빌드 시 `Build/Mobile` 생성.
+2. FMOD Unity 설정의 Android/iOS 플랫폼이 `Mobile` 폴더를 가리키는지 확인 (지금은 기본값).
+3. **CPU 측정부터**: 10-5에서 데스크톱도 Studio 업데이트가 과부하됐었다. 기기에서 `StudioSystem.getCPUUsage`로 재고, 동시 원샷 수·레이어 수를 모바일용으로 줄이는 품질 단계(예: `Intensity` 상한, 처치 화음 보이싱 상한)를 둔다.
+4. Android 오디오 지연이 크므로 12-1의 지연 보정 값을 기기별로 조정할 수 있게 한다(옵션 메뉴의 "오디오 싱크 보정" 슬라이더가 일반적).
+5. 앱이 백그라운드로 갔다 오면 FMOD 믹서를 일시정지/재개(`RuntimeManager`가 `OnApplicationPause`를 처리하는지 확인).
+
+## 13. 피버 다양화: 배경 변형 + 피버 게스트 루프 (2026-11-27)
+
+- 피버 예약 시 `Audio/FeverSelector.cs`가 피버 배경 변형(4종, `ArrangementState.FeverVariant`)과 피버 게스트 루프(6종, ID 13~18, 85%)를 고른다. 연속 중복 없음, 시드는 `sectionSeed` 기반 별도 스트림.
+- 패턴: `PatternClip.FeverVariantMask` (기본 0xFF = 모든 변형) + `PatternMatch`가 변형을 검사. 원래 피버 리드·셰이커·베이스 5도는 변형 0 전용, 1~3은 같은 레이어(+ `Fever comp`)에 자기 클립.
+- 게스트: `ArrangementTimeline.FeatureLoopAt`이 피버 프레이즈(임팩트·피버·아웃트로)에서 `FeverGuest`를 돌려준다 (빌드업 마디는 0). 일반 `FeatureSelector`는 `Loop.Fever` 루프를 고르지 않는다.
+- 루프 설명·의도: [FeatureLoops.md](FeatureLoops.md) "3차". 검증: EditMode 187개 통과(새 테스트 4개), 코드 밖 음 0개, 오프라인 렌더로 믹스 레벨 ±0.8 dB.

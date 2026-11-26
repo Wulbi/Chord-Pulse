@@ -56,6 +56,10 @@ EVENT_REGION_MIN_S = 0.5
 # kept as is because changing it changes Max Instances in instruments.js (an FMOD CLI run and a bank rebuild).
 POST_BOUNDARY_BEATS, POST_BOUNDARY_DISPATCH_BEATS, DISPATCH_WINDOW_BEATS = 1, 1.0, 0.5
 FEVER_PHASES = ["None", "Build", "Impact", "Fever", "Outro"]   # FeverPhaseMask bits 1, 2, 4, 8, 16 (None = outside fever)
+# Fever bed variants (pattern_fever.py VARIANTS): Unity picks one per fever (ArrangementState.FeverVariant, 0 outside the
+# fever zone). A clip's fever_variants lists the variants it plays in; the default is every variant.
+FEVER_VARIANT_COUNT = 4
+ALL_FEVER_VARIANTS = tuple(range(FEVER_VARIANT_COUNT))
 
 
 class Inst:
@@ -130,22 +134,28 @@ class Layer:
 
 class Clip:
     def __init__(self, name, layer, notes, styles=(0, 1, 2, 3), variation=(0, 4), combo=0, intensity=0.0,
-                 fever=tuple(FEVER_PHASES), feature_loop=0, section_phrase=0, legacy_shift="none"):
+                 fever=tuple(FEVER_PHASES), feature_loop=0, section_phrase=0, legacy_shift="none",
+                 fever_variants=ALL_FEVER_VARIANTS):
         self.name, self.layer, self.notes = name, layer, sorted(notes, key=lambda n: (n.beat, n.midi))
         self.styles, self.variation, self.combo, self.intensity = tuple(styles), tuple(variation), combo, intensity
         self.fever, self.feature_loop, self.section_phrase = tuple(fever), feature_loop, section_phrase
         self.legacy_shift = legacy_shift
+        self.fever_variants = tuple(sorted(fever_variants))
 
-    def matches(self, style, variation, combo, intensity, section_phrase, feature_loop=0):
+    @property
+    def fever_variant_mask(self):
+        return sum(1 << v for v in self.fever_variants)
+
+    def matches(self, style, variation, combo, intensity, section_phrase, feature_loop=0, fever_variant=0):
         return (style in self.styles and self.variation[0] <= variation <= self.variation[1] and combo >= self.combo
                 and intensity >= self.intensity and self.section_phrase in (0, section_phrase)
-                and self.feature_loop in (0, feature_loop))
+                and self.feature_loop in (0, feature_loop) and fever_variant in self.fever_variants)
 
     @property
     def conditions(self):
         """(styles, variation min, max, combo min, intensity min, fever phases, feature loop)."""
         return (tuple(sorted(self.styles)), self.variation[0], self.variation[1], self.combo, self.intensity,
-                tuple(p for p in FEVER_PHASES if p in self.fever), self.feature_loop)
+                tuple(p for p in FEVER_PHASES if p in self.fever), self.feature_loop, self.fever_variants)
 
 
 # Data modules (each defines LAYERS and CLIPS), imported lazily: they import the classes above from this module.
@@ -181,6 +191,7 @@ def collect():
         assert set(c.fever) <= set(FEVER_PHASES) and c.fever, c.name
         assert c.section_phrase in (0, 1, 2), c.name
         assert 0 <= c.feature_loop <= FEATURE_LOOP_MAX, c.name
+        assert c.fever_variants and all(0 <= v < FEVER_VARIANT_COUNT for v in c.fever_variants), c.name
         for n in c.notes:
             assert 0 <= n.beat < PHRASE_BEATS, f"clip {c.name}: note at beat {n.beat}"
             assert 0 <= n.midi <= 127 and n.length >= 0 and n.hold >= 0, (c.name, n.beat, n.midi)
@@ -211,7 +222,7 @@ def _states():
 
 def max_instances(clips, insts, layers):
     """(name, bus) -> most notes sounding at once at MAX_BPM (+ SPARE_INSTANCES), over every arrangement state (feature
-    loops: each loop id the instrument's clips belong to)."""
+    loops: each loop id the instrument's clips belong to; fever variants: each variant)."""
     spb = 60.0 / MAX_BPM
     result = {}
     base = list(_states())
@@ -222,8 +233,10 @@ def max_instances(clips, insts, layers):
         timeline = max(max(n.inst.sample_seconds(n.midi), EVENT_REGION_MIN_S)
                        for c in mine for n in c.notes if n.inst.key == key)
         loops = sorted({c.feature_loop for c in mine} - {0}) or [0]
+        variants = sorted({v for c in mine for v in c.fever_variants}) if any(
+            c.fever_variants != ALL_FEVER_VARIANTS for c in mine) else [0]
         per_state = []
-        for st in (b + (fl,) for b in base for fl in loops):
+        for st in (b + (fl, fv) for b in base for fl in loops for fv in variants):
             iv = []
             for c in mine:
                 if c.matches(*st):
@@ -324,13 +337,15 @@ def cs_text(bus_member):
         "    public readonly byte SectionPhrase;",
         "    /// <summary>The clip's notes: PatternTable.Notes[First .. First + Count - 1], sorted by beat.</summary>",
         "    public readonly int First, Count;",
+        "    /// <summary>Bit per fever bed variant (1 &lt;&lt; ArrangementState.FeverVariant) the clip plays in.</summary>",
+        "    public readonly byte FeverVariantMask;",
         "",
         "    public PatternClip(int layer, int styleMask, byte variationMin, byte variationMax, byte comboMin, float intensityMin,",
-        "        FeverPhaseMask fever, byte featureLoop, byte sectionPhrase, int first, int count)",
+        "        FeverPhaseMask fever, byte featureLoop, byte sectionPhrase, int first, int count, byte feverVariantMask = 0xFF)",
         "    {",
         "        Layer = layer; StyleMask = styleMask; VariationMin = variationMin; VariationMax = variationMax; ComboMin = comboMin;",
         "        IntensityMin = intensityMin; Fever = fever; FeatureLoop = featureLoop; SectionPhrase = sectionPhrase;",
-        "        First = first; Count = count;",
+        "        First = first; Count = count; FeverVariantMask = feverVariantMask;",
         "    }",
         "}",
         "",
@@ -338,6 +353,8 @@ def cs_text(bus_member):
         "{",
         f"    public const int StyleCount = {STYLE_COUNT};",
         f"    public const float PhraseBeats = {PHRASE_BEATS}f;",
+        "    /// <summary>Fever bed variants (ArrangementState.FeverVariant 0 .. FeverVariantCount - 1).</summary>",
+        f"    public const int FeverVariantCount = {FEVER_VARIANT_COUNT};",
         "",
         "    /// <summary>Layers (bits) of the core kick / snare / hat, scheduled a bar ahead by their own PatternScheduler.</summary>",
         f"    public const ulong CoreLayerMask = 0x{sum(1 << i for i, l in enumerate(layers) if l.core):X}UL;",
@@ -360,7 +377,9 @@ def cs_text(bus_member):
         style_mask = sum(1 << s for s in c.styles)
         fever = " | ".join(f"FeverPhaseMask.{p}" for p in FEVER_PHASES if p in c.fever)
         L.append(f"        new PatternClip({layer_index[c.layer]}, {style_mask}, {c.variation[0]}, {c.variation[1]}, {c.combo}, "
-                 f"{_f(c.intensity)}, {fever}, {c.feature_loop}, {c.section_phrase}, {first}, {len(c.notes)}),   // {c.name}")
+                 f"{_f(c.intensity)}, {fever}, {c.feature_loop}, {c.section_phrase}, {first}, {len(c.notes)}"
+                 + ("" if c.fever_variants == ALL_FEVER_VARIANTS else f", {c.fever_variant_mask}")
+                 + f"),   // {c.name}")
         first += len(c.notes)
     L += ["    };", "", "    public static readonly PatternNote[] Notes =", "    {"]
     for c in clips:

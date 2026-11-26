@@ -29,9 +29,12 @@ public sealed class FeatureSelector
         public readonly int StartBar;
         public readonly int Bars;
         public readonly Instrument Instruments;
+        /// <summary>A fever guest: plays only over fever (picked by <see cref="FeverSelector"/>), never for an ordinary phrase.</summary>
+        public readonly bool Fever;
 
-        public Loop(int id, string name, int startBar, int bars, Instrument instruments)
+        public Loop(int id, string name, int startBar, int bars, Instrument instruments, bool fever = false)
         {
+            Fever = fever;
             Id = id;
             Name = name;
             StartBar = startBar;
@@ -109,7 +112,7 @@ public sealed class FeatureSelector
         {
             var loop = Loops[i];
             double weight = loop.Bars == 4 ? 0.6 + 0.3 * energy : 1.0;
-            if (loop.Id == _recent[0] || loop.Id == excludeId)
+            if (loop.Fever || loop.Id == _recent[0] || loop.Id == excludeId)
                 weight = 0;
             else if (Array.IndexOf(_recent, loop.Id) >= 0)
                 weight *= 0.4;

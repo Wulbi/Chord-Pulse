@@ -108,10 +108,31 @@ var INSTRUMENTS = [
   "name": "Bass",
   "bus": "Music Bed/Layers",
   "busFolder": "MusicBed",
-  "max": 5,
+  "max": 7,
   "attack": 0,
   "release": 0,
   "notes": [
+   {
+    "midi": 29,
+    "file": "AT101V_101Bass_C2_v100.wav",
+    "pitch": -7,
+    "volume": -11.4,
+    "onset": 0.001498
+   },
+   {
+    "midi": 31,
+    "file": "AT101V_101Bass_C2_v100.wav",
+    "pitch": -5,
+    "volume": -11.4,
+    "onset": 0.001335
+   },
+   {
+    "midi": 33,
+    "file": "AT101V_101Bass_C2_v100.wav",
+    "pitch": -3,
+    "volume": -11.4,
+    "onset": 0.001189
+   },
    {
     "midi": 36,
     "file": "AT101V_101Bass_C2_v100.wav",
@@ -134,11 +155,32 @@ var INSTRUMENTS = [
     "onset": 0.000794
    },
    {
+    "midi": 41,
+    "file": "AT101V_101Bass_C2_v100.wav",
+    "pitch": 5,
+    "volume": -11.4,
+    "onset": 0.000749
+   },
+   {
     "midi": 43,
     "file": "AT101V_101Bass_C2_v100.wav",
     "pitch": 7,
     "volume": -11.4,
     "onset": 0.000667
+   },
+   {
+    "midi": 45,
+    "file": "AT101V_101Bass_C2_v100.wav",
+    "pitch": 9,
+    "volume": -11.4,
+    "onset": 0.000595
+   },
+   {
+    "midi": 48,
+    "file": "AT101V_101Bass_C2_v100.wav",
+    "pitch": 12,
+    "volume": -11.4,
+    "onset": 0.0005
    }
   ]
  },
@@ -1029,7 +1071,7 @@ var INSTRUMENTS = [
   "name": "FeaturePerc",
   "bus": "Feature/Perc",
   "busFolder": "Perc",
-  "max": 13,
+  "max": 15,
   "attack": 2,
   "release": 70,
   "notes": [
@@ -1116,7 +1158,7 @@ var INSTRUMENTS = [
   "name": "FeverDrums",
   "bus": "Music Bed/Layers",
   "busFolder": "MusicBed",
-  "max": 15,
+  "max": 18,
   "attack": 0,
   "release": 0,
   "notes": [
@@ -1341,9 +1383,37 @@ var INSTRUMENTS = [
     "onset": 0.0
    },
    {
+    "midi": 77,
+    "file": "AT101V_ClassicLead_C4_v100.wav",
+    "pitch": 17,
+    "volume": -15.2,
+    "onset": 0.0
+   },
+   {
     "midi": 79,
     "file": "AT101V_ClassicLead_C4_v100.wav",
     "pitch": 19,
+    "volume": -15.2,
+    "onset": 0.0
+   },
+   {
+    "midi": 81,
+    "file": "AT101V_ClassicLead_C4_v100.wav",
+    "pitch": 21,
+    "volume": -15.2,
+    "onset": 0.0
+   },
+   {
+    "midi": 83,
+    "file": "AT101V_ClassicLead_C4_v100.wav",
+    "pitch": 23,
+    "volume": -15.2,
+    "onset": 0.0
+   },
+   {
+    "midi": 84,
+    "file": "AT101V_ClassicLead_C4_v100.wav",
+    "pitch": 24,
     "volume": -15.2,
     "onset": 0.0
    }
@@ -1353,7 +1423,7 @@ var INSTRUMENTS = [
   "name": "FeverPluck",
   "bus": "Music Bed/Harmony",
   "busFolder": "Harmony",
-  "max": 12,
+  "max": 16,
   "attack": 0,
   "release": 0,
   "notes": [
@@ -1668,11 +1738,60 @@ var INSTRUMENTS = [
   "release": 70,
   "notes": [
    {
+    "midi": 71,
+    "file": "Mallets/glock_medium_G4.wav",
+    "pitch": -8,
+    "volume": 10.0,
+    "onset": 0.011112
+   },
+   {
+    "midi": 72,
+    "file": "Mallets/glock_medium_G4.wav",
+    "pitch": -7,
+    "volume": 10.0,
+    "onset": 0.010488
+   },
+   {
+    "midi": 74,
+    "file": "Mallets/glock_medium_G4.wav",
+    "pitch": -5,
+    "volume": 10.0,
+    "onset": 0.009344
+   },
+   {
+    "midi": 76,
+    "file": "Mallets/glock_medium_G4.wav",
+    "pitch": -3,
+    "volume": 10.0,
+    "onset": 0.008324
+   },
+   {
+    "midi": 77,
+    "file": "Mallets/glock_medium_G4.wav",
+    "pitch": -2,
+    "volume": 10.0,
+    "onset": 0.007857
+   },
+   {
+    "midi": 79,
+    "file": "Mallets/glock_medium_G4.wav",
+    "pitch": 0,
+    "volume": 10.0,
+    "onset": 0.007
+   },
+   {
     "midi": 81,
     "file": "Mallets/glock_medium_G4.wav",
     "pitch": 2,
     "volume": 10.0,
     "onset": 0.006236
+   },
+   {
+    "midi": 83,
+    "file": "Mallets/glock_medium_C5.wav",
+    "pitch": -1,
+    "volume": 10.0,
+    "onset": 0.007416
    },
    {
     "midi": 84,
@@ -1682,6 +1801,13 @@ var INSTRUMENTS = [
     "onset": 0.007
    },
    {
+    "midi": 86,
+    "file": "Mallets/glock_medium_C5.wav",
+    "pitch": 2,
+    "volume": 10.0,
+    "onset": 0.006236
+   },
+   {
     "midi": 88,
     "file": "Mallets/glock_medium_G5.wav",
     "pitch": -3,
@@ -1689,11 +1815,32 @@ var INSTRUMENTS = [
     "onset": 0.008324
    },
    {
+    "midi": 89,
+    "file": "Mallets/glock_medium_G5.wav",
+    "pitch": -2,
+    "volume": 10.0,
+    "onset": 0.007857
+   },
+   {
+    "midi": 91,
+    "file": "Mallets/glock_medium_G5.wav",
+    "pitch": 0,
+    "volume": 10.0,
+    "onset": 0.007
+   },
+   {
     "midi": 93,
     "file": "Mallets/glock_medium_G5.wav",
     "pitch": 2,
     "volume": 10.0,
     "onset": 0.006236
+   },
+   {
+    "midi": 95,
+    "file": "Mallets/glock_medium_C6.wav",
+    "pitch": -1,
+    "volume": 10.0,
+    "onset": 0.007416
    },
    {
     "midi": 96,
@@ -2725,16 +2872,37 @@ var INSTRUMENTS = [
   "name": "PowerChord",
   "bus": "Feature/Guitar",
   "busFolder": "Guitar",
-  "max": 6,
+  "max": 8,
   "attack": 2,
   "release": 70,
   "notes": [
+   {
+    "midi": 41,
+    "file": "Guitar/Thrum_PowerChordE5_E2B2E3_v100.wav",
+    "pitch": 1,
+    "volume": -13.9,
+    "onset": 0.000944
+   },
    {
     "midi": 43,
     "file": "Guitar/Thrum_PowerChordE5_E2B2E3_v100.wav",
     "pitch": 3,
     "volume": -13.9,
     "onset": 0.000841
+   },
+   {
+    "midi": 45,
+    "file": "Guitar/Thrum_PowerChordE5_E2B2E3_v100.wav",
+    "pitch": 5,
+    "volume": -13.9,
+    "onset": 0.000749
+   },
+   {
+    "midi": 48,
+    "file": "Guitar/Thrum_PowerChordE5_E2B2E3_v100.wav",
+    "pitch": 8,
+    "volume": -13.9,
+    "onset": 0.00063
    }
   ]
  },
@@ -3160,7 +3328,7 @@ var INSTRUMENTS = [
   "name": "Trumpet",
   "bus": "Feature/Trumpet",
   "busFolder": "Trumpet",
-  "max": 12,
+  "max": 15,
   "attack": 2,
   "release": 70,
   "notes": [
@@ -3226,6 +3394,13 @@ var INSTRUMENTS = [
     "pitch": 4,
     "volume": -6.4,
     "onset": 0.002381
+   },
+   {
+    "midi": 84,
+    "file": "Brass/Sum_SHTrumpet_stac_F4_v3_rr1.wav",
+    "pitch": 7,
+    "volume": -6.4,
+    "onset": 0.002002
    }
   ]
  },
@@ -3445,6 +3620,13 @@ var INSTRUMENTS = [
     "pitch": 3,
     "volume": -4.4,
     "onset": 0.015136
+   },
+   {
+    "midi": 98,
+    "file": "Woodwinds/LDFlute_stac_A5_v3_rr1.wav",
+    "pitch": 5,
+    "volume": -4.4,
+    "onset": 0.013485
    }
   ]
  },

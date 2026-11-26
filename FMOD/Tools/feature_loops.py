@@ -41,7 +41,7 @@ def write_cs():
             onsets[key] = (max(top, midi), voices + 1)
         loop_lines.append(
             f"        new FeatureSelector.Loop({loop_['id']}, \"{loop_['name']}\", {loop_['startBar']}, {loop_['bars']}, "
-            f"(FeatureSelector.Instrument){flags}),")
+            f"(FeatureSelector.Instrument){flags}{', fever: true' if loop_.get('fever') else ''}),")
         entries = ", ".join(
             f"new Note({beat}f, {midi}, {voices}, (FeatureSelector.Instrument){flag})"
             for (beat, flag), (midi, voices) in sorted(onsets.items()))

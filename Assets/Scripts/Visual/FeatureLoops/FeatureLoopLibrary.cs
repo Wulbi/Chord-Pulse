@@ -94,6 +94,7 @@ public sealed class FeatureLoopLibrary : ScriptableObject
                     new VoiceOverride { instrument = FeatureSelector.Instrument.Whistle, side = FeatureSide.Right },
                 };
             case 9: // Glock Sparkle: smaller, icy chimes instead of the warm marimba ones.
+            case 15: // Fever Glock Shower: the same icy chimes, over fever.
                 return new[] { new VoiceOverride { instrument = FeatureSelector.Instrument.Mallets, style = glock } };
             case 12: // Mallet Hook: the muted cowbell only keeps time under the xylophone tune.
                 return new[] { new VoiceOverride { instrument = FeatureSelector.Instrument.Percussion, sizeScale = 0.5f } };

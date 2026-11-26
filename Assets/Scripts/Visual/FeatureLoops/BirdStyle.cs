@@ -21,6 +21,7 @@ public sealed class BirdStyle : FeatureVisualStyle
     {
         color = new Color(0.72f, 1f, 0.95f, 0.8f);
         seconds = 1.4f;
+        prewarm = 8;
         size = 0.28f;
     }
 
@@ -96,6 +97,13 @@ public sealed class BirdEmitter : IFeatureEmitter
             c.a *= Mathf.Clamp01((1f - t) * 4f);
             bird.Wings.startColor = bird.Wings.endColor = c;
         }
+    }
+
+    public void Prewarm(int count)
+    {
+        while (_birds.Count < count)
+            Take().Active = true;
+        Clear();
     }
 
     public void Clear()

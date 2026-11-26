@@ -12,6 +12,8 @@ public interface IFeatureEmitter
     void Emit(FeatureLoopNotes.Note note, float sizeScale, int side);
     void Tick(float deltaTime);
     void Clear();
+    /// <summary>Creates pooled objects up front, so a guest's first notes do not build GameObjects mid-song.</summary>
+    void Prewarm(int count);
 }
 
 /// <summary>Everything an emitter may use from the scene. Shared by all emitters of one director.</summary>
