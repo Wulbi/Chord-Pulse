@@ -17,6 +17,17 @@ public struct SpawnOrder
     /// Enemies of this slot, 1..GameplayTuning.MaxGroupSize: same colour and speed, from different directions.
     /// Hidden / SecondColorIndex / Kind describe the first one only; the others are plain Basic enemies.
     public int Count;
+
+    /// The order for the other enemies of the slot: same colour and speed, never gray, a chord pair or a special kind.
+    public SpawnOrder Mate()
+    {
+        var mate = this;
+        mate.Hidden = false;
+        mate.SecondColorIndex = -1;
+        mate.Kind = EnemyKind.Basic;
+        mate.Count = 1;
+        return mate;
+    }
 }
 
 /// Decides when and what to spawn, following the music (flow and breath). Pure rules, no Unity types.
@@ -53,7 +64,7 @@ public sealed class SpawnDirector
         _chargerPending = false;
     }
 
-    /// Call every frame. Returns true when an enemy should spawn now; at most one per call.
+    /// Call every frame. Returns true when a slot is due now: one order per call, for order.Count enemies (1..3).
     public bool TryNext(in SpawnContext context, out SpawnOrder order)
     {
         order = default;
@@ -132,7 +143,9 @@ public sealed class SpawnDirector
             kind = EnemyKind.Splitter;
         order = MakeOrder(_runColor, hidden, secondColor, kind);
         // Groups only in flow: a breath phrase is a rest. One draw decides between 1, 2 and 3.
-        if (!context.Breath && stage.PairChance + stage.TripleChance > 0)
+        // A chord pair comes alone: plain mates are bigger, so they would reach a pulse first and block the pair's
+        // other colour (the one the player still has selected) before it could strip the pair.
+        if (!context.Breath && secondColor < 0 && stage.PairChance + stage.TripleChance > 0)
         {
             double roll = _random.NextDouble();
             order.Count = roll < stage.TripleChance ? 3 : roll < stage.TripleChance + stage.PairChance ? 2 : 1;
@@ -166,6 +179,10 @@ public sealed class SpawnDirector
             Count = 1,
         };
     }
+
+    /// Degrees a mate is turned from the enemy spawned just before it, for unit in [0, 1): 60..150. Two such steps put
+    /// the third enemy of a slot 120..300 degrees from the first, so no two of a group share a direction.
+    public static float MateAngleStep(double unit) => 60f + 90f * (float)unit;
 
     /// Row of GameplayTuning.SpawnStages in force: the last one whose StartSeconds has passed (0 before the first).
     public static int StageIndex(double roundSeconds)

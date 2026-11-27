@@ -184,6 +184,8 @@ public sealed class ChordPulsePrototype : MonoBehaviour
     float _arenaRadius;
     int _selectedColor;
     float _spawnAngle;
+    int _spawnGroup;
+    readonly CoreHitRule _coreHits = new CoreHitRule();
     int _score;
     int _killStreak;
     int _health;
@@ -265,6 +267,8 @@ public sealed class ChordPulsePrototype : MonoBehaviour
 
         _selectedColor = 0;
         _spawnAngle = Random.Range(0f, 360f);
+        _spawnGroup = 0;
+        _coreHits.Reset();
         _score = 0;
         _killStreak = 0;
         _health = MaxHealth;
@@ -374,6 +378,9 @@ public sealed class ChordPulsePrototype : MonoBehaviour
                 _poolManager.ReturnToPool(enemy.Instance);
                 _enemyStates.RemoveAt(i);
                 _enemyViews.Remove(state);
+                // The rest of a group that already cost a health point: gone, no second penalty.
+                if (!_coreHits.CostsHealth(state.Group))
+                    continue;
                 _health--;
                 _killStreak = 0;
                 ResetPulseCombo();
@@ -409,15 +416,14 @@ public sealed class ChordPulsePrototype : MonoBehaviour
         };
         if (_spawnDirector.TryNext(spawnContext, out var order))
         {
-            SpawnFromNewDirection(order);
-            // The rest of the slot: plain enemies of the same colour and speed from other directions, so one pulse
-            // takes the whole group. Only the first one can be gray, a chord pair or a special kind.
-            var mate = order;
-            mate.Hidden = false;
-            mate.SecondColorIndex = -1;
-            mate.Kind = EnemyKind.Basic;
+            // A slot of 2-3: plain enemies of the same colour and speed from other directions, so one pulse takes the
+            // whole group. Only the first one can be gray or a special kind. They share a group id: reaching the core
+            // together costs one health (CoreHitRule).
+            int group = order.Count > 1 ? ++_spawnGroup : 0;
+            SpawnFromNewDirection(order, group, false);
+            var mate = order.Mate();
             for (int i = 1; i < order.Count; i++)
-                SpawnFromNewDirection(mate);
+                SpawnFromNewDirection(mate, group, true);
         }
 
         UpdateTargetMarkers(fever);
@@ -667,10 +673,12 @@ public sealed class ChordPulsePrototype : MonoBehaviour
         }
     }
 
-    void SpawnFromNewDirection(SpawnOrder order)
+    void SpawnFromNewDirection(SpawnOrder order, int group = 0, bool mate = false)
     {
-        // Keep consecutive spawns at least 60 degrees apart, including within a color group.
-        _spawnAngle = Mathf.Repeat(_spawnAngle + Random.Range(60f, 300f), 360f);
+        // Keep consecutive spawns at least 60 degrees apart, including within a color group. A mate turns less
+        // (60..150), which also keeps the third enemy of a slot away from the first.
+        float turn = mate ? SpawnDirector.MateAngleStep(Random.value) : Random.Range(60f, 300f);
+        _spawnAngle = Mathf.Repeat(_spawnAngle + turn, 360f);
         float radians = _spawnAngle * Mathf.Deg2Rad;
         var direction = new Vector2(Mathf.Cos(radians), Mathf.Sin(radians));
         bool chordPair = order.SecondColorIndex >= 0;
@@ -684,6 +692,7 @@ public sealed class ChordPulsePrototype : MonoBehaviour
         var state = new EnemyState
         {
             Kind = order.Kind,
+            Group = group,
             ColorIndex = order.ColorIndex,
             SecondColorIndex = order.SecondColorIndex,
             Distance = _arenaRadius,

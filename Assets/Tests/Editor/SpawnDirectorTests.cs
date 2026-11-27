@@ -451,7 +451,7 @@ public class SpawnDirectorTests
     [Test]
     public void Count_FollowsTheTable()
     {
-        var s = NoChargers(AfterOpening(Collect(0, 8000, Ctx(seconds: 600))));
+        var s = NoChargers(AfterOpening(Collect(0, 8000, Ctx(seconds: 600)))).Where(x => x.order.SecondColorIndex < 0).ToList();
         Assert.IsTrue(s.All(x => x.order.Count >= 1 && x.order.Count <= GameplayTuning.MaxGroupSize));
         Assert.AreEqual(Stage(600).PairChance, s.Count(x => x.order.Count == 2) / (double)s.Count, 0.05);
         Assert.AreEqual(Stage(600).TripleChance, s.Count(x => x.order.Count == 3) / (double)s.Count, 0.05);
@@ -465,5 +465,59 @@ public class SpawnDirectorTests
         var runs = RunsOf(s);
         foreach (var r in runs.Skip(1).Take(runs.Count - 2))
         { Assert.GreaterOrEqual(r.Length, Stage(600).RunMin); Assert.LessOrEqual(r.Length, Stage(600).RunMax); }
+    }
+
+    [Test]
+    public void ChordPairSlots_AreAlwaysAlone()   // mates would arrive ahead of the pair and block the bridging colour
+    {
+        var pairs = Collect(0, 8000, Ctx(seconds: 600)).Where(x => x.order.SecondColorIndex >= 0).ToList();
+        Assert.Greater(pairs.Count, 100);
+        Assert.IsTrue(pairs.All(x => x.order.Count == 1));
+    }
+
+    [Test]
+    public void Mate_IsAPlainCopy_SameColourAndSpeed()
+    {
+        var specials = Collect(0, 8000, Ctx(seconds: 600)).Where(x => x.order.Count > 1 && (x.order.Hidden || x.order.Kind != EnemyKind.Basic)).ToList();
+        Assert.Greater(specials.Count, 50);
+        foreach (var x in specials)
+        {
+            var mate = x.order.Mate();
+            Assert.IsFalse(mate.Hidden);
+            Assert.AreEqual(-1, mate.SecondColorIndex);
+            Assert.AreEqual(EnemyKind.Basic, mate.Kind);
+            Assert.AreEqual(x.order.ColorIndex, mate.ColorIndex);
+            Assert.AreEqual(x.order.Speed, mate.Speed);
+        }
+    }
+
+    [Test]
+    public void MateAngles_KeepAGroupApart()
+    {
+        foreach (double a in new[] { 0.0, 0.5, 0.999 })
+        {
+            Assert.GreaterOrEqual(SpawnDirector.MateAngleStep(a), 60f);
+            Assert.LessOrEqual(SpawnDirector.MateAngleStep(a), 150f);
+            foreach (double b in new[] { 0.0, 0.5, 0.999 })
+            {
+                float thirdFromFirst = SpawnDirector.MateAngleStep(a) + SpawnDirector.MateAngleStep(b);
+                Assert.GreaterOrEqual(thirdFromFirst, 120f);
+                Assert.LessOrEqual(thirdFromFirst, 300f);
+            }
+        }
+    }
+
+    [Test]
+    public void CoreHitRule_OneHealthPerGroup()
+    {
+        var rule = new CoreHitRule();
+        Assert.IsTrue(rule.CostsHealth(0));
+        Assert.IsTrue(rule.CostsHealth(0));     // enemies that came alone always cost one each
+        Assert.IsTrue(rule.CostsHealth(7));
+        Assert.IsTrue(rule.CostsHealth(8));
+        Assert.IsFalse(rule.CostsHealth(7));    // the rest of group 7, even after another group hit in between
+        Assert.IsFalse(rule.CostsHealth(8));
+        rule.Reset();
+        Assert.IsTrue(rule.CostsHealth(7));
     }
 }
