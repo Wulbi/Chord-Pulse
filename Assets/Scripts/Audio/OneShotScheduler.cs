@@ -89,6 +89,9 @@ public sealed class OneShotScheduler
         public int Handle = -1; // >= 0 once handed to the backend
         public ulong Start;
         public ulong Stop;
+        public bool Muted;       // SilenceAbove / SilenceBetween: volume 0, stopped after the hold
+        public int MutedUpdates; // Update calls since the mute (RescheduleFrom's does not count)
+        public ulong RemoveAt;   // set on the second Update after the mute
     }
 
     readonly BeatClock _clock;
@@ -124,6 +127,25 @@ public sealed class OneShotScheduler
     /// (stop time not passed; for zero-length notes, not yet reported finished by the backend).
     /// </summary>
     public int ActiveCount => _notes.Count;
+
+    /// <summary>
+    /// How long a note muted by <see cref="SilenceAbove"/> / <see cref="SilenceBetween"/> is held at volume 0 before it is
+    /// stopped (samples), counted from the second <see cref="Update"/> after the mute. SoundManager sets it to 3 mixer blocks.
+    /// </summary>
+    public ulong SilenceHoldSamples { get; set; } = 3072;
+
+    /// <summary>Notes muted by <see cref="SilenceAbove"/> / <see cref="SilenceBetween"/> and not yet removed.</summary>
+    public int MutedCount
+    {
+        get
+        {
+            int count = 0;
+            foreach (var note in _notes)
+                if (note.Muted)
+                    count++;
+            return count;
+        }
+    }
 
     /// <summary>
     /// Plays <paramref name="note"/> so its attack lands on its beat (the sample starts OnsetSeconds earlier) and stops it
@@ -175,8 +197,16 @@ public sealed class OneShotScheduler
     /// (zero-length notes: whose backend reports them finished). A handed-over note keeps the start it was handed over with
     /// when later anchors move the clock (Task 12 fix round 2: re-timing armed notes lost notes); tempo changes go through
     /// <see cref="RescheduleFrom"/>.
+    /// Muted notes (<see cref="SilenceAbove"/>) are stopped once <see cref="SilenceHoldSamples"/> have passed from the
+    /// second Update after the mute: the first one runs in the mute's own frame, before FMOD's RuntimeManager.Update has
+    /// sent the volume-0 command, so the hold counts from the frame after it (a stall on the mute's frame cannot eat it).
+    /// Call it once per frame, after the frame's SilenceAbove / SilenceBetween.
     /// </summary>
-    public void Update()
+    public void Update() => UpdateNotes(countMuted: true);
+
+    // RescheduleFrom's pass does not count toward a muted note's hold: it can run later in the mute's own frame
+    // (QueueFever from game code), which must not count as the frame after the mute.
+    void UpdateNotes(bool countMuted)
     {
         ulong now = _backend.NowDsp;
         for (int i = _notes.Count - 1; i >= 0; i--)
@@ -190,6 +220,17 @@ public sealed class OneShotScheduler
                     _backend.Release(note.Handle);
                     _notes.RemoveAt(i);
                 }
+                else if (note.Muted && countMuted)
+                {
+                    note.MutedUpdates++;
+                    if (note.MutedUpdates == 2)
+                        note.RemoveAt = now + SilenceHoldSamples;
+                    else if (note.MutedUpdates > 2 && now >= note.RemoveAt)
+                    {
+                        Cancel(note, now);
+                        _notes.RemoveAt(i);
+                    }
+                }
                 continue;
             }
             var result = Dispatch(note, now);
@@ -202,7 +243,7 @@ public sealed class OneShotScheduler
     /// Recomputes every note on or after <paramref name="beat"/> with the current clock (call after the clock learned
     /// a tempo that differs from what was assumed, e.g. a section that did not change). Notes already handed to the
     /// backend but not yet sounding are cancelled and handed over again with the new times; notes already sounding
-    /// are left alone.
+    /// are left alone, and so are muted notes (handed over again they would sound at full volume).
     /// </summary>
     public void RescheduleFrom(double beat)
     {
@@ -210,11 +251,11 @@ public sealed class OneShotScheduler
         for (int i = _notes.Count - 1; i >= 0; i--)
         {
             var note = _notes[i];
-            if (note.Beat < beat || note.Handle < 0 || note.Start <= now)
+            if (note.Beat < beat || note.Handle < 0 || note.Start <= now || note.Muted)
                 continue;
             Cancel(note, now);
         }
-        Update();
+        UpdateNotes(countMuted: false);
     }
 
     /// <summary>
@@ -243,7 +284,7 @@ public sealed class OneShotScheduler
         return cancelled;
     }
 
-    /// <summary>Drops every waiting note and stops every note handed to the backend now.</summary>
+    /// <summary>Drops every waiting note and stops every note handed to the backend now (muted ones too).</summary>
     public void StopAll()
     {
         ulong now = _backend.NowDsp;
@@ -262,7 +303,7 @@ public sealed class OneShotScheduler
     /// Scales the volume of every note with Rung &gt; <paramref name="aboveRung"/> that is already handed to the backend
     /// (instance volume GainDb * <paramref name="scale"/>), and remembers the setting so notes handed over later get the
     /// same call right after their Start. <paramref name="scale"/> is clamped to 0..1. Waiting notes are not touched
-    /// until they are handed over.
+    /// until they are handed over. Muted notes (<see cref="SilenceAbove"/>) stay at 0.
     /// </summary>
     public void SetFade(int aboveRung, float scale)
     {
@@ -270,7 +311,7 @@ public sealed class OneShotScheduler
         _fadeAboveRung = aboveRung;
         _fadeScale = Math.Max(0f, Math.Min(1f, scale));
         foreach (var note in _notes)
-            if (note.Handle >= 0 && note.Rung > aboveRung)
+            if (note.Handle >= 0 && note.Rung > aboveRung && !note.Muted)
                 _backend.SetVolume(note.Handle, note.GainDb, _fadeScale);
     }
 
@@ -279,43 +320,36 @@ public sealed class OneShotScheduler
     public void ClearFade() => _fading = false;
 
     /// <summary>
-    /// Removes every note with Rung &gt; <paramref name="rung"/>, of any owner: waiting notes are dropped, notes handed to
-    /// the backend (armed or sounding) are stopped now and released. Returns the number removed.
+    /// Removes every note with Rung &gt; <paramref name="rung"/>, of any owner: waiting notes are dropped; notes handed to
+    /// the backend (armed or sounding) are muted now (volume 0) and stopped by <see cref="Update"/> after
+    /// <see cref="SilenceHoldSamples"/> (stopping them in the same Studio command flush as the volume 0 would cut them while
+    /// still audible). Notes already muted are skipped. Returns the number removed or muted.
     /// </summary>
-    public int SilenceAbove(int rung)
-    {
-        ulong now = _backend.NowDsp;
-        int removed = 0;
-        for (int i = _notes.Count - 1; i >= 0; i--)
-        {
-            var note = _notes[i];
-            if (note.Rung <= rung)
-                continue;
-            if (note.Handle >= 0)
-                Cancel(note, now);
-            _notes.RemoveAt(i);
-            removed++;
-        }
-        return removed;
-    }
+    public int SilenceAbove(int rung) => Silence(rung, int.MaxValue);
 
     /// <summary>
     /// Removes every note with <paramref name="aboveRung"/> &lt; Rung &lt;= <paramref name="upToRung"/>, of any owner, the
-    /// same way as <see cref="SilenceAbove"/>: waiting notes are dropped, notes handed to the backend (armed or sounding)
-    /// are stopped now and released. Returns the number removed.
+    /// same way as <see cref="SilenceAbove"/>: waiting notes are dropped, handed notes are muted and stopped after the
+    /// hold. Returns the number removed or muted.
     /// </summary>
-    public int SilenceBetween(int aboveRung, int upToRung)
+    public int SilenceBetween(int aboveRung, int upToRung) => Silence(aboveRung, upToRung);
+
+    int Silence(int aboveRung, int upToRung)
     {
-        ulong now = _backend.NowDsp;
         int removed = 0;
         for (int i = _notes.Count - 1; i >= 0; i--)
         {
             var note = _notes[i];
-            if (note.Rung <= aboveRung || note.Rung > upToRung)
+            if (note.Rung <= aboveRung || note.Rung > upToRung || note.Muted)
                 continue;
             if (note.Handle >= 0)
-                Cancel(note, now);
-            _notes.RemoveAt(i);
+            {
+                _backend.SetVolume(note.Handle, note.GainDb, 0f);
+                note.Muted = true;
+                note.MutedUpdates = 0;
+            }
+            else
+                _notes.RemoveAt(i);
             removed++;
         }
         return removed;

@@ -21,7 +21,8 @@ public sealed class LadderState
         public float Scale;
         /// <summary>The combo dropped this frame outside the fever phrase and outside a fade (fade started or not).</summary>
         public bool Broke;
-        /// <summary>With <see cref="Broke"/>: the rung heard at the break. Notes above it (up to
+        /// <summary>With <see cref="Broke"/>: the rung heard at the break, or the time floor if that is higher (a floor
+        /// rung pending for the next bar line is owed whatever the combo does). Notes above it (up to
         /// <see cref="ComboLadder.MaxRung"/>) were never heard and are to be removed.</summary>
         public int HeardRungAtBreak;
     }
@@ -111,7 +112,7 @@ public sealed class LadderState
         if (broke && !feverPhrase)
         {
             step.Broke = true;
-            step.HeardRungAtBreak = HeardRung;
+            step.HeardRungAtBreak = Math.Max(HeardRung, Floor);
         }
 
         if (step.Broke && HeardRung > Floor)

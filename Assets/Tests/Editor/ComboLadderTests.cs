@@ -48,6 +48,7 @@ public class ComboLadderTests
         var expected = new[] { 0.10, 0.10, 0.20, 0.30, 0.45, 0.60, 0.75 };
         for (int r = 0; r <= 6; r++) Assert.AreEqual(expected[r], ComboLadder.GuestChance(r), 1e-9);
         Assert.IsFalse(ComboLadder.GuestsMayRepeat(4)); Assert.IsTrue(ComboLadder.GuestsMayRepeat(5));
+        Assert.AreEqual(0.75, ComboLadder.GuestChance(ComboLadder.GuestRung), 1e-9);
     }
 
     [Test] public void Fade_ScaleFollowsOneMinusTSquared_OverTwoBeats()

@@ -187,7 +187,6 @@ public sealed class SoundManager : SingletonBehaviour<SoundManager>, IKillBedSta
     /// <summary>Loop already chosen for the phrase starting at <see cref="NextPhraseStep"/> (null = none or fever).</summary>
     public FeatureSelector.Loop UpcomingFeature =>
         Running && !FeverOverlaps(NextPhraseStep, NextPhraseStep + StepsPerPhrase) ? _features.Next : null;
-    /// <summary>True while the current feature loop is actually playing notes in this bar.</summary>
     /// <summary>
     /// Threat 0..1 from the game (nearest enemy, low health). FMOD fades in a string pad (0.25+), an off-beat
     /// sub pulse (0.45+) and swaps the bass for an acid bass (0.65+). Forced to 0 during fever build-up and fever.
@@ -195,10 +194,6 @@ public sealed class SoundManager : SingletonBehaviour<SoundManager>, IKillBedSta
     public float Tension { get => _tension; set => _tension = Mathf.Clamp01(value); }
     /// <summary>Last life: the accompaniment is low-passed so it sounds smothered (kill chords stay clear).</summary>
     public bool Danger { get => _danger; set => _danger = value; }
-    /// <summary>
-    /// Arrangement pattern of the phrase being heard: 0 original, 1 driving 8th bass, 2 driving bass + snare fill,
-    /// 3 walking bass + arpeggio + ghost snares, 4 walking bass + chord stabs + ghost snares.
-    /// </summary>
     /// <summary>
     /// The on-screen pulse combo from the game (negative reads 0). With the round time it picks the combo ladder's rung
     /// (<see cref="ComboLadder.Rung"/>): rungs 1..3 add the intensity layers, 4..6 the combo layers (16th hats, glass pad,
@@ -238,6 +233,10 @@ public sealed class SoundManager : SingletonBehaviour<SoundManager>, IKillBedSta
     public int CurrentStyle => Running ? Math.Max(0, _appliedStyle) : StyleSynthpop;
     /// <summary>Bed style already chosen for the phrase starting at <see cref="NextPhraseStep"/>.</summary>
     public int UpcomingStyle => _styleNext;
+    /// <summary>
+    /// Arrangement pattern FMOD is playing: 0 original, 1 driving 8th bass, 2 driving bass + snare fill,
+    /// 3 walking bass + arpeggio + ghost snares, 4 walking bass + chord stabs + ghost snares.
+    /// </summary>
     public int CurrentVariation => Running ? _appliedVariation : 0;
 
     // --- Values for visuals: these follow what is being heard. ---
@@ -262,6 +261,7 @@ public sealed class SoundManager : SingletonBehaviour<SoundManager>, IKillBedSta
             return 0f;
         return RuntimeManager.StudioSystem.getParameterByName(parameter, out _, out float final) == FMOD.RESULT.OK ? final : 0f;
     }
+    /// <summary>True while the current feature loop is actually playing notes in this bar.</summary>
     public bool FeatureSounding =>
         CurrentFeature != null && CurrentFeature.PlaysInBar(CurrentBar % SectionSelector.BarsPerPhrase);
     /// <summary>First step of the phrase after the one being mixed (from the music clock; 32 before the music starts).</summary>
@@ -452,6 +452,9 @@ public sealed class SoundManager : SingletonBehaviour<SoundManager>, IKillBedSta
             yield return null;
         }
         _clock.Reset(rate);
+        // A muted note (combo break) is held silent for 3 mixer blocks before it is stopped.
+        if (RuntimeManager.CoreSystem.getDSPBufferSize(out uint block, out _) == FMOD.RESULT.OK && block > 0)
+            Shots.SilenceHoldSamples = 3UL * block;
         _dspSmoother.Reset(rate);
         _transport.Start(startDsp + (ulong)Math.Round(StartLeadSeconds * rate),
             SectionSelector.Bpm(_sections.Current.Section), SectionSelector.Bpm(_sections.Next.Section));
@@ -851,8 +854,9 @@ public sealed class SoundManager : SingletonBehaviour<SoundManager>, IKillBedSta
 
     // Once per frame at the mixer's beat (fever phrase = the 4 fever bars, not the build-up bar). A break above the floor
     // fades every one-shot above the floor (Shots.SetFade: handed notes now, later ones as they are handed over); when the
-    // fade ends those notes are removed, the guest loop of this phrase and the one chosen for the next are dropped, and the
-    // arrangement is refreshed with the floor's rung so nothing above it is scheduled again.
+    // fade ends those notes are muted and stopped after a short hold (Shots.SilenceAbove), the guest loop of this phrase
+    // and the one chosen for the next are dropped, and the arrangement is refreshed with the floor's rung so nothing above
+    // it is scheduled again.
     void UpdateLadder(bool feverPhrase)
     {
         var result = _ladder.Update(_comboCount, _roundSeconds, _audioBeat,
@@ -865,7 +869,7 @@ public sealed class SoundManager : SingletonBehaviour<SoundManager>, IKillBedSta
             Shots.SetFade(result.Floor, result.Scale);
         if (!result.FadeEnded)
             return;
-        Shots.SetFade(result.Floor, 0f);
+        // Muted now, stopped by Shots.Update after the hold (SilenceHoldSamples), once the volume 0 has been mixed.
         Shots.SilenceAbove(result.Floor);
         Shots.ClearFade();
         if (_features.Current != null || _features.Next != null)

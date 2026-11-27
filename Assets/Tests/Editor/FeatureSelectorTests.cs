@@ -63,6 +63,29 @@ public class FeatureSelectorTests
     }
 
     [Test]
+    public void RungFive_AllowsGuestsInARow()
+    {
+        var selector = new FeatureSelector(Seed);
+        var phrase = new SectionSelector.Phrase();
+        int guests = 0, counted = 0, inARow = 0;
+        for (int i = 0; i < 4000; i++)
+        {
+            var next = selector.Advance(phrase, 1, allowed: true, rung: 5);
+            if (selector.Current != null && next != null)
+                inARow++;
+            if (i < 2)
+                continue;
+            counted++;
+            if (next != null)
+                guests++;
+        }
+        double share = (double)guests / counted;
+        UnityEngine.Debug.Log($"FeatureSelector rung 5 share={share:F4}, guests in a row={inARow}");
+        Assert.AreEqual(0.60, share, 0.03);
+        Assert.Greater(inARow, 0);
+    }
+
+    [Test]
     public void LowRungs_NeverTwoInARow()
     {
         var selector = new FeatureSelector(Seed);

@@ -221,6 +221,37 @@ public class LadderStateTests
         Assert.AreEqual(ComboLadder.Rung(2, 40), At(frames, 8.0).HeardRung);
     }
 
+    // Final fix wave S2: the floor's pending rung (the 30 s crossing, entering at the next bar line) is owed whatever the
+    // combo does, so a break does not report a heard rung below it.
+    [Test] public void Break_BelowAPendingFloor_ReportsTheFloor()
+    {
+        var state = new LadderState();
+        Run(state, 0, 29, 0, 5);                      // heard 0 (floor 0)
+        Run(state, 1, 31, 5, 7.9);                    // floor 1 from now, enters at beat 8
+        Assert.AreEqual((0, 1), (state.HeardRung, state.Floor), "setup");
+        var brk = Run(state, 0, 31, 7.9, 7.95)[0];   // combo 1 -> 0 before the bar line
+        Assert.IsTrue(brk.Step.Broke);
+        Assert.IsFalse(brk.Step.FadeStarted);
+        Assert.AreEqual(1, brk.Step.HeardRungAtBreak);
+    }
+
+    // Final fix wave S5: a break on the frame that latches a new rung at the bar line.
+    [Test] public void Break_OnTheBarLatchFrame_FadesFromTheNewlyLatchedRung()
+    {
+        var state = new LadderState();
+        Run(state, 0, 40, 0, 1);
+        Run(state, 0, 40, 1, 5);                      // heard 1 (the floor)
+        Run(state, 8, 40, 5, 8);                      // live 5, enters at beat 8
+        Assert.AreEqual((1, 5), (state.HeardRung, state.LiveRung), "setup");
+        var step = state.Update(0, 40, 8.0, 2, false); // the bar line and the break in one frame
+        Assert.IsTrue(step.Broke);
+        Assert.AreEqual(5, step.HeardRungAtBreak, "the newly latched rung counts as heard");
+        Assert.IsTrue(step.FadeStarted);
+        Assert.AreEqual(5, state.Fade.FromRung);
+        Assert.AreEqual(1, step.Floor);
+        Assert.AreEqual(5, state.HeardRung);
+    }
+
     [Test] public void Reset_ClearsAFadeInProgress()
     {
         var state = AtRungFive(10);

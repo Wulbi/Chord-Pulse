@@ -555,77 +555,274 @@ public class OneShotSchedulerTests
     }
 
     [Test]
-    public void SilenceAbove_DropsWaitingAndStopsHandedNotes()
+    public void SilenceAbove_DropsWaitingNotes()
     {
         var (clock, backend, scheduler) = Make();
+        clock.Anchor(0, 0, 120);
+        backend.Now = 30000;
+        scheduler.Schedule(N(73, 4, 1, 0f, 0, rung: 1), Owner); // waiting
+        scheduler.Schedule(N(74, 4, 1, 0f, 0, rung: 4), new object()); // waiting, another owner
+        Assert.AreEqual(0, backend.Starts.Count);
+
+        Assert.AreEqual(1, scheduler.SilenceAbove(1));
+
+        Assert.AreEqual(0, backend.Volumes.Count, "a waiting note is dropped, not muted");
+        Assert.AreEqual(0, scheduler.MutedCount);
+        Assert.AreEqual(1, scheduler.ActiveCount);
+        backend.Now = 90000; // beat 4 (96000) inside the window
+        scheduler.Update();
+        Assert.AreEqual(1, backend.Starts.Count);
+        Assert.AreEqual(73, backend.Starts[0].midi, "the rung-4 waiting note is not dispatched");
+    }
+
+    // Final fix wave M1: a handed note above the rung is muted (volume 0) at once and stopped only after the hold, which
+    // counts from the second Update after the mute, so the volume 0 is rendered before the stop.
+
+    static int StopsAt(FakeBackend backend, int handle, ulong at) => backend.Stops.FindAll(s => s.handle == handle && s.dspStop == at).Count;
+    static int StopsOf(FakeBackend backend, int handle) => backend.Stops.FindAll(s => s.handle == handle).Count;
+    static int ReleasesOf(FakeBackend backend, int handle) => backend.Releases.FindAll(h => h == handle).Count;
+
+    [Test]
+    public void SilenceAbove_MutesHandedNotes_ThenStopsThemAfterTheHold()
+    {
+        var (clock, backend, scheduler) = Make();
+        scheduler.SilenceHoldSamples = 3072;
         clock.Anchor(0, 0, 120);
         var other = new object(); // not owner-scoped
         backend.Now = 20000; // beat 1 (24000) inside the window
-        scheduler.Schedule(N(70, 1, 4, 0f, 0, rung: 4), Owner); // will be sounding
-        scheduler.Schedule(N(71, 1, 4, 0f, 0, rung: 0), other); // will be sounding
-        Assert.AreEqual(2, backend.Starts.Count);
+        scheduler.Schedule(N(70, 1, 4, -2f, 0, rung: 4), Owner); // will be sounding (stop 120000)
+        scheduler.Schedule(N(71, 1, 4, 0f, 0, rung: 0), other); // will be sounding, below the rung
         int sounding4 = backend.Starts[0].handle;
+        int sounding0 = backend.Starts[1].handle;
         backend.Now = 30000; // both started; beat 1.5 (36000) inside the window
-        scheduler.Schedule(N(72, 1.5, 1, 0f, 0, rung: 4), other); // handed, not started
-        Assert.AreEqual(3, backend.Starts.Count);
+        scheduler.Schedule(N(72, 1.5, 1, -3f, 0, rung: 4), other); // handed, not started (stop 60000)
         int armed4 = backend.Starts[2].handle;
-        scheduler.Schedule(N(73, 4, 1, 0f, 0, rung: 1), Owner); // waiting
-        scheduler.Schedule(N(74, 4, 1, 0f, 0, rung: 4), Owner); // waiting
-        Assert.AreEqual(3, backend.Starts.Count);
         int stopsBefore = backend.Stops.Count;
 
-        Assert.AreEqual(3, scheduler.SilenceAbove(1));
+        Assert.AreEqual(2, scheduler.SilenceAbove(1));
 
-        Assert.AreEqual(stopsBefore + 2, backend.Stops.Count);
-        Assert.Contains((sounding4, 30000UL), backend.Stops);
-        Assert.Contains((armed4, 30000UL), backend.Stops);
-        Assert.Contains(sounding4, backend.Releases);
-        Assert.Contains(armed4, backend.Releases);
-        Assert.AreEqual(2, backend.Releases.Count);
-        Assert.AreEqual(2, scheduler.ActiveCount);
+        Assert.AreEqual(2, backend.Volumes.Count);
+        Assert.Contains((sounding4, -2f, 0f), backend.Volumes);
+        Assert.Contains((armed4, -3f, 0f), backend.Volumes);
+        Assert.AreEqual(stopsBefore, backend.Stops.Count, "no stop with the mute");
+        Assert.AreEqual(0, backend.Releases.Count);
+        Assert.AreEqual(2, scheduler.MutedCount);
+        Assert.AreEqual(3, scheduler.ActiveCount, "muted notes stay until they are stopped");
+        Assert.AreEqual(0, scheduler.SilenceAbove(1), "already muted: skipped, not counted");
+        Assert.AreEqual(2, backend.Volumes.Count, "no second volume call");
 
-        backend.Now = 90000; // beat 4 (96000) inside the window
+        scheduler.Update();  // the mute's own frame
+        backend.Now = 31000;
+        scheduler.Update();  // the next frame: the hold runs from here, to 34072
+        backend.Now = 34071;
         scheduler.Update();
-        Assert.AreEqual(4, backend.Starts.Count);
-        Assert.AreEqual(73, backend.Starts[3].midi, "the rung-4 waiting note is not dispatched");
+        Assert.AreEqual(stopsBefore, backend.Stops.Count, "no stop inside the hold");
+        Assert.AreEqual(0, backend.Releases.Count);
+
+        backend.Now = 34072;
+        scheduler.Update();
+        Assert.AreEqual(1, StopsAt(backend, sounding4, 34072));
+        Assert.AreEqual(1, StopsAt(backend, armed4, 34072));
+        Assert.AreEqual(1, ReleasesOf(backend, sounding4));
+        Assert.AreEqual(1, ReleasesOf(backend, armed4));
+        Assert.AreEqual(0, ReleasesOf(backend, sounding0));
+        Assert.AreEqual(0, scheduler.MutedCount);
+        Assert.AreEqual(1, scheduler.ActiveCount);
     }
 
     [Test]
-    public void SilenceBetween_RemovesOnlyTheRungRange()
+    public void SilenceBetween_UsesTheSamePath()
     {
         var (clock, backend, scheduler) = Make();
+        scheduler.SilenceHoldSamples = 3072;
         clock.Anchor(0, 0, 120);
         backend.Now = 20000; // beat 1 (24000) inside the window
-        scheduler.Schedule(N(61, 1, 4, 0f, 0, rung: 1), Owner); // will be sounding
-        scheduler.Schedule(N(63, 1, 4, 0f, 0, rung: 3), Owner); // will be sounding
-        Assert.AreEqual(2, backend.Starts.Count);
-        int sounding3 = backend.Starts[1].handle;
+        scheduler.Schedule(N(61, 1, 4, 0f, 0, rung: 1), Owner); // will be sounding, below the range
+        scheduler.Schedule(N(66, 1, 4, -1f, 0, rung: 6), Owner); // will be sounding, in the range
+        int sounding1 = backend.Starts[0].handle;
+        int sounding6 = backend.Starts[1].handle;
         backend.Now = 30000; // both started; beat 1.5 (36000) inside the window
-        scheduler.Schedule(N(65, 1.5, 1, 0f, 0, rung: 5), Owner); // handed, not started
-        scheduler.Schedule(N(67, 1.5, 1, 0f, 0, rung: 7), Owner); // handed, not started
-        Assert.AreEqual(4, backend.Starts.Count);
+        scheduler.Schedule(N(65, 1.5, 1, -2f, 0, rung: 5), Owner); // handed, not started, in the range
+        scheduler.Schedule(N(67, 1.5, 1, 0f, 0, rung: 7), Owner); // handed, not started, above the range
         int armed5 = backend.Starts[2].handle;
+        int armed7 = backend.Starts[3].handle;
         scheduler.Schedule(N(71, 4, 1, 0f, 0, rung: 1), Owner); // waiting
-        scheduler.Schedule(N(73, 4, 1, 0f, 0, rung: 3), Owner); // waiting
-        scheduler.Schedule(N(75, 4, 1, 0f, 0, rung: 5), Owner); // waiting
+        scheduler.Schedule(N(76, 4, 1, 0f, 0, rung: 6), Owner); // waiting, in the range
         scheduler.Schedule(N(77, 4, 1, 0f, 0, rung: 7), Owner); // waiting
         int stopsBefore = backend.Stops.Count;
 
-        Assert.AreEqual(4, scheduler.SilenceBetween(1, 6));
+        Assert.AreEqual(3, scheduler.SilenceBetween(1, 6));
 
-        Assert.AreEqual(stopsBefore + 2, backend.Stops.Count);
-        Assert.Contains((sounding3, 30000UL), backend.Stops);
-        Assert.Contains((armed5, 30000UL), backend.Stops);
-        Assert.AreEqual(2, backend.Releases.Count);
-        Assert.Contains(sounding3, backend.Releases);
-        Assert.Contains(armed5, backend.Releases);
-        Assert.AreEqual(4, scheduler.ActiveCount);
+        CollectionAssert.AreEquivalent(new[] { (sounding6, -1f, 0f), (armed5, -2f, 0f) }, backend.Volumes);
+        Assert.AreEqual(stopsBefore, backend.Stops.Count, "no stop with the mute");
+        Assert.AreEqual(0, backend.Releases.Count);
+        Assert.AreEqual(2, scheduler.MutedCount);
+        Assert.AreEqual(0, scheduler.SilenceBetween(1, 6), "already muted: skipped, not counted");
+
+        scheduler.Update();
+        backend.Now = 31000;
+        scheduler.Update();
+        backend.Now = 34072;
+        scheduler.Update();
+        Assert.AreEqual(1, StopsAt(backend, sounding6, 34072));
+        Assert.AreEqual(1, StopsAt(backend, armed5, 34072));
+        Assert.AreEqual(1, ReleasesOf(backend, sounding6));
+        Assert.AreEqual(1, ReleasesOf(backend, armed5));
+        Assert.AreEqual(0, ReleasesOf(backend, sounding1));
+        Assert.AreEqual(0, ReleasesOf(backend, armed7), "rung 7 kept");
+        Assert.AreEqual(0, scheduler.MutedCount);
 
         backend.Now = 90000; // beat 4 (96000) inside the window
         scheduler.Update();
         Assert.AreEqual(6, backend.Starts.Count);
         CollectionAssert.AreEquivalent(new[] { 71, 77 }, new[] { backend.Starts[4].midi, backend.Starts[5].midi },
             "only the rung-1 and rung-7 waiting notes are dispatched");
+    }
+
+    [Test]
+    public void Hold_CountsFromTheSecondUpdate()
+    {
+        var (clock, backend, scheduler) = Make();
+        scheduler.SilenceHoldSamples = 3072;
+        clock.Anchor(0, 0, 120);
+        backend.Now = 20000;
+        scheduler.Schedule(N(70, 1, 8, 0f, 0, rung: 4), Owner); // sounding until beat 9
+        int h = backend.Starts[0].handle;
+        backend.Now = 30000;
+        scheduler.SilenceAbove(1);
+        backend.Now = 35000; // a stall on the mute's frame
+        scheduler.Update();  // frame N: before FMOD has sent the volume command
+        scheduler.RescheduleFrom(0); // later in frame N (game code, e.g. QueueFever): not a frame of the hold
+        backend.Now = 40000;
+        scheduler.Update();  // frame N+1: the hold runs from here, to 43072
+        backend.Now = 43071;
+        scheduler.Update();
+        Assert.AreEqual(0, ReleasesOf(backend, h), "not stopped before the hold from the second Update has passed");
+        Assert.AreEqual(1, StopsOf(backend, h), "only the stop at its end time");
+        backend.Now = 43072;
+        scheduler.Update();
+        Assert.AreEqual(1, StopsAt(backend, h, 43072));
+        Assert.AreEqual(1, ReleasesOf(backend, h));
+    }
+
+    [Test]
+    public void MutedNote_IsNotScaledBySetFade_NorRehandedByRescheduleFrom()
+    {
+        var (clock, backend, scheduler) = Make();
+        clock.Anchor(0, 0, 120);
+        backend.Now = 30000;
+        scheduler.Schedule(N(72, 1.5, 1, -3f, 0, rung: 4), Owner); // armed (start 36000)
+        int h = backend.Starts[0].handle;
+        scheduler.SilenceAbove(1);
+        Assert.AreEqual(1, backend.Volumes.Count);
+
+        scheduler.SetFade(1, 0.5f);
+        Assert.AreEqual(1, backend.Volumes.Count, "the muted note is not raised again");
+
+        clock.Anchor(1, 25000, 132); // a tempo change moves beat 1.5
+        scheduler.RescheduleFrom(0);
+        Assert.AreEqual(1, backend.Starts.Count, "not handed over again");
+        Assert.AreEqual(1, StopsOf(backend, h), "not cancelled: only its own stop");
+        Assert.AreEqual(0, ReleasesOf(backend, h));
+        Assert.AreEqual(1, scheduler.MutedCount);
+    }
+
+    [Test]
+    public void NoteOfTheSameRungScheduledAfterTheMute_PlaysWhole()
+    {
+        var (clock, backend, scheduler) = Make();
+        scheduler.SilenceHoldSamples = 3072;
+        clock.Anchor(0, 0, 120);
+        backend.Now = 20000;
+        scheduler.Schedule(N(70, 1, 4, 0f, 0, rung: 4), Owner);
+        int old = backend.Starts[0].handle;
+        backend.Now = 30000;
+        scheduler.SetFade(1, 0.2f);
+        // FadeEnded: mute, then forget the fade; the rebuilt rung's next notes are new notes.
+        scheduler.SilenceAbove(1);
+        scheduler.ClearFade();
+        scheduler.Schedule(N(74, 1.5, 4, 0f, 0, rung: 4), Owner); // handed at once
+        int fresh = backend.Starts[1].handle;
+        Assert.IsFalse(backend.Volumes.Exists(v => v.handle == fresh), "no volume call: full level");
+        Assert.AreEqual(0, ReleasesOf(backend, old), "the old note is held silent, not cut");
+        Assert.AreEqual(1, scheduler.MutedCount);
+
+        scheduler.Update();
+        backend.Now = 31000;
+        scheduler.Update();
+        backend.Now = 40000; // past the old note's hold
+        scheduler.Update();
+        Assert.AreEqual(1, ReleasesOf(backend, old));
+        Assert.AreEqual(1, StopsOf(backend, fresh), "only its own stop time");
+        Assert.AreEqual(0, ReleasesOf(backend, fresh));
+        Assert.IsFalse(backend.Volumes.Exists(v => v.handle == fresh));
+        Assert.AreEqual(1, scheduler.ActiveCount);
+        Assert.AreEqual(0, scheduler.MutedCount);
+    }
+
+    [Test]
+    public void StopAll_DuringTheHold_StopsOnce()
+    {
+        var (clock, backend, scheduler) = Make();
+        scheduler.SilenceHoldSamples = 3072;
+        clock.Anchor(0, 0, 120);
+        backend.Now = 20000;
+        scheduler.Schedule(N(70, 1, 4, 0f, 0, rung: 4), Owner);
+        int h = backend.Starts[0].handle;
+        backend.Now = 30000;
+        scheduler.SilenceAbove(1);
+        scheduler.Update();
+        backend.Now = 31000;
+        scheduler.StopAll();
+        Assert.AreEqual(1, StopsAt(backend, h, 31000));
+        Assert.AreEqual(1, ReleasesOf(backend, h));
+        Assert.AreEqual(0, scheduler.MutedCount);
+        Assert.AreEqual(0, scheduler.ActiveCount);
+        backend.Now = 32000;
+        scheduler.Update();
+        backend.Now = 50000;
+        scheduler.Update();
+        Assert.AreEqual(2, StopsOf(backend, h), "its end time and the StopAll, nothing after");
+        Assert.AreEqual(1, ReleasesOf(backend, h));
+    }
+
+    [Test]
+    public void MutedNote_ReachingItsOwnStop_IsReleasedOnce()
+    {
+        var (clock, backend, scheduler) = Make();
+        scheduler.SilenceHoldSamples = 10000;
+        clock.Anchor(0, 0, 120);
+        backend.Now = 30000;
+        scheduler.Schedule(N(72, 1.5, 0.1, 0f, 0, rung: 4), Owner); // start 36000, stop 38400
+        int h = backend.Starts[0].handle;
+        scheduler.SilenceAbove(1);
+        scheduler.Update();
+        backend.Now = 31000;
+        scheduler.Update(); // the hold would end at 41000
+        backend.Now = 38400;
+        scheduler.Update();
+        Assert.AreEqual(1, ReleasesOf(backend, h));
+        Assert.AreEqual(0, scheduler.MutedCount);
+        Assert.AreEqual(0, scheduler.ActiveCount);
+        backend.Now = 41000;
+        scheduler.Update();
+        Assert.AreEqual(1, ReleasesOf(backend, h));
+        Assert.AreEqual(1, StopsOf(backend, h), "only its own stop time, never a cut");
+    }
+
+    // Final fix wave S5: a note handed over by Schedule itself (inside the window) while a fade is set.
+    [Test]
+    public void SetFade_AppliesToANoteHandedImmediatelyBySchedule()
+    {
+        var (clock, backend, scheduler) = Make();
+        clock.Anchor(0, 0, 120);
+        backend.Now = 40000; // beat 2 (48000) inside the window
+        scheduler.SetFade(1, 0.4f);
+        scheduler.Schedule(N(60, 2, 1, -4f, 0, rung: 3), Owner);
+        scheduler.Schedule(N(62, 2, 1, -1f, 0, rung: 1), Owner);
+        Assert.AreEqual(2, backend.Starts.Count);
+        Assert.AreEqual(1, backend.Volumes.Count);
+        Assert.AreEqual((backend.Starts[0].handle, -4f, 0.4f), backend.Volumes[0]);
     }
 
     [Test]
