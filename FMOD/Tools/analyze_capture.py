@@ -1197,7 +1197,10 @@ def cmd_ladderfade(args):
                 print("ladder: last scale before the end %.4f (%.1f dB) at beat %.4f" % (prev["scale"], to_db(prev["scale"]), prev["beat"]))
                 # The muted column (final fix wave M1): notes held at volume 0 from the rung drop; the first row after it
                 # with muted back at 0 is the frame that stopped them.
-                if "muted" in drop:
+                if "muted" in drop and drop["muted"] == 0:
+                    # Nothing held at volume 0: the next row with muted 0 is not a stop.
+                    print("ladder: muted 0 at the rung drop: no note was muted, no stop to report")
+                elif "muted" in drop:
                     back = next((r for r in rows if r["capture_frame"] > drop["capture_frame"] and r["muted"] == 0), None)
                     if back:
                         stop_frame = back["capture_frame"]

@@ -3480,3 +3480,130 @@ block that carries the volume 0: a ramp to silence instead of a cut.
   the break; beats 56 and 61 in `b47`): the same notes scheduled twice with the first copy cancelled (cancelled 76
   against 74 / 72). It depends on the frame timing of a bar-line invalidation; the audio nulls against `cl6_ref` before
   the break and against `rung0` after the fade.
+
+## Combo ladder — curve lead (the fade's last step)
+
+Question: with the fade's volume sent ahead of its curve, does the above-floor level reach silence before the rung
+drop, so that the end of the fade makes no last step?
+
+What changed (code): during a fade `SoundManager` sends `Shots.SetFade(floor, Fade.Scale(beat + lead))` instead of
+the step's scale, with `lead = ComboFade.LeadBeats(ComboFade.LeadBlocks, block, rate, bpm)`: `LeadBlocks` 2, `block`
+the mixer block from `getDSPBufferSize` (1024 here; 1024 if the call fails), `rate` the beat clock's sample rate
+(48000), `bpm` `MusicTransport.Bpm` (the tempo being mixed, the clock that gives the ladder its beat). Lead = 2048
+samples = 42.7 ms = 0.0825 beat at 116 BPM (0.0768 beat at 108 BPM). The fade's start and end, `LadderState`, the mute
+/ hold / stop and the values visuals read (`ComboFadeScale`, `LayerPresence`, `GuestPresence`) are not led, so
+`.ladder.csv` `scale` still shows the un-led curve (last scale before the end 0.0202 in `b405`; the value sent on that
+frame was already 0).
+
+`ladderfade`: when `muted` is 0 at the rung drop, it now prints `muted 0 at the rung drop: no note was muted, no stop
+to report` instead of taking the next row as the stop.
+
+### Takes (Editor, seed 7, 64 beats, `combobreak`, `logOneShots`, full mix, `MusicMix` 1, `scheduleOffsetSamples` 0)
+
+Recorded as the cl8 takes: auto refresh disallowed around each take, no Editor query while a take recorded,
+`Application.runInBackground = true` set at frame 2 of each take from an Editor call (runtime only;
+`PlayerSettings.runInBackground` read false after every take; ProjectSettings MD5s identical before and after the
+session; `AudioCapture.unity` MD5 unchanged, fields set without saving).
+
+| take | settings | unforced stalls | longest frame | Studio avg / max % | Core dsp avg / max % | ONESHOTS | PATTERNS sched. / started | RESYNCED | valid |
+|---|---|---:|---|---|---|---|---|---:|---|
+| `combobreak_seed7_cl9_b405` | `"40.5"` | 0 | 2067 ms, before the first beat (34 ms after beat 0) | 0.95 / 2.47 | 1.75 / 2.83 | 776 / 0 / 0 / 72 | 818 / 776 | 0 | yes |
+| `combobreak_seed7_cl9_b47` | `"47.0"` | 0 | 2086 ms, before the first beat (46 ms after beat 0) | 0.98 / 1.44 | 1.72 / 2.38 | 773 / 0 / 0 / 75 | 806 / 773 | 0 | yes |
+| `combobreak_seed7_cl9_floor` | `"40.5"`, `comboMax` 2 | 0 | 1937 ms, before the first beat (35 ms after beat 0) | 0.72 / 1.05 | 0.96 / 1.14 | 481 / 0 / 0 / 19 | 493 / 481 | 0 | yes |
+
+ONESHOTS = started / late / dropped / cancelled. Every take: `dropped frames 0`, dsp-to-frame mismatches 0.
+References: the cl6 `ref`, `floor_ref` and `rung0` takes; they still null before the break, so they were not
+re-recorded: `b405` vs `cl6_ref` residual 108.5 dB below over beats 0-40.5, `b47` vs `cl6_ref` 106.8 dB below over
+0-47, `floor` vs `cl6_floor_ref` identical over 0-40.5; every 4-beat window 0.000 dB; beats 0-4 of every take
+identical to `cl6_rung0`. The cl9 takes ran at a lower Editor frame rate than cl8 (mean frame 5.6-5.9 ms against
+4.5 ms in `cl8_b405`; largest ladder beat step 0.0825 / 0.0768 beat = two mixer blocks, as in `cl8_floor_r2`; 172 /
+189 / 178 frames with scale < 1 against 214 / 201 / 207).
+
+### The rung drop, before and after (above-floor signal take - rung0, 2 ms windows from the rung drop's capture frame, dBFS)
+
+| offset ms | -10 | -8 | -6 | -4 | -2 | +0 | +2 | +4 | +6 | +8..+20 | +22 | +24 | +26 | +28 |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---|---:|---:|---:|---:|
+| `cl8_b405` | -61.6 | -59.6 | -61.3 | -58.5 | -60.8 | -62.0 | -69.1 | -69.6 | -70.9 | -68.6 .. -72.3 | -75.4 | -86.4 | -99.0 | -114.2 |
+| `cl9_b405` | -141.4 | -140.1 | -137.3 | -135.8 | -135.6 | -143.3 | silent | -140.1 | -143.6 | -136.5 .. -144.9 | -133.2 | -134.7 | -132.4 | -134.1 |
+| `cl8_b47` | -64.0 | -65.6 | -67.5 | -62.7 | -62.7 | -64.1 | -75.4 | -81.9 | -74.9 | -74.5 .. -80.9 | -84.0 | -99.2 | -113.6 | -128.1 |
+| `cl9_b47` | -142.4 | -144.3 | -141.7 | -141.4 | -141.1 | -144.8 | -144.3 | -143.5 | -148.9 | -137.1 .. -148.8 | -142.7 | -143.0 | -142.1 | -143.4 |
+| `cl8_floor_r2` | -65.6 | -63.3 | -64.3 | -65.7 | -63.7 | -65.1 | -70.8 | -73.2 | -73.4 | -72.7 .. -76.7 | -82.4 | -122.2 | -130.6 | -130.9 |
+| `cl9_floor` | -141.1 | -141.4 | -136.6 | -133.8 | -135.2 | -140.4 | silent | -141.3 | -143.1 | -133.7 .. -141.3 | -130.6 | -132.9 | -129.2 | -131.8 |
+
+In cl9 the above-floor signal is gone before the rung drop: `b405` -72.2 (-22 ms), -79.0 (-20), -96.2 (-18), -112.9
+(-16); `b47` -79.0, -86.5, -97.8, -111.5; `floor` -73.9, -83.8, -104.9, -127.0. From -16 ms on, every 2 ms window up
+to +120 ms reads -120 dBFS or lower (the take's residual against `rung0`). The descent from about -72 dBFS to silence
+over about 6 ms is the sent 0 (the led curve's end) reaching the mix, now about 20 ms before the drop instead of
++22 .. +28 ms after it; there is no plateau at +0. The stop (`muted` back to 0) is at rung drop + 64.0 ms in all three
+takes (muted 15 / 14 / 1): above-floor 30 ms before it -128.0 / -138.1 / -125.5 dBFS, last block before it -126.9 /
+-137.6 / -124.5, 30 ms after it -140.2 / -138.4 / -137.8.
+
+### Fade, measured (above-floor gain per half-beat window, dB; take - rung0 against ref - rung0)
+
+| window (beats after the break) | curve 1 - t² | `cl8_b405` | `cl9_b405` | `cl8_b47` | `cl9_b47` |
+|---|---:|---:|---:|---:|---:|
+| 0.0-0.5 | -0.18 | -0.1 | -0.1 | -0.1 | -0.2 |
+| 0.5-1.0 | -1.35 | -1.0 | -1.3 | -0.9 | -1.2 |
+| 1.0-1.5 | -4.28 | -3.2 | -3.8 | -3.7 | -4.3 |
+| 1.5-2.0 | -11.64 | -9.1 | -10.8 | -9.3 | -10.9 |
+| 2.0-2.5 (after; above-floor residual) | -inf | -29.9 (-67.3 dBFS) | -46.8 (-84.2 dBFS) | -37.5 (-74.2 dBFS) | -65.6 (-102.3 dBFS) |
+
+1/8-beat cells (measured / curve from the break beat): `cl9_b405` -0.7/-0.7 at 41.0, -4.6/-4.9 at 41.75, -10.3/-10.8 at
+42.125, -20.9/-23.0 at 42.375 (cl8 -0.5, -3.9, -8.6, -15.8); `cl9_b47` -2.9/-2.9 at 48.0, -8.2/-8.2 at 48.5,
+-15.0/-14.8 at 48.75, -23.5/-23.0 at 48.875 (cl8 -2.4, -7.0, -12.2, -17.5). `floor` (the pluck alone) is not a usable
+gain curve: `floor_ref` - `rung0` is silent in several cells (the pluck's rests), so its windows read -0.1 / -2.4 /
+-3.5 / -33.7 (cl8 -0.0 / -2.0 / -2.9 / -20.0).
+
+Lag (the reviewer's method, not in `ladderfade`; a scratch script using `analyze_capture.Take`: least-squares fit in
+linear gain of the 1/16-beat above-floor gain, from the break beat to +2.25 beats, against 1 - t² shifted by L, L in
+0.0005-beat steps). Check of the method: cl6 `b405` +0.1020, `b47` +0.0735 beat from the break beat (reviewer 0.100 /
+0.075).
+
+| take | lag from the break beat | lag from the fade start (the frame the break was seen) |
+|---|---:|---:|
+| `cl8_b405` | +0.1025 | +0.0673 |
+| `cl8_b47` | +0.0735 | +0.0629 |
+| `cl9_b405` | +0.0195 | -0.0157 |
+| `cl9_b47` | -0.0035 | -0.0141 |
+
+From the fade start the measured fade now leads its curve by 0.014-0.016 beat (7-8 ms at 116 BPM): the lag before
+was 0.063-0.067 beat (1.5-1.6 blocks) and the lead is 2 blocks (0.0825 beat). The part from the break beat to the
+fade start (+0.0352 / +0.0106, the break seen on the next mixer block) is unchanged.
+
+### Expectations (curve lead brief)
+
+| expectation | measured | verdict |
+|---|---|---|
+| No step at +0: the 2 ms windows before (-2) and after (+0) +0 differ by less than 3 dB | `b405` -135.6 / -143.3 dBFS (7.7 dB), `b47` -141.1 / -144.8 (3.7 dB), `floor` -135.2 / -140.4 (5.2 dB). Both windows are silence (the take's residual against `rung0`, which scatters by up to about 8 dB between neighbouring 2 ms windows: `b405` +0 .. +10 reads -143.3, silent, -140.1, -143.6, -144.9, -137.2). cl8: -62.0 -> -69.1 / -64.1 -> -75.4 / -65.1 -> -70.8 | **NOT met** as written (3.7-7.7 dB, all at -135 dBFS or below) |
+| No step at +0: above-floor level in the 10 ms before +0 at or below -90 dBFS | `b405` -137.4, `b47` -142.0, `floor` -136.6 dBFS (power mean of the five 2 ms windows -10 .. -2; cl8 about -60 / -64 / -64) | met |
+| Above-floor gain per half-beat window falls monotonically, closer to the curve | `b405` -0.1, -1.3, -3.8, -10.8; `b47` -0.2, -1.2, -4.3, -10.9 (curve -0.18 / -1.35 / -4.28 / -11.64; cl8 -0.1 / -1.0 / -3.2 / -9.1 and -0.1 / -0.9 / -3.7 / -9.3) | met (monotonic; within 0.84 dB of the curve, cl8 within 2.54) |
+| Reviewer-style lag near 0 | from the fade start -0.016 / -0.014 beat (cl8 +0.067 / +0.063); from the break beat +0.020 / -0.004 (cl6 0.100 / 0.075) | met (near 0; slightly ahead) |
+| Unchanged: "after the fade" +0.00 dB vs rung0 | `b405` -36.21 vs -36.21 (+0.00), `b47` -37.11 vs -37.11 (+0.00), `floor` -36.21 vs -36.21 (+0.00) | met |
+| Unchanged: clicks 0 | raw 0 and first difference 0 in the fade and the half beat after it, all three takes (cl8 `floor_r2` had 2 first-difference hits at 42.52 / 42.55, now 0) | met |
+| Unchanged: late / dropped / RESYNCED 0 | 0 / 0 / 0 in all three takes | met |
+| Unchanged: fade start and rung drop offsets | `b405` +0.0352 / +2.0564, `b47` +0.0106 / +2.0374, `floor` +0.0352 / +2.0564 (as cl8) | met |
+| Unchanged: the stop at rung drop + 64.0 ms, silent before it | +64.0 ms in all three; 30 ms before it -128.0 / -138.1 / -125.5 dBFS | met |
+| Unchanged: floor layers (kick) within the cl8 figures | `kicks` beats 36-46, `cl9_floor` vs `cl6_ref`: -0.21, -0.62, -0.17, -0.56, -0.19, -0.64 dB (max 0.64, = cl8); vs `cl6_floor_ref`: 0.00 at every kick beat (= cl8) | met |
+| Tuning (`LeadBlocks` 3 if the 10 ms before +0 is above -90 dBFS) | -137.4 / -142.0 / -136.6 dBFS | not triggered; `LeadBlocks` stays 2, no `_lb3` takes |
+
+Bar line inside the fade (`b47`, beat 48, not an expectation here): above-floor gain -2.43 dB before / -2.65 dB after,
+step -0.22 dB against the curve's -0.22 (cl8 -1.99 / -2.18); full mix take step - ref step +1.89 dB (cl8 +1.57).
+
+### NOT met / open
+
+- "Less than 3 dB between the 2 ms before and after +0": NOT met as written (7.7 / 3.7 / 5.2 dB), but both windows
+  are at -135 .. -145 dBFS, the residual of the take against `rung0`, where neighbouring 2 ms windows scatter by up to
+  about 8 dB anywhere in the silent span. The level condition (-90 dBFS) is met by 47-52 dB.
+
+### Noticed, not changed
+
+- The last volume step has moved, not vanished: about 20 ms before the rung drop the above-floor signal still falls
+  from about -72 dBFS (about 35 dB below its unfaded level) to silence within about 6 ms, when the sent 0 reaches the
+  mix. It is the step from the last non-zero sent value to 0; with frames one or two mixer blocks apart the last
+  non-zero value sent is up to about 0.08 beat before the curve's end. Not measured as a click (0 raw and 0 first
+  difference).
+- With a lead of 2 blocks against a measured lag of 1.5-1.6 blocks, the heard fade now runs 0.014-0.016 beat (7-8 ms)
+  ahead of the curve from the fade start; the last 1/8-beat cells read up to 0.5 dB below the curve (`b47` 48.875
+  -23.5 / -23.0).
+- The cl9 takes ran at a lower Editor frame rate than cl8 (see Takes); no stall, and nothing in the audio depends on
+  it except how often `SetFade` is sent.
