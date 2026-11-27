@@ -75,9 +75,6 @@ public sealed class ChordPulsePrototype : MonoBehaviour
     const float ArenaInset = 0.45f;
     // Fever charge: pulses in a row that kill something (outside fever); reaching it queues fever for the next loop.
     const int PulseComboForFever = 10;
-    // Music layer levels 1..3 (SoundManager.Combo): enemies killed in a row without the core being hit.
-    // Separate from the pulse combo, which charges fever.
-    static readonly int[] KillStreakLayerThresholds = { 4, 8, 12 };
 
     [SerializeField] Camera playCamera;
     [SerializeField] GamePanel gamePanel;
@@ -187,7 +184,6 @@ public sealed class ChordPulsePrototype : MonoBehaviour
     int _spawnGroup;
     readonly CoreHitRule _coreHits = new CoreHitRule();
     int _score;
-    int _killStreak;
     int _health;
     int _pulseCombo;
     int _maxPulseCombo;   // highest pulse combo of the round (game-over screen)
@@ -270,7 +266,6 @@ public sealed class ChordPulsePrototype : MonoBehaviour
         _spawnGroup = 0;
         _coreHits.Reset();
         _score = 0;
-        _killStreak = 0;
         _health = MaxHealth;
         _pulseCombo = 0;
         _maxPulseCombo = 0;
@@ -314,7 +309,7 @@ public sealed class ChordPulsePrototype : MonoBehaviour
         _soundManager.Intensity = SpawnDirector.Difficulty(_soundManager.RoundSeconds);
         _soundManager.Tension = TensionMeter.Compute(_enemyStates, CoreRadius, _arenaRadius, _health, MaxHealth);
         _soundManager.Danger = _health == 1;
-        _soundManager.Combo = MusicLayerLevel(_killStreak);
+        _soundManager.ComboCount = _pulseCombo;
         int step = _soundManager.CurrentStep;
         double beatPosition = _soundManager.BeatPosition;
         // The music can restart mid-round (output sample rate change): the beat jumps back, so unlock the rules.
@@ -382,7 +377,6 @@ public sealed class ChordPulsePrototype : MonoBehaviour
                 if (!_coreHits.CostsHealth(state.Group))
                     continue;
                 _health--;
-                _killStreak = 0;
                 ResetPulseCombo();
                 _soundManager.Hurt();
                 UpdateHud();
@@ -526,14 +520,6 @@ public sealed class ChordPulsePrototype : MonoBehaviour
         _targetMarkers.Show(_targets, danger, sinceBeat);
     }
 
-    static int MusicLayerLevel(int streak)
-    {
-        int level = 0;
-        while (level < KillStreakLayerThresholds.Length && streak >= KillStreakLayerThresholds[level])
-            level++;
-        return level;
-    }
-
     // Two counters move together but are separate:
     // - pulse combo (shown on screen): +1 for every pulse that kills, fever pulses included; never touched by fever.
     // - fever charge: the same count, but only outside fever. Reaching PulseComboForFever queues fever; it is frozen
@@ -644,7 +630,6 @@ public sealed class ChordPulsePrototype : MonoBehaviour
                     _soundManager.QueueKillChord(partnerColor, wave.ChordStep);
                 // The n-th kill of one pulse is worth n points.
                 _score += pulseEvent.Points;
-                _killStreak++;
                 if (pulseEvent.Points == 1)
                     AddPulseCombo(pulse.IsFever);
                 UpdateHud();

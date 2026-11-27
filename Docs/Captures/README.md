@@ -3164,3 +3164,47 @@ changes were taken out of the working tree with `git apply -R` of their diff and
 in between).
 
 Verdict: no audible change from Task 3 (0.000 dB against the same code without it; the same pattern notes).
+
+## Combo ladder — Task 4 (the screen combo drives the ladder; capture scenarios pin their arrangement)
+
+Question: `SoundManager` now plays the ladder's rung (`LadderState`: screen combo `ComboCount` and round time, raised on
+bar lines, faded over 2 beats above the floor when the combo breaks). The capture scenarios never set `ComboCount`, so
+they pin their old arrangement with `SoundManager.PinArrangement(intensity, combo)` instead (otherwise the floor would
+rise with the round time):
+
+| scenario | pinned intensity | pinned combo | `SoundManager.Intensity` (section choice) |
+|---|---:|---:|---|
+| `heavy` | 0 (or the `intensity` option) | 3 | 0 (or the option) |
+| `duck` | 3 | 0 | 3 |
+| `baseline`, `spike`, `styles`, `features`, `fever` | 0 (or the `intensity` option) | 0 | 0 (or the option) |
+| any, after `restartAfterStop` | 0 | 3 for `heavy`, else 0 | 0 (as before: only heavy's combo and tension were re-applied) |
+
+Does a pinned take sound as before? Settings for both takes: Editor, `heavy`, seed 7, 128 beats, `logOneShots`, full
+mix, `scheduleOffsetSamples` 0, `fadeProbe` off (the `heavy_seed7_s9f` settings). `heavy_seed7_s9f` itself is stale
+(music content changed after it, see Task 3), so the reference `heavy_seed7_cl4_ref` was recorded first on `9586309`
+(Task 3, untouched tree), then `heavy_seed7_cl4` with this task's code. Auto refresh disallowed around each take, no
+Editor query while a take recorded, `Application.runInBackground = true` set at frame 2 of each take from an Editor call
+(runtime only; `PlayerSettings.runInBackground` read false afterwards; ProjectSettings MD5s identical before and after).
+
+| take | code | unforced stalls | longest frame | Studio avg / max % | Core dsp avg / max % | ONESHOTS | PATTERNS sched. / started | valid |
+|---|---|---:|---|---|---|---|---|---|
+| `heavy_seed7_cl4_ref` | `9586309` | 0 | 1673 ms, before the first beat | 1.57 / 2.32 | 5.64 / 9.22 | 4738 / 0 / 0 / 43 | 1677 / 1669 | yes |
+| `heavy_seed7_cl4` | Task 4 | 0 | 2140 ms, before the first beat | 1.54 / 2.75 | 5.51 / 6.89 | 4733 / 0 / 0 / 7 | 1671 / 1664 | yes |
+
+ONESHOTS = started / late / dropped / cancelled. KILLS 3069 started in both, RESYNCED 0, dsp-to-frame mismatches 0,
+CHANNELS 87 / 87 in both.
+
+| criterion | result | verdict |
+|---|---|---|
+| `heavy_seed7_cl4` against `heavy_seed7_cl4_ref` (`rms --compare`, 4-beat windows), every window within ±0.1 dB (the first bar may differ) | max \|diff\| **0.094 dB** (window 0, beats 0-4: -30.41 vs -30.51 dBFS); windows 1-30 0.00 | met |
+
+Window 0 is the expected first-bar difference. In the reference the heavy scenario's combo 3 reached the arrangement
+one bar late (Task 3's interim pin read the bar-latched combo, which was still 0 while bar 0 was scheduled in the start
+lead): at the bar-0 latch the schedulers were invalidated, so `cl4_ref` lacks the GlassPad chord (ComboPad, MIDI
+67 / 72 / 76) on beat 0, which was inside the onset safety and never re-stated, and lists nine notes of beats 0.5-3
+twice (SineSub 36 and Acid 36 at 0.5; Acid 48, Drums 38 / 42 at 1; Drums 36 / 42 at 2; Drums 38 / 42 at 3), the first
+copies cancelled by the invalidation (cancelled 43 against 7). With `PinArrangement` combo 3 applies from the start:
+`cl4` plays the beat-0 GlassPad chord and schedules every note once. Every other scheduled note (`.patterns.csv`: beat,
+instrument, bus, MIDI) is identical between the takes.
+
+Not measured here: a combo break and its fade (no scenario sets `ComboCount` yet).

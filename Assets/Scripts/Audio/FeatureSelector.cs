@@ -103,6 +103,12 @@ public sealed class FeatureSelector
         Next = null;
     }
 
+    /// <summary>
+    /// Drops the loop of the phrase being heard (a broken combo faded it out). It was heard, so the recent-loop memory
+    /// keeps it.
+    /// </summary>
+    public void CancelCurrent() => Current = null;
+
     Loop Choose(int energy, int excludeId)
     {
         energy = Math.Max(0, Math.Min(energy, SectionSelector.SectionCount - 1));

@@ -86,10 +86,15 @@ public sealed class SoundManager : SingletonBehaviour<SoundManager>, IKillBedSta
     int _variationCurrent;
     int _variationNext;
     int _appliedVariation = -1;
-    // Combo layers (0..3, latched on bar lines) and the hurt dip (global "Hurt", snapped to 1, seeks back to 0).
-    int _combo;
+    // The combo ladder (LadderState: the screen combo and the round time pick a rung 0..6, raised on bar lines, faded out
+    // above the floor when the combo breaks), the combo level being played (fever zone 0) and the hurt dip (global
+    // "Hurt", snapped to 1, seeks back to 0).
+    readonly LadderState _ladder = new LadderState();
+    int _comboCount;
+    // PinArrangement (measurement scenes): intensity / combo level used instead of the ladder's (-1 = not pinned).
+    int _pinIntensity = -1;
+    int _pinCombo = -1;
     int _appliedCombo = -1;
-    int _comboBar = -1;
     bool _hurtPending;
     // Bed style per phrase (0 synthpop, 1 latin, 2 funk, 3 dreamy),
     // chosen one phrase ahead and held for a few phrases so the arrangement does not flip-flop.
@@ -117,9 +122,9 @@ public sealed class SoundManager : SingletonBehaviour<SoundManager>, IKillBedSta
     int _appliedIntensity = -1;
 
     /// <summary>
-    /// Target musical energy (set from difficulty). Drives arrangement density for normal sections
-    /// (0 kick/snare/closed hat/bass, 1 +pluck, 2 +open hats, 3 +clap) and which tempo sections get picked.
-    /// Fever always plays the full arrangement; breath phrases drop back to the sparse one.
+    /// Target musical energy 0..3 (set from difficulty, i.e. round time). Steers which tempo sections get picked, the
+    /// pattern variation weights and the guest-loop length weight. It no longer gates layers: the arrangement density is
+    /// the combo ladder's (<see cref="ComboCount"/>, <see cref="LadderRung"/>).
     /// </summary>
     public int Intensity { get => _intensity; set => _intensity = Mathf.Clamp(value, 0, MaxIntensity); }
 
@@ -195,11 +200,36 @@ public sealed class SoundManager : SingletonBehaviour<SoundManager>, IKillBedSta
     /// 3 walking bass + arpeggio + ghost snares, 4 walking bass + chord stabs + ghost snares.
     /// </summary>
     /// <summary>
-    /// Kill-streak level 0..3 from the game: 1 adds 16th hats, 2 a glass pad, 3 a bell arpeggio.
-    /// Applied on the next bar line; 0 during fever build-up and fever (fever has its own full arrangement).
+    /// The on-screen pulse combo from the game (negative reads 0). With the round time it picks the combo ladder's rung
+    /// (<see cref="ComboLadder.Rung"/>): rungs 1..3 add the intensity layers, 4..6 the combo layers (16th hats, glass pad,
+    /// bell arpeggio). A higher rung comes in on the next bar line; a combo that drops to 0 fades the layers above the
+    /// floor over <see cref="ComboFade.Beats"/> beats and then removes them (not inside the fever phrase).
     /// </summary>
-    public int Combo { get => _combo; set => _combo = Mathf.Clamp(value, 0, 3); }
-    /// <summary>Combo level FMOD is playing right now.</summary>
+    public int ComboCount { get => _comboCount; set => _comboCount = Math.Max(0, value); }
+    /// <summary>Rung being played: during a fade the rung from before the break, after it the floor's.</summary>
+    public int LadderRung => _ladder.HeardRung;
+    /// <summary>The time floor of the ladder (0 before 30 s, 1 before 2 min, then 2).</summary>
+    public int LadderFloor => _ladder.Floor;
+    /// <summary>Fade of the layers above the floor after a break: 1 = whole, 0 = gone; 1 when no fade runs.</summary>
+    public float ComboFadeScale => _ladder.Fade.Active ? _ladder.Fade.Scale(_audioBeat) : 1f;
+    /// <summary>How much of a layer that needs <paramref name="requiredRung"/> is heard (0..1): 1 at or below the floor,
+    /// 0 above <see cref="LadderRung"/>, the fade value above the floor during a fade.</summary>
+    public float LayerPresence(int requiredRung) => _ladder.Fade.Presence(requiredRung, LadderRung, _audioBeat);
+    /// <summary>How much of the guest loop is heard: the fade value during a fade, otherwise 1.</summary>
+    public float GuestPresence => _ladder.Fade.Active ? ComboFadeScale : 1f;
+
+    /// <summary>
+    /// Measurement scenes: play this intensity (0..3) and combo level (0..3) instead of the ladder's (fever and breath
+    /// still apply). -1 leaves that one to the ladder; both -1 clears the pin. <see cref="StartMusic"/> clears it.
+    /// </summary>
+    public void PinArrangement(int intensity, int combo)
+    {
+        _pinIntensity = intensity < 0 ? -1 : Math.Min(intensity, MaxIntensity);
+        _pinCombo = combo < 0 ? -1 : Math.Min(combo, ComboLadder.ComboLevel(ComboLadder.MaxRung));
+    }
+
+    /// <summary>Combo level FMOD is playing right now (<see cref="ComboLadder.ComboLevel"/> of <see cref="LadderRung"/>,
+    /// or the pin; 0 in the fever build-up and fever).</summary>
     public int CurrentCombo => Running ? Math.Max(0, _appliedCombo) : 0;
     /// <summary>The core was hit: the accompaniment loses its lows and dips for about 0.6 s.</summary>
     public void Hurt() => _hurtPending = true;
@@ -240,7 +270,8 @@ public sealed class SoundManager : SingletonBehaviour<SoundManager>, IKillBedSta
     public int CurrentBar => Running ? CurrentBeat / BeatsPerBar : -1;
     /// <summary>Chord of the bar being heard: 0 C, 1 Am, 2 F, 3 G (every section starts on C, phrases are 4 bars).</summary>
     public int ChordIndex => Running ? CurrentBar % SectionSelector.BarsPerPhrase : 0;
-    /// <summary>Arrangement density FMOD is actually playing (fever and breath already applied).</summary>
+    /// <summary>Arrangement density FMOD is actually playing: fever 3, breath 0, otherwise
+    /// <see cref="ComboLadder.Intensity"/> of <see cref="LadderRung"/> (or the pin).</summary>
     public int ArrangementIntensity => Math.Max(0, _appliedIntensity);
     /// <summary>Whether the kick drum plays on this beat (it drops out during the fever build-up bar).</summary>
     public bool KickOn(int beat) => beat >= 0 && IsKickBeat(beat) && !FeverBuilding;
@@ -293,8 +324,9 @@ public sealed class SoundManager : SingletonBehaviour<SoundManager>, IKillBedSta
         _progressions = new ProgressionSelector(sectionSeed);
         _variationRandom = sectionSeed == 0 ? new System.Random() : new System.Random(unchecked(sectionSeed * 31 + 5));
         _variationCurrent = _variationNext = 0;
-        _combo = 0;
-        _appliedCombo = _comboBar = -1;
+        _comboCount = 0;
+        _appliedCombo = -1;
+        _pinIntensity = _pinCombo = -1;
         _styleRandom = sectionSeed == 0 ? new System.Random() : new System.Random(unchecked(sectionSeed * 131 + 9));
         _styleCurrent = _styleNext = StyleSynthpop;
         _appliedStyle = -1;
@@ -515,6 +547,8 @@ public sealed class SoundManager : SingletonBehaviour<SoundManager>, IKillBedSta
         Shots.StopAll();
         _shotBackend.StopAll(); // also the release tails the scheduler has already let go of
         ResetPatterns();
+        _ladder.Reset();
+        Shots.ClearFade();
         _arrangementValid = false;
         _killPlanner.Clear();
         _transport.Stop();
@@ -643,10 +677,12 @@ public sealed class SoundManager : SingletonBehaviour<SoundManager>, IKillBedSta
             FeatureNext = _features.Next != null ? _features.Next.Id : 0,
             SectionPhraseCurrent = _sectionPhraseCurrent,
             SectionPhraseNext = _sectionPhraseNext,
-            // Combo ladder Task 3: the game's intensity and its bar-latched combo are still independent, so both are
-            // passed through as pins (the rung is unused); Task 4 replaces them with the ladder's rung.
-            PinIntensity = _intensity,
-            PinCombo = Math.Max(0, _appliedCombo),
+            // The combo ladder's rung (LadderState, updated this frame before any refresh); pins only from PinArrangement.
+            LiveRung = _ladder.LiveRung,
+            AppliedRung = _ladder.AppliedRung,
+            RungBar = _ladder.RungBar,
+            PinIntensity = _pinIntensity,
+            PinCombo = _pinCombo,
             FeverStart = _feverStart,
             FeverVariant = _feverStart >= 0 ? _fever.Variant : 0,
             FeverGuest = _feverStart >= 0 && _fever.Guest != null ? _fever.Guest.Id : 0,
@@ -695,8 +731,15 @@ public sealed class SoundManager : SingletonBehaviour<SoundManager>, IKillBedSta
     // Bed style played at a step (UpdateStyle's rule; fever is handled by the caller).
     int StyleAt(int step) => step >= NextPhraseStep ? _styleNext : _styleCurrent;
 
-    // Combo level played at a step: the applied level up to the bar it was last latched for, the game's after it.
-    int ComboAt(int step) => step / StepsPerBar > _comboBar ? _combo : Math.Max(0, _appliedCombo);
+    // Combo level played at a step: the pin, or the ladder's rung at that step with the same bar latch as the pattern
+    // layers (ArrangementTimeline.RungAt), so kill chords and bed agree.
+    int ComboAt(int step)
+    {
+        if (_pinCombo >= 0)
+            return _pinCombo;
+        var rung = new ArrangementInputs { LiveRung = _ladder.LiveRung, AppliedRung = _ladder.AppliedRung, RungBar = _ladder.RungBar };
+        return ComboLadder.ComboLevel(ArrangementTimeline.RungAt(step, in rung));
+    }
 
     // The next phrase's section was chosen or replaced: the clock times beats past that boundary with its BPM, and
     // one-shots already handed to FMOD for beats after it are moved.
@@ -782,21 +825,50 @@ public sealed class SoundManager : SingletonBehaviour<SoundManager>, IKillBedSta
     bool FeverOverlaps(double fromStep, double toStep) =>
         _feverStart >= 0 && fromStep < _feverStart + FeverSteps && toStep >= _feverStart - FeverBuildSteps;
 
-    // The applied values (what is being mixed now: ArrangementIntensity, CurrentStyle, CurrentVariation, CurrentCombo, the
-    // combo latch) and the global parameters, at the mixer's step. The pattern layers themselves follow
+    // The combo ladder (UpdateLadder), the applied values (what is being mixed now: ArrangementIntensity, CurrentStyle,
+    // CurrentVariation, CurrentCombo) and the global parameters, at the mixer's step. The pattern layers themselves follow
     // ArrangementTimeline per step (CurrentArrangement).
     void UpdateFever()
     {
         double step = AudioStepPosition;
         bool fever = _feverStart >= 0 && step >= _feverStart && step < _feverStart + FeverSteps;
+        bool feverZone = fever || FeverOverlaps(step, step);
+
+        UpdateLadder(fever);
 
         bool breath = step >= NextPhraseStep ? _sections.Next.Breath : _sections.Current.Breath;
-        _appliedIntensity = fever ? MaxIntensity : breath ? 0 : _intensity;
+        int intensity = _pinIntensity >= 0 ? _pinIntensity : ComboLadder.Intensity(LadderRung);
+        _appliedIntensity = fever ? MaxIntensity : breath ? 0 : intensity;
+        _appliedCombo = feverZone ? 0 : _pinCombo >= 0 ? _pinCombo : ComboLadder.ComboLevel(LadderRung);
 
-        UpdateTension(fever || FeverOverlaps(step, step));
+        UpdateTension(feverZone);
         UpdateVariation(step);
-        UpdateCombo(step, fever || FeverOverlaps(step, step));
+        UpdateHurt();
         UpdateStyle(step);
+    }
+
+    // Once per frame at the mixer's beat (fever phrase = the 4 fever bars, not the build-up bar). A break above the floor
+    // fades every one-shot above the floor (Shots.SetFade: handed notes now, later ones as they are handed over); when the
+    // fade ends those notes are removed, the guest loop of this phrase and the one chosen for the next are dropped, and the
+    // arrangement is refreshed with the floor's rung so nothing above it is scheduled again.
+    void UpdateLadder(bool feverPhrase)
+    {
+        var result = _ladder.Update(_comboCount, _roundSeconds, _audioBeat,
+            (int)Math.Floor(_audioBeat / BeatsPerBar), feverPhrase);
+        if (result.FadeStarted || _ladder.Fade.Active)
+            Shots.SetFade(result.Floor, result.Scale);
+        if (!result.FadeEnded)
+            return;
+        Shots.SetFade(result.Floor, 0f);
+        Shots.SilenceAbove(result.Floor);
+        Shots.ClearFade();
+        if (_features.Current != null || _features.Next != null)
+        {
+            _features.CancelCurrent();
+            _features.CancelNext();
+        }
+        if (_clock.BeatAt(FmodClock.MasterDsp(), out double now))
+            RefreshArrangement(now);
     }
 
     // The original pattern a bit more often than each variant; never the same variant twice in a row.
@@ -865,7 +937,7 @@ public sealed class SoundManager : SingletonBehaviour<SoundManager>, IKillBedSta
         _appliedStyle = style;
     }
 
-    void UpdateCombo(double step, bool feverZone)
+    void UpdateHurt()
     {
         if (_hurtPending && _globalsAvailable)
         {
@@ -874,12 +946,6 @@ public sealed class SoundManager : SingletonBehaviour<SoundManager>, IKillBedSta
             if (Check(SetMusicParameter("Hurt", 1f, true)))
                 Check(SetMusicParameter("Hurt", 0f));
         }
-        // The level is latched per bar (passed to ArrangementInputs.PinCombo until the ladder's rung latch takes over).
-        int bar = (int)Math.Floor(step / StepsPerBar);
-        if (bar == _comboBar)
-            return;
-        _comboBar = bar;
-        _appliedCombo = feverZone ? 0 : _combo;
     }
 
     // Switched on the phrase boundary. Build-up and fever keep the original pattern (they bring their own rolls and fills).

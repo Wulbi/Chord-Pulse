@@ -87,8 +87,9 @@ public sealed class CaptureScenario : MonoBehaviour
     [SerializeField] bool tensionSteps;
     [Tooltip("styles: keep the bed audible (musicMix) instead of forcing MusicMix 0.")]
     [SerializeField] bool stylesWithBed;
-    [Tooltip(">= 0: SoundManager.Intensity for the take (the off-beat pluck plays from 1, funk guitar from 2; it also " +
-             "steers the section choice). -1 = leave it (0 after StartMusic; duck sets 3).")]
+    [Tooltip(">= 0: arrangement intensity for the take, pinned with SoundManager.PinArrangement (the off-beat pluck plays " +
+             "from 1, funk guitar from 2), and SoundManager.Intensity (section choice). -1 = intensity 0 pinned, " +
+             "SoundManager.Intensity left at 0 (duck pins and sets 3).")]
     [SerializeField] int intensity = -1;
     [Tooltip("Comma-separated PatternTable.LayerNames: only these pattern layers are scheduled (one-shot path; sets the " +
              "layer masks of both PatternSchedulers, core and the rest). Empty = all.")]
@@ -234,11 +235,7 @@ public sealed class CaptureScenario : MonoBehaviour
 
         sound.StartMusic();
         if (scenario == Scenario.heavy)
-        {
-            // Applied after StartMusic, which resets both to 0.
-            sound.Combo = 3;
-            sound.Tension = 0.8f;
-        }
+            sound.Tension = 0.8f; // applied after StartMusic, which resets it
         sound.MusicMix = musicMix;
         if ((scenario == Scenario.styles && !stylesWithBed) || killsOnly)
             sound.MusicMix = 0f; // kill chords alone: the bed would differ between styles
@@ -278,6 +275,7 @@ public sealed class CaptureScenario : MonoBehaviour
         }
         else if (meterFeatureDuck)
             StartCoroutine(MeterDuckCompressor(featureKeyed: true));
+        PinArrangement(sound, restart: false);
         Debug.Log("[CaptureScenario] " + scenario + " seed " + seed + ", " + beats + " beats -> " + _wavPath);
     }
 
@@ -377,6 +375,16 @@ public sealed class CaptureScenario : MonoBehaviour
         }
     }
 
+    // The arrangement of every scenario is fixed as it was before the combo ladder (no ladder: the take never sets
+    // SoundManager.ComboCount, and the floor would otherwise rise with the round time): heavy plays combo level 3, every
+    // scenario intensity 0, except duck (3) and the intensity option. After a restart (restartAfterStop) only heavy's
+    // combo was re-applied, so the intensity there is 0 again. Called after StartMusic, which clears the pin.
+    void PinArrangement(SoundManager sound, bool restart)
+    {
+        int pinIntensity = restart ? 0 : scenario == Scenario.duck ? SoundManager.MaxIntensity : Math.Max(0, intensity);
+        sound.PinArrangement(pinIntensity, scenario == Scenario.heavy ? 3 : 0);
+    }
+
     // stallMs / stallAtBeats: one Thread.Sleep per value, on the first frame whose visual beat is at or past it (after
     // this frame's scheduling, so the next frame sees the whole gap).
     void ForceStall(SoundManager sound)
@@ -421,10 +429,8 @@ public sealed class CaptureScenario : MonoBehaviour
             _restartFrame = AudioCapture.FramesCaptured;
             sound.StartMusic();
             if (scenario == Scenario.heavy)
-            {
-                sound.Combo = 3;
                 sound.Tension = 0.8f;
-            }
+            PinArrangement(sound, restart: true);
             return;
         }
         // Same kills per beat as the first run, so the first 4 beats of both are comparable.
