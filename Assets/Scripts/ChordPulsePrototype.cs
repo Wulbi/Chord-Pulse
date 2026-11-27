@@ -154,11 +154,15 @@ public sealed class ChordPulsePrototype : MonoBehaviour
     const float IconFlash = 0.85f;
     readonly GradientColorKey[] _rainbowKeys = new GradientColorKey[8];
     readonly Gradient _rainbow = new Gradient();
+    // The same hue wheel for fever pulses, without the core's damage chips: a pulse is always a whole circle.
+    readonly Gradient _pulseRainbow = new Gradient();
+    static readonly GradientAlphaKey[] OpaqueAlpha = { new GradientAlphaKey(1f, 0f), new GradientAlphaKey(1f, 1f) };
 
     readonly List<TargetMarkers.Target> _targets = new List<TargetMarkers.Target>();
     TargetMarkers _targetMarkers;
     GameOverSequence _gameOverSequence;
     CoreDamageVisuals _coreDamage;
+    MissPopups _missPopups;
     readonly List<GameOverSequence.Target> _gameOverTargets = new List<GameOverSequence.Target>();
 
     PoolManager _poolManager;
@@ -234,6 +238,8 @@ public sealed class ChordPulsePrototype : MonoBehaviour
         _gameOverSequence = gameObject.AddComponent<GameOverSequence>();
         _gameOverSequence.Init(playCamera, _visuals.Stage, _boundary, BoundaryColor, _arenaRadius, _ringMaterial);
         CreateShatterEffect();
+        _missPopups = gameObject.AddComponent<MissPopups>();
+        _missPopups.Init(playCamera);
         _coreDamage = gameObject.AddComponent<CoreDamageVisuals>();
         _coreDamage.Init(_core, CoreRadius, 0.12f, _ringMaterial, Shatter,
             () => _soundManager.FeverActive ? Color.white : Colors[_selectedColor]);
@@ -293,6 +299,7 @@ public sealed class ChordPulsePrototype : MonoBehaviour
         _roundStartFrame = Time.frameCount;
         _gameOverSequence.ResetVisuals();
         _coreDamage.ResetVisuals();
+        _missPopups.ResetVisuals();
         // The core, its colour shape and the cooldown arc all sit on the arena centre; a game over trembles the core,
         // so re-centre them explicitly (they must never drift apart).
         _core.transform.localPosition = Vector3.zero;
@@ -467,7 +474,7 @@ public sealed class ChordPulsePrototype : MonoBehaviour
     {
         var ring = CreateRing("Pulse", fever ? Color.white : Colors[_selectedColor], CoreRadius, WaveWidth);
         if (fever)
-            ring.colorGradient = _rainbow;
+            ring.colorGradient = _pulseRainbow;
         _waves.Add(new Wave
         {
             Ring = ring,
@@ -587,6 +594,16 @@ public sealed class ChordPulsePrototype : MonoBehaviour
             _soundManager.QueueFever();
     }
 
+    // This pulse missed (the combo breaks): "MISS" on the wrong-colour enemy that blocked it, or on the core when the
+    // pulse hit nothing (or that enemy is already gone).
+    void ShowMiss(PulseState pulse)
+    {
+        var position = _core.transform.position;
+        if (pulse.WrongColorEnemy != null && _enemyViews.TryGetValue(pulse.WrongColorEnemy, out var view))
+            position = view.Instance.transform.position;
+        _missPopups.Show(position);
+    }
+
     void ResetPulseCombo()
     {
         _pulseCombo = 0;
@@ -607,6 +624,7 @@ public sealed class ChordPulsePrototype : MonoBehaviour
         }
         // Alpha from the core damage: its chips show as gaps in the rainbow too.
         _rainbow.SetKeys(_rainbowKeys, _coreDamage.AlphaKeys);
+        _pulseRainbow.SetKeys(_rainbowKeys, OpaqueAlpha);
         _coreDamage.AlphaDirty = false;
         _core.colorGradient = _rainbow;
     }
@@ -732,7 +750,11 @@ public sealed class ChordPulsePrototype : MonoBehaviour
                 // come in at the same distance). One that only hit a wrong color, or reached the edge, breaks it.
                 // A fever pulse that kills nothing keeps it too.
                 if (!pulse.IsFever && pulse.Kills == 0 && !pulse.HitProgress)
+                {
+                    // A miss shows even at combo 0: the player still learns why the shot failed.
                     ResetPulseCombo();
+                    ShowMiss(pulse);
+                }
                 Destroy(wave.Ring.gameObject);
                 _waves.RemoveAt(i);
             }
@@ -741,7 +763,7 @@ public sealed class ChordPulsePrototype : MonoBehaviour
                 DrawCircle(wave.Ring, pulse.Radius);
                 // Fever pulses spin the same hue wheel as the core.
                 if (pulse.IsFever)
-                    wave.Ring.colorGradient = _rainbow;
+                    wave.Ring.colorGradient = _pulseRainbow;
                 // A stopped pulse fades out over its short run-on.
                 if (pulse.IsStopping && !pulse.IsFever)
                 {

@@ -1,0 +1,65 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="630" height="500" viewBox="0 0 630 500">
+<defs><radialGradient id="bgG" cx="50%" cy="46%" r="75%"><stop offset="0" stop-color="#1C2540"/><stop offset="0.55" stop-color="#121A2C"/><stop offset="1" stop-color="#080B13"/></radialGradient></defs>
+<rect width="630" height="500" fill="url(#bgG)"/>
+<circle cx="315.0" cy="230.0" r="138.9" fill="none" stroke="#EEF2F8" stroke-width="1.4" opacity="0.140"/>
+<circle cx="315.0" cy="230.0" r="208.3" fill="none" stroke="#EEF2F8" stroke-width="1.4" opacity="0.126"/>
+<circle cx="315.0" cy="230.0" r="277.8" fill="none" stroke="#EEF2F8" stroke-width="1.4" opacity="0.112"/>
+<circle cx="315.0" cy="230.0" r="347.2" fill="none" stroke="#EEF2F8" stroke-width="1.4" opacity="0.098"/>
+<circle cx="315.0" cy="230.0" r="416.7" fill="none" stroke="#EEF2F8" stroke-width="1.4" opacity="0.084"/>
+<circle cx="315.0" cy="230.0" r="486.1" fill="none" stroke="#EEF2F8" stroke-width="1.4" opacity="0.070"/>
+<circle cx="315.0" cy="230.0" r="555.6" fill="none" stroke="#EEF2F8" stroke-width="1.4" opacity="0.056"/>
+<circle cx="315.0" cy="230.0" r="625.0" fill="none" stroke="#EEF2F8" stroke-width="1.4" opacity="0.042"/>
+<circle cx="315.0" cy="230.0" r="694.4" fill="none" stroke="#EEF2F8" stroke-width="1.4" opacity="0.028"/>
+<path d="M132.3,163.5 A194.4,194.4 0 0 1 298.1,36.3" fill="none" stroke="#FF4A59" stroke-width="3.2" stroke-linecap="round" opacity="0.55"/>
+<path d="M517.2,60.4 A263.9,263.9 0 0 1 554.2,341.5" fill="none" stroke="#4AB8FF" stroke-width="3.2" stroke-linecap="round" opacity="0.55"/>
+<path d="M285.9,562.1 A333.3,333.3 0 0 1 26.3,396.7" fill="none" stroke="#FFD440" stroke-width="3.2" stroke-linecap="round" opacity="0.55"/>
+<polygon points="86.7,484.7 76.0,495.4 65.3,484.7 76.0,474.0" fill="#FFD440" opacity="0.9"/>
+<polygon points="584.6,61.6 576.0,70.2 567.5,61.6 576.0,53.1" fill="#FFD440" opacity="1.0"/>
+<polygon points="533.9,520.6 524.4,530.1 514.9,520.6 524.4,511.1" fill="#FFD440" opacity="0.75"/>
+<polygon points="360.1,11.6 352.7,18.9 345.4,11.6 352.7,4.2" fill="#FFD440" opacity="0.95"/>
+<polygon points="439.5,3.3 427.9,14.8 416.4,3.3 427.9,-8.2" fill="#FFD440" opacity="0.97"/>
+<circle cx="-5.6" cy="478.8" r="10.9" fill="#4AB8FF" opacity="0.78"/>
+<circle cx="191.4" cy="369.3" r="7.1" fill="#4AB8FF" opacity="0.99"/>
+<circle cx="-12.6" cy="368.9" r="8.1" fill="#4AB8FF" opacity="0.96"/>
+<circle cx="20.7" cy="82.3" r="8.9" fill="#4AB8FF" opacity="0.98"/>
+<circle cx="209.3" cy="34.0" r="10.9" fill="#4AB8FF" opacity="0.98"/>
+<polygon points="-20.0,74.6 -40.1,72.4 -34.7,60.7" fill="#FF4A59" opacity="1.0" stroke-linejoin="round"/>
+<circle cx="292.3" cy="440.4" r="10.3" fill="#4AB8FF" opacity="1.0"/>
+<circle cx="659.6" cy="444.2" r="10.5" fill="#4AB8FF" opacity="0.76"/>
+<polygon points="57.2,357.0 47.6,366.6 43.7,358.8" fill="#FF4A59" opacity="0.9" stroke-linejoin="round"/>
+<polygon points="624.3,192.2 639.2,185.0 640.5,195.5" fill="#FF4A59" opacity="0.77" stroke-linejoin="round"/>
+<polygon points="176.3,129.5 153.4,122.4 162.3,110.0" fill="#FF4A59" opacity="0.82" stroke-linejoin="round"/>
+<circle cx="177.3" cy="396.0" r="7.9" fill="#4AB8FF" opacity="0.97"/>
+<polygon points="4.8,508.5 -5.7,519.0 -16.2,508.5 -5.7,497.9" fill="#FFD440" opacity="0.91"/>
+<circle cx="614.3" cy="112.8" r="9.2" fill="#4AB8FF" opacity="0.93"/>
+<circle cx="592.8" cy="112.8" r="8.6" fill="#4AB8FF" opacity="0.89"/>
+<polygon points="618.4,251.2 609.3,260.3 600.3,251.2 609.3,242.2" fill="#FFD440" opacity="0.84"/>
+<polygon points="144.6,116.1 133.6,127.1 122.6,116.1 133.6,105.2" fill="#FFD440" opacity="0.87"/>
+<polygon points="204.7,-20.2 195.9,-11.4 187.0,-20.2 195.9,-29.1" fill="#FFD440" opacity="0.87"/>
+<polygon points="142.6,41.6 133.5,50.7 124.4,41.6 133.5,32.5" fill="#FFD440" opacity="0.84"/>
+<polygon points="215.6,490.3 206.8,499.1 198.1,490.3 206.8,481.6" fill="#FFD440" opacity="0.95"/>
+<polygon points="649.9,480.6 638.6,491.9 627.3,480.6 638.6,469.3" fill="#FFD440" opacity="0.78"/>
+<polygon points="292.0,498.0 282.2,507.8 272.4,498.0 282.2,488.2" fill="#FFD440" opacity="0.92"/>
+<circle cx="530.3" cy="390.2" r="9.4" fill="#4AB8FF" opacity="0.81"/>
+<polygon points="644.4,410.9 667.1,415.0 660.0,427.9" fill="#FF4A59" opacity="0.86" stroke-linejoin="round"/>
+<polygon points="360.9,438.0 347.9,451.0 334.9,438.0 347.9,425.1" fill="#FFD440" opacity="0.83"/>
+<polygon points="501.9,23.4 494.3,31.0 486.6,23.4 494.3,15.7" fill="#FFD440" opacity="0.9"/>
+<polygon points="75.8,71.8 63.8,83.7 51.9,71.8 63.8,59.8" fill="#FFD440" opacity="0.82"/>
+<circle cx="146.8" cy="473.1" r="8.9" fill="#4AB8FF" opacity="0.76"/>
+<circle cx="115.6" cy="350.9" r="10.8" fill="#4AB8FF" opacity="0.97"/>
+<circle cx="315.0" cy="169.8148148148148" r="74.5" fill="none" stroke="#EEF2F8" stroke-width="1.6" opacity="0.1"/>
+<circle cx="315.0" cy="169.8148148148148" r="60.9" fill="none" stroke="#EEF2F8" stroke-width="1.6" opacity="0.2"/>
+<circle cx="315.0" cy="169.8148148148148" r="47.3" fill="none" stroke="#EEF2F8" stroke-width="1.9" opacity="0.38"/>
+<circle cx="315.0" cy="169.8148148148148" r="21.4" fill="none" stroke="#EEF2F8" stroke-width="5.2"/>
+<circle cx="315.0" cy="122.5" r="17.1" fill="#0E1420"/>
+<polygon points="315.0,135.2 307.9,114.1 322.1,114.1" fill="#FF4A59" opacity="1" stroke-linejoin="round"/>
+<circle cx="274.0" cy="193.5" r="17.1" fill="#0E1420"/>
+<circle cx="274.0" cy="193.5" r="10.1" fill="#4AB8FF" opacity="1"/>
+<circle cx="356.0" cy="193.5" r="17.1" fill="#0E1420"/>
+<polygon points="368.1,193.5 356.0,205.6 343.9,193.5 356.0,181.4" fill="#FFD440" opacity="1"/>
+<circle cx="315.0" cy="162.7" r="2.9" fill="#FF4A59"/>
+<circle cx="321.2" cy="173.4" r="2.9" fill="#FFD440"/>
+<circle cx="308.8" cy="173.4" r="2.9" fill="#4AB8FF"/>
+<text x="315.0" y="290.2" font-family="Bahnschrift, 'Segoe UI', Arial, sans-serif" font-size="59.3" font-weight="700" letter-spacing="4.1" fill="#EEF2F8" text-anchor="middle">CHORD PULSE</text>
+<rect x="162.2" y="308.7037037037037" width="99.1" height="5.555555555555555" rx="2.7777777777777777" fill="#FF4A59"/><rect x="266.9" y="308.7037037037037" width="99.1" height="5.555555555555555" rx="2.7777777777777777" fill="#4AB8FF"/><rect x="368.7" y="308.7037037037037" width="99.1" height="5.555555555555555" rx="2.7777777777777777" fill="#FFD440"/>
+</svg>

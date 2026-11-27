@@ -171,6 +171,37 @@ public class SpawnDirectorTests
     }
 
     [Test]
+    public void LateSpeedScale_RisesOnePercentPerThirtySecondsAfterTenMinutes()
+    {
+        Assert.AreEqual(1.0, SpawnDirector.LateSpeedScale(0), 1e-9);
+        Assert.AreEqual(1.0, SpawnDirector.LateSpeedScale(629.9), 1e-9);
+        Assert.AreEqual(1.01, SpawnDirector.LateSpeedScale(630), 1e-9);
+        Assert.AreEqual(1.01, SpawnDirector.LateSpeedScale(659.9), 1e-9);
+        Assert.AreEqual(1.20, SpawnDirector.LateSpeedScale(1200), 1e-9);
+        Assert.AreEqual(2.00, SpawnDirector.LateSpeedScale(3600), 1e-9);
+    }
+
+    [Test]
+    public void LateSpeed_AppliesToEveryEnemy_FeverAndChargersToo()
+    {
+        float scale = (float)SpawnDirector.LateSpeedScale(1200);
+        float lo = GameplayTuning.BaseEnemySpeed * (1f - GameplayTuning.EnemySpeedJitter) * scale - 1e-4f;
+        float hi = GameplayTuning.BaseEnemySpeed * (1f + GameplayTuning.EnemySpeedJitter) * scale + 1e-4f;
+        var flow = Collect(0, 4000, Ctx(seconds: 1200));
+        Assert.Greater(flow.Count(x => x.order.Kind == EnemyKind.Charger), 20);
+        foreach (var x in flow)
+        {
+            float k = x.order.Kind == EnemyKind.Charger ? GameplayTuning.ChargerSpeedMultiplier : 1f;
+            Assert.GreaterOrEqual(x.order.Speed, lo * k);
+            Assert.LessOrEqual(x.order.Speed, hi * k);
+            Assert.AreEqual(x.order.Speed, x.order.Mate().Speed);
+        }
+        _dir.Reset();
+        foreach (var x in Collect(0, 400, Ctx(fever: true, seconds: 1200)))
+        { Assert.GreaterOrEqual(x.order.Speed, lo); Assert.LessOrEqual(x.order.Speed, hi); }
+    }
+
+    [Test]
     public void Fever_SpawnsOncePerBeat()
     {
         var s = Collect(100, 131, Ctx(fever: true));
@@ -440,7 +471,7 @@ public class SpawnDirectorTests
     {
         Assert.IsTrue(Collect(0, 2000, Ctx(seconds: 29)).All(x => x.order.Count == 1));
         _dir.Reset();
-        Assert.IsTrue(Collect(0, 400, Ctx(fever: true, seconds: 600)).All(x => x.order.Count == 1));
+        Assert.IsTrue(Collect(0, 400, Ctx(fever: true, seconds: 29)).All(x => x.order.Count == 1));
         _dir.Reset();
         Assert.IsTrue(Collect(0, 4000, Ctx(breath: true, seconds: 600)).All(x => x.order.Count == 1));
         _dir.Reset();
@@ -454,6 +485,17 @@ public class SpawnDirectorTests
     {
         var s = NoChargers(AfterOpening(Collect(0, 8000, Ctx(seconds: 600)))).Where(x => x.order.SecondColorIndex < 0).ToList();
         Assert.IsTrue(s.All(x => x.order.Count >= 1 && x.order.Count <= GameplayTuning.MaxGroupSize));
+        Assert.AreEqual(Stage(600).PairChance, s.Count(x => x.order.Count == 2) / (double)s.Count, 0.05);
+        Assert.AreEqual(Stage(600).TripleChance, s.Count(x => x.order.Count == 3) / (double)s.Count, 0.05);
+    }
+
+    [Test]
+    public void Fever_UsesTheRowsGroupSizes_StillOncePerBeatAndPlain()
+    {
+        var s = Collect(0, 8000, Ctx(fever: true, seconds: 600));
+        Assert.AreEqual(SpawnDirector.StepsPerBeat, MinGap(s));
+        Assert.AreEqual(SpawnDirector.StepsPerBeat, MaxGap(s));
+        Assert.IsTrue(s.All(x => x.order.Kind == EnemyKind.Basic && !x.order.Hidden && x.order.SecondColorIndex < 0 && !x.order.Mixed));
         Assert.AreEqual(Stage(600).PairChance, s.Count(x => x.order.Count == 2) / (double)s.Count, 0.05);
         Assert.AreEqual(Stage(600).TripleChance, s.Count(x => x.order.Count == 3) / (double)s.Count, 0.05);
     }

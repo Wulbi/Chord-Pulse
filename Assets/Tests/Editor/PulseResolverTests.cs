@@ -225,6 +225,13 @@ public class PulseResolverTests
     [Test] public void PairHitByAThirdColor_IsNotProgress()
     { var p = P(2); Run(p, L(Pair(0, 1, 2f))); Assert.IsFalse(p.HitProgress); }
 
+    // The miss pop-up shows on the enemy that blocked the pulse: the first wrong colour it met, not a later one.
+    [Test] public void WrongColor_RecordsTheFirstBlockingEnemy()
+    { var first = E(1, 2f); var second = E(2, 2.1f); var p = P(0);
+      Run(p, L(second, first)); Assert.AreSame(first, p.WrongColorEnemy); }
+    [Test] public void NoWrongColor_RecordsNoEnemy()
+    { var p = P(0); Run(p, L(E(0, 2f), E(2, 3f, hidden: true))); Assert.IsNull(p.WrongColorEnemy); }
+
     [Test] public void NoEnemies_ZeroDelta_KeepsTravelling()
     { var p = P(0); Assert.AreEqual(PulseOutcome.Travelling, _resolver.Advance(p, L(), 8f, 5f, 0f, _events)); Assert.AreEqual(0, _events.Count); }
 }

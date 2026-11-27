@@ -58,6 +58,11 @@ public static class GameplayTuning
     // 적
     public const float BaseEnemySpeed = 0.4f;          // 기존 0.65
     public const float EnemySpeedJitter = 0.15f;       // 속도 = Base * (1 ± Jitter)
+    // 표의 마지막 줄 뒤: 이 시점부터 LateSpeedStepSeconds마다 모든 적의 속도가 LateSpeedStep씩 오른다 (상한 없음).
+    // 박자만 맞추면 끝없이 버티는 판을 끝내는 장치: 색을 보고 고를 시간이 계속 줄어든다.
+    public const double LateSpeedStart = 600.0;
+    public const double LateSpeedStepSeconds = 30.0;
+    public const double LateSpeedStep = 0.01;
     public const float BaseEnemyHalfSize = 0.21f;
     public const int EnemyPoolSize = 96;               // 미리 만들어 두는 수 (모자라면 풀이 더 만든다)
     // 스폰 (스텝 = 반 박)

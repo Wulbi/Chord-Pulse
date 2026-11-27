@@ -82,6 +82,8 @@ public sealed class PulseResolver
                 {
                     pulse.HitWrongColor = true;
                     var hit = contact.Enemy;
+                    if (pulse.WrongColorEnemy == null)
+                        pulse.WrongColorEnemy = hit;
                     if (hit.Kind == EnemyKind.Charger && hit.Boosts < GameplayTuning.ChargerMaxBoosts)
                     {
                         hit.Speed *= GameplayTuning.ChargerBoostMultiplier;

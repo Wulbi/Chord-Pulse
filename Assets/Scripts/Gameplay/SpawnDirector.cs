@@ -48,6 +48,7 @@ public sealed class SpawnDirector
     bool _prevFever;
     bool _noPairNextRun;
     bool _chargerPending;
+    double _speedScale = 1.0;
 
     public SpawnDirector(System.Random random)
     {
@@ -72,6 +73,7 @@ public sealed class SpawnDirector
         order = default;
         int step = context.Step;
         if (step < 0) return false;
+        _speedScale = LateSpeedScale(context.RoundSeconds);
 
         if (context.Fever != _prevFever)
         {
@@ -85,7 +87,15 @@ public sealed class SpawnDirector
         if (context.Fever)
         {
             if (step < _nextStep) return false;
+            // Fever: one slot per beat, plain enemies of any colour (a fever pulse takes them all), in groups as big as
+            // the row in force gives, so there is as much to burst as outside fever.
             order = MakeOrder(_random.Next(ColorCount), false);
+            var feverStage = GameplayTuning.SpawnStages[StageIndex(context.RoundSeconds)];
+            if (feverStage.PairChance + feverStage.TripleChance > 0)
+            {
+                double roll = _random.NextDouble();
+                order.Count = roll < feverStage.TripleChance ? 3 : roll < feverStage.TripleChance + feverStage.PairChance ? 2 : 1;
+            }
             _nextStep = step + StepsPerBeat;
             return true;
         }
@@ -185,7 +195,7 @@ public sealed class SpawnDirector
         {
             ColorIndex = color,
             Hidden = hidden,
-            Speed = (float)(baseSpeed * (1.0 + jitter)),
+            Speed = (float)(baseSpeed * (1.0 + jitter) * _speedScale),
             SecondColorIndex = secondColor,
             Kind = kind,
             Count = 1,
@@ -204,6 +214,15 @@ public sealed class SpawnDirector
         for (int i = 1; i < stages.Length && roundSeconds >= stages[i].StartSeconds; i++)
             index = i;
         return index;
+    }
+
+    /// Speed factor for every enemy: 1 until GameplayTuning.LateSpeedStart, then +LateSpeedStep per whole
+    /// LateSpeedStepSeconds after it, without a cap.
+    public static double LateSpeedScale(double roundSeconds)
+    {
+        double late = roundSeconds - GameplayTuning.LateSpeedStart;
+        if (late <= 0) return 1.0;
+        return 1.0 + GameplayTuning.LateSpeedStep * System.Math.Floor(late / GameplayTuning.LateSpeedStepSeconds);
     }
 
     /// Number of DifficultyThresholds the round time has passed, 0..3. Drives the music's arrangement density, not the spawns.

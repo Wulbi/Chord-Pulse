@@ -3787,3 +3787,21 @@ Vocals/343868__reitanna__oooh-ooh-hoo-hoo.wav
 형식: 44100 Hz / 16-bit / 1 channels / 2.113 sec
 가공: 없음
 SHA-256: d85156a39dda65a2b715ad9af8a50c9580d69ae3d027e7f89e665e20fac2cf62
+
+==============================================================
+직접 합성: 스케줄링 측정용 클릭 (FMOD/ChordPulse/Assets/Spike)
+기록일: 2026-11-28
+출처: 이 저장소의 FMOD/Tools/spike_click.py로 처음부터 합성 (제3자 오디오 없음). 박자 스케줄링 정확도를 재는 테스트 신호입니다.
+라이선스: 프로젝트 자체 제작물. 외부 라이선스 의무 없음.
+click_1k.wav는 커밋 dad0491의 spike_click.py가 썼고, 지금 버전은 더 이상 쓰지 않습니다(파일 docstring). click_3k.wav는 지금 버전도 씁니다.
+==============================================================
+
+Spike/click_1k.wav
+종류: 5 ms 1 kHz 사인 버스트
+형식: 48000 Hz / 16-bit / 1 channel / 0.005 sec
+SHA-256: 0b5e110dc102de6d67bf8a7b4e3d728040db3ab988ab450114b438434066110e
+
+Spike/click_3k.wav
+종류: 5 ms 3 kHz 사인 버스트
+형식: 48000 Hz / 16-bit / 1 channel / 0.005 sec
+SHA-256: ab7a297354fe8be50a5cf62c6be5322e4566df35d2ee56d498003fddc1f83b4a

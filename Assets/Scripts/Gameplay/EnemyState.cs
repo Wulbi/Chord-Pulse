@@ -35,6 +35,8 @@ public sealed class PulseState
     public bool IsFever;
     public int Kills;           // cumulative kills of this pulse
     public bool HitWrongColor;
+    /// The first wrong-colour enemy this pulse ran into (null if none), so a miss can be shown where it happened.
+    public EnemyState WrongColorEnemy;
     /// Revealed a gray enemy or stripped a chord pair: progress, so a pulse with no kill still keeps the combo.
     public bool HitProgress;
     /// Set by the first enemy that stops this pulse (wrong colour, reveal or strip): the pulse runs on to here, then ends.

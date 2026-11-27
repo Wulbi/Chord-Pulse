@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1140" height="320" viewBox="0 0 1140 320">
+<circle cx="170" cy="160" r="142.6" fill="none" stroke="#EEF2F8" stroke-width="3.1" opacity="0.1"/>
+<circle cx="170" cy="160" r="116.6" fill="none" stroke="#EEF2F8" stroke-width="3.1" opacity="0.2"/>
+<circle cx="170" cy="160" r="90.5" fill="none" stroke="#EEF2F8" stroke-width="3.7" opacity="0.38"/>
+<circle cx="170" cy="160" r="40.9" fill="none" stroke="#EEF2F8" stroke-width="9.9"/>
+<circle cx="170.0" cy="69.5" r="32.7" fill="#0E1420"/>
+<polygon points="170.0,93.7 156.5,53.3 183.5,53.3" fill="#FF4A59" opacity="1" stroke-linejoin="round"/>
+<circle cx="91.6" cy="205.3" r="32.7" fill="#0E1420"/>
+<circle cx="91.6" cy="205.3" r="19.4" fill="#4AB8FF" opacity="1"/>
+<circle cx="248.4" cy="205.3" r="32.7" fill="#0E1420"/>
+<polygon points="271.6,205.3 248.4,228.4 225.2,205.3 248.4,182.1" fill="#FFD440" opacity="1"/>
+<circle cx="170.0" cy="146.4" r="5.6" fill="#FF4A59"/>
+<circle cx="181.8" cy="166.8" r="5.6" fill="#FFD440"/>
+<circle cx="158.2" cy="166.8" r="5.6" fill="#4AB8FF"/>
+<text x="340" y="182" font-family="Bahnschrift, 'Segoe UI', Arial, sans-serif" font-size="96" font-weight="700" letter-spacing="5.8" fill="#EEF2F8" text-anchor="start">CHORD PULSE</text>
+<rect x="344.0" y="212" width="236.7" height="12" rx="6.0" fill="#FF4A59"/><rect x="592.7" y="212" width="236.7" height="12" rx="6.0" fill="#4AB8FF"/><rect x="835.3" y="212" width="236.7" height="12" rx="6.0" fill="#FFD440"/>
+</svg>
