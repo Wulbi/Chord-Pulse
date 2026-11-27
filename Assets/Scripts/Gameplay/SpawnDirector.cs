@@ -14,11 +14,13 @@ public struct SpawnOrder
     public float Speed;
     public int SecondColorIndex;   // chord pair: second colour; otherwise -1
     public EnemyKind Kind;         // default Basic
+    /// This slot's colour is not its run's: one slot of another colour inside a run (SpawnStage.MixChance).
+    public bool Mixed;
     /// Enemies of this slot, 1..GameplayTuning.MaxGroupSize: same colour and speed, from different directions.
     /// Hidden / SecondColorIndex / Kind describe the first one only; the others are plain Basic enemies.
     public int Count;
 
-    /// The order for the other enemies of the slot: same colour and speed, never gray, a chord pair or a special kind.
+    /// The order for the other enemies of the slot: same colour (a mixed slot's own) and speed, never gray, a chord pair or a special kind.
     public SpawnOrder Mate()
     {
         var mate = this;
@@ -117,7 +119,8 @@ public sealed class SpawnDirector
         }
 
         int secondColor = -1;
-        if (_runRemaining <= 0)
+        bool runStart = _runRemaining <= 0;
+        if (runStart)
         {
             int previousColor = _runColor;
             _runColor = (_runColor + 1 + _random.Next(ColorCount - 1)) % ColorCount;
@@ -141,7 +144,16 @@ public sealed class SpawnDirector
         if (!hidden && secondColor < 0
             && stage.SplitterChance > 0 && _random.NextDouble() < stage.SplitterChance)
             kind = EnemyKind.Splitter;
-        order = MakeOrder(_runColor, hidden, secondColor, kind);
+        // Mixing: one slot of another colour inside a run. Never the run's first or last slot, so a run still opens
+        // and closes in its own colour (a chord pair bridges it, the next run differs from it). A breath phrase has none.
+        // The slot's enemies still share one colour; gray / splitter / group size are drawn as for any slot.
+        int color = _runColor;
+        bool mixed = !context.Breath && !runStart && _runRemaining > 1
+            && stage.MixChance > 0 && _random.NextDouble() < stage.MixChance;
+        if (mixed)
+            color = (_runColor + 1 + _random.Next(ColorCount - 1)) % ColorCount;
+        order = MakeOrder(color, hidden, secondColor, kind);
+        order.Mixed = mixed;
         // Groups only in flow: a breath phrase is a rest. One draw decides between 1, 2 and 3.
         // A chord pair comes alone: plain mates are bigger, so they would reach a pulse first and block the pair's
         // other colour (the one the player still has selected) before it could strip the pair.

@@ -36,14 +36,15 @@ public class SpawnDirectorTests
     static List<int> Steps(List<(int step, SpawnOrder order)> spawns) { return spawns.Select(x => x.step).ToList(); }
     static List<int> Colors(List<(int step, SpawnOrder order)> spawns) { return spawns.Select(x => x.order.ColorIndex).ToList(); }
 
+    // A slot of another colour inside a run (order.Mixed) counts toward that run's length.
     static List<(int Color, int Length)> RunsOf(List<(int step, SpawnOrder order)> spawns)
     {
         var runs = new List<(int Color, int Length)>();
         foreach (var x in spawns)
         {
             int c = x.order.ColorIndex;
-            if (runs.Count > 0 && runs[runs.Count - 1].Color == c)
-                runs[runs.Count - 1] = (c, runs[runs.Count - 1].Length + 1);
+            if (runs.Count > 0 && (x.order.Mixed || runs[runs.Count - 1].Color == c))
+                runs[runs.Count - 1] = (runs[runs.Count - 1].Color, runs[runs.Count - 1].Length + 1);
             else
                 runs.Add((c, 1));
         }
@@ -318,7 +319,7 @@ public class SpawnDirectorTests
             Assert.GreaterOrEqual(r.RunMin, 1, "row " + i);
             Assert.GreaterOrEqual(r.RunMax, r.RunMin, "row " + i);
             Assert.LessOrEqual(r.PairChance + r.TripleChance, 1.0, "row " + i);
-            foreach (double p in new[] { r.PairChance, r.TripleChance, r.HiddenChance, r.ChordPairChance, r.ChargerChance, r.SplitterChance })
+            foreach (double p in new[] { r.PairChance, r.TripleChance, r.HiddenChance, r.ChordPairChance, r.ChargerChance, r.SplitterChance, r.MixChance })
             { Assert.GreaterOrEqual(p, 0.0, "row " + i); Assert.LessOrEqual(p, 1.0, "row " + i); }
         }
     }
@@ -329,7 +330,7 @@ public class SpawnDirectorTests
         foreach (double t in new[] { 0.0, 20.0 })
         {
             var r = Stage(t);
-            Assert.AreEqual(0.0, r.PairChance + r.TripleChance + r.HiddenChance + r.ChordPairChance + r.ChargerChance + r.SplitterChance);
+            Assert.AreEqual(0.0, r.PairChance + r.TripleChance + r.HiddenChance + r.ChordPairChance + r.ChargerChance + r.SplitterChance + r.MixChance);
         }
         Assert.Greater(Stage(0).IntervalSteps, Stage(20).IntervalSteps);
         Assert.Greater(Stage(20).IntervalSteps, Stage(40).IntervalSteps);
@@ -489,6 +490,64 @@ public class SpawnDirectorTests
             Assert.AreEqual(x.order.ColorIndex, mate.ColorIndex);
             Assert.AreEqual(x.order.Speed, mate.Speed);
         }
+    }
+
+    [Test]
+    public void MixedSlots_AppearOnlyFromTwoMinutes()
+    {
+        Assert.IsFalse(Collect(0, 4000, Ctx(seconds: 119)).Any(x => x.order.Mixed));
+        _dir.Reset();
+        Assert.IsTrue(Collect(0, 4000, Ctx(seconds: 120)).Any(x => x.order.Mixed));
+    }
+
+    [Test]
+    public void MixedSlot_IsInsideARun_InAnotherColour()
+    {
+        foreach (double t in new[] { 120.0, 600.0 })
+        {
+            _dir.Reset();
+            var s = NoChargers(AfterOpening(Collect(0, 8000, Ctx(seconds: t))));
+            int mixed = 0;
+            for (int i = 1; i < s.Count - 1; i++)
+            {
+                if (!s[i].order.Mixed) continue;
+                mixed++;
+                int before = i - 1, after = i + 1;
+                while (before > 0 && s[before].order.Mixed) before--;
+                while (after < s.Count - 1 && s[after].order.Mixed) after++;
+                if (s[before].order.Mixed || s[after].order.Mixed) continue;
+                // Never the first or the last slot of its run: the run's colour is on both sides.
+                Assert.AreEqual(s[before].order.ColorIndex, s[after].order.ColorIndex, "seconds " + t + " slot " + i);
+                Assert.AreNotEqual(s[before].order.ColorIndex, s[i].order.ColorIndex, "seconds " + t + " slot " + i);
+                Assert.AreEqual(-1, s[i].order.SecondColorIndex);
+            }
+            Assert.Greater(mixed, 50, "seconds " + t);
+        }
+    }
+
+    [Test]
+    public void MixedSlots_FollowTheTable()
+    {
+        var s = NoChargers(AfterOpening(Collect(0, 8000, Ctx(seconds: 300))));
+        var runs = RunsOf(s);
+        int inside = runs.Sum(r => System.Math.Max(0, r.Length - 2));
+        Assert.AreEqual(Stage(300).MixChance, s.Count(x => x.order.Mixed) / (double)inside, 0.05);
+    }
+
+    [Test]
+    public void NoMixedSlots_InBreathOrFever()
+    {
+        Assert.IsFalse(Collect(0, 8000, Ctx(breath: true, seconds: 600)).Any(x => x.order.Mixed));
+        _dir.Reset();
+        Assert.IsFalse(Collect(0, 800, Ctx(fever: true, seconds: 600)).Any(x => x.order.Mixed));
+    }
+
+    [Test]
+    public void MixedSlot_KeepsOneColourPerSlot()
+    {
+        var groups = Collect(0, 8000, Ctx(seconds: 600)).Where(x => x.order.Mixed && x.order.Count > 1).ToList();
+        Assert.Greater(groups.Count, 20);
+        foreach (var x in groups) Assert.AreEqual(x.order.ColorIndex, x.order.Mate().ColorIndex);
     }
 
     [Test]
