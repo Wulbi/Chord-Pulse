@@ -61,6 +61,10 @@ public sealed class CaptureScenario : MonoBehaviour
     [Tooltip("Write <take>.oneshots.csv: FmodOneShotBackend.DiagnosticLog of the spike and kill-chord backends (frame, " +
              "event, handle, DSP clock, ...). Off = the backends compute nothing for it.")]
     [SerializeField] bool logOneShots;
+    [Tooltip("Combo ladder Task 1 probe: every frame OneShotScheduler.SetFade(-1, 1f) on the spike scheduler and on " +
+             "SoundManager's shared one (_shots, by reflection), i.e. setVolume at the same level on every handed note, " +
+             "armed or sounding. Checks that per-frame setVolume does not move start times.")]
+    [SerializeField] bool fadeProbe;
 
     [Header("forced stalls (unity-music-clock Task 7)")]
     [Tooltip("> 0: System.Threading.Thread.Sleep(stallMs) once on the frame in which SoundManager.BeatPosition first " +
@@ -339,6 +343,11 @@ public sealed class CaptureScenario : MonoBehaviour
         }
         if (scenario == Scenario.spike)
             UpdateSpike(sound);
+        if (fadeProbe)
+        {
+            _scheduler?.SetFade(-1, 1f);
+            (_killSchedulerField.GetValue(sound) as OneShotScheduler)?.SetFade(-1, 1f);
+        }
         if (scenario == Scenario.styles)
             ForceStyle(sound);
         if (scenario == Scenario.features)

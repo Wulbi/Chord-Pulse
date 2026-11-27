@@ -3076,3 +3076,53 @@ to 5.21 %, the Editor's level, consistent with 91 real voices being mixed instea
   (Later: fixed, see "Final fix wave — M1 follow-up (Vorbis codec count)".)
 - Feature bus onset: 0 by construction, not measured.
 - `FmodClock` last-good-value path: no test.
+## Combo ladder — Task 1 (setVolume probe)
+
+Question: the combo ladder fades layers by lowering the instance volume of their scheduled one-shots every frame
+(`OneShotScheduler.SetFade` -> `IOneShotBackend.SetVolume` -> `EventInstance.setVolume`). Does calling `setVolume` every
+frame on notes that are handed to FMOD but not yet sounding (armed: paused instance, channel group delay set) move their
+start times?
+
+New capture option: `CaptureScenario.fadeProbe` (off by default). When on, every frame it calls `SetFade(-1, 1f)` on
+the spike scheduler and on SoundManager's shared scheduler (`_shots`, by reflection). Every note has rung >= 0, so every
+handed note (armed or sounding) gets `setVolume` at its own gain, every frame, and each newly handed note gets it right
+after its `Start`. The level does not change.
+
+Settings for both takes: Editor, `spike`, seed 33, 68 beats, `spikeDispatchBeats` 0.5, `spikeTarget`
+`SpikeClick:KillChords:72`, `shortLeadOnDsp` off, `logOneShots`, full mix, `scheduleOffsetSamples` 0. These are the
+`spike_seed33_s8c` settings. The takes differ only in `fadeProbe`.
+- Auto refresh was disallowed around each take: one `DisallowAutoRefresh` before Play mode, one `AllowAutoRefresh` after.
+- No Editor query was made while a take recorded.
+- The Editor window was not focused, and the project's Run In Background is off. Play mode stayed at frame 1 until
+  `Application.runInBackground = true` was set from an Editor call, at frame 1-2 of each take, before the capture began.
+  This is runtime only: `PlayerSettings.runInBackground` read false again after Play mode, and no settings file changed.
+  Both takes ran this way.
+
+| take | `fadeProbe` | unforced stalls | longest frame | Studio avg / max % | Core dsp avg / max % | ONESHOTS | RESYNCED | valid |
+|---|---|---:|---|---|---|---|---:|---|
+| `spike_seed33_cl1_probe_off` | off | 0 | 247 ms, before the first beat | 0.55 / 1.07 | 0.80 / 1.82 | 562 / 0 / 0 / 10 | 0 | yes |
+| `spike_seed33_cl1_probe_on` | on | 0 | 1475 ms, before the first beat | 0.64 / 0.88 | 0.82 / 1.79 | 562 / 0 / 0 / 10 | 0 | yes |
+
+ONESHOTS = started / late / dropped / cancelled. Both takes: SPIKE scheduled 64, started 64, late 0, dropped 0,
+cancelled 0; `dropped frames 0`; `CAPTURE dsp-to-frame mismatches 0`; CHANNELS 26 / 20.
+
+Attack (`python FMOD/Tools/analyze_capture.py spike <wav> --xcorr`; detector bias -39.0 samples = -0.812 ms):
+
+| criterion (gate for `probe_on`) | `probe_off` | `probe_on` | verdict |
+|---|---|---|---|
+| corrected mean \|e\| ≤ 0.10 ms | 0.02 | 0.02 | met |
+| corrected max \|e\| ≤ 0.50 ms | 0.04 | 0.04 | met |
+| corrected signed mean | -0.01 ms (-0.4 samples) | -0.01 ms (-0.4 samples) | - |
+| 4 beats after tempo changes (n 13), mean / max | 0.02 / 0.04 | 0.02 / 0.04 | - |
+| missing / late / early | 0 / 0 / 0 | 0 / 0 / 0 | met |
+| xcorr lag 0 | 64 / 64 | 64 / 64 | met |
+| `.cpu.txt` late / dropped / RESYNCED | 0 / 0 / 0 | 0 / 0 / 0 | met |
+| `spike` gate (exit code) | PASS (0) | PASS (0) | - |
+
+Every row of the `spike` output is identical between the two takes. The values also equal `spike_seed33_s8c`.
+
+Verdict: **met**. Calling `setVolume` every frame on armed and sounding one-shots did not move any click: 64 of 64 at lag
+0 with and without the probe. The setVolume fade approach of the combo ladder spec stands.
+
+Not measured: whether a scale below 1 lands on the intended level (the probe keeps the level unchanged), and the
+`SilenceAbove` stop path. Neither was asked for here.
