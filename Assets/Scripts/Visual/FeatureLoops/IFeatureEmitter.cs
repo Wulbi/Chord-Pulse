@@ -24,6 +24,8 @@ public sealed class FeatureVisualContext
     public Material Material;
     /// <summary>Soft round sprite for heads and sparkles.</summary>
     public Sprite Dot;
+    /// <summary>Hard-edged unit square (pixels, blocks, bars); rotate 45° for a diamond.</summary>
+    public Sprite Square;
     public Transform Root;
     public int SortingOrder;
 

@@ -38,6 +38,7 @@ import sys
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 
+import progressions  # noqa: E402
 import samples  # noqa: E402
 
 CS_PATH = os.path.join(HERE, "..", "..", "Assets", "Scripts", "Audio", "Generated", "PatternTable.g.cs")
@@ -60,6 +61,10 @@ FEVER_PHASES = ["None", "Build", "Impact", "Fever", "Outro"]   # FeverPhaseMask 
 # fever zone). A clip's fever_variants lists the variants it plays in; the default is every variant.
 FEVER_VARIANT_COUNT = 4
 ALL_FEVER_VARIANTS = tuple(range(FEVER_VARIANT_COUNT))
+# Chord progressions (progressions.py): Unity picks one per phrase (ArrangementState.Progression). A clip's progressions
+# lists the progressions it plays in; expand() builds a part once per progression.
+PROGRESSION_COUNT = progressions.PROGRESSION_COUNT
+ALL_PROGRESSIONS = progressions.ALL_PROGRESSIONS
 
 
 class Inst:
@@ -135,27 +140,59 @@ class Layer:
 class Clip:
     def __init__(self, name, layer, notes, styles=(0, 1, 2, 3), variation=(0, 4), combo=0, intensity=0.0,
                  fever=tuple(FEVER_PHASES), feature_loop=0, section_phrase=0, legacy_shift="none",
-                 fever_variants=ALL_FEVER_VARIANTS):
+                 fever_variants=ALL_FEVER_VARIANTS, progressions=ALL_PROGRESSIONS):
         self.name, self.layer, self.notes = name, layer, sorted(notes, key=lambda n: (n.beat, n.midi))
         self.styles, self.variation, self.combo, self.intensity = tuple(styles), tuple(variation), combo, intensity
         self.fever, self.feature_loop, self.section_phrase = tuple(fever), feature_loop, section_phrase
         self.legacy_shift = legacy_shift
         self.fever_variants = tuple(sorted(fever_variants))
+        self.progressions = tuple(sorted(progressions))
 
     @property
     def fever_variant_mask(self):
         return sum(1 << v for v in self.fever_variants)
 
-    def matches(self, style, variation, combo, intensity, section_phrase, feature_loop=0, fever_variant=0):
+    @property
+    def progression_mask(self):
+        return sum(1 << p for p in self.progressions)
+
+    def matches(self, style, variation, combo, intensity, section_phrase, feature_loop=0, fever_variant=0,
+                progression=0):
         return (style in self.styles and self.variation[0] <= variation <= self.variation[1] and combo >= self.combo
                 and intensity >= self.intensity and self.section_phrase in (0, section_phrase)
-                and self.feature_loop in (0, feature_loop) and fever_variant in self.fever_variants)
+                and self.feature_loop in (0, feature_loop) and fever_variant in self.fever_variants
+                and progression in self.progressions)
 
     @property
     def conditions(self):
         """(styles, variation min, max, combo min, intensity min, fever phases, feature loop)."""
         return (tuple(sorted(self.styles)), self.variation[0], self.variation[1], self.combo, self.intensity,
-                tuple(p for p in FEVER_PHASES if p in self.fever), self.feature_loop, self.fever_variants)
+                tuple(p for p in FEVER_PHASES if p in self.fever), self.feature_loop, self.fever_variants,
+                self.progressions)
+
+
+def _note_key(n):
+    return (n.beat, n.midi, n.length, n.raw_volume, n.inst.key, n.hold)
+
+
+def expand(name, layer, make, **kw):
+    """One part on every progression: make(progression) -> notes. Progressions that give the same notes share a clip
+    (ProgressionMask); the clip with progression 0 keeps `name`, the others are named f"{name}P{first progression}"."""
+    groups = []
+    for p in ALL_PROGRESSIONS:
+        notes = make(p)
+        key = sorted(_note_key(n) for n in notes)
+        for g in groups:
+            if g[0] == key:
+                g[2].append(p)
+                break
+        else:
+            groups.append((key, notes, [p]))
+    out = []
+    for _, notes, progs in groups:
+        clip_name = name if progs[0] == 0 else f"{name}P{progs[0]}"
+        out.append(Clip(clip_name, layer, notes, progressions=progs, **kw))
+    return out
 
 
 # Data modules (each defines LAYERS and CLIPS), imported lazily: they import the classes above from this module.
@@ -192,6 +229,7 @@ def collect():
         assert c.section_phrase in (0, 1, 2), c.name
         assert 0 <= c.feature_loop <= FEATURE_LOOP_MAX, c.name
         assert c.fever_variants and all(0 <= v < FEVER_VARIANT_COUNT for v in c.fever_variants), c.name
+        assert c.progressions and all(0 <= p < PROGRESSION_COUNT for p in c.progressions), c.name
         for n in c.notes:
             assert 0 <= n.beat < PHRASE_BEATS, f"clip {c.name}: note at beat {n.beat}"
             assert 0 <= n.midi <= 127 and n.length >= 0 and n.hold >= 0, (c.name, n.beat, n.midi)
@@ -222,7 +260,8 @@ def _states():
 
 def max_instances(clips, insts, layers):
     """(name, bus) -> most notes sounding at once at MAX_BPM (+ SPARE_INSTANCES), over every arrangement state (feature
-    loops: each loop id the instrument's clips belong to; fever variants: each variant)."""
+    loops: each loop id the instrument's clips belong to; fever variants: each variant; progressions: each
+    progression)."""
     spb = 60.0 / MAX_BPM
     result = {}
     base = list(_states())
@@ -235,8 +274,10 @@ def max_instances(clips, insts, layers):
         loops = sorted({c.feature_loop for c in mine} - {0}) or [0]
         variants = sorted({v for c in mine for v in c.fever_variants}) if any(
             c.fever_variants != ALL_FEVER_VARIANTS for c in mine) else [0]
+        progs = sorted({p for c in mine for p in c.progressions}) if any(
+            c.progressions != ALL_PROGRESSIONS for c in mine) else [0]
         per_state = []
-        for st in (b + (fl, fv) for b in base for fl in loops for fv in variants):
+        for st in (b + (fl, fv, pr) for b in base for fl in loops for fv in variants for pr in progs):
             iv = []
             for c in mine:
                 if c.matches(*st):
@@ -251,7 +292,8 @@ def max_instances(clips, insts, layers):
                             else:
                                 window = DISPATCH_WINDOW_BEATS
                             iv.append((a - window * spb, end))
-            per_state.append(iv)
+            per_state.append(tuple(sorted(iv)))
+        per_state = list(set(per_state))   # states that place the same notes count once
         times = sorted({a for iv in per_state for a, _ in iv})
         best = 0
         for t in times:
@@ -339,13 +381,16 @@ def cs_text(bus_member):
         "    public readonly int First, Count;",
         "    /// <summary>Bit per fever bed variant (1 &lt;&lt; ArrangementState.FeverVariant) the clip plays in.</summary>",
         "    public readonly byte FeverVariantMask;",
+        "    /// <summary>Bit per chord progression (1 &lt;&lt; ArrangementState.Progression) the clip plays in.</summary>",
+        "    public readonly ushort ProgressionMask;",
         "",
         "    public PatternClip(int layer, int styleMask, byte variationMin, byte variationMax, byte comboMin, float intensityMin,",
-        "        FeverPhaseMask fever, byte featureLoop, byte sectionPhrase, int first, int count, byte feverVariantMask = 0xFF)",
+        "        FeverPhaseMask fever, byte featureLoop, byte sectionPhrase, int first, int count, byte feverVariantMask = 0xFF,",
+        "        ushort progressionMask = 0xFFFF)",
         "    {",
         "        Layer = layer; StyleMask = styleMask; VariationMin = variationMin; VariationMax = variationMax; ComboMin = comboMin;",
         "        IntensityMin = intensityMin; Fever = fever; FeatureLoop = featureLoop; SectionPhrase = sectionPhrase;",
-        "        First = first; Count = count; FeverVariantMask = feverVariantMask;",
+        "        First = first; Count = count; FeverVariantMask = feverVariantMask; ProgressionMask = progressionMask;",
         "    }",
         "}",
         "",
@@ -355,6 +400,22 @@ def cs_text(bus_member):
         f"    public const float PhraseBeats = {PHRASE_BEATS}f;",
         "    /// <summary>Fever bed variants (ArrangementState.FeverVariant 0 .. FeverVariantCount - 1).</summary>",
         f"    public const int FeverVariantCount = {FEVER_VARIANT_COUNT};",
+        "",
+        "    /// <summary>Chord progressions (progressions.py; ArrangementState.Progression 0 .. ProgressionCount - 1).</summary>",
+        f"    public const int ProgressionCount = {PROGRESSION_COUNT};",
+        "    public static readonly string[] ProgressionNames = { " + ", ".join(f'"{p[0]}"' for p in progressions.PROGRESSIONS) + " };",
+        "    /// <summary>Per progression: 0 bright, 1 dark (minor colour), 2 soft (ProgressionSelector weights).</summary>",
+        "    public static readonly byte[] ProgressionMood = { " + ", ".join(str(p[2]) for p in progressions.PROGRESSIONS) + " };",
+        "    /// <summary>Chord names by chord id (KillChordTable rows).</summary>",
+        "    public static readonly string[] ChordNames = { " + ", ".join(f'"{c}"' for c in progressions.CHORD_NAMES) + " };",
+        "    /// <summary>[progression, bar] chord id (ChordNames index).</summary>",
+        "    public static readonly byte[,] ProgressionChords =",
+        "    {",
+    ] + [
+        "        { " + ", ".join(str(progressions.CHORD_NAMES.index(c)) for c in p[1]) + " },   // " + p[0]
+        for p in progressions.PROGRESSIONS
+    ] + [
+        "    };",
         "",
         "    /// <summary>Layers (bits) of the core kick / snare / hat, scheduled a bar ahead by their own PatternScheduler.</summary>",
         f"    public const ulong CoreLayerMask = 0x{sum(1 << i for i, l in enumerate(layers) if l.core):X}UL;",
@@ -371,24 +432,64 @@ def cs_text(bus_member):
     L += [f'        "{l.name}",' for l in layers]
     L += ["    };", "", "    /// <summary>Name of each clip (same index as Clips).</summary>", "    public static readonly string[] ClipNames =", "    {"]
     L += [f'        "{c.name}",' for c in clips]
-    L += ["    };", "", "    public static readonly PatternClip[] Clips =", "    {"]
+    L += ["    };", ""]
     first = 0
+    clip_rows = []
     for c in clips:
         style_mask = sum(1 << s for s in c.styles)
         fever = " | ".join(f"FeverPhaseMask.{p}" for p in FEVER_PHASES if p in c.fever)
-        L.append(f"        new PatternClip({layer_index[c.layer]}, {style_mask}, {c.variation[0]}, {c.variation[1]}, {c.combo}, "
-                 f"{_f(c.intensity)}, {fever}, {c.feature_loop}, {c.section_phrase}, {first}, {len(c.notes)}"
-                 + ("" if c.fever_variants == ALL_FEVER_VARIANTS else f", {c.fever_variant_mask}")
-                 + f"),   // {c.name}")
+        clip_rows.append((None,
+                          f"new PatternClip({layer_index[c.layer]}, {style_mask}, {c.variation[0]}, {c.variation[1]}, {c.combo}, "
+                          f"{_f(c.intensity)}, {fever}, {c.feature_loop}, {c.section_phrase}, {first}, {len(c.notes)}"
+                          + ("" if c.fever_variants == ALL_FEVER_VARIANTS and c.progressions == ALL_PROGRESSIONS
+                             else f", {c.fever_variant_mask}")
+                          + ("" if c.progressions == ALL_PROGRESSIONS else f", {c.progression_mask}")
+                          + f");   // {c.name}"))
         first += len(c.notes)
-    L += ["    };", "", "    public static readonly PatternNote[] Notes =", "    {"]
+    note_rows = []
     for c in clips:
-        L.append(f"        // {c.name}")
-        for n in c.notes:
-            L.append(f"        new PatternNote({_f(n.beat)}, {n.midi}, {_f(n.length)}, {_f(n.hold)}, {_f(n.gain_db)}, "
-                     f"Instrument.{n.inst.name}, OutputBus.{bus_member(n.inst.bus)}),")
-    L += ["    };", "}", ""]
+        for i, n in enumerate(c.notes):
+            note_rows.append((c.name if i == 0 else None,
+                              f"new PatternNote({_f(n.beat)}, {n.midi}, {_f(n.length)}, {_f(n.hold)}, {_f(n.gain_db)}, "
+                              f"Instrument.{n.inst.name}, OutputBus.{bus_member(n.inst.bus)});"))
+    L += _cs_chunked_array("PatternClip", "Clips", clip_rows)
+    L += [""]
+    L += _cs_chunked_array("PatternNote", "Notes", note_rows)
+    L += ["}", ""]
     return "\n".join(L)
+
+
+# Elements per fill method of a generated array (_cs_chunked_array).
+CS_CHUNK = 256
+
+
+def _cs_chunked_array(cs_type, field, rows):
+    """C# lines for `public static readonly <cs_type>[] <field>`, filled by methods of CS_CHUNK elements each.
+    rows: (comment line before the element or None, "new T(...);" with an optional trailing comment).
+    One array initializer with every element puts them all in PatternTable's static constructor, and Unity's Mono
+    refuses to compile a method that large ("Method PatternTable:.cctor () stack is too big"; in the editor a
+    StackOverflowException that takes the editor down) - it happened at about 19 000 notes."""
+    chunks = [rows[i:i + CS_CHUNK] for i in range(0, len(rows), CS_CHUNK)]
+    L = [
+        f"    public static readonly {cs_type}[] {field} = Build{field}();",
+        "",
+        f"    // Filled {CS_CHUNK} at a time: one initializer with every element is a static constructor too big for Mono.",
+        f"    static {cs_type}[] Build{field}()",
+        "    {",
+        f"        var a = new {cs_type}[{len(rows)}];",
+    ]
+    L += [f"        {field}{k}(a);" for k in range(len(chunks))]
+    L += ["        return a;", "    }"]
+    index = 0
+    for k, chunk in enumerate(chunks):
+        L += ["", f"    static void {field}{k}({cs_type}[] a)", "    {"]
+        for comment, element in chunk:
+            if comment:
+                L.append(f"        // {comment}")
+            L.append(f"        a[{index}] = {element}")
+            index += 1
+        L.append("    }")
+    return L
 
 
 def write_table(bus_member):

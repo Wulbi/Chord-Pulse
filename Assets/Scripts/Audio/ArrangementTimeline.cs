@@ -22,6 +22,8 @@ public struct ArrangementInputs
     public int FeverStart;
     /// <summary>Fever bed variant of the queued fever (FeverSelector), and its fever guest loop id (0 = none).</summary>
     public int FeverVariant, FeverGuest;
+    /// <summary>Chord progression of the phrase being played and of the next one (ProgressionSelector).</summary>
+    public int ProgressionCurrent, ProgressionNext;
 }
 
 /// <summary>
@@ -98,13 +100,14 @@ public static class ArrangementTimeline
             FeatureLoop = FeatureLoopAt(step, in x),
             SectionPhrase = next ? x.SectionPhraseNext : x.SectionPhraseCurrent,
             FeverVariant = zone ? x.FeverVariant : 0,
+            Progression = next ? x.ProgressionNext : x.ProgressionCurrent,
         };
     }
 
     static bool Same(in ArrangementState a, in ArrangementState b) =>
         a.Style == b.Style && a.Variation == b.Variation && a.Combo == b.Combo && a.Intensity == b.Intensity &&
         a.Fever == b.Fever && a.FeatureLoop == b.FeatureLoop && a.SectionPhrase == b.SectionPhrase &&
-        a.FeverVariant == b.FeverVariant;
+        a.FeverVariant == b.FeverVariant && a.Progression == b.Progression;
 
     /// <summary>First step in [fromStep, toStep] whose state differs between the two decision sets, or -1.</summary>
     public static int FirstDifferentStep(in ArrangementInputs before, in ArrangementInputs after, int fromStep, int toStep)

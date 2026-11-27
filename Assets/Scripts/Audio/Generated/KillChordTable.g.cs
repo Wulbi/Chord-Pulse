@@ -35,6 +35,9 @@ public static class KillChordTable
     /// <summary>[style] main-note target level in dB; style 0 keeps the original per-note level.</summary>
     public static readonly float[] TargetDb = { -27.0f, -27.0f, -27.0f, -28.5f };
 
+    /// <summary>Chord ids (PatternTable.ChordNames): 0 C, 1 Am, 2 F, 3 G, 4 Dm, 5 Em.</summary>
+    public const int Chords = 6;
+
     /// <summary>[chord, voice] MIDI note, lowest first.</summary>
     public static readonly int[,] Voicing =
     {
@@ -42,13 +45,15 @@ public static class KillChordTable
         { 57, 60, 64, 69, 76 },
         { 53, 57, 60, 65, 72 },
         { 55, 59, 62, 67, 74 },
+        { 50, 53, 57, 62, 69 },
+        { 52, 55, 59, 64, 71 },
     };
 
     /// <summary>[voice] smallest voicing (1 triad, 2 + octave, 3 + top voice) that plays the voice.</summary>
     public static readonly int[] VoiceMinVoicing = { 1, 1, 1, 2, 3 };
 
-    public static readonly int[] Seventh = { 71, 67, 64, 65 };
-    public static readonly int[] RootLow = { 48, 45, 41, 43 };
+    public static readonly int[] Seventh = { 71, 67, 64, 65, 60, 62 };
+    public static readonly int[] RootLow = { 48, 45, 41, 43, 50, 40 };
 
     public const float SeventhDb = -30.0f;
     public const float BellDb = -33.0f;

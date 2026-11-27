@@ -23,11 +23,16 @@ lead / shaker / bass fifths above; 1-3 replace those three parts for the whole f
 build roll / riser, impact and outro clips are shared by every variant, and the bed and core drums play under all of
 them as before (synthpop, intensity 3). Every variant keeps to C - Am - F - G chord tones, so any fever guest loop
 (pattern_feature.py, fever=True) fits over any variant; variant 3 has no lead (its 16th arpeggio leaves room for one).
+Chord progressions (progressions.py): every pitched part is built once per progression (patterns.expand). Lines written
+over the original bars (lead, anthem lead, riser, fall) move bar by bar onto the progression's chords
+(progressions.remap_rows); chord-built parts (bass, disco lead, arpeggio) read the bar's chord. Progression 0 plays the
+original notes. The percussion is the same on every progression.
 The snare rolls pitch the snare by fractions of a semitone per hit, so the fever percussion is one
 instrument (FeverDrums) whose table maps each Note to (sample, pitch) directly (samples.pick with a dict). Data only.
 """
+import progressions as P
 import samples
-from patterns import Clip, Inst, Layer, N
+from patterns import Clip, Inst, Layer, N, expand
 
 # ---- data block (extract_fever.py) ----
 # Fever lead: 4-bar pattern; condition {'Fever': (0.5, 1.0)}; ADSR None; track fader 0.0 dB
@@ -214,9 +219,30 @@ LAYERS = [Layer(t, t) for t in ("Fever lead", "Fever shaker", "Fever bass fifths
 LAYERS.append(Layer("Fever comp", "Fever comp"))   # variant chord / arpeggio parts (no old timeline track)
 
 
+def fits(inst):
+    def ok(midis):
+        try:
+            for m in midis:
+                inst.sample(m)
+            return True
+        except AssertionError:
+            return False
+    return ok
+
+
 def phrase(layer, rows, inst):
     """A 4-bar track: (beat in the phrase, MIDI, length beats, dB)."""
     return [N(b, m, length, v + TRACK_DB.get(layer, 0.0), inst) for b, m, length, v in rows]
+
+
+def melody(layer, rows, inst):
+    """make(progression): a 4-bar line written over C - Am - F - G, moved bar by bar onto the progression."""
+    return lambda p: phrase(layer, P.remap_rows(rows, p, lambda r: 1, fits(inst)), inst)
+
+
+def chord_built(layer, make_bar, inst):
+    """make(progression): per_bar rows built from each bar's chord data."""
+    return lambda p: phrase(layer, per_bar(make_bar, p), inst)
 
 
 def every_bar(layer, rows, note_of):
@@ -226,17 +252,26 @@ def every_bar(layer, rows, note_of):
 
 
 # ---- fever bed variants 1-3 ----
-# Per bar of the phrase: root (bass, MIDI) and the chord's tones from C5 up, for the lead / comp lines.
-CHORDS = [dict(root=36, tones=(72, 76, 79)),   # C
-          dict(root=33, tones=(72, 76, 81)),   # Am
-          dict(root=29, tones=(72, 77, 81)),   # F
-          dict(root=31, tones=(74, 79, 83))]   # G
+# Per chord: the chord's tones from C5 up (lead / comp lines) and the lowest arpeggio voicing; roots are
+# progressions.BASS_ROOT. Written for the original four chords, Dm / Em derived (progressions.derive).
+TONES = P.derive({"C": (72, 76, 79), "Am": (72, 76, 81), "F": (72, 77, 81), "G": (74, 79, 83)},
+                 lambda v: max(v) <= 84 and fits(LEAD_INST)(v))
+ARP_BASE = P.derive({"C": (60, 64, 67), "Am": (57, 60, 64), "F": (57, 60, 65), "G": (55, 59, 62)},
+                    lambda v: fits(PLUCK_INST)(list(v) + [v[0] + 24, v[2] + 12]))
 VARIANT_NAMES = ["Fever Classic", "Disco Drive", "Anthem", "Arp Rush"]
 
 
-def per_bar(make):
-    """make(bar, chord) -> rows with beats in the bar; returns rows with beats in the phrase."""
-    return [(bar * 4 + b,) + tuple(rest) for bar, ch in enumerate(CHORDS) for b, *rest in make(bar, ch)]
+def per_bar(make, p):
+    """make(bar, chord dict) -> rows with beats in the bar; returns rows with beats in the phrase (progression p)."""
+    rows = []
+    for bar, name in enumerate(P.chords(p)):
+        ch = dict(name=name, root=P.BASS_ROOT[name], tones=TONES[name], arp=ARP_BASE[name])
+        rows += [(bar * 4 + b,) + tuple(rest) for b, *rest in make(bar, ch)]
+    return rows
+
+
+def _fifths_bar(bar, ch):
+    return [(1.0, P.fifth(ch["name"]), 0.85, -10.0), (3.0, P.fifth(ch["name"]), 0.85, -10.0)]
 
 
 def drums(rows):
@@ -274,11 +309,8 @@ ANTHEM_CLAPS = [(bar * 4 + b, samples.CLAP, 0.5, -17.0 if b % 2 == 0 else -15.0)
 
 
 # 3 Arp Rush: 16th pluck arpeggio over two octaves (no lead), syncopated bass, 16th shaker.
-ARP_BASE = [(60, 64, 67), (57, 60, 64), (57, 60, 65), (55, 59, 62)]   # lowest voicing per bar (C4 E4 G4, ...)
-
-
 def _arp(bar, ch):
-    lo, mid, hi = ARP_BASE[bar]
+    lo, mid, hi = ch["arp"]
     up = [lo, mid, hi, lo + 12, mid + 12, hi + 12, lo + 24, hi + 12]
     seq = up + up[::-1]
     rows = []
@@ -299,31 +331,38 @@ ARP_SHAKER = [(bar * 4 + i * 0.25, samples.SHAKER, 0.2, -19.0 if i % 2 else -22.
               for bar in range(4) for i in range(16) if not (bar == 3 and i == 15)]
 
 
-def variant(v, name, layer, notes):
-    return Clip(f"FeverV{v}{name}", layer, notes, fever=FEVER_ON, fever_variants=(v,))
+def variant(v, name, layer, make):
+    """A variant's part; make(progression) -> notes (or a plain note list for percussion)."""
+    if callable(make):
+        return expand(f"FeverV{v}{name}", layer, make, fever=FEVER_ON, fever_variants=(v,))
+    return [Clip(f"FeverV{v}{name}", layer, make, fever=FEVER_ON, fever_variants=(v,))]
 
 
-CLIPS = [
-    Clip("FeverLead", "Fever lead", phrase("Fever lead", LEAD, LEAD_INST), fever=FEVER_ON, fever_variants=(0,)),
-    Clip("FeverShaker", "Fever shaker", every_bar("Fever shaker", SHAKER, lambda p: samples.SHAKER), fever=FEVER_ON,
-         fever_variants=(0,)),
-    Clip("FeverBassFifths", "Fever bass fifths", phrase("Fever bass fifths", BASS_FIFTHS, BASS_INST), fever=FEVER_ON,
-         fever_variants=(0,)),
-    variant(1, "Bass", "Fever bass fifths", phrase("", per_bar(_disco_bass), BASS_INST)),
+# The fifths track was hand-made on C Am F G: the fifth of each bar's chord on beats 2 and 4 (same notes on progression 0).
+assert per_bar(_fifths_bar, 0) == BASS_FIFTHS
+CLIPS = [c for group in (
+    expand("FeverLead", "Fever lead", melody("Fever lead", LEAD, LEAD_INST), fever=FEVER_ON, fever_variants=(0,)),
+    [Clip("FeverShaker", "Fever shaker", every_bar("Fever shaker", SHAKER, lambda p: samples.SHAKER), fever=FEVER_ON,
+          fever_variants=(0,))],
+    expand("FeverBassFifths", "Fever bass fifths", chord_built("Fever bass fifths", _fifths_bar, BASS_INST),
+           fever=FEVER_ON, fever_variants=(0,)),
+    variant(1, "Bass", "Fever bass fifths", chord_built("", _disco_bass, BASS_INST)),
     variant(1, "Hats", "Fever shaker", drums(DISCO_HATS)),
-    variant(1, "Lead", "Fever lead", phrase("", per_bar(_disco_lead), LEAD_INST)),
-    variant(2, "Lead", "Fever lead", phrase("", ANTHEM_LEAD, LEAD_INST)),
-    variant(2, "Bass", "Fever bass fifths", phrase("", per_bar(_anthem_bass), BASS_INST)),
+    variant(1, "Lead", "Fever lead", chord_built("", _disco_lead, LEAD_INST)),
+    variant(2, "Lead", "Fever lead", melody("", ANTHEM_LEAD, LEAD_INST)),
+    variant(2, "Bass", "Fever bass fifths", chord_built("", _anthem_bass, BASS_INST)),
     variant(2, "Claps", "Fever shaker", drums(ANTHEM_CLAPS)),
-    variant(3, "Arp", "Fever comp", phrase("", per_bar(_arp), PLUCK_INST)),
-    variant(3, "Bass", "Fever bass fifths", phrase("", per_bar(_arp_bass), BASS_INST)),
+    variant(3, "Arp", "Fever comp", chord_built("", _arp, PLUCK_INST)),
+    variant(3, "Bass", "Fever bass fifths", chord_built("", _arp_bass, BASS_INST)),
     variant(3, "Shaker", "Fever shaker", drums(ARP_SHAKER)),
-    Clip("FeverBuildRoll", "Fever build roll", every_bar("Fever build roll", BUILD_ROLL, snare_note), fever=("Build",)),
-    Clip("FeverBuildRiser", "Fever build riser", phrase("Fever build riser", BUILD_RISER, PLUCK_INST), fever=("Build",)),
-    Clip("FeverImpact", "Fever impact", every_bar("Fever impact", IMPACT, lambda f: _BY_FILE[f]), fever=("Impact",)),
-    Clip("FeverOutroFall", "Fever outro fall", phrase("Fever outro fall", OUTRO_FALL, PLUCK_INST), fever=("Outro",)),
-    Clip("FeverOutroSnare", "Fever outro snare", every_bar("Fever outro snare", OUTRO_SNARE, snare_note),
-         fever=("Outro",)),
-]
+    [Clip("FeverBuildRoll", "Fever build roll", every_bar("Fever build roll", BUILD_ROLL, snare_note),
+          fever=("Build",))],
+    expand("FeverBuildRiser", "Fever build riser", melody("Fever build riser", BUILD_RISER, PLUCK_INST),
+           fever=("Build",)),
+    [Clip("FeverImpact", "Fever impact", every_bar("Fever impact", IMPACT, lambda f: _BY_FILE[f]), fever=("Impact",))],
+    expand("FeverOutroFall", "Fever outro fall", melody("Fever outro fall", OUTRO_FALL, PLUCK_INST), fever=("Outro",)),
+    [Clip("FeverOutroSnare", "Fever outro snare", every_bar("Fever outro snare", OUTRO_SNARE, snare_note),
+          fever=("Outro",))],
+) for c in group]
 
 assert len(VARIANT_NAMES) == __import__("patterns").FEVER_VARIANT_COUNT

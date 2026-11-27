@@ -35,6 +35,7 @@ public sealed class FeatureLoopVisuals : MonoBehaviour
             ArenaRadius = arenaRadius,
             Material = material,
             Dot = CreateDot(),
+            Square = Sprite.Create(Texture2D.whiteTexture, new Rect(0, 0, 4, 4), new Vector2(0.5f, 0.5f), 4),
             Root = transform,
             SortingOrder = SortingOrder,
         };
@@ -178,5 +179,8 @@ public sealed class FeatureLoopVisuals : MonoBehaviour
             Destroy(dot.texture);
             Destroy(dot);
         }
+        // The square uses Unity's shared white texture: destroy only the sprite.
+        if (_context?.Square != null)
+            Destroy(_context.Square);
     }
 }

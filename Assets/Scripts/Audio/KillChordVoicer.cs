@@ -26,7 +26,7 @@ public static class KillChordVoicer
 
     /// <param name="style">0 synthpop, 1 latin, 2 funk, 3 dreamy.</param>
     /// <param name="color">0 Red, 1 Blue, 2 Yellow.</param>
-    /// <param name="chordIndex">Bar of the phrase: 0 C, 1 Am, 2 F, 3 G.</param>
+    /// <param name="chordIndex">Chord id (PatternTable.ChordNames): 0 C, 1 Am, 2 F, 3 G, 4 Dm, 5 Em.</param>
     /// <param name="voicing">0 none, 1 triad, 2 + octave, 3 + top voice.</param>
     public static void Voice(int style, int color, int chordIndex, int voicing, int combo, float tension, List<KillNote> into)
     {

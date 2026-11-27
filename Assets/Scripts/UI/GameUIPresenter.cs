@@ -8,7 +8,7 @@ public class GameUIPresenter : MonoBehaviour
     void OnEnable()
     {
         if (GameManager.HasInstance)
-            GameManager.Instance.OnGameOver += HandleGameOver;
+            GameManager.Instance.OnGameOverPresented += HandleGameOver;
     }
 
     void Start()
@@ -16,14 +16,14 @@ public class GameUIPresenter : MonoBehaviour
         if (!GameManager.HasInstance)
             return;
 
-        GameManager.Instance.OnGameOver -= HandleGameOver;
-        GameManager.Instance.OnGameOver += HandleGameOver;
+        GameManager.Instance.OnGameOverPresented -= HandleGameOver;
+        GameManager.Instance.OnGameOverPresented += HandleGameOver;
     }
 
     void OnDisable()
     {
         if (GameManager.HasInstance)
-            GameManager.Instance.OnGameOver -= HandleGameOver;
+            GameManager.Instance.OnGameOverPresented -= HandleGameOver;
     }
 
     void HandleGameOver()

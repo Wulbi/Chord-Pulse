@@ -87,6 +87,66 @@
 
 ---
 
+## 4차: 코드 진행 12종 + 새 악기 게스트 루프 15종 (2026-11-27)
+
+플레이마다 다른 느낌을 주려고 **코드 진행**을 프레이즈마다 바꾸고, 그동안 쓰지 않던 악기(`SampleLibrary/`에 있던 후보)로 게스트 루프를 만들었다.
+
+### 코드 진행 (`FMOD/Tools/progressions.py`, `Audio/ProgressionSelector.cs`)
+
+모두 C장조 다이어토닉(C Dm Em F G Am)이라 새 샘플 없이 어떤 파트든 옮길 수 있다. 0번이 원래 C–Am–F–G이고, 0번에서는 모든 음이 예전과 똑같다 (80개 클립 전부 비교).
+
+| # | 이름 | 코드 | 분위기 |
+|---|---|---|---|
+| 0 | Classic | C Am F G | 밝음 (홈 테마) |
+| 1 | Axis | C G Am F | 밝음 |
+| 2 | Minor Axis | Am F C G | 어두움 |
+| 3 | Royal Road | F G Em Am | 부드러움 |
+| 4 | Turnaround | Dm G C Am | 밝음 |
+| 5 | Plagal Lift | C F Am G | 밝음 |
+| 6 | Melancholy | Am Em F G | 어두움 |
+| 7 | Doo-wop | C Am Dm G | 밝음 |
+| 8 | Sunrise | F C G Am | 부드러움 |
+| 9 | Stepping Up | C Em F G | 부드러움 |
+| 10 | Shadow | Am Dm G C | 어두움 |
+| 11 | Pop Lament | Am F G Em | 어두움 |
+
+- **고르는 규칙** (`ProgressionSelector`): 다음 프레이즈의 진행을 한 프레이즈 앞서 고른다. 한 진행은 1~2 프레이즈(60%로 2) 유지하고, 바뀔 때 직전 진행으로 바로 돌아가지 않는다. 피버는 밝은 진행, 숨 고르기·드리미 스타일은 부드러운 진행, 텐션 0.5 이상이면 어두운 진행에 가중치 3배, Classic은 항상 1.5배. 라운드 시작은 밝은 진행(절반은 Classic). 시드는 `sectionSeed` 기반 별도 스트림.
+- **파트를 옮기는 법**:
+  - 베이스류(루트·5도·워킹·앤티시페이션)는 코드별 고정 음역 `BASS_ROOT`(C2 D2 E1 F1 G1 A1)에서 계산.
+  - 보이싱 표(플럭·패드·벨·스트링·마림바·클라브·기타·콰이어·피버 톤·처치 화음)는 원래 4코드 표에 `derive()`가 Dm·Em을 채운다 (가장 가까운 원래 보이싱을 음계 단위로 옮기고, 악기 음역을 벗어나는 후보는 버림).
+  - 원래 마디 위에 쓴 멜로디(게스트 루프, 피버 리드·앤섬·라이저·폴, 원래 오프비트 플럭)는 마디마다 원래 코드 → 새 코드로 **같은 음계 이동**을 한다. 윤곽이 유지되고 코드음은 코드음으로 간다 (3음 → 3음). 이동 폭이 가장 작은 쪽, 악기 음역 안인 쪽을 고른다. 타악기는 그대로.
+  - `patterns.expand()`가 진행마다 파트를 만들고, 같은 음이 나오는 진행끼리 한 클립으로 묶는다 (`PatternClip.ProgressionMask`). 0번 클립은 이름이 그대로, 나머지는 `<이름>P<진행>`.
+- 검사: 진행마다 코드 밖 음 수가 원래(경과음·접근음) 29~31개로 같다. 오프라인 렌더로 배경 레벨이 12개 진행 모두 -35.2 ~ -35.7 dB.
+- 처치 화음: `IKillBedState.ChordAt(beat)` → 그 마디의 코드 id로 `KillChordTable` 행(C Am F G Dm Em)을 고른다.
+
+### 새 악기 게스트 루프 (ID 19~33)
+
+| ID | 이름 | 악기 | 마디 | 내용 · 의도 |
+|---|---|---|---|---|
+| 19 | Sax Groove | 테너 색소폰 | 1~4 | 코드마다 블루지한 리프, 마지막 마디는 G로 치고 올라감 |
+| 20 | Clarinet Swing | 클라리넷 | 1~2 | 스윙 8분 선율 |
+| 21 | Flute Breeze | 플루트 | 1~4 | 반주 위 높은 곳의 가벼운 선율, 4마디째 한 옥타브 아래로 대답 |
+| 22 | Horn Section | 호른 + 트롬본 | 1~4 | 따뜻한 금관 섹션: 길게 잡고 3박 반·4박에 짧은 히트 |
+| 23 | FM Piano Stabs | FM 피아노 | 1~4 | 하우스 피아노식 오프비트 코드 스탭 |
+| 24 | Chip Quest | 칩튠 리드 + 삼각파 베이스 | 1~4 | 8비트 모험 테마 |
+| 25 | La La Choir | "라라" 보컬 신스 | 1~4 | 따라 부르기 좋은 훅 |
+| 26 | Tine Keys | 틴 피아노(로즈풍) | 3~4 | 몽환적인 아르페지오 |
+| 27 | Mbira Ripple | 음비라 | 1~4 | 맞물리는 엄지 피아노 패턴 |
+| 28 | Jingle Sparkle | 슬레이벨·탬버린·트라이앵글 | 1~4 | 반짝이는 리듬 |
+| 29 | Toy Box | 우드 클릭·로그 드럼·슬랩스틱·슬라이드 휘슬·앤빌 | 1~4 | 장난감 상자 같은 코믹한 타악기 |
+| 30 | Acid Line | 애시드 베이스 | 1~4 | 꿀렁이는 8분·16분 라인 |
+| 31 | Twang Lick | 트왱 기타 | 4 | 다음 프레이즈로 넘기는 서프 기타 릭 |
+| 32 | Fever Sax Blast | 테너 색소폰 | 피버 | 피버 전체를 미는 색소폰 리프 |
+| 33 | Fever Chip Rush | 칩튠 플럭 + 리드 + 베이스 | 피버 | 16분 칩 아르페지오 위 리드 훅 |
+
+- 버스: `Feature/Winds`, `Feature/Keys`, `Feature/Chip`, `Feature/Voice`, `Feature/AcidLine` (로우컷만). 트왱은 기존 `Feature/Guitar`, 새 타악기는 `FeaturePerc`에 번호를 추가.
+- 비주얼: 새 악기는 기존 6계열을 쓴다 (색소폰·호른·트롬본 = 트럼펫, 클라리넷·플루트·보컬 = 휘슬, 건반·음비라 = 말렛, 칩·애시드 = 신스, 트왱 = 기타).
+- 샘플: 64개 파일을 `SampleLibrary/`에서 `FMOD/ChordPulse/Assets/`로 다시 옮기고 `sample-manifest.json`의 `location`을 바꿨다 (진행 때문에 쓰이게 된 기존 표의 5개 포함). 출처는 `SOURCES_AND_LICENSES.txt`에 이미 있다.
+- 음높이: 기음을 YIN으로 측정했다 (VSCO·DC·BrettTenor·MOHorn·tenortbn·음비라 파일은 이름보다 한 옥타브 위). 빌드된 뱅크에서 모든 음을 하나씩 렌더해 확인했고, 샤프·플랫한 샘플(라라 +23~28c, 음비라 +16~28c, 클라리넷 -8~-37c)은 `samples.TUNE_CENTS`로 보정해 중앙값 ±5c 이내로 맞췄다. 너무 어긋나는 음비라 B4·F#4·A4 텅과 클리핑된 호른 F4는 뺐다.
+- 레벨: 루프 단독 RMS(연주 마디 기준)를 기존 루프 중앙값(-36 dB) 근처인 -35.4 ~ -37.4 dB로 맞췄다 (124 BPM 오프라인 렌더, 다른 진행에서도 같음).
+
+---
+
 ## 3차: 피버 전용 — 피버 배경 변형 4종 + 피버 게스트 루프 6종 (2026-11-27)
 
 피버가 매번 같은 리드·셰이커·베이스였던 것을 바꿨다. 피버를 예약하는 순간 Unity의 `FeverSelector`가 **배경 변형 1개**와 (85% 확률로) **게스트 루프 1개**를 골라 피버 프레이즈 전체(임팩트~아웃트로)에 깐다. 같은 변형·같은 게스트는 두 번 연속 나오지 않는다. 빌드업 마디·임팩트 히트·아웃트로 하강·스네어는 모든 변형이 공유하고, 코어 드럼과 배경(신스팝, Intensity 3)도 그대로 깔린다.
@@ -159,7 +219,7 @@ Mallet Hook    ████   ████
 
 ## 수정·추가하는 방법
 
-1. 루프 데이터: 일반·피버 게스트 루프는 [pattern_feature.py](../FMOD/Tools/pattern_feature.py)의 `LOOPS` / `FEVER_LOOPS` (박은 프레이즈 기준 0~16, MIDI 60 = C4; 헬퍼 `T` 트럼펫 · `W` 휘파람 · `M` 말렛 · `P` 타악기 · `S` 신스 · `G` 기타). 피버 배경 변형은 [pattern_fever.py](../FMOD/Tools/pattern_fever.py)의 `VARIANTS` 부분 (변형을 늘리면 `patterns.FEVER_VARIANT_COUNT`와 `FeverSelector.VariantNames`도).
+1. 루프 데이터: 일반·피버 게스트 루프는 [pattern_feature.py](../FMOD/Tools/pattern_feature.py)의 `LOOPS` / `FEVER_LOOPS` / `NEW_LOOPS` (박은 프레이즈 기준 0~16, MIDI 60 = C4; 헬퍼 `T` 트럼펫 · `W` 휘파람 · `M` 말렛 · `P` 타악기 · `S` 신스 · `G` 기타 · `X` 아무 악기 · `riff` C 위에 쓴 한 마디를 각 마디 코드로 옮겨 반복). **항상 C–Am–F–G 위에 쓴다**: 다른 코드 진행으로는 자동으로 옮겨진다 (4차). 새 악기는 `samples.py`에 표(측정한 기음), `INSTRUMENTS`·`FLAGS`에 항목, 필요하면 `mixer.py`에 버스를 추가하고 `mixer.js`도 실행. 피버 배경 변형은 [pattern_fever.py](../FMOD/Tools/pattern_fever.py)의 `VARIANTS` 부분 (변형을 늘리면 `patterns.FEVER_VARIANT_COUNT`와 `FeverSelector.VariantNames`도).
 2. `python -I FMOD/Tools/feature_loops.py` → `Assets/Scripts/Audio/FeatureLoopNotes.g.cs` (루프 표·음 위치, 선택과 비주얼이 읽음).
 3. `python -I FMOD/Tools/instruments.py` → `instruments.js`, `InstrumentTable.g.cs`, `PatternTable.g.cs`.
 4. FMOD Studio를 닫고 `fmodstudiocl.exe -script FMOD/Tools/instruments.js FMOD/ChordPulse/ChordPulse.fspro`, 그 다음 **별도 명령으로** `fmodstudiocl.exe -build FMOD/ChordPulse/ChordPulse.fspro`. 뱅크는 손으로 복사하지 않는다 (에디터는 FMOD 빌드 폴더를 읽고, 플레이어 빌드 때 FMOD가 복사).

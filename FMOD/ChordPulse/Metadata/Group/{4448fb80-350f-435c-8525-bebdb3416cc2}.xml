@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<objects serializationModel="Studio.02.02.00">
+	<object class="MixerGroup" id="{4448fb80-350f-435c-8525-bebdb3416cc2}">
+		<property name="name">
+			<value>AcidLine</value>
+		</property>
+		<relationship name="effectChain">
+			<destination>{74d16b11-d33b-4ddc-909f-f69f758a1d31}</destination>
+		</relationship>
+		<relationship name="panner">
+			<destination>{d65c9058-e97f-496a-9500-a0fb5935bb08}</destination>
+		</relationship>
+		<relationship name="output">
+			<destination>{30982b85-be67-48d4-8ef0-2e7cbc43914f}</destination>
+		</relationship>
+	</object>
+	<object class="MixerBusEffectChain" id="{74d16b11-d33b-4ddc-909f-f69f758a1d31}">
+		<relationship name="effects">
+			<destination>{070e23db-1038-4d15-a5df-61e19ea30303}</destination>
+			<destination>{b2b29cf6-c763-48fc-94f2-8fd4f4275eb8}</destination>
+		</relationship>
+	</object>
+	<object class="MixerBusPanner" id="{d65c9058-e97f-496a-9500-a0fb5935bb08}" />
+	<object class="HighpassEffect" id="{070e23db-1038-4d15-a5df-61e19ea30303}">
+		<property name="cutoff">
+			<value>40</value>
+		</property>
+	</object>
+	<object class="MixerBusFader" id="{b2b29cf6-c763-48fc-94f2-8fd4f4275eb8}" />
+</objects>

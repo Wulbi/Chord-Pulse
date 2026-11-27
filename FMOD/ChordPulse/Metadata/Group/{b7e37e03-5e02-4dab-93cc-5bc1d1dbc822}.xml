@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<objects serializationModel="Studio.02.02.00">
+	<object class="MixerGroup" id="{b7e37e03-5e02-4dab-93cc-5bc1d1dbc822}">
+		<property name="name">
+			<value>Voice</value>
+		</property>
+		<relationship name="effectChain">
+			<destination>{2533c386-85a2-4714-abe0-70bac67bcc92}</destination>
+		</relationship>
+		<relationship name="panner">
+			<destination>{f7490a8c-057a-462b-89ec-7cdb733bb6e7}</destination>
+		</relationship>
+		<relationship name="output">
+			<destination>{30982b85-be67-48d4-8ef0-2e7cbc43914f}</destination>
+		</relationship>
+	</object>
+	<object class="MixerBusEffectChain" id="{2533c386-85a2-4714-abe0-70bac67bcc92}">
+		<relationship name="effects">
+			<destination>{0ff40ddf-83b1-4cad-9d7f-31b84992f4dc}</destination>
+			<destination>{e29d4b0d-735c-4e73-bfa3-84ebe3deaef9}</destination>
+		</relationship>
+	</object>
+	<object class="MixerBusPanner" id="{f7490a8c-057a-462b-89ec-7cdb733bb6e7}" />
+	<object class="HighpassEffect" id="{0ff40ddf-83b1-4cad-9d7f-31b84992f4dc}">
+		<property name="cutoff">
+			<value>180</value>
+		</property>
+	</object>
+	<object class="MixerBusFader" id="{e29d4b0d-735c-4e73-bfa3-84ebe3deaef9}" />
+</objects>

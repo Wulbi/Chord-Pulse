@@ -25,7 +25,7 @@ public class InstrumentCoverageTests
         var list = new List<KillNote>();
         for (int style = 0; style < KillChordTable.Styles; style++)
             for (int color = 0; color < KillChordTable.Colors; color++)
-                for (int chord = 0; chord < 4; chord++)
+                for (int chord = 0; chord < KillChordTable.Chords; chord++)
                     for (int voicing = 0; voicing <= 3; voicing++)
                         foreach (int combo in new[] { 0, 1, 2, 3 })
                             foreach (float tension in new[] { 0f, 0.7f })
@@ -90,8 +90,23 @@ public class InstrumentCoverageTests
             case OutputBus.Perc: return FeatureSelector.Instrument.Percussion;
             case OutputBus.Synth: return FeatureSelector.Instrument.Synth;
             case OutputBus.Guitar: return FeatureSelector.Instrument.Guitar;
+            // guest loops 19+: the new families' buses (the visual family depends on the instrument: FeatureFlag(note))
+            case OutputBus.Winds: return FeatureSelector.Instrument.Trumpet;
+            case OutputBus.Keys: return FeatureSelector.Instrument.Mallets;
+            case OutputBus.Chip: return FeatureSelector.Instrument.Synth;
+            case OutputBus.Voice: return FeatureSelector.Instrument.Whistle;
+            case OutputBus.AcidLine: return FeatureSelector.Instrument.Synth;
         }
         return 0;
+    }
+
+    /// <summary>The visual family of a feature note (pattern_feature.py FLAGS): by bus, except the winds bus, whose
+    /// clarinet and flute draw as the whistle (sax, horn and trombone as the trumpet).</summary>
+    public static FeatureSelector.Instrument FeatureFlag(PatternNote n)
+    {
+        if (n.Bus == OutputBus.Winds && (n.Instrument == Instrument.Clarinet || n.Instrument == Instrument.Flute))
+            return FeatureSelector.Instrument.Whistle;
+        return FeatureFlag(n.Bus);
     }
 
     /// <summary>
@@ -102,9 +117,10 @@ public class InstrumentCoverageTests
     [Test]
     public void FeatureLoopNotes_MatchPatternData()
     {
-        Assert.AreEqual(18, FeatureLoopNotes.Loops.Length); // 12 phrase loops + 6 fever guests (ids 13-18)
+        // 12 phrase loops, 6 fever guests (ids 13-18), 13 phrase loops with the new instruments (19-31), 2 fever (32-33)
+        Assert.AreEqual(33, FeatureLoopNotes.Loops.Length);
         for (int id = 1; id <= FeatureLoopNotes.Loops.Length; id++)
-            Assert.AreEqual(id > 12, FeatureLoopNotes.Loops[id - 1].Fever, $"loop {id} fever flag");
+            Assert.AreEqual((id >= 13 && id <= 18) || id >= 32, FeatureLoopNotes.Loops[id - 1].Fever, $"loop {id} fever flag");
         for (int id = 1; id <= FeatureLoopNotes.Loops.Length; id++)
         {
             var onsets = new SortedDictionary<(float beat, int flag), (int midi, int voices)>();
@@ -113,12 +129,13 @@ public class InstrumentCoverageTests
             for (int c = 0; c < PatternTable.Clips.Length; c++)
             {
                 var clip = PatternTable.Clips[c];
-                if (clip.FeatureLoop != id)
+                // FeatureLoopNotes holds the loop as written (progression 0, C Am F G)
+                if (clip.FeatureLoop != id || (clip.ProgressionMask & 1) == 0)
                     continue;
                 for (int i = clip.First; i < clip.First + clip.Count; i++)
                 {
                     var n = PatternTable.Notes[i];
-                    var flag = FeatureFlag(n.Bus);
+                    var flag = FeatureFlag(n);
                     Assert.AreNotEqual((FeatureSelector.Instrument)0, flag, $"loop {id}: note on bus {n.Bus}, not a feature bus");
                     int midi = flag == FeatureSelector.Instrument.Percussion ? 72 : n.Midi;
                     var key = (n.Beat, (int)flag);
@@ -164,7 +181,7 @@ public class InstrumentCoverageTests
         Assert.AreEqual(0UL, PatternTable.CoreLayerMask & (1UL << layerIndex), "fever layers are not core layers");
         int clips = 0;
         foreach (var c in PatternTable.Clips)
-            if (c.Layer == layerIndex && (c.FeverVariantMask & 1) != 0)
+            if (c.Layer == layerIndex && (c.FeverVariantMask & 1) != 0 && (c.ProgressionMask & 1) != 0)
                 clips++;
         Assert.AreEqual(1, clips, $"variant-0 clips of {layer}");
         var clip = PatternTable.Clips[System.Array.IndexOf(PatternTable.ClipNames, clipName)];

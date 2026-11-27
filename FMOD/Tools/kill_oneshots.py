@@ -18,6 +18,7 @@ import sys
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 
+import progressions  # noqa: E402
 import samples  # noqa: E402
 
 CS_PATH = os.path.join(HERE, "..", "..", "Assets", "Scripts", "Audio", "Generated", "KillChordTable.g.cs")
@@ -26,10 +27,7 @@ NORMALIZE_DB = -27.0   # keep equal to instruments.NORMALIZE_DB (not imported: i
 MAX_INSTANCES = 24     # one beat can stack 3 colours x 5 voices + extras on the same instrument
 
 COLORS = ["Red", "Blue", "Yellow"]
-VOICING = [(60, 64, 67, 72, 79), (57, 60, 64, 69, 76), (53, 57, 60, 65, 72), (55, 59, 62, 67, 74)]
 VOICE_MIN = [1, 1, 1, 2, 3]   # smallest voicing (1 triad, 2 + octave, 3 + top voice) that plays voice i
-SEVENTH = [71, 67, 64, 65]
-ROOT_LOW = [48, 45, 41, 43]
 BELL_LENGTH = 1.5
 PUNCH_LENGTH = 0.7
 
@@ -52,6 +50,39 @@ TARGET = [-27.0, -27.0, -27.0, -28.5]   # style 0: original per-note level (~-27
 EXTRA = {"seventh": -30.0, "bell": -33.0, "punch": -30.0}
 
 
+def _max_pitch(name):
+    # the original synth leads/plucks are one sample each and were pitched up to +19 semitones on the timeline
+    return 24 if name.startswith("Orig") else 15
+
+
+def _fits(entry):
+    """A chord's kill notes stay inside every style's instrument range (progressions.derive ok)."""
+    try:
+        for style, cols in STYLES.items():
+            for inst, octave, _ in cols:
+                for m in list(entry["v"]) + [entry["s"]]:
+                    samples.pick(TABLES[inst], m + octave, _max_pitch(inst))
+            samples.pick(TABLES["Bells"], entry["v"][2] + 12, 15)
+        return True
+    except AssertionError:
+        return False
+
+
+# Per chord id (progressions.CHORD_NAMES: C Am F G are the old bar order, then Dm Em): the voicing (VOICE_MIN voices),
+# the seventh (combo 2+) and the low punch root. Dm / Em are derived from the original four (progressions.derive);
+# KillChordPlanner reads the chord of the beat's bar from the phrase's progression.
+_CHORDS = progressions.derive({
+    "C": dict(v=(60, 64, 67, 72, 79), s=71), "Am": dict(v=(57, 60, 64, 69, 76), s=67),
+    "F": dict(v=(53, 57, 60, 65, 72), s=64), "G": dict(v=(55, 59, 62, 67, 74), s=65),
+}, _fits)
+VOICING = [_CHORDS[c]["v"] for c in progressions.CHORD_NAMES]
+SEVENTH = [_CHORDS[c]["s"] for c in progressions.CHORD_NAMES]
+ROOT_LOW = [progressions.BASS_ROOT[c] + 12 for c in progressions.CHORD_NAMES]
+CHORD_COUNT = len(progressions.CHORD_NAMES)
+assert VOICING[:4] == [(60, 64, 67, 72, 79), (57, 60, 64, 69, 76), (53, 57, 60, 65, 72), (55, 59, 62, 67, 74)]
+assert SEVENTH[:4] == [71, 67, 64, 65] and ROOT_LOW[:4] == [48, 45, 41, 43]
+
+
 def punch_instrument(style):
     return "Sub" if style == 3 else "Bass"
 
@@ -60,19 +91,18 @@ def all_notes():
     """Yield (instrument, midi) for every note any kill chord can play."""
     for style, cols in STYLES.items():
         for inst, octave, _ in cols:
-            for pb in range(4):
+            for pb in range(CHORD_COUNT):
                 for m in VOICING[pb]:
                     yield inst, m + octave
                 yield inst, SEVENTH[pb] + octave
-        for pb in range(4):
+        for pb in range(CHORD_COUNT):
             yield "Bells", VOICING[pb][2] + 12
             yield punch_instrument(style), ROOT_LOW[pb]
 
 
 def register(lib):
     for name, table in TABLES.items():
-        # the original synth leads/plucks are one sample each and were pitched up to +19 semitones on the timeline
-        lib.add(name, table, MAX_INSTANCES, bus=BUS, max_pitch=24 if name.startswith("Orig") else 15)
+        lib.add(name, table, MAX_INSTANCES, bus=BUS, max_pitch=_max_pitch(name))
     for inst, midi in all_notes():
         lib.need(inst, BUS, midi)
 
@@ -107,9 +137,11 @@ def cs_text():
         L.append("        " + _arr([repr(c[2]) for c in STYLES[s]]) + ",")
     L += ["    };", "", "    /// <summary>[style] main-note target level in dB; style 0 keeps the original per-note level.</summary>",
           "    public static readonly float[] TargetDb = " + _arr([f"{t}f" for t in TARGET]) + ";", "",
+          "    /// <summary>Chord ids (PatternTable.ChordNames): 0 C, 1 Am, 2 F, 3 G, 4 Dm, 5 Em.</summary>",
+          f"    public const int Chords = {CHORD_COUNT};", "",
           "    /// <summary>[chord, voice] MIDI note, lowest first.</summary>",
           "    public static readonly int[,] Voicing =", "    {"]
-    for pb in range(4):
+    for pb in range(CHORD_COUNT):
         L.append("        " + _arr(VOICING[pb]) + ",")
     L += ["    };", "",
           "    /// <summary>[voice] smallest voicing (1 triad, 2 + octave, 3 + top voice) that plays the voice.</summary>",

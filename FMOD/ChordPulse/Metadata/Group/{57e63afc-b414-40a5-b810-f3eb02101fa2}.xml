@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<objects serializationModel="Studio.02.02.00">
+	<object class="MixerGroup" id="{57e63afc-b414-40a5-b810-f3eb02101fa2}">
+		<property name="name">
+			<value>Winds</value>
+		</property>
+		<relationship name="effectChain">
+			<destination>{28e2d592-9070-4b2c-8132-5b90c89b4b4c}</destination>
+		</relationship>
+		<relationship name="panner">
+			<destination>{43b4f430-2cf1-406a-b631-11c3e2f73d5e}</destination>
+		</relationship>
+		<relationship name="output">
+			<destination>{30982b85-be67-48d4-8ef0-2e7cbc43914f}</destination>
+		</relationship>
+	</object>
+	<object class="MixerBusEffectChain" id="{28e2d592-9070-4b2c-8132-5b90c89b4b4c}">
+		<relationship name="effects">
+			<destination>{2651726d-53a3-48be-9a14-cd7adb2a6d31}</destination>
+			<destination>{73d66003-c590-49e2-8fc6-a105a7fd136a}</destination>
+		</relationship>
+	</object>
+	<object class="MixerBusPanner" id="{43b4f430-2cf1-406a-b631-11c3e2f73d5e}" />
+	<object class="HighpassEffect" id="{2651726d-53a3-48be-9a14-cd7adb2a6d31}">
+		<property name="cutoff">
+			<value>150</value>
+		</property>
+	</object>
+	<object class="MixerBusFader" id="{73d66003-c590-49e2-8fc6-a105a7fd136a}" />
+</objects>

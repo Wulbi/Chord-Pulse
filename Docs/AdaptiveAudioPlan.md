@@ -807,3 +807,13 @@ fmodstudiocl.exe -build FMOD/ChordPulse/ChordPulse.fspro                        
 - 패턴: `PatternClip.FeverVariantMask` (기본 0xFF = 모든 변형) + `PatternMatch`가 변형을 검사. 원래 피버 리드·셰이커·베이스 5도는 변형 0 전용, 1~3은 같은 레이어(+ `Fever comp`)에 자기 클립.
 - 게스트: `ArrangementTimeline.FeatureLoopAt`이 피버 프레이즈(임팩트·피버·아웃트로)에서 `FeverGuest`를 돌려준다 (빌드업 마디는 0). 일반 `FeatureSelector`는 `Loop.Fever` 루프를 고르지 않는다.
 - 루프 설명·의도: [FeatureLoops.md](FeatureLoops.md) "3차". 검증: EditMode 187개 통과(새 테스트 4개), 코드 밖 음 0개, 오프라인 렌더로 믹스 레벨 ±0.8 dB.
+
+## 14. 코드 진행 12종 + 새 악기 게스트 루프 (2026-11-27)
+
+- 프레이즈마다 코드 진행 하나 (`FMOD/Tools/progressions.py`, `Audio/ProgressionSelector.cs`, `ArrangementState.Progression`). 진행은 한 프레이즈 앞서 정해지고 프레이즈 경계에서 정확히 바뀐다 (`ArrangementInputs.ProgressionCurrent/Next`). 피버 프레이즈도 그 프레이즈의 진행을 따른다.
+- 패턴: `PatternClip.ProgressionMask`(ushort, 기본 0xFFFF). `patterns.expand()`가 배경·피버·게스트 루프의 모든 음높이 파트를 진행마다 만들고 같은 음끼리 묶는다 (클립 80 → 705, 음 1,799 → 18,200; 레이어 44). 진행 0은 예전과 같은 음.
+- `PatternTable.g.cs`가 커져서 정적 생성자 스택 오버플로가 났다 → 배열을 256개씩 채우는 메서드로 나눠 생성 (`patterns._cs_chunked_array`). `max_instances`는 같은 음을 내는 상태를 한 번만 센다 (생성 23초).
+- 처치 화음: 비트의 마디 코드 id (`IKillBedState.ChordAt`) → `KillChordTable` 6행 (C Am F G + Dm Em, `progressions.derive`).
+- 새 게스트 루프 15종 (ID 19~33, 피버 32·33): 색소폰, 클라리넷, 플루트, 호른·트롬본, FM 피아노, 칩튠, 라라 보컬, 틴 피아노, 음비라, 슬레이벨류, 장난감 타악기, 애시드 베이스, 트왱 기타. 설명·레벨·튜닝은 [FeatureLoops.md](FeatureLoops.md) "4차".
+- 샘플별 미세 튜닝 `samples.TUNE_CENTS` (FMOD 사운드 pitch에 소수 반음).
+- 검증: EditMode 268개 통과(새 `ProgressionTests` 6개), 진행 0 음 비교, 새 악기 음 렌더 피치 검사, 진행별·루프별 오프라인 레벨. 게임 안에서 들어 본 것은 아님.

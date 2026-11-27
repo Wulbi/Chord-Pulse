@@ -159,6 +159,8 @@ public sealed class ChordPulsePrototype : MonoBehaviour
     const float SameTargetDistance = 0.06f;
     readonly List<TargetMarkers.Target> _targets = new List<TargetMarkers.Target>();
     TargetMarkers _targetMarkers;
+    GameOverSequence _gameOverSequence;
+    readonly List<GameOverSequence.Target> _gameOverTargets = new List<GameOverSequence.Target>();
 
     PoolManager _poolManager;
     GameManager _gameManager;
@@ -197,7 +199,7 @@ public sealed class ChordPulsePrototype : MonoBehaviour
         _gameManager = GameManager.Instance;
         _soundManager = SoundManager.Instance;
         _gameManager.OnGameRestarted += StartRound;
-        _gameManager.OnGameOver += _soundManager.StopMusic;
+        _gameManager.OnGameOver += HandleGameOver;
     }
 
     void Start()
@@ -217,6 +219,8 @@ public sealed class ChordPulsePrototype : MonoBehaviour
         _tensionVignette.Init(playCamera, _visuals.Stage, _arenaRadius);
         _featureVisuals = gameObject.AddComponent<FeatureLoopVisuals>();
         _featureVisuals.Init(playCamera, _arenaRadius, _ringMaterial);
+        _gameOverSequence = gameObject.AddComponent<GameOverSequence>();
+        _gameOverSequence.Init(playCamera, _visuals.Stage, _boundary, BoundaryColor, _arenaRadius, _ringMaterial);
         CreateShatterEffect();
         _targetMarkers = gameObject.AddComponent<TargetMarkers>();
         _targetMarkers.Init(_ringMaterial);
@@ -268,6 +272,8 @@ public sealed class ChordPulsePrototype : MonoBehaviour
         _lastHudBeat = -1;
         _wasFeverActive = false;
         _roundStartFrame = Time.frameCount;
+        _gameOverSequence.ResetVisuals();
+        _core.enabled = true;
         _visuals.ResetVisuals();
         _bedStyleVisuals.ResetVisuals();
         _bedLayerVisuals.ResetVisuals();
@@ -797,6 +803,103 @@ public sealed class ChordPulsePrototype : MonoBehaviour
             new Vector3(0f, behind, TrailDepth), new Vector3(TrailWidth[index], growth, 1f));
     }
 
+    // Game over: play the collapse (everything shakes, then bursts outward from the core) before the Restart
+    // screen; the music goes muffled and fades meanwhile (timeline in GameOverSequence).
+    void HandleGameOver()
+    {
+        _gameManager.DelayGameOverPresentation();
+        _soundManager.FadeOutMusic(GameOverSequence.TotalSeconds - 0.2f);
+        if (_targetMarkers != null)
+            _targetMarkers.Hide();
+
+        _gameOverTargets.Clear();
+        _gameOverTargets.Add(new GameOverSequence.Target { Transform = _core.transform, Distance = 0f, Burst = BurstCore });
+        _gameOverTargets.Add(new GameOverSequence.Target { Transform = _boundary.transform, Distance = _arenaRadius });
+        foreach (var enemy in _enemyViews.Values)
+        {
+            var view = enemy;
+            _gameOverTargets.Add(new GameOverSequence.Target
+            {
+                Transform = view.Instance.transform,
+                Distance = Vector2.Distance(view.Instance.transform.position, transform.position),
+                Burst = () => ShatterEnemyView(view)
+            });
+        }
+        foreach (var dying in _dying)
+        {
+            var d = dying;
+            _gameOverTargets.Add(new GameOverSequence.Target
+            {
+                Transform = d.View.Instance.transform,
+                Distance = Vector2.Distance(d.View.Instance.transform.position, transform.position),
+                Burst = () =>
+                {
+                    if (_dying.Remove(d))
+                        Burst(d);
+                }
+            });
+        }
+        foreach (var wave in _waves)
+        {
+            var w = wave;
+            _gameOverTargets.Add(new GameOverSequence.Target
+            {
+                Transform = w.Ring.transform,
+                Distance = w.Pulse.Radius,
+                Burst = () => ShatterRing(w.Ring, w.Pulse.Radius)
+            });
+        }
+        _gameOverSequence.Play(_gameOverTargets, () =>
+        {
+            _soundManager.StopMusic();
+            _gameManager.PresentGameOver();
+        });
+    }
+
+    // The core goes first and biggest: the shockwave starts from it.
+    void BurstCore()
+    {
+        var color = Colors[_selectedColor];
+        for (int i = 0; i < 3; i++)
+            Shatter(_core.transform.position, color);
+        _core.enabled = false;
+        _coreIcon.enabled = false;
+        _cooldownArc.enabled = false;
+    }
+
+    // A live enemy caught by the game-over shockwave: shards from every shape it shows, in its colours.
+    void ShatterEnemyView(Enemy enemy)
+    {
+        if (enemy.Instance == null || !enemy.Instance.activeSelf)
+            return;
+        if (enemy.Body.enabled)
+            Shatter(enemy.Instance.transform.position, enemy.Body.color);
+        else
+        {
+            if (enemy.LeftShape.enabled)
+                Shatter(enemy.LeftShape.transform.position, enemy.LeftShape.color);
+            if (enemy.RightShape.enabled)
+                Shatter(enemy.RightShape.transform.position, enemy.RightShape.color);
+        }
+        _poolManager.ReturnToPool(enemy.Instance);
+    }
+
+    // A pulse ring breaks into shards around its circle (hidden, not destroyed: StartRound destroys the rings).
+    void ShatterRing(LineRenderer ring, float radius)
+    {
+        if (!ring.enabled)
+            return;
+        var color = ring.startColor;
+        color.a = 1f;
+        const int points = 6;
+        for (int i = 0; i < points; i++)
+        {
+            float a = i * (2f * Mathf.PI / points);
+            Shatter(transform.position + new Vector3(Mathf.Cos(a), Mathf.Sin(a), 0f) * radius, color);
+        }
+        ring.enabled = false;
+    }
+
     // Kill confirmed: the enemy stops, flashes white and turns into a hollow outline of its colour(s), then charges
     // up (shrinks, trembles, brightens) until the kill chord's beat, where it shatters. Its parts and colours are
     // captured now because the look changes.
@@ -1084,8 +1187,7 @@ public sealed class ChordPulsePrototype : MonoBehaviour
         if (_gameManager != null)
         {
             _gameManager.OnGameRestarted -= StartRound;
-            if (_soundManager != null)
-                _gameManager.OnGameOver -= _soundManager.StopMusic;
+            _gameManager.OnGameOver -= HandleGameOver;
         }
         if (_soundManager != null)
             _soundManager.StopMusic();

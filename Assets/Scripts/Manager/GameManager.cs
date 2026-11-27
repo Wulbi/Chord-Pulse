@@ -10,6 +10,12 @@ public class GameManager : SingletonBehaviour<GameManager>
     [SerializeField] float scorePerSecond = 10f;
 
     public event Action OnGameOver;
+    /// <summary>
+    /// The game-over screen may show now. Fires right after <see cref="OnGameOver"/> unless a handler called
+    /// <see cref="DelayGameOverPresentation"/> to play its own sequence first; that handler then calls
+    /// <see cref="PresentGameOver"/> when it is done.
+    /// </summary>
+    public event Action OnGameOverPresented;
     public event Action<int> OnScoreChanged;
     public event Action OnGameRestarted;
 
@@ -18,6 +24,8 @@ public class GameManager : SingletonBehaviour<GameManager>
     public int Score { get; private set; }
 
     float _score;
+    bool _presentationDelayed;
+    bool _presented;
 
     protected override void Awake()
     {
@@ -46,7 +54,23 @@ public class GameManager : SingletonBehaviour<GameManager>
 
         IsGameOver = true;
         IsPlaying = false;
+        _presentationDelayed = false;
+        _presented = false;
         OnGameOver?.Invoke();
+        if (!_presentationDelayed)
+            PresentGameOver();
+    }
+
+    /// <summary>Call from an <see cref="OnGameOver"/> handler to hold the game-over screen until <see cref="PresentGameOver"/>.</summary>
+    public void DelayGameOverPresentation() => _presentationDelayed = true;
+
+    /// <summary>Shows the game-over screen (once per game over).</summary>
+    public void PresentGameOver()
+    {
+        if (!IsGameOver || _presented)
+            return;
+        _presented = true;
+        OnGameOverPresented?.Invoke();
     }
 
     public void Restart()

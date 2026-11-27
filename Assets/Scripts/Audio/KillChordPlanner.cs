@@ -8,6 +8,8 @@ public interface IKillBedState
     bool FeverZone(int beat);
     int StyleAt(int beat);
     int ComboAt(int beat);
+    /// <summary>Chord id (PatternTable.ChordNames, KillChordTable rows) of the beat's bar in its phrase's progression.</summary>
+    int ChordAt(int beat);
     float Tension { get; }
 }
 
@@ -31,6 +33,7 @@ public sealed class KillChordPlanner
         public int Style;
         public int Combo;
         public float Tension;
+        public int Chord;
     }
 
     readonly Dictionary<int, Record> _beats = new Dictionary<int, Record>();
@@ -90,11 +93,10 @@ public sealed class KillChordPlanner
             return;
         chord.Voicing[color] = after;
 
-        int chordIndex = beat / SoundManager.BeatsPerBar % SectionSelector.BarsPerPhrase;
         _before.Clear();
         _after.Clear();
-        KillChordVoicer.Voice(chord.Style, color, chordIndex, before, chord.Combo, chord.Tension, _before);
-        KillChordVoicer.Voice(chord.Style, color, chordIndex, after, chord.Combo, chord.Tension, _after);
+        KillChordVoicer.Voice(chord.Style, color, chord.Chord, before, chord.Combo, chord.Tension, _before);
+        KillChordVoicer.Voice(chord.Style, color, chord.Chord, after, chord.Combo, chord.Tension, _after);
         foreach (var note in _after)
         {
             if (RemoveSame(_before, note))
@@ -111,6 +113,7 @@ public sealed class KillChordPlanner
         chord.Style = fever ? SoundManager.StyleSynthpop : bed.StyleAt(beat);
         chord.Combo = fever ? 0 : bed.ComboAt(beat);
         chord.Tension = fever ? 0f : bed.Tension;
+        chord.Chord = bed.ChordAt(beat);
     }
 
     static OneShotNote ToOneShot(KillNote note, int beat) =>
@@ -142,13 +145,12 @@ public sealed class KillChordPlanner
                 continue;
             var chord = pair.Value;
             ReadState(chord, beat, bed);
-            int chordIndex = beat / SoundManager.BeatsPerBar % SectionSelector.BarsPerPhrase;
             for (int color = 0; color < ColorCount; color++)
             {
                 if (chord.Voicing[color] <= 0)
                     continue;
                 _after.Clear();
-                KillChordVoicer.Voice(chord.Style, color, chordIndex, chord.Voicing[color], chord.Combo, chord.Tension, _after);
+                KillChordVoicer.Voice(chord.Style, color, chord.Chord, chord.Voicing[color], chord.Combo, chord.Tension, _after);
                 foreach (var note in _after)
                     into.Add(ToOneShot(note, beat));
             }

@@ -590,6 +590,83 @@ var BUSES = [
     }
    }
   ]
+ ],
+ [
+  "Feature/Winds",
+  "Feature",
+  0.0,
+  [
+   {
+    "entity": "HighpassEffect",
+    "props": {
+     "cutoff": 150,
+     "resonance": 1
+    }
+   }
+  ]
+ ],
+ [
+  "Feature/Keys",
+  "Feature",
+  0.0,
+  [
+   {
+    "entity": "HighpassEffect",
+    "props": {
+     "cutoff": 100,
+     "resonance": 1
+    }
+   }
+  ]
+ ],
+ [
+  "Feature/Chip",
+  "Feature",
+  0.0,
+  [
+   {
+    "entity": "HighpassEffect",
+    "props": {
+     "cutoff": 90,
+     "resonance": 1
+    }
+   },
+   {
+    "entity": "LowpassEffect",
+    "props": {
+     "cutoff": 9000,
+     "resonance": 1
+    }
+   }
+  ]
+ ],
+ [
+  "Feature/Voice",
+  "Feature",
+  0.0,
+  [
+   {
+    "entity": "HighpassEffect",
+    "props": {
+     "cutoff": 180,
+     "resonance": 1
+    }
+   }
+  ]
+ ],
+ [
+  "Feature/AcidLine",
+  "Feature",
+  0.0,
+  [
+   {
+    "entity": "HighpassEffect",
+    "props": {
+     "cutoff": 40,
+     "resonance": 1
+    }
+   }
+  ]
  ]
 ];
 var EPS = 0.001;

@@ -18,6 +18,9 @@ public sealed class HelpPanel : BasePanel
         ("Space", "Shoot Pulse")
     };
 
+    const string FmodLogoPath = "UI/FMODLogoWhite";
+    const float FmodLogoHeight = 64f;
+
     RectTransform _card;
     Text _prompt;
     Action _onClosed;
@@ -112,6 +115,28 @@ public sealed class HelpPanel : BasePanel
         }
         _prompt = CreateText("Prompt", "Press Space to start", font, 26, FontStyle.Italic, TextAnchor.MiddleCenter,
             new Vector2(0f, -120f), new Vector2(520f, 40f), Color.white);
+        CreateFmodLogo();
+    }
+
+    // FMOD's logo in the bottom-right corner of the start screen (the credit line is in the credits roll).
+    // The texture is a copy of Assets/Plugins/FMOD/images/FMODLogoWhite.png, kept in Resources so builds include it.
+    void CreateFmodLogo()
+    {
+        var texture = Resources.Load<Texture2D>(FmodLogoPath);
+        if (texture == null)
+        {
+            Debug.LogWarning($"[HelpPanel] FMOD logo not found: Resources/{FmodLogoPath}");
+            return;
+        }
+        var logo = new GameObject("FMOD Logo", typeof(RectTransform)).AddComponent<RawImage>();
+        var rect = logo.rectTransform;
+        rect.SetParent(transform, false);
+        rect.anchorMin = rect.anchorMax = rect.pivot = new Vector2(1f, 0f);
+        rect.anchoredPosition = new Vector2(-36f, 32f);
+        rect.sizeDelta = new Vector2(FmodLogoHeight * texture.width / texture.height, FmodLogoHeight);
+        logo.texture = texture;
+        logo.color = new Color(1f, 1f, 1f, 0.85f);
+        logo.raycastTarget = false;
     }
 
     Text CreateText(string textName, string value, Font font, int size, FontStyle style, TextAnchor alignment,

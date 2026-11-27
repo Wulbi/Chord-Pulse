@@ -145,6 +145,12 @@ SUB_BUSES = [
     ("Feature/Perc", "Feature", 0.0, [_hp(120)]),
     ("Feature/Synth", "Feature", 0.0, [_hp(200), _lp(6500)]),
     ("Feature/Guitar", "Feature", 0.0, [_hp(110)]),
+    # 2026-11-27 guest loops 19+ (pattern_feature.py): one sub-bus per new instrument family, low cut only.
+    ("Feature/Winds", "Feature", 0.0, [_hp(150)]),
+    ("Feature/Keys", "Feature", 0.0, [_hp(100)]),
+    ("Feature/Chip", "Feature", 0.0, [_hp(90), _lp(9000)]),
+    ("Feature/Voice", "Feature", 0.0, [_hp(180)]),
+    ("Feature/AcidLine", "Feature", 0.0, [_hp(40)]),
 ]
 
 # C# OutputBus member -> bus path (instruments.py generates the enum and InstrumentTable.BusPath from this).

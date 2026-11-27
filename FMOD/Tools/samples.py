@@ -119,7 +119,75 @@ FEATURE_PERC = [("WorldPerc/Cowbell2_Normal_v3_rr1_Mid.wav", 56, -21.8, 0.010, 0
                 ("WorldPerc/Conga_HitN_v3_rr1_Sum.wav", 63, -28.5, 0.001, 0.48),
                 ("WorldPerc/Quinto_HitN_v3_rr1_Sum.wav", 62, -26.0, 0.001, 0.33),
                 ("WorldPerc/Tumba_HitFM_v3_rr1_Sum.wav", 64, -32.6, 0.001, 0.32),
-                ("WorldPerc/Guiro_Fast_rr1_Mid.wav", 73, -50.6, 0.009, 0.39)]
+                ("WorldPerc/Guiro_Fast_rr1_Mid.wav", 73, -50.6, 0.009, 0.39),
+                # 2026-11-27 guest loops 19+: sparkle and toy percussion (numbers past GM where GM has no such sound)
+                ("Sparkle/Tamb1_Hit_v2_rr1_Mid.wav", 54, -35.5, 0.012, 0.31),
+                ("Sparkle/Sleighbells_Hit_rr1_Mid.wav", 83, -40.6, 0.009, 0.63),
+                ("Sparkle/Triangle1_Hit_v2_rr1_Mid.wav", 81, -45.7, 0.009, 1.90),
+                ("Sparkle/Triangle1_hitFM_v2_rr1_Mid.wav", 80, -49.1, 0.009, 0.22),
+                ("Quirky/wood_click_ff.wav", 76, -28.7, 0.020, 0.20),
+                ("Quirky/LogDrumHi_MedM_v3_rr1_Sum.wav", 77, -27.7, 0.000, 0.54),
+                ("Quirky/LogDrumLo_MedM_v3_rr1_Sum.wav", 45, -30.7, 0.001, 0.36),
+                ("Quirky/slapstick_rr1.wav", 84, -28.0, 0.007, 0.17),
+                ("Quirky/Main_SirenWhistle-005.wav", 71, -38.0, 0.012, 0.52),
+                ("Quirky/Main_SirenWhistle-002.wav", 72, -39.4, 0.008, 1.92),
+                ("Quirky/Anvil_Hit2_v3_rr1_Mid.wav", 86, -24.6, 0.010, 0.41)]
+
+# --- guest loops 19+ (2026-11-27): instruments that were unused candidates in SampleLibrary/ (sources in
+# sample-manifest.json). Roots measured (YIN + FFT cross-check; VSCO / DC / BrettTenor / MOHorn / tenortbn / mbira files
+# sound an octave above their names), RMS / onset with measure_sample.py, audible s = last 150 ms window within 30 dB of
+# the peak.
+SAX = [("Woodwinds/BrettTenor_Staccato_Main_C3_vl1_rr4.wav", 60, -33.2, 0.030, 0.26),
+       ("Woodwinds/BrettTenor_Staccato_Main_E3_vl1_rr4.wav", 64, -25.1, 0.017, 0.28),
+       ("Woodwinds/BrettTenor_Staccato_Main_A#3_vl1_rr3.wav", 70, -33.2, 0.014, 0.30),
+       ("Woodwinds/BrettTenor_Staccato_Main_C4_vl1_rr7.wav", 72, -34.5, 0.009, 0.28),
+       ("Woodwinds/BrettTenor_Staccato_Main_E4_vl1_rr1.wav", 76, -27.1, 0.006, 0.28),
+       ("Woodwinds/BrettTenor_Staccato_Main_A4_vl1_rr5.wav", 81, -29.4, 0.004, 0.27)]
+CLARINET = [("Woodwinds/DCClar_stac_D3_v3_rr1_sum.wav", 62, -21.9, 0.025, 0.19),
+            ("Woodwinds/DCClar_stac_F3_v3_rr1_sum.wav", 65, -23.7, 0.015, 0.23),
+            ("Woodwinds/DCClar_stac_A#3_v3_rr1_sum.wav", 70, -19.3, 0.018, 0.23),
+            ("Woodwinds/DCClar_stac_D4_v3_rr1_sum.wav", 74, -21.5, 0.020, 0.25),
+            ("Woodwinds/DCClar_stac_F4_v3_rr1_sum.wav", 77, -21.2, 0.017, 0.24)]
+FLUTE = [("Woodwinds/LDFlute_stac_C4_v3_rr1.wav", 72, -34.0, 0.022, 0.27),
+         ("Woodwinds/LDFlute_stac_E4_v3_rr1.wav", 76, -32.9, 0.051, 0.33),
+         ("Woodwinds/LDFlute_stac_A4_v3_rr1.wav", 81, -31.2, 0.029, 0.26)]
+# French horn without the clipped F4 file (D2 .. C3 files = D3 .. C4).
+HORN = [("Brass/MOHorn_stac_D2_v3_rr1.wav", 50, -26.4, 0.016, 0.33),
+        ("Brass/MOHorn_stac_F2_v3_rr1.wav", 53, -19.2, 0.007, 0.33),
+        ("Brass/MOHorn_stac_A2_v3_rr1.wav", 57, -17.3, 0.010, 0.32),
+        ("Brass/MOHorn_stac_C3_v3_rr1.wav", 60, -14.0, 0.010, 0.34)]
+TROMBONE = [("Brass/tenortbn_stac_F1_v4_rr1.wav", 41, -34.3, 0.006, 0.32),
+            ("Brass/tenortbn_stac_A#1_v4_rr1.wav", 46, -25.4, 0.033, 0.27),
+            ("Brass/tenortbn_stac_F2_v4_rr1.wav", 53, -28.0, 0.009, 0.27),
+            ("Brass/tenortbn_stac_A#2_v4_rr1.wav", 58, -22.1, 0.012, 0.28),
+            ("Brass/tenortbn_stac_D3_v4_rr1.wav", 62, -22.9, 0.019, 0.26),
+            ("Brass/tenortbn_stac_F3_v4_rr1.wav", 65, -23.4, 0.032, 0.25)]
+FM_PIANO = [("FMKeys/FMPiano_C3_vl3.wav", 48, -23.4, 0.001, 6.24),
+            ("FMKeys/FMPiano_C4_vl3.wav", 60, -23.8, 0.000, 4.50),
+            ("FMKeys/FMPiano_C5_vl3.wav", 72, -24.2, 0.000, 3.20)]
+TINE_PIANO = [("Synth/ATFS1_TinePiano_C3_v110.wav", 48, -9.0, 0.000, 1.24),
+              ("Synth/ATFS1_TinePiano_E3_v110.wav", 52, -7.9, 0.000, 1.37),
+              ("Synth/ATFS1_TinePiano_G3_v110.wav", 55, -11.4, 0.000, 1.85),
+              ("Synth/ATFS1_TinePiano_C4_v110.wav", 60, -8.7, 0.000, 1.02)]
+# Mbira tines without the most out-of-tune ones (F#4 +44 c, A4 -40 c).
+# The B4 tine rings 70-110 cents off its neighbours in renders, so it is left out too.
+MBIRA = [("Mallets/Mbira6_Normal_MainSpirit_C#4_k2_vl3_rr2.wav", 73, -26.2, 0.002, 0.54),
+         ("Mallets/Mbira6_Normal_MainSpirit_D#4_k13_vl3_rr2.wav", 75, -28.7, 0.002, 0.60)]
+LALA = [("Synth/ATFS1_LaLaLead_A3_v100.wav", 57, -11.1, 0.007, 2.31),
+        ("Synth/ATFS1_LaLaLead_E4_v100.wav", 64, -10.7, 0.001, 2.35)]
+# Chiptune voices: synthesized by Tools/gen_chiptune.py (the project's own material).
+CHIP_PLUCK = [("Chiptune/Chip_Pulse25_Pluck_C3.wav", 48, -7.6, 0.000, 0.45),
+              ("Chiptune/Chip_Pulse25_Pluck_C4.wav", 60, -7.6, 0.000, 0.45),
+              ("Chiptune/Chip_Pulse25_Pluck_C5.wav", 72, -7.6, 0.000, 0.45)]
+CHIP_LEAD = [("Chiptune/Chip_Pulse50_Lead_C4.wav", 60, -5.7, 0.000, 0.85)]
+CHIP_BASS = [("Chiptune/Chip_TriBass_C2.wav", 36, -7.3, 0.000, 0.35),
+             ("Chiptune/Chip_TriBass_G2.wav", 43, -7.3, 0.000, 0.35),
+             ("Chiptune/Chip_TriBass_C3.wav", 48, -7.4, 0.000, 0.35)]
+ACID_LINE = [("SynthBass/AT20V_AcidBass_C2_v100.wav", 24, -20.1, 0.001, 0.73),
+             ("SynthBass/AT20V_AcidBass_E2_v100.wav", 28, -18.1, 0.001, 0.73),
+             ("SynthBass/AT20V_AcidBass_A2_v100.wav", 33, -16.9, 0.000, 0.80)]
+TWANG = [("Guitar/Thrum_TwangNote_E3_v100.wav", 52, -18.3, 0.001, 0.91),
+         ("Guitar/Thrum_TwangNote_B3_v100.wav", 59, -16.3, 0.002, 0.83)]
 
 
 def pick(table, midi, max_pitch=15):
@@ -133,3 +201,16 @@ def pick(table, midi, max_pitch=15):
     pitch = midi - s[1]
     assert -max_pitch <= pitch <= max_pitch, (s[0], midi, pitch)
     return s, pitch
+
+
+# Fine tuning (cents the sample is measured sharp; negative = flat): instruments.py plays it that much lower, so these
+# guest-loop samples sit in tune with the bed. Measured with YIN (sample tables above) and checked by rendering every
+# note from the built bank (2026-11-27).
+TUNE_CENTS = {
+    "Synth/ATFS1_LaLaLead_A3_v100.wav": 23, "Synth/ATFS1_LaLaLead_E4_v100.wav": 28,
+    "Mallets/Mbira6_Normal_MainSpirit_C#4_k2_vl3_rr2.wav": 16,
+    "Mallets/Mbira6_Normal_MainSpirit_D#4_k13_vl3_rr2.wav": 28,
+    "Woodwinds/DCClar_stac_D3_v3_rr1_sum.wav": -30, "Woodwinds/DCClar_stac_F3_v3_rr1_sum.wav": -37,
+    "Woodwinds/DCClar_stac_A#3_v3_rr1_sum.wav": -8, "Woodwinds/DCClar_stac_D4_v3_rr1_sum.wav": -15,
+    "Woodwinds/DCClar_stac_F4_v3_rr1_sum.wav": -12,
+}

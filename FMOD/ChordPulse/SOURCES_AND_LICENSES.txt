@@ -3008,3 +3008,782 @@ AcousticDrums/RockKit/BigRusty_oh_rd_bl_vl4_rr1.flac
 형식: 44100 Hz / 16-bit / 2 channels / 11.583175 sec
 가공: 없음 (파일명 접두사만 추가)
 SHA-256: 6d1af3d880490485e447618b8e5f2f3fbae9ab115eac1bdd51800f4cce3386d3
+
+
+==============================================================
+보관 위치 변경 (2026-11-27)
+FMOD 이벤트에서 쓰지 않는 후보 샘플은 FMOD/ChordPulse/Assets에서 저장소 루트의 SampleLibrary/로 옮겼고, SampleLibrary/는 git에 올리지 않습니다(.gitignore).
+각 파일의 위치는 sample-manifest.json의 "location" 필드에 있습니다. 출처 기록은 위치와 상관없이 이 파일에 그대로 둡니다.
+SampleLibrary/ 복구: python Tools/restore_sample_library.py (매니페스트의 URL에서 다시 받고 SHA-256으로 확인).
+후보를 FMOD에서 쓰려면 파일을 SampleLibrary/에서 FMOD/ChordPulse/Assets의 같은 경로로 옮기고, 매니페스트의 location을 바꿉니다.
+==============================================================
+
+==============================================================
+추가 수집 5: 반짝이는 소리 · 특이한 소리 (SampleLibrary/Sparkle, SampleLibrary/Quirky)
+확인일: 2026-11-27 (Asia/Seoul)
+라이선스: CC0 1.0 Universal; VCSL https://github.com/sgossner/VCSL 커밋 c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e -> VCSL-ORIGINAL-LICENSE.txt
+수집 방법: 고정 커밋 raw URL에서 개별 WAV만 받음. git blob SHA-1이 저장소 트리 값과 일치함을 확인. Legacy 폴더 제외, 가장 센 셈여림·라운드로빈 1번.
+원본 WAV는 자르기, 정규화, 리샘플링 없이 그대로 복사했습니다. 상태: 후보. 청음 전.
+==============================================================
+
+Sparkle/BellTree_Hit_C5_rr1_Mid.wav
+제작자: Versilian Studios (Sam Gossner) and contributors
+악기: Bell tree
+원본 경로: Idiophones/Struck Idiophones/Bell Tree/Individual/BellTree_Hit_C5_rr1_Mid.wav
+출처: https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Idiophones/Struck%20Idiophones/Bell%20Tree/Individual/BellTree_Hit_C5_rr1_Mid.wav
+라이선스: CC0-1.0; 근거: VCSL-ORIGINAL-LICENSE.txt
+기준음: C5
+형식: 44100 Hz / 16-bit / 2 channels / 5.86254 sec
+가공: 없음
+SHA-256: d5cbf5465a4734d72bcc69cabfd56753227f3b54c977a0ffb9ac6fcbacafe422
+
+Sparkle/BellTree_Hit_E5_rr1_Mid.wav
+제작자: Versilian Studios (Sam Gossner) and contributors
+악기: Bell tree
+원본 경로: Idiophones/Struck Idiophones/Bell Tree/Individual/BellTree_Hit_E5_rr1_Mid.wav
+출처: https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Idiophones/Struck%20Idiophones/Bell%20Tree/Individual/BellTree_Hit_E5_rr1_Mid.wav
+라이선스: CC0-1.0; 근거: VCSL-ORIGINAL-LICENSE.txt
+기준음: E5
+형식: 44100 Hz / 16-bit / 2 channels / 3.553243 sec
+가공: 없음
+SHA-256: 71aeec32c08bc636c16f1271d52fc56ba14ff6e163f014b53538c87deb02e282
+
+Sparkle/BellTree_Hit_G#5_rr1_Mid.wav
+제작자: Versilian Studios (Sam Gossner) and contributors
+악기: Bell tree
+원본 경로: Idiophones/Struck Idiophones/Bell Tree/Individual/BellTree_Hit_G#5_rr1_Mid.wav
+출처: https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Idiophones/Struck%20Idiophones/Bell%20Tree/Individual/BellTree_Hit_G%235_rr1_Mid.wav
+라이선스: CC0-1.0; 근거: VCSL-ORIGINAL-LICENSE.txt
+기준음: G#5
+형식: 44100 Hz / 16-bit / 2 channels / 4.893469 sec
+가공: 없음
+SHA-256: 5533a0e57b07839b849d14ad63fd4efbcfd2e7cf77801af5481d91c1f6358bc2
+
+Sparkle/BellTree_Stroke_1_Mid.wav
+제작자: Versilian Studios (Sam Gossner) and contributors
+악기: Bell tree
+원본 경로: Idiophones/Struck Idiophones/Bell Tree/Stroke/BellTree_Stroke_1_Mid.wav
+출처: https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Idiophones/Struck%20Idiophones/Bell%20Tree/Stroke/BellTree_Stroke_1_Mid.wav
+라이선스: CC0-1.0; 근거: VCSL-ORIGINAL-LICENSE.txt
+기준음: 미지정
+형식: 44100 Hz / 16-bit / 2 channels / 4.563651 sec
+가공: 없음
+SHA-256: aae960ec30aaf8217ca6421d540adefd43012ddb12275be3022818f3a0478cdf
+
+Sparkle/Sleighbells_Hit_rr1_Mid.wav
+제작자: Versilian Studios (Sam Gossner) and contributors
+악기: Sleigh bells
+원본 경로: Idiophones/Struck Idiophones/Sleigh Bells/Sleighbells_Hit_rr1_Mid.wav
+출처: https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Idiophones/Struck%20Idiophones/Sleigh%20Bells/Sleighbells_Hit_rr1_Mid.wav
+라이선스: CC0-1.0; 근거: VCSL-ORIGINAL-LICENSE.txt
+기준음: 미지정
+형식: 44100 Hz / 16-bit / 2 channels / 2.5 sec
+가공: 없음
+SHA-256: cc424c298ac98a783ebf37ce6f2152a19b227ff89c5c20bc2462ddc8261fefc5
+
+Sparkle/sleighbell1_shake1.wav
+제작자: Versilian Studios (Sam Gossner) and contributors
+악기: Sleigh bells
+원본 경로: Idiophones/Struck Idiophones/Sleigh Bells/sleighbell1_shake1.wav
+출처: https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Idiophones/Struck%20Idiophones/Sleigh%20Bells/sleighbell1_shake1.wav
+라이선스: CC0-1.0; 근거: VCSL-ORIGINAL-LICENSE.txt
+기준음: 미지정
+형식: 44100 Hz / 24-bit / 2 channels / 5.253379 sec
+가공: 없음
+SHA-256: 25aa6a5aa83b31835f4d6066d5cd0e5c06c7c3144d9b39ffa7854cb148a20786
+
+Sparkle/Tamb1_Hit_v2_rr1_Mid.wav
+제작자: Versilian Studios (Sam Gossner) and contributors
+악기: Tambourine
+원본 경로: Idiophones/Struck Idiophones/Tambourine 1/Tamb1_Hit_v2_rr1_Mid.wav
+출처: https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Idiophones/Struck%20Idiophones/Tambourine%201/Tamb1_Hit_v2_rr1_Mid.wav
+라이선스: CC0-1.0; 근거: VCSL-ORIGINAL-LICENSE.txt
+기준음: 미지정
+형식: 44100 Hz / 16-bit / 2 channels / 1.661859 sec
+가공: 없음
+SHA-256: 885ebf1d70f8e888f576682e4e4112b92b69649162f392c83b3379c91a09cf41
+
+Sparkle/Tamb1_Shake_rr1_Mid.wav
+제작자: Versilian Studios (Sam Gossner) and contributors
+악기: Tambourine
+원본 경로: Idiophones/Struck Idiophones/Tambourine 1/Tamb1_Shake_rr1_Mid.wav
+출처: https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Idiophones/Struck%20Idiophones/Tambourine%201/Tamb1_Shake_rr1_Mid.wav
+라이선스: CC0-1.0; 근거: VCSL-ORIGINAL-LICENSE.txt
+기준음: 미지정
+형식: 44100 Hz / 16-bit / 2 channels / 1.46737 sec
+가공: 없음
+SHA-256: 5876b66d1e8009b3ee884ff3bf52fbc420b44f9ddffffe830b4074d3dfc09924
+
+Sparkle/Tamb1_Roll_v3_rr1_Mid.wav
+제작자: Versilian Studios (Sam Gossner) and contributors
+악기: Tambourine
+원본 경로: Idiophones/Struck Idiophones/Tambourine 1/Tamb1_Roll_v3_rr1_Mid.wav
+출처: https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Idiophones/Struck%20Idiophones/Tambourine%201/Tamb1_Roll_v3_rr1_Mid.wav
+라이선스: CC0-1.0; 근거: VCSL-ORIGINAL-LICENSE.txt
+기준음: 미지정
+형식: 44100 Hz / 16-bit / 2 channels / 9.703039 sec
+가공: 없음
+SHA-256: 23dfe482f0b24b7ade9e8a9a19761b6ef3cff0dca59e353b4b5ede84c0b2bf61
+
+Sparkle/Triangle1_Hit_v2_rr1_Mid.wav
+제작자: Versilian Studios (Sam Gossner) and contributors
+악기: Triangle
+원본 경로: Idiophones/Struck Idiophones/Triangles/Triangle1_Hit_v2_rr1_Mid.wav
+출처: https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Idiophones/Struck%20Idiophones/Triangles/Triangle1_Hit_v2_rr1_Mid.wav
+라이선스: CC0-1.0; 근거: VCSL-ORIGINAL-LICENSE.txt
+기준음: 미지정
+형식: 44100 Hz / 16-bit / 2 channels / 6.005215 sec
+가공: 없음
+SHA-256: bec62db48c6a052bff1b54f88c11fc6cb6131b9633da2afb35636291754971af
+
+Sparkle/Triangle1_hitFM_v2_rr1_Mid.wav
+제작자: Versilian Studios (Sam Gossner) and contributors
+악기: Triangle
+원본 경로: Idiophones/Struck Idiophones/Triangles/Triangle1_hitFM_v2_rr1_Mid.wav
+출처: https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Idiophones/Struck%20Idiophones/Triangles/Triangle1_hitFM_v2_rr1_Mid.wav
+라이선스: CC0-1.0; 근거: VCSL-ORIGINAL-LICENSE.txt
+기준음: 미지정
+형식: 44100 Hz / 16-bit / 2 channels / 2.229932 sec
+가공: 없음
+SHA-256: 5afe80fc2bd326951ee17ad3796c1f08bd6d26f4c675648a3bac7088c67629a6
+
+Sparkle/sus_C4_r01_main.wav
+제작자: Versilian Studios (Sam Gossner) and contributors
+악기: Hand chimes
+원본 경로: Idiophones/Struck Idiophones/Hand Chimes/sus_C4_r01_main.wav
+출처: https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Idiophones/Struck%20Idiophones/Hand%20Chimes/sus_C4_r01_main.wav
+라이선스: CC0-1.0; 근거: VCSL-ORIGINAL-LICENSE.txt
+기준음: C4
+형식: 44100 Hz / 24-bit / 2 channels / 8.210544 sec
+가공: 없음
+SHA-256: 89980f18db9e08a137d1fc18f0505281bd6c192021b9dd33dafb7d3117ef608c
+
+Sparkle/sus_C5_r01_main.wav
+제작자: Versilian Studios (Sam Gossner) and contributors
+악기: Hand chimes
+원본 경로: Idiophones/Struck Idiophones/Hand Chimes/sus_C5_r01_main.wav
+출처: https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Idiophones/Struck%20Idiophones/Hand%20Chimes/sus_C5_r01_main.wav
+라이선스: CC0-1.0; 근거: VCSL-ORIGINAL-LICENSE.txt
+기준음: C5
+형식: 44100 Hz / 24-bit / 2 channels / 7.141565 sec
+가공: 없음
+SHA-256: 836f13d448c9d6d685da634368615c2f7c03b6fb5b99ac93627e1fbb40368e58
+
+Sparkle/sus_A4_r01_main.wav
+제작자: Versilian Studios (Sam Gossner) and contributors
+악기: Hand chimes
+원본 경로: Idiophones/Struck Idiophones/Hand Chimes/sus_A4_r01_main.wav
+출처: https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Idiophones/Struck%20Idiophones/Hand%20Chimes/sus_A4_r01_main.wav
+라이선스: CC0-1.0; 근거: VCSL-ORIGINAL-LICENSE.txt
+기준음: A4
+형식: 44100 Hz / 24-bit / 2 channels / 8.861224 sec
+가공: 없음
+SHA-256: 43604b3b049f3d7c60c6e5c8601d7027045ded1f124debcd65c2ccef723daaa1
+
+Sparkle/sus_C6_r01_main.wav
+제작자: Versilian Studios (Sam Gossner) and contributors
+악기: Hand chimes
+원본 경로: Idiophones/Struck Idiophones/Hand Chimes/sus_C6_r01_main.wav
+출처: https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Idiophones/Struck%20Idiophones/Hand%20Chimes/sus_C6_r01_main.wav
+라이선스: CC0-1.0; 근거: VCSL-ORIGINAL-LICENSE.txt
+기준음: C6
+형식: 44100 Hz / 24-bit / 2 channels / 3.609274 sec
+가공: 없음
+SHA-256: 202a0c95519668c7afb72835c5fd3a9a80805ba3cc9ea8bfc2f40a48d05b0283
+
+Sparkle/glass1_D#4_Fast_1_Decay.wav
+제작자: Versilian Studios (Sam Gossner) and contributors
+악기: Wine glasses
+원본 경로: Idiophones/Friction Idiophones/Wine Glasses/Releases/Fast/glass1_D#4_Fast_1_Decay.wav
+출처: https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Idiophones/Friction%20Idiophones/Wine%20Glasses/Releases/Fast/glass1_D%234_Fast_1_Decay.wav
+라이선스: CC0-1.0; 근거: VCSL-ORIGINAL-LICENSE.txt
+기준음: D#4
+형식: 44100 Hz / 24-bit / 2 channels / 3.082608 sec
+가공: 없음
+SHA-256: bab9b423a5c9177d07d899f10f281f1cd6085704859a7f25b3cc80cefb9c0083
+
+Sparkle/glass2_F#4_Fast_1_Decay.wav
+제작자: Versilian Studios (Sam Gossner) and contributors
+악기: Wine glasses
+원본 경로: Idiophones/Friction Idiophones/Wine Glasses/Releases/Fast/glass2_F#4_Fast_1_Decay.wav
+출처: https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Idiophones/Friction%20Idiophones/Wine%20Glasses/Releases/Fast/glass2_F%234_Fast_1_Decay.wav
+라이선스: CC0-1.0; 근거: VCSL-ORIGINAL-LICENSE.txt
+기준음: F#4
+형식: 44100 Hz / 24-bit / 2 channels / 2.675714 sec
+가공: 없음
+SHA-256: ddd5d9a9cecc15d2a662c2bc20140f8d22bdaa4b8206b456a0bb4836f2c14030
+
+Sparkle/glass3_A#4_Fast_1_Decay.wav
+제작자: Versilian Studios (Sam Gossner) and contributors
+악기: Wine glasses
+원본 경로: Idiophones/Friction Idiophones/Wine Glasses/Releases/Fast/glass3_A#4_Fast_1_Decay.wav
+출처: https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Idiophones/Friction%20Idiophones/Wine%20Glasses/Releases/Fast/glass3_A%234_Fast_1_Decay.wav
+라이선스: CC0-1.0; 근거: VCSL-ORIGINAL-LICENSE.txt
+기준음: A#4
+형식: 44100 Hz / 24-bit / 2 channels / 1.588322 sec
+가공: 없음
+SHA-256: 1a30b049275b56b549588c60fccccf45b1b2a5ee8b13f5012315acf3b1c81434
+
+Sparkle/glass4_D5_Fast_1_Decay.wav
+제작자: Versilian Studios (Sam Gossner) and contributors
+악기: Wine glasses
+원본 경로: Idiophones/Friction Idiophones/Wine Glasses/Releases/Fast/glass4_D5_Fast_1_Decay.wav
+출처: https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Idiophones/Friction%20Idiophones/Wine%20Glasses/Releases/Fast/glass4_D5_Fast_1_Decay.wav
+라이선스: CC0-1.0; 근거: VCSL-ORIGINAL-LICENSE.txt
+기준음: D5
+형식: 44100 Hz / 24-bit / 2 channels / 1.320454 sec
+가공: 없음
+SHA-256: 2cd999d87a803f5b852deadfab0b5b8fa25cf00fc4a9ddca5658d5f305df66e4
+
+Sparkle/Fing_Cymb.wav
+제작자: Versilian Studios (Sam Gossner) and contributors
+악기: Finger cymbals
+원본 경로: Idiophones/Struck Idiophones/Finger Cymbals/Fing_Cymb.wav
+출처: https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Idiophones/Struck%20Idiophones/Finger%20Cymbals/Fing_Cymb.wav
+라이선스: CC0-1.0; 근거: VCSL-ORIGINAL-LICENSE.txt
+기준음: 미지정
+형식: 44100 Hz / 24-bit / 2 channels / 6.342812 sec
+가공: 없음
+SHA-256: 6d39abaeff2a09fc8dcd366664ebad47f570c95b0e0440fde1bb6b7dbd33be32
+
+Sparkle/HB_1.wav
+제작자: Versilian Studios (Sam Gossner) and contributors
+악기: Nepalese hand bells
+원본 경로: Idiophones/Struck Idiophones/Hand Bells, Nepalese/HB_1.wav
+출처: https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Idiophones/Struck%20Idiophones/Hand%20Bells%2C%20Nepalese/HB_1.wav
+라이선스: CC0-1.0; 근거: VCSL-ORIGINAL-LICENSE.txt
+기준음: 미지정
+형식: 44100 Hz / 24-bit / 2 channels / 2.998322 sec
+가공: 없음
+SHA-256: 46e19962db5cb9b339f22609f1c529cd187249c36f3bcd05d4002179c403c222
+
+Sparkle/HB_2.wav
+제작자: Versilian Studios (Sam Gossner) and contributors
+악기: Nepalese hand bells
+원본 경로: Idiophones/Struck Idiophones/Hand Bells, Nepalese/HB_2.wav
+출처: https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Idiophones/Struck%20Idiophones/Hand%20Bells%2C%20Nepalese/HB_2.wav
+라이선스: CC0-1.0; 근거: VCSL-ORIGINAL-LICENSE.txt
+기준음: 미지정
+형식: 44100 Hz / 24-bit / 2 channels / 1.269433 sec
+가공: 없음
+SHA-256: e201ef095eac406a1bd5a9ec774229b57f40407d633e6dbeed53c67ebb973d56
+
+Quirky/flexatone_slap1.wav
+제작자: Versilian Studios (Sam Gossner) and contributors
+악기: Flexatone
+원본 경로: Idiophones/Struck Idiophones/Flexatone/flexatone_slap1.wav
+출처: https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Idiophones/Struck%20Idiophones/Flexatone/flexatone_slap1.wav
+라이선스: CC0-1.0; 근거: VCSL-ORIGINAL-LICENSE.txt
+기준음: 미지정
+형식: 44100 Hz / 24-bit / 2 channels / 1.006553 sec
+가공: 없음
+SHA-256: 77f07de7f2257ab08e586545d495e25ce715f13ba8584ba39f9ddc4a376d3c75
+
+Quirky/flexatone1.wav
+제작자: Versilian Studios (Sam Gossner) and contributors
+악기: Flexatone
+원본 경로: Idiophones/Struck Idiophones/Flexatone/flexatone1.wav
+출처: https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Idiophones/Struck%20Idiophones/Flexatone/flexatone1.wav
+라이선스: CC0-1.0; 근거: VCSL-ORIGINAL-LICENSE.txt
+기준음: 미지정
+형식: 44100 Hz / 24-bit / 2 channels / 3.800839 sec
+가공: 없음
+SHA-256: 043e96282afcb2079f7460cd49dbf78b200b584292d62fae4c6ae5eb898bdac6
+
+Quirky/flexatone_fast.wav
+제작자: Versilian Studios (Sam Gossner) and contributors
+악기: Flexatone
+원본 경로: Idiophones/Struck Idiophones/Flexatone/flexatone_fast.wav
+출처: https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Idiophones/Struck%20Idiophones/Flexatone/flexatone_fast.wav
+라이선스: CC0-1.0; 근거: VCSL-ORIGINAL-LICENSE.txt
+기준음: 미지정
+형식: 44100 Hz / 24-bit / 2 channels / 4.321315 sec
+가공: 없음
+SHA-256: e7ed4d1b90b1f1fb1b369ee9b497ed16ebab9eb43290e8e95d2c62ad8a2229db
+
+Quirky/Ratchet1_Crank_rr1_Mid.wav
+제작자: Versilian Studios (Sam Gossner) and contributors
+악기: Ratchet
+원본 경로: Idiophones/Struck Idiophones/Ratchet/Ratchet1_Crank_rr1_Mid.wav
+출처: https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Idiophones/Struck%20Idiophones/Ratchet/Ratchet1_Crank_rr1_Mid.wav
+라이선스: CC0-1.0; 근거: VCSL-ORIGINAL-LICENSE.txt
+기준음: 미지정
+형식: 44100 Hz / 16-bit / 2 channels / 1.579796 sec
+가공: 없음
+SHA-256: 40108f3c5e704635d7af039f3202463415228103c260f642e8f231b100b06bec
+
+Quirky/Ratchet2_Fast_rr1_Mid.wav
+제작자: Versilian Studios (Sam Gossner) and contributors
+악기: Ratchet
+원본 경로: Idiophones/Struck Idiophones/Ratchet/Ratchet2_Fast_rr1_Mid.wav
+출처: https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Idiophones/Struck%20Idiophones/Ratchet/Ratchet2_Fast_rr1_Mid.wav
+라이선스: CC0-1.0; 근거: VCSL-ORIGINAL-LICENSE.txt
+기준음: 미지정
+형식: 44100 Hz / 16-bit / 2 channels / 8.762449 sec
+가공: 없음
+SHA-256: f4b66db2382097bb0f44edb56ee368023999996ebaef4810384b54d6223bf1a9
+
+Quirky/slapstick_rr1.wav
+제작자: Versilian Studios (Sam Gossner) and contributors
+악기: Slapstick
+원본 경로: Idiophones/Struck Idiophones/Slapstick/slapstick_rr1.wav
+출처: https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Idiophones/Struck%20Idiophones/Slapstick/slapstick_rr1.wav
+라이선스: CC0-1.0; 근거: VCSL-ORIGINAL-LICENSE.txt
+기준음: 미지정
+형식: 44100 Hz / 24-bit / 2 channels / 1.308299 sec
+가공: 없음
+SHA-256: e73b38bf43b385d95e2c790e7424526a91af8d1cdf484002912a4a8eabe73300
+
+Quirky/Main_SirenWhistle-002.wav
+제작자: Versilian Studios (Sam Gossner) and contributors
+악기: Siren whistle
+원본 경로: Aerophones/Free Aerophones/Siren/Main_SirenWhistle-002.wav
+출처: https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Aerophones/Free%20Aerophones/Siren/Main_SirenWhistle-002.wav
+라이선스: CC0-1.0; 근거: VCSL-ORIGINAL-LICENSE.txt
+기준음: 미지정
+형식: 44100 Hz / 16-bit / 2 channels / 3.861111 sec
+가공: 없음
+SHA-256: 884e9acc5e06fd2926f336af86e1c95b3adb0a1fadae5b553d3f1e2f3e6fc98b
+
+Quirky/Main_SirenWhistle-005.wav
+제작자: Versilian Studios (Sam Gossner) and contributors
+악기: Siren whistle
+원본 경로: Aerophones/Free Aerophones/Siren/Main_SirenWhistle-005.wav
+출처: https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Aerophones/Free%20Aerophones/Siren/Main_SirenWhistle-005.wav
+라이선스: CC0-1.0; 근거: VCSL-ORIGINAL-LICENSE.txt
+기준음: 미지정
+형식: 44100 Hz / 16-bit / 2 channels / 2.087937 sec
+가공: 없음
+SHA-256: af2b14be1fb293c848a8945a7d9bc2470c66437203716ebd236b6591383330b6
+
+Quirky/Main_TrainLow_Short-001.wav
+제작자: Versilian Studios (Sam Gossner) and contributors
+악기: Train whistle (toy)
+원본 경로: Aerophones/Edge-blown Aerophones/Train Whistle, Toy/Main_TrainLow_Short-001.wav
+출처: https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Aerophones/Edge-blown%20Aerophones/Train%20Whistle%2C%20Toy/Main_TrainLow_Short-001.wav
+라이선스: CC0-1.0; 근거: VCSL-ORIGINAL-LICENSE.txt
+기준음: 미지정
+형식: 44100 Hz / 16-bit / 2 channels / 1.118118 sec
+가공: 없음
+SHA-256: f92e932bb4fb1150bc0354b6d014a85e3ed432795d6fc8c8a8affa72e009dbbe
+
+Quirky/Main_TrainLow_Fall-001.wav
+제작자: Versilian Studios (Sam Gossner) and contributors
+악기: Train whistle (toy)
+원본 경로: Aerophones/Edge-blown Aerophones/Train Whistle, Toy/Main_TrainLow_Fall-001.wav
+출처: https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Aerophones/Edge-blown%20Aerophones/Train%20Whistle%2C%20Toy/Main_TrainLow_Fall-001.wav
+라이선스: CC0-1.0; 근거: VCSL-ORIGINAL-LICENSE.txt
+기준음: 미지정
+형식: 44100 Hz / 16-bit / 2 channels / 2.104082 sec
+가공: 없음
+SHA-256: fddc8d1c7a0d5a74ad484587be6f6ee5295deffcd11fb47f6f4bf136e2e0ef6b
+
+Quirky/Main_TrainMed_Short-001.wav
+제작자: Versilian Studios (Sam Gossner) and contributors
+악기: Train whistle (toy)
+원본 경로: Aerophones/Edge-blown Aerophones/Train Whistle, Toy/Main_TrainMed_Short-001.wav
+출처: https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Aerophones/Edge-blown%20Aerophones/Train%20Whistle%2C%20Toy/Main_TrainMed_Short-001.wav
+라이선스: CC0-1.0; 근거: VCSL-ORIGINAL-LICENSE.txt
+기준음: 미지정
+형식: 44100 Hz / 16-bit / 2 channels / 1.319456 sec
+가공: 없음
+SHA-256: 221d2ce7d147de65f1e1c6881887b4bebe8f2c94d5270cf4b36af2eeff341be5
+
+Quirky/Didgeridoo1_Bark1_Main_rr3.wav
+제작자: Versilian Studios (Sam Gossner) and contributors
+악기: Didgeridoo
+원본 경로: Aerophones/Lip Aerophones/Didgeridoo/Didgeridoo1_Bark1_Main_rr3.wav
+출처: https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Aerophones/Lip%20Aerophones/Didgeridoo/Didgeridoo1_Bark1_Main_rr3.wav
+라이선스: CC0-1.0; 근거: VCSL-ORIGINAL-LICENSE.txt
+기준음: 미지정
+형식: 44100 Hz / 24-bit / 2 channels / 0.463039 sec
+가공: 없음
+SHA-256: 4c91d328d892da07c4cf717f2f44a862833ea23d1abca53087f00ced2d354e25
+
+Quirky/Didgeridoo1_BarkDown2_Main.wav
+제작자: Versilian Studios (Sam Gossner) and contributors
+악기: Didgeridoo
+원본 경로: Aerophones/Lip Aerophones/Didgeridoo/Didgeridoo1_BarkDown2_Main.wav
+출처: https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Aerophones/Lip%20Aerophones/Didgeridoo/Didgeridoo1_BarkDown2_Main.wav
+라이선스: CC0-1.0; 근거: VCSL-ORIGINAL-LICENSE.txt
+기준음: 미지정
+형식: 44100 Hz / 24-bit / 2 channels / 2.125442 sec
+가공: 없음
+SHA-256: 64ea0a7cf688ab4da28d2787e70b5d202945eb0197a1bde8f13ac4cf48bcc47c
+
+Quirky/Didgeridoo1_Short1_Main_rr2.wav
+제작자: Versilian Studios (Sam Gossner) and contributors
+악기: Didgeridoo
+원본 경로: Aerophones/Lip Aerophones/Didgeridoo/Didgeridoo1_Short1_Main_rr2.wav
+출처: https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Aerophones/Lip%20Aerophones/Didgeridoo/Didgeridoo1_Short1_Main_rr2.wav
+라이선스: CC0-1.0; 근거: VCSL-ORIGINAL-LICENSE.txt
+기준음: 미지정
+형식: 44100 Hz / 24-bit / 2 channels / 0.374399 sec
+가공: 없음
+SHA-256: eae62adf204bb0fe3f669eab2077f9890d75ed21e1152dc4a74cbb326de48a61
+
+Quirky/Anvil_Hit1_v3_rr1_Mid.wav
+제작자: Versilian Studios (Sam Gossner) and contributors
+악기: Anvil
+원본 경로: Idiophones/Struck Idiophones/Anvil/Anvil_Hit1_v3_rr1_Mid.wav
+출처: https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Idiophones/Struck%20Idiophones/Anvil/Anvil_Hit1_v3_rr1_Mid.wav
+라이선스: CC0-1.0; 근거: VCSL-ORIGINAL-LICENSE.txt
+기준음: 미지정
+형식: 44100 Hz / 16-bit / 2 channels / 2.325488 sec
+가공: 없음
+SHA-256: f832799b7cabeb06163a18ac49d373d21bc5271fc316f9f61e6d6f17ef669a18
+
+Quirky/Anvil_Hit2_v3_rr1_Mid.wav
+제작자: Versilian Studios (Sam Gossner) and contributors
+악기: Anvil
+원본 경로: Idiophones/Struck Idiophones/Anvil/Anvil_Hit2_v3_rr1_Mid.wav
+출처: https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Idiophones/Struck%20Idiophones/Anvil/Anvil_Hit2_v3_rr1_Mid.wav
+라이선스: CC0-1.0; 근거: VCSL-ORIGINAL-LICENSE.txt
+기준음: 미지정
+형식: 44100 Hz / 16-bit / 2 channels / 2.044354 sec
+가공: 없음
+SHA-256: 1482a60b6da77eecb02dea1710ddc9c6711db4bb6feb0b113cba5de4cf188b0b
+
+Quirky/BrakeDrum1_Hammer_v3_rr1_Mid.wav
+제작자: Versilian Studios (Sam Gossner) and contributors
+악기: Brake drum
+원본 경로: Idiophones/Struck Idiophones/Brake Drum/BrakeDrum1_Hammer_v3_rr1_Mid.wav
+출처: https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Idiophones/Struck%20Idiophones/Brake%20Drum/BrakeDrum1_Hammer_v3_rr1_Mid.wav
+라이선스: CC0-1.0; 근거: VCSL-ORIGINAL-LICENSE.txt
+기준음: 미지정
+형식: 44100 Hz / 16-bit / 2 channels / 1.69678 sec
+가공: 없음
+SHA-256: a488e7cdca983fc53c4399fa0c492d582510dd48ee35e5336113b0041f8f55b1
+
+Quirky/LogDrumHi_MedM_v3_rr1_Sum.wav
+제작자: Versilian Studios (Sam Gossner) and contributors
+악기: Slit drum
+원본 경로: Idiophones/Struck Idiophones/Slit Drum/LogDrumHi_MedM_v3_rr1_Sum.wav
+출처: https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Idiophones/Struck%20Idiophones/Slit%20Drum/LogDrumHi_MedM_v3_rr1_Sum.wav
+라이선스: CC0-1.0; 근거: VCSL-ORIGINAL-LICENSE.txt
+기준음: 미지정
+형식: 44100 Hz / 16-bit / 2 channels / 1.518594 sec
+가공: 없음
+SHA-256: e56b10659b821bbf4eeb3cc371f42ea60414adcbd66ad0ead9e7a62cdd11fe3f
+
+Quirky/LogDrumLo_MedM_v3_rr1_Sum.wav
+제작자: Versilian Studios (Sam Gossner) and contributors
+악기: Slit drum
+원본 경로: Idiophones/Struck Idiophones/Slit Drum/LogDrumLo_MedM_v3_rr1_Sum.wav
+출처: https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Idiophones/Struck%20Idiophones/Slit%20Drum/LogDrumLo_MedM_v3_rr1_Sum.wav
+라이선스: CC0-1.0; 근거: VCSL-ORIGINAL-LICENSE.txt
+기준음: 미지정
+형식: 44100 Hz / 16-bit / 2 channels / 1.251474 sec
+가공: 없음
+SHA-256: 1428c9b05398c3b08aac4c36c5c5f57c52bca3c89627d693f3ecc00759c43fea
+
+Quirky/wood_click_ff.wav
+제작자: Versilian Studios (Sam Gossner) and contributors
+악기: Woodblock
+원본 경로: Idiophones/Struck Idiophones/Woodblock/wood_click_ff.wav
+출처: https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Idiophones/Struck%20Idiophones/Woodblock/wood_click_ff.wav
+라이선스: CC0-1.0; 근거: VCSL-ORIGINAL-LICENSE.txt
+기준음: 미지정
+형식: 44100 Hz / 24-bit / 2 channels / 0.757982 sec
+가공: 없음
+SHA-256: 9a911c66212d50a09494821bf9af8ce6e007612e232b5905f838348cb1d63b75
+
+Quirky/Gliss_Up_Med_ff_1.wav
+제작자: Versilian Studios (Sam Gossner) and contributors
+악기: Dan tranh (zither) FX
+원본 경로: Chordophones/Zithers/Dan Tranh/Gliss/Gliss_Up_Med_ff_1.wav
+출처: https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Chordophones/Zithers/Dan%20Tranh/Gliss/Gliss_Up_Med_ff_1.wav
+라이선스: CC0-1.0; 근거: VCSL-ORIGINAL-LICENSE.txt
+기준음: 미지정
+형식: 44100 Hz / 24-bit / 1 channels / 8.193265 sec
+가공: 없음
+SHA-256: 4d24b9b4e8a05a048ffa23ba0216532a6db5d52bd953ded0d221b06a918066f5
+
+Quirky/Gliss_Dwn_Med_ff_1.wav
+제작자: Versilian Studios (Sam Gossner) and contributors
+악기: Dan tranh (zither) FX
+원본 경로: Chordophones/Zithers/Dan Tranh/Gliss/Gliss_Dwn_Med_ff_1.wav
+출처: https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Chordophones/Zithers/Dan%20Tranh/Gliss/Gliss_Dwn_Med_ff_1.wav
+라이선스: CC0-1.0; 근거: VCSL-ORIGINAL-LICENSE.txt
+기준음: 미지정
+형식: 44100 Hz / 24-bit / 1 channels / 9.391882 sec
+가공: 없음
+SHA-256: caa3a84262b20ae34316345d4734069c82265f1ee6b654aef75aad9d645c28cf
+
+Quirky/FX_05c.wav
+제작자: Versilian Studios (Sam Gossner) and contributors
+악기: Dan tranh (zither) FX
+원본 경로: Chordophones/Zithers/Dan Tranh/FX/FX_05c.wav
+출처: https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Chordophones/Zithers/Dan%20Tranh/FX/FX_05c.wav
+라이선스: CC0-1.0; 근거: VCSL-ORIGINAL-LICENSE.txt
+기준음: 미지정
+형식: 44100 Hz / 24-bit / 1 channels / 2.751361 sec
+가공: 없음
+SHA-256: 5454035366b16c21ae3f370c15216247e1fdc43e414888fe11f5065139cc3616
+
+Quirky/FX_30.wav
+제작자: Versilian Studios (Sam Gossner) and contributors
+악기: Dan tranh (zither) FX
+원본 경로: Chordophones/Zithers/Dan Tranh/FX/FX_30.wav
+출처: https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Chordophones/Zithers/Dan%20Tranh/FX/FX_30.wav
+라이선스: CC0-1.0; 근거: VCSL-ORIGINAL-LICENSE.txt
+기준음: 미지정
+형식: 44100 Hz / 24-bit / 1 channels / 0.41254 sec
+가공: 없음
+SHA-256: cd536e36b63b4dc7339742f8ac052c410f775ae9240b9897cacd29d926cb69ac
+
+==============================================================
+추가 수집 6: 칩튠 원샷 (SampleLibrary/Chiptune) - 직접 합성
+작성일: 2026-11-27
+출처: 이 저장소의 Tools/gen_chiptune.py로 처음부터 합성 (제3자 오디오 없음). 같은 스크립트를 다시 실행하면 같은 파일이 만들어집니다.
+라이선스: 프로젝트 자체 제작물. 외부 라이선스 의무 없음.
+구성: NES 2A03 방식 - 펄스파(듀티 12.5/25/50%, 16단계 볼륨), 32단계 삼각파, 15비트 LFSR 노이즈. 44.1 kHz / 16-bit / 모노.
+==============================================================
+
+Chiptune/Chip_Arp_Am.wav
+종류: 25% pulse chord arpeggio (60 Hz)
+기준음: 미지정
+길이: 0.6 sec
+SHA-256: cf4633a58b3b5616327da4e2f6b93707adab2074851e773e1762a4031732d2d4
+
+Chiptune/Chip_Arp_C.wav
+종류: 25% pulse chord arpeggio (60 Hz)
+기준음: 미지정
+길이: 0.6 sec
+SHA-256: 2afeeb6488b118c055d808b5a25d83ee4c262cff1dd13f484f6bc987ee6f93fb
+
+Chiptune/Chip_Arp_F.wav
+종류: 25% pulse chord arpeggio (60 Hz)
+기준음: 미지정
+길이: 0.6 sec
+SHA-256: dc32e9451165bfa01016b8e357747f388ea052e0a071e8e328a7d36c4143da5a
+
+Chiptune/Chip_Arp_G.wav
+종류: 25% pulse chord arpeggio (60 Hz)
+기준음: 미지정
+길이: 0.6 sec
+SHA-256: 3c9790170cba0dbb91823fa7dfddde10bfa75d0cf9d4b882d7c7cfde81ec4517
+
+Chiptune/Chip_FX_Coin.wav
+종류: pulse FX
+기준음: 미지정
+길이: 0.349977 sec
+SHA-256: dc02cb76eeed2ae79f77fe11e9e4d8180f71aa40e4645d3d6d99a7f67ec5230d
+
+Chiptune/Chip_FX_PowerUp.wav
+종류: pulse FX
+기준음: 미지정
+길이: 0.5 sec
+SHA-256: 032b8f48153681d6fc4fe2b94d1ab2a14e339309c6a40f2d1d17fde789b1fc0d
+
+Chiptune/Chip_HatClosed.wav
+종류: short-mode noise hi-hat
+기준음: 미지정
+길이: 0.06 sec
+SHA-256: 9e839e740decd71aac2a8374e760979090e11a9f8f4021c4a7b6bb16cce3f1a5
+
+Chiptune/Chip_HatOpen.wav
+종류: short-mode noise hi-hat
+기준음: 미지정
+길이: 0.3 sec
+SHA-256: 5a2737b3fb01f894c8019d7fe75a2d64fb54bbb58a107093c3f05cbf4b0567c1
+
+Chiptune/Chip_Kick.wav
+종류: triangle pitch-drop kick
+기준음: 미지정
+길이: 0.25 sec
+SHA-256: afc9737e85d2ed8919cdfc589dbfe13471ddc175b1e8d755f8bc0afb6ba62b3f
+
+Chiptune/Chip_Pulse12_Pluck_C3.wav
+종류: pulse pluck
+기준음: C3
+길이: 0.6 sec
+SHA-256: 3b930a7908e16d56c085782b255871e66e447988e703f3464efc1029ef8d1b3d
+
+Chiptune/Chip_Pulse12_Pluck_C4.wav
+종류: pulse pluck
+기준음: C4
+길이: 0.6 sec
+SHA-256: 9126420b9f6f0ac7e90e216778fd66b2c261a925dec9e635cfa549d790a15dd6
+
+Chiptune/Chip_Pulse12_Pluck_C5.wav
+종류: pulse pluck
+기준음: C5
+길이: 0.6 sec
+SHA-256: 18adb1995f32aceeebd2247f72dc6c129d95e8a487da726dde38d2cc6b135835
+
+Chiptune/Chip_Pulse25_Pluck_C3.wav
+종류: pulse pluck
+기준음: C3
+길이: 0.6 sec
+SHA-256: 5b1dd390250320fc843a617213b77c813e77075f254661345376e767fa60a0b8
+
+Chiptune/Chip_Pulse25_Pluck_C4.wav
+종류: pulse pluck
+기준음: C4
+길이: 0.6 sec
+SHA-256: 2bfbe5dd68fd1cdf1a1b923da8b46ae2e7ef822f2a87b6bb35c2546acf4ee95c
+
+Chiptune/Chip_Pulse25_Pluck_C5.wav
+종류: pulse pluck
+기준음: C5
+길이: 0.6 sec
+SHA-256: ec2800d52535ffe6c1a442e2560b522f878df65db24b4c7e077ce0d1588c1212
+
+Chiptune/Chip_Pulse50_Lead_C4.wav
+종류: pulse lead with vibrato
+기준음: C4
+길이: 1.0 sec
+SHA-256: 0f049b0e29223da59751b53895b2e6fafab03f198c570df61159470fc8414eda
+
+Chiptune/Chip_Pulse50_Pluck_C3.wav
+종류: pulse pluck
+기준음: C3
+길이: 0.6 sec
+SHA-256: 453bdf4e71536d749971c0e63f94ed3a6c39ed11533ed8b8c40d14438f221559
+
+Chiptune/Chip_Pulse50_Pluck_C4.wav
+종류: pulse pluck
+기준음: C4
+길이: 0.6 sec
+SHA-256: 887a03d5d961199729bed93686e5c3e8b7892c078c2fdf5b45b0c7532a2d9350
+
+Chiptune/Chip_Pulse50_Pluck_C5.wav
+종류: pulse pluck
+기준음: C5
+길이: 0.6 sec
+SHA-256: 82ed7e14632a0e6d19693cf67faec9447381d0196eeff46f55f715454a1b64dc
+
+Chiptune/Chip_Snare.wav
+종류: noise snare
+기준음: 미지정
+길이: 0.22 sec
+SHA-256: dd904f6ad8ef467f446952fefbb9eb74cd457fb89dea9169cf169c09b0d19390
+
+Chiptune/Chip_TriBass_C2.wav
+종류: triangle bass
+기준음: C2
+길이: 0.5 sec
+SHA-256: bcf2dddecd00827801eace32b11d9507f074ba370ecb94262f80c830b61174bb
+
+Chiptune/Chip_TriBass_C3.wav
+종류: triangle bass
+기준음: C3
+길이: 0.5 sec
+SHA-256: 130ac69ad9dd60f4a58fc56cd3364384cf4c1002bdb4e1d487cbc9ed3acf6397
+
+Chiptune/Chip_TriBass_G2.wav
+종류: triangle bass
+기준음: G2
+길이: 0.5 sec
+SHA-256: 3552b1ba75cb4290099e7f45d187d57291d03f3cf84342bcf6c6f67b7df10db9
+
+
+==============================================================
+추가 수집 7: 보컬 원샷 (SampleLibrary/Vocals)
+확인일: 2026-11-27 (Asia/Seoul)
+출처: Freesound (https://freesound.org). 각 소리 페이지에서 라이선스 링크가 CC0 1.0(http://creativecommons.org/publicdomain/zero/1.0/)인 것만 받음.
+  CC0가 아니어서 제외: 664148 Delilah Vocal Chop (CC BY-NC 4.0), 65195 chamber_choir_chord_o (CC BY 3.0), 348568 EDM Hey Sample (CC BY-NC 3.0). 손실 압축 m4a인 416338도 제외.
+수집 방법: Freesound는 로그인해야 받을 수 있어 사용자 계정으로 원본 파일을 받음. 파일명은 Freesound 다운로드 이름 그대로.
+복구 스크립트로는 자동으로 받을 수 없음 (manifest의 manual_download=true). 다시 받으려면 각 소리 페이지에서 로그인 후 Download.
+원본 그대로이며 가공 없음. 형식 정보는 Freesound 페이지 표기 기준. 상태: 후보. 청음 전.
+==============================================================
+
+Vocals/794482__watermelondreams__weird-girl-vocal-fx-ahhhh.wav
+제작자: WatermelonDreams (Freesound)
+제목: Weird Girl Vocal FX - ''Ahhhh''
+소리 페이지: https://freesound.org/people/WatermelonDreams/sounds/794482/
+라이선스: CC0-1.0; 근거: 소리 페이지의 라이선스 표기 (2026-11-27 확인)
+형식: 44100 Hz / 16-bit / 2 channels / 2.629 sec
+가공: 없음
+SHA-256: d725acca007e0734a9231708c4e3b58976e75f2ba264945fbe4570afbc05272e
+
+Vocals/794486__watermelondreams__weird-girl-vocal-fx-iiihhh.wav
+제작자: WatermelonDreams (Freesound)
+제목: Weird Girl Vocal FX - "IIIHHH!"
+소리 페이지: https://freesound.org/people/WatermelonDreams/sounds/794486/
+라이선스: CC0-1.0; 근거: 소리 페이지의 라이선스 표기 (2026-11-27 확인)
+형식: 44100 Hz / 16-bit / 2 channels / 2.493 sec
+가공: 없음
+SHA-256: 5d2e79ba22d2166515cb83bf4a306c26b2bef3b37fc577fc0f4b56433e3aeb8d
+
+Vocals/794484__watermelondreams__weird-girl-vocal-fx-eeehhh.wav
+제작자: WatermelonDreams (Freesound)
+제목: Weird Girl Vocal FX - "Eeehhh!"
+소리 페이지: https://freesound.org/people/WatermelonDreams/sounds/794484/
+라이선스: CC0-1.0; 근거: 소리 페이지의 라이선스 표기 (2026-11-27 확인)
+형식: 44100 Hz / 16-bit / 2 channels / 2.515 sec
+가공: 없음
+SHA-256: 4b0eb2fd13c28e8e5adc02712d6a1c6266d27c42a7772c58b544d131df12f12c
+
+Vocals/794478__watermelondreams__ufo-type-vocal-lalala.wav
+제작자: WatermelonDreams (Freesound)
+제목: UFO-Type Vocal - "Lalala"
+소리 페이지: https://freesound.org/people/WatermelonDreams/sounds/794478/
+라이선스: CC0-1.0; 근거: 소리 페이지의 라이선스 표기 (2026-11-27 확인)
+형식: 44100 Hz / 16-bit / 2 channels / 3.111 sec
+가공: 없음
+SHA-256: 4475efd7a8221ed77b1050ab361caa8e4cd392d6f09054fa402052a18fcc3d04
+
+Vocals/794479__watermelondreams__ufo-type-vocal-oh-wow.wav
+제작자: WatermelonDreams (Freesound)
+제목: UFO-Type Vocal - "Oh Wow!"
+소리 페이지: https://freesound.org/people/WatermelonDreams/sounds/794479/
+라이선스: CC0-1.0; 근거: 소리 페이지의 라이선스 표기 (2026-11-27 확인)
+형식: 44100 Hz / 16-bit / 2 channels / 1.955 sec
+가공: 없음
+SHA-256: dd56f36ebbb5f6e6d9d946deecd6fe55b31ad8226fb1d019fd491e8fb0efadbe
+
+Vocals/794480__watermelondreams__ufo-type-vocal-ooh-baby.wav
+제작자: WatermelonDreams (Freesound)
+제목: UFO-Type Vocal - "Ooh Baby!"
+소리 페이지: https://freesound.org/people/WatermelonDreams/sounds/794480/
+라이선스: CC0-1.0; 근거: 소리 페이지의 라이선스 표기 (2026-11-27 확인)
+형식: 44100 Hz / 16-bit / 2 channels / 1.921 sec
+가공: 없음
+SHA-256: 45b08e2d0a01279b4d0a02edbed639e0331996c3b3b5ee369146509545e538de
+
+Vocals/593436__lil-lugger__hey-sample.wav
+제작자: lil-lugger (Freesound)
+제목: Hey Sample
+소리 페이지: https://freesound.org/people/lil-lugger/sounds/593436/
+라이선스: CC0-1.0; 근거: 소리 페이지의 라이선스 표기 (2026-11-27 확인)
+형식: 44100 Hz / 24-bit / 2 channels / 2.988 sec
+가공: 없음
+SHA-256: d677756e1bf41f295250126c64aafd2b897192d1be7519cbb40d195a4ac03339
+
+Vocals/390533__svproducties__trap_hey.aiff
+제작자: SVProducties (Freesound)
+제목: Trap_Hey
+소리 페이지: https://freesound.org/people/SVProducties/sounds/390533/
+라이선스: CC0-1.0; 근거: 소리 페이지의 라이선스 표기 (2026-11-27 확인)
+형식: 44100 Hz / 16-bit / 1 channels / 0.895 sec
+가공: 없음
+SHA-256: 2705bc1ee48acbf5a27f88b1627dabbac3fce019fd6a7f149856c109e9ef076c
+
+Vocals/345431__artmasterrich__male_heyyy_01.wav
+제작자: Artmasterrich (Freesound)
+제목: Male_Heyyy_01
+소리 페이지: https://freesound.org/people/Artmasterrich/sounds/345431/
+라이선스: CC0-1.0; 근거: 소리 페이지의 라이선스 표기 (2026-11-27 확인)
+형식: 44100 Hz / 16-bit / 2 channels / 0.812 sec
+가공: 없음
+SHA-256: f2572a934735185951ca358bc6c68c1a384a313f915701aa259bb0073ef330b8
+
+Vocals/57204__jace__men-shouting-hey.wav
+제작자: Jace (Freesound)
+제목: Men Shouting Hey.wav
+소리 페이지: https://freesound.org/people/Jace/sounds/57204/
+라이선스: CC0-1.0; 근거: 소리 페이지의 라이선스 표기 (2026-11-27 확인)
+형식: 44100 Hz / 32-bit / 2 channels / 1.294 sec
+가공: 없음
+SHA-256: 1516904abcf8d4154c0ba2f65d5e892582b423fc5c6fd0fd7c7176cb8eed1664
+
+Vocals/343868__reitanna__oooh-ooh-hoo-hoo.wav
+제작자: Reitanna (Freesound)
+제목: oooh ooh hoo hoo.wav
+소리 페이지: https://freesound.org/people/Reitanna/sounds/343868/
+라이선스: CC0-1.0; 근거: 소리 페이지의 라이선스 표기 (2026-11-27 확인)
+형식: 44100 Hz / 16-bit / 1 channels / 2.113 sec
+가공: 없음
+SHA-256: d85156a39dda65a2b715ad9af8a50c9580d69ae3d027e7f89e665e20fac2cf62

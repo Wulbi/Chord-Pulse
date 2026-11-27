@@ -105,7 +105,7 @@ public class KillChordVoicerTests
         Assert.Greater(InstrumentTable.OnsetSeconds(Instrument.Marimba, 72), 0.0);
         for (int s = 0; s < 4; s++)
             for (int c = 0; c < 3; c++)
-                for (int ch = 0; ch < 4; ch++)
+                for (int ch = 0; ch < KillChordTable.Chords; ch++)
                     Assert.AreEqual(5, Voice(s, c, ch, 3).Count);
     }
 
@@ -116,7 +116,7 @@ public class KillChordVoicerTests
         var list = new List<KillNote>();
         for (int style = 0; style < KillChordTable.Styles; style++)
             for (int color = 0; color < KillChordTable.Colors; color++)
-                for (int chord = 0; chord < 4; chord++)
+                for (int chord = 0; chord < KillChordTable.Chords; chord++)
                     for (int voicing = 0; voicing <= 3; voicing++)
                         foreach (int combo in new[] { 0, 1, 2, 3 })
                             foreach (float tension in new[] { 0f, 0.7f })

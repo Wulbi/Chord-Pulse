@@ -12,6 +12,9 @@ public class KillChordPlannerTests
         public bool FeverZone(int beat) => Fever.Contains(beat);
         public int StyleAt(int beat) => Style;
         public int ComboAt(int beat) => Combo;
+        // Classic progression: the bar of the phrase is the chord id (0 C, 1 Am, 2 F, 3 G).
+        public int Progression;
+        public int ChordAt(int beat) => ProgressionSelector.ChordAt(Progression, beat / 4 % 4);
     }
 
     // NUnit shares one fixture instance between tests: build fresh state per test.

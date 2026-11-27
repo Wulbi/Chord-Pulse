@@ -71,8 +71,11 @@ public sealed class SoundManager : SingletonBehaviour<SoundManager>, IKillBedSta
     FeatureSelector _features = new FeatureSelector(0);
     // Variant and guest loop of the queued / playing fever (chosen when fever is queued).
     FeverSelector _fever = new FeverSelector(0);
+    ProgressionSelector _progressions = new ProgressionSelector(0);
     float _tension;
     bool _danger;
+    Coroutine _fadeRoutine;
+    float _fadeRestoreMix = -1f;
     float _appliedTension = -1f;
     float _appliedDanger = -1f;
     // The global parameters Tension, Danger and Hurt exist in the loaded bank (they drive bus effects; FMOD/Tools/mixer.py).
@@ -170,6 +173,12 @@ public sealed class SoundManager : SingletonBehaviour<SoundManager>, IKillBedSta
         !Running || FeverBuilding ? null : FeverActive ? _fever.Guest : _features.Current;
     /// <summary>Name of the fever bed variant playing (null outside fever).</summary>
     public string CurrentFeverVariant => FeverActive ? FeverSelector.VariantName(_fever.Variant) : null;
+    /// <summary>Name of the chord progression playing (progressions.py), or null when the music is not running.</summary>
+    public string CurrentProgression => Running ? ProgressionSelector.Name(ProgressionAt(AudioStepPosition)) : null;
+    /// <summary>Name of the chord playing now (C, Am, F, G, Dm, Em), or null when the music is not running.</summary>
+    public string CurrentChord => Running
+        ? PatternTable.ChordNames[((IKillBedState)this).ChordAt((int)Math.Floor(AudioStepPosition / StepsPerBeat))]
+        : null;
     /// <summary>Loop already chosen for the phrase starting at <see cref="NextPhraseStep"/> (null = none or fever).</summary>
     public FeatureSelector.Loop UpcomingFeature =>
         Running && !FeverOverlaps(NextPhraseStep, NextPhraseStep + StepsPerPhrase) ? _features.Next : null;
@@ -281,6 +290,7 @@ public sealed class SoundManager : SingletonBehaviour<SoundManager>, IKillBedSta
         _sections = new SectionSelector(sectionSeed);
         _features = new FeatureSelector(sectionSeed);
         _fever = new FeverSelector(sectionSeed);
+        _progressions = new ProgressionSelector(sectionSeed);
         _variationRandom = sectionSeed == 0 ? new System.Random() : new System.Random(unchecked(sectionSeed * 31 + 5));
         _variationCurrent = _variationNext = 0;
         _combo = 0;
@@ -418,8 +428,84 @@ public sealed class SoundManager : SingletonBehaviour<SoundManager>, IKillBedSta
         _startRoutine = null;
     }
 
+    /// <summary>
+    /// Game over: the bed goes muffled (the last-life low-pass) and fades out over <paramref name="seconds"/>
+    /// (real time, so slow motion does not stretch it), then the music stops. The mix setting is restored for the
+    /// next round. <see cref="StopMusic"/> during the fade cuts it short.
+    /// </summary>
+    public void FadeOutMusic(float seconds)
+    {
+        if (!_musicPlaying)
+            return;
+        CancelFade();
+        _fadeRestoreMix = musicMix;
+        _fadeRoutine = StartCoroutine(FadeOut(seconds));
+    }
+
+    IEnumerator FadeOut(float seconds)
+    {
+        _danger = true;
+        float from = musicMix;
+        for (float t = 0f; t < seconds; t += Time.unscaledDeltaTime)
+        {
+            // Ease out: most of the drop early, a quiet tail.
+            float k = 1f - t / seconds;
+            musicMix = from * k * k;
+            yield return null;
+        }
+        _fadeRoutine = null;
+        StopMusic();
+    }
+
+    void CancelFade()
+    {
+        if (_fadeRoutine == null && _fadeRestoreMix < 0f)
+            return;
+        if (_fadeRoutine != null)
+            StopCoroutine(_fadeRoutine);
+        _fadeRoutine = null;
+        if (_fadeRestoreMix >= 0f)
+            musicMix = _fadeRestoreMix;
+        _fadeRestoreMix = -1f;
+    }
+
+    /// <summary>The music is held by <see cref="PauseMusic"/>.</summary>
+    public bool MusicPaused { get; private set; }
+
+    /// <summary>
+    /// Freezes the music where it is (settings panel): the master channel group is paused, which also stops its DSP
+    /// clock - the clock every beat and every scheduled one-shot is timed on - so <see cref="ResumeMusic"/> continues on
+    /// the same sample and nothing has to be rescheduled. The beat position stands still meanwhile.
+    /// (System.mixerSuspend is not used: on Windows the DSP clock keeps running under it.)
+    /// </summary>
+    public void PauseMusic()
+    {
+        if (MusicPaused || !SetMasterPaused(true))
+            return;
+        MusicPaused = true;
+    }
+
+    public void ResumeMusic()
+    {
+        if (!MusicPaused)
+            return;
+        MusicPaused = false;
+        SetMasterPaused(false);
+        // It was interpolating the clock against real time, which ran on during the pause.
+        _dspSmoother.Reset();
+    }
+
+    static bool SetMasterPaused(bool paused)
+    {
+        return RuntimeManager.IsInitialized
+            && RuntimeManager.CoreSystem.getMasterChannelGroup(out var master) == FMOD.RESULT.OK
+            && master.setPaused(paused) == FMOD.RESULT.OK;
+    }
+
     public void StopMusic()
     {
+        ResumeMusic(); // never leave the mixer paused behind a stopped round
+        CancelFade();
         if (_startRoutine != null)
         {
             StopCoroutine(_startRoutine);
@@ -564,6 +650,8 @@ public sealed class SoundManager : SingletonBehaviour<SoundManager>, IKillBedSta
             FeverStart = _feverStart,
             FeverVariant = _feverStart >= 0 ? _fever.Variant : 0,
             FeverGuest = _feverStart >= 0 && _fever.Guest != null ? _fever.Guest.Id : 0,
+            ProgressionCurrent = _progressions.Current,
+            ProgressionNext = _progressions.Next,
         };
     }
 
@@ -597,7 +685,12 @@ public sealed class SoundManager : SingletonBehaviour<SoundManager>, IKillBedSta
     bool IKillBedState.FeverZone(int beat) => FeverOverlaps(beat * StepsPerBeat, beat * StepsPerBeat);
     int IKillBedState.StyleAt(int beat) => StyleAt(beat * StepsPerBeat);
     int IKillBedState.ComboAt(int beat) => ComboAt(beat * StepsPerBeat);
+    int IKillBedState.ChordAt(int beat) =>
+        ProgressionSelector.ChordAt(ProgressionAt(beat * StepsPerBeat), beat / BeatsPerBar % SectionSelector.BarsPerPhrase);
     float IKillBedState.Tension => HeardTension;
+
+    // Chord progression played at a step (decided per phrase, one phrase ahead).
+    int ProgressionAt(double step) => step >= NextPhraseStep ? _progressions.Next : _progressions.Current;
 
     // Bed style played at a step (UpdateStyle's rule; fever is handled by the caller).
     int StyleAt(int step) => step >= NextPhraseStep ? _styleNext : _styleCurrent;
@@ -616,7 +709,8 @@ public sealed class SoundManager : SingletonBehaviour<SoundManager>, IKillBedSta
 
     void Update()
     {
-        if (!_musicPlaying)
+        // Paused: the clock stands still, and the on-screen beat must not creep on (FollowBeat never stops by itself).
+        if (!_musicPlaying || MusicPaused)
             return;
         // Output device change with another mixer rate: start over from phrase 0 (rare; the position is not kept).
         int rate = FmodClock.SampleRate();
@@ -678,6 +772,7 @@ public sealed class SoundManager : SingletonBehaviour<SoundManager>, IKillBedSta
         _styleNext = ChooseStyle(next.Breath, feverNext);
         _variationCurrent = _variationNext;
         _variationNext = ChooseVariation(next.Breath);
+        _progressions.Advance(next.Breath, feverNext, _tension, _styleNext == StyleDreamy);
         // The latin bed already is a percussion groove: the Latin Groove guest would only double it.
         _features.Advance(next, _intensity, allowed: !feverNext,
             excludeId: _styleNext == StyleLatin ? LatinGrooveLoopId : 0);

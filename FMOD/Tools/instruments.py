@@ -120,7 +120,9 @@ def build():
             s, pitch = samples.pick(table, midi, max_pitch)
             volume = round(max(VOLUME_MIN, min(NORMALIZE_DB - s[2], VOLUME_MAX)), 2)
             onset = s[3] / (2 ** (pitch / 12.0))
-            notes.append(dict(midi=midi, file=s[0], pitch=pitch, volume=volume, onset=round(onset, 6)))
+            # samples.TUNE_CENTS: a sample measured sharp / flat plays that much lower / higher (FMOD pitch is fractional)
+            tuned = round(pitch - samples.TUNE_CENTS.get(s[0], 0) / 100.0, 2) if s[0] in samples.TUNE_CENTS else pitch
+            notes.append(dict(midi=midi, file=s[0], pitch=tuned, volume=volume, onset=round(onset, 6)))
         insts.append(dict(name=name, bus=bus, busFolder=bus_folder(bus), max=max_inst,
                           attack=attack_ms, release=release_ms, notes=notes))
     # OnsetSeconds is keyed by (instrument, midi) only: every bus must give the same onset for the same note.

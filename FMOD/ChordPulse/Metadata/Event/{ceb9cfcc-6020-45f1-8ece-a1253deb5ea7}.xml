@@ -82,6 +82,8 @@
 			<destination>{5c001865-287c-4cd5-b964-4518921befdb}</destination>
 			<destination>{a1b1ca77-fb7e-4f0c-8193-601cf91c4c8a}</destination>
 			<destination>{bf58647d-f60f-45a4-ac72-8fe5d6f1fa79}</destination>
+			<destination>{ee49cc55-0c83-445d-807e-ac0c6728d39d}</destination>
+			<destination>{6e235804-b44e-4701-9d01-11b9faa6d7aa}</destination>
 		</relationship>
 		<relationship name="mixerGroup">
 			<destination>{5c5ecd2e-f3de-4235-b5a9-a9bbe733c5fe}</destination>
@@ -104,6 +106,8 @@
 			<destination>{5c001865-287c-4cd5-b964-4518921befdb}</destination>
 			<destination>{a1b1ca77-fb7e-4f0c-8193-601cf91c4c8a}</destination>
 			<destination>{bf58647d-f60f-45a4-ac72-8fe5d6f1fa79}</destination>
+			<destination>{ee49cc55-0c83-445d-807e-ac0c6728d39d}</destination>
+			<destination>{6e235804-b44e-4701-9d01-11b9faa6d7aa}</destination>
 		</relationship>
 	</object>
 	<object class="ParameterProxy" id="{97ff5f15-700e-4c71-83e8-1d0c566ec523}">
@@ -417,6 +421,46 @@
 		</relationship>
 		<relationship name="audioFile">
 			<destination>{2d7460b9-b8ff-416c-a223-c6b7d4b94b92}</destination>
+		</relationship>
+	</object>
+	<object class="SingleSound" id="{ee49cc55-0c83-445d-807e-ac0c6728d39d}">
+		<property name="length">
+			<value>12.401179138321995</value>
+		</property>
+		<property name="volume">
+			<value>-9.60000038</value>
+		</property>
+		<property name="pitch">
+			<value>-10</value>
+		</property>
+		<relationship name="modulators">
+			<destination>{853d6351-629a-49ef-9783-9b21b9860356}</destination>
+		</relationship>
+		<relationship name="triggerConditions">
+			<destination>{947293e4-db77-44e1-85cf-d56e3c9d5d5d}</destination>
+		</relationship>
+		<relationship name="audioFile">
+			<destination>{32f996cd-8570-4205-922e-f8f549ba1a81}</destination>
+		</relationship>
+	</object>
+	<object class="SingleSound" id="{6e235804-b44e-4701-9d01-11b9faa6d7aa}">
+		<property name="length">
+			<value>12.401179138321995</value>
+		</property>
+		<property name="volume">
+			<value>-9.60000038</value>
+		</property>
+		<property name="pitch">
+			<value>-8</value>
+		</property>
+		<relationship name="modulators">
+			<destination>{309b02bd-3534-4433-9fee-394c978dd1cb}</destination>
+		</relationship>
+		<relationship name="triggerConditions">
+			<destination>{bea417fc-658b-49b9-973c-09a96ab9597d}</destination>
+		</relationship>
+		<relationship name="audioFile">
+			<destination>{32f996cd-8570-4205-922e-f8f549ba1a81}</destination>
 		</relationship>
 	</object>
 	<object class="EventMixerGroup" id="{5c5ecd2e-f3de-4235-b5a9-a9bbe733c5fe}">
@@ -765,6 +809,50 @@
 		</property>
 		<property name="maximum">
 			<value>79.400000000000006</value>
+		</property>
+		<relationship name="parameter">
+			<destination>{54526f95-8176-4edf-b73c-dfa11aa94b68}</destination>
+		</relationship>
+	</object>
+	<object class="ADSRModulator" id="{853d6351-629a-49ef-9783-9b21b9860356}">
+		<property name="nameOfPropertyBeingModulated">
+			<value>volume</value>
+		</property>
+		<property name="attackTime">
+			<value>1</value>
+		</property>
+		<property name="releaseTime">
+			<value>120</value>
+		</property>
+	</object>
+	<object class="ParameterCondition" id="{947293e4-db77-44e1-85cf-d56e3c9d5d5d}">
+		<property name="minimum">
+			<value>49.600000000000001</value>
+		</property>
+		<property name="maximum">
+			<value>50.399999999999999</value>
+		</property>
+		<relationship name="parameter">
+			<destination>{54526f95-8176-4edf-b73c-dfa11aa94b68}</destination>
+		</relationship>
+	</object>
+	<object class="ADSRModulator" id="{309b02bd-3534-4433-9fee-394c978dd1cb}">
+		<property name="nameOfPropertyBeingModulated">
+			<value>volume</value>
+		</property>
+		<property name="attackTime">
+			<value>1</value>
+		</property>
+		<property name="releaseTime">
+			<value>120</value>
+		</property>
+	</object>
+	<object class="ParameterCondition" id="{bea417fc-658b-49b9-973c-09a96ab9597d}">
+		<property name="minimum">
+			<value>51.600000000000001</value>
+		</property>
+		<property name="maximum">
+			<value>52.399999999999999</value>
 		</property>
 		<relationship name="parameter">
 			<destination>{54526f95-8176-4edf-b73c-dfa11aa94b68}</destination>

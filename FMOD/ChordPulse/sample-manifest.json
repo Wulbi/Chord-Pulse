@@ -18,7 +18,8 @@
     "channels": 2,
     "sample_rate": 44100,
     "bits": 16,
-    "duration_seconds": 1.218481
+    "duration_seconds": 1.218481,
+    "location": "FMOD/ChordPulse/Assets"
   },
   {
     "file": "Brass/Sum_SHTrumpet_stac_F3_v3_rr1.wav",
@@ -39,7 +40,8 @@
     "channels": 2,
     "sample_rate": 44100,
     "bits": 16,
-    "duration_seconds": 1.421429
+    "duration_seconds": 1.421429,
+    "location": "FMOD/ChordPulse/Assets"
   },
   {
     "file": "Brass/Sum_SHTrumpet_stac_A#3_v3_rr1.wav",
@@ -60,7 +62,8 @@
     "channels": 2,
     "sample_rate": 44100,
     "bits": 16,
-    "duration_seconds": 1.532812
+    "duration_seconds": 1.532812,
+    "location": "FMOD/ChordPulse/Assets"
   },
   {
     "file": "Brass/Sum_SHTrumpet_stac_D4_v3_rr1.wav",
@@ -81,7 +84,8 @@
     "channels": 2,
     "sample_rate": 44100,
     "bits": 16,
-    "duration_seconds": 1.754127
+    "duration_seconds": 1.754127,
+    "location": "FMOD/ChordPulse/Assets"
   },
   {
     "file": "Brass/Sum_SHTrumpet_stac_F4_v3_rr1.wav",
@@ -102,7 +106,8 @@
     "channels": 2,
     "sample_rate": 44100,
     "bits": 16,
-    "duration_seconds": 1.535374
+    "duration_seconds": 1.535374,
+    "location": "FMOD/ChordPulse/Assets"
   },
   {
     "file": "Brass/Sum_SHTrumpet_sus_C3_v3_rr1.wav",
@@ -123,7 +128,8 @@
     "channels": 2,
     "sample_rate": 44100,
     "bits": 16,
-    "duration_seconds": 6.995986
+    "duration_seconds": 6.995986,
+    "location": "FMOD/ChordPulse/Assets"
   },
   {
     "file": "Brass/MOHorn_stac_D2_v3_rr1.wav",
@@ -144,7 +150,8 @@
     "channels": 2,
     "sample_rate": 44100,
     "bits": 16,
-    "duration_seconds": 0.800499
+    "duration_seconds": 0.800499,
+    "location": "FMOD/ChordPulse/Assets"
   },
   {
     "file": "Brass/MOHorn_stac_F2_v3_rr1.wav",
@@ -165,7 +172,8 @@
     "channels": 2,
     "sample_rate": 44100,
     "bits": 16,
-    "duration_seconds": 1.717075
+    "duration_seconds": 1.717075,
+    "location": "FMOD/ChordPulse/Assets"
   },
   {
     "file": "Brass/MOHorn_stac_A2_v3_rr1.wav",
@@ -186,7 +194,8 @@
     "channels": 2,
     "sample_rate": 44100,
     "bits": 16,
-    "duration_seconds": 1.560408
+    "duration_seconds": 1.560408,
+    "location": "FMOD/ChordPulse/Assets"
   },
   {
     "file": "Brass/MOHorn_stac_C3_v3_rr1.wav",
@@ -207,7 +216,8 @@
     "channels": 2,
     "sample_rate": 44100,
     "bits": 16,
-    "duration_seconds": 1.592336
+    "duration_seconds": 1.592336,
+    "location": "FMOD/ChordPulse/Assets"
   },
   {
     "file": "Brass/MOHorn_stac_F4_v3_rr1.wav",
@@ -228,7 +238,8 @@
     "channels": 2,
     "sample_rate": 44100,
     "bits": 16,
-    "duration_seconds": 0.997982
+    "duration_seconds": 0.997982,
+    "location": "SampleLibrary"
   },
   {
     "file": "Brass/tenortbn_stac_F1_v4_rr1.wav",
@@ -249,7 +260,8 @@
     "channels": 2,
     "sample_rate": 44100,
     "bits": 16,
-    "duration_seconds": 1.831995
+    "duration_seconds": 1.831995,
+    "location": "FMOD/ChordPulse/Assets"
   },
   {
     "file": "Brass/tenortbn_stac_A#1_v4_rr1.wav",
@@ -270,7 +282,8 @@
     "channels": 2,
     "sample_rate": 44100,
     "bits": 16,
-    "duration_seconds": 1.306508
+    "duration_seconds": 1.306508,
+    "location": "FMOD/ChordPulse/Assets"
   },
   {
     "file": "Brass/tenortbn_stac_F2_v4_rr1.wav",
@@ -291,7 +304,8 @@
     "channels": 2,
     "sample_rate": 44100,
     "bits": 16,
-    "duration_seconds": 1.531043
+    "duration_seconds": 1.531043,
+    "location": "FMOD/ChordPulse/Assets"
   },
   {
     "file": "Brass/tenortbn_stac_A#2_v4_rr1.wav",
@@ -312,7 +326,8 @@
     "channels": 2,
     "sample_rate": 44100,
     "bits": 16,
-    "duration_seconds": 2.02932
+    "duration_seconds": 2.02932,
+    "location": "FMOD/ChordPulse/Assets"
   },
   {
     "file": "Brass/tenortbn_stac_D3_v4_rr1.wav",
@@ -333,7 +348,8 @@
     "channels": 2,
     "sample_rate": 44100,
     "bits": 16,
-    "duration_seconds": 1.864535
+    "duration_seconds": 1.864535,
+    "location": "FMOD/ChordPulse/Assets"
   },
   {
     "file": "Brass/tenortbn_stac_F3_v4_rr1.wav",
@@ -354,7 +370,8 @@
     "channels": 2,
     "sample_rate": 44100,
     "bits": 16,
-    "duration_seconds": 2.005896
+    "duration_seconds": 2.005896,
+    "location": "FMOD/ChordPulse/Assets"
   },
   {
     "file": "Woodwinds/LDFlute_stac_C4_v3_rr1.wav",
@@ -375,7 +392,8 @@
     "channels": 2,
     "sample_rate": 44100,
     "bits": 24,
-    "duration_seconds": 0.814898
+    "duration_seconds": 0.814898,
+    "location": "FMOD/ChordPulse/Assets"
   },
   {
     "file": "Woodwinds/LDFlute_stac_E4_v3_rr1.wav",
@@ -396,7 +414,8 @@
     "channels": 2,
     "sample_rate": 44100,
     "bits": 24,
-    "duration_seconds": 0.888186
+    "duration_seconds": 0.888186,
+    "location": "FMOD/ChordPulse/Assets"
   },
   {
     "file": "Woodwinds/LDFlute_stac_A4_v3_rr1.wav",
@@ -417,7 +436,8 @@
     "channels": 2,
     "sample_rate": 44100,
     "bits": 24,
-    "duration_seconds": 0.743401
+    "duration_seconds": 0.743401,
+    "location": "FMOD/ChordPulse/Assets"
   },
   {
     "file": "Woodwinds/LDFlute_stac_C5_v3_rr1.wav",
@@ -438,7 +458,8 @@
     "channels": 2,
     "sample_rate": 44100,
     "bits": 24,
-    "duration_seconds": 0.735918
+    "duration_seconds": 0.735918,
+    "location": "FMOD/ChordPulse/Assets"
   },
   {
     "file": "Woodwinds/LDFlute_stac_E5_v3_rr1.wav",
@@ -459,7 +480,8 @@
     "channels": 2,
     "sample_rate": 44100,
     "bits": 24,
-    "duration_seconds": 0.831837
+    "duration_seconds": 0.831837,
+    "location": "FMOD/ChordPulse/Assets"
   },
   {
     "file": "Woodwinds/LDFlute_stac_A5_v3_rr1.wav",
@@ -480,7 +502,8 @@
     "channels": 2,
     "sample_rate": 44100,
     "bits": 24,
-    "duration_seconds": 1.023583
+    "duration_seconds": 1.023583,
+    "location": "FMOD/ChordPulse/Assets"
   },
   {
     "file": "Woodwinds/DCClar_stac_D3_v3_rr1_sum.wav",
@@ -501,7 +524,8 @@
     "channels": 2,
     "sample_rate": 44100,
     "bits": 16,
-    "duration_seconds": 0.666553
+    "duration_seconds": 0.666553,
+    "location": "FMOD/ChordPulse/Assets"
   },
   {
     "file": "Woodwinds/DCClar_stac_F3_v3_rr1_sum.wav",
@@ -522,7 +546,8 @@
     "channels": 2,
     "sample_rate": 44100,
     "bits": 16,
-    "duration_seconds": 0.53585
+    "duration_seconds": 0.53585,
+    "location": "FMOD/ChordPulse/Assets"
   },
   {
     "file": "Woodwinds/DCClar_stac_A#3_v3_rr1_sum.wav",
@@ -543,7 +568,8 @@
     "channels": 2,
     "sample_rate": 44100,
     "bits": 16,
-    "duration_seconds": 0.612766
+    "duration_seconds": 0.612766,
+    "location": "FMOD/ChordPulse/Assets"
   },
   {
     "file": "Woodwinds/DCClar_stac_D4_v3_rr1_sum.wav",
@@ -564,7 +590,8 @@
     "channels": 2,
     "sample_rate": 44100,
     "bits": 16,
-    "duration_seconds": 0.625374
+    "duration_seconds": 0.625374,
+    "location": "FMOD/ChordPulse/Assets"
   },
   {
     "file": "Woodwinds/DCClar_stac_F4_v3_rr1_sum.wav",
@@ -585,7 +612,8 @@
     "channels": 2,
     "sample_rate": 44100,
     "bits": 16,
-    "duration_seconds": 0.610612
+    "duration_seconds": 0.610612,
+    "location": "FMOD/ChordPulse/Assets"
   },
   {
     "file": "Woodwinds/BrettTenor_Staccato_Main_C3_vl1_rr4.wav",
@@ -606,7 +634,8 @@
     "channels": 2,
     "sample_rate": 48000,
     "bits": 24,
-    "duration_seconds": 0.498083
+    "duration_seconds": 0.498083,
+    "location": "FMOD/ChordPulse/Assets"
   },
   {
     "file": "Woodwinds/BrettTenor_Staccato_Main_E3_vl1_rr4.wav",
@@ -627,7 +656,8 @@
     "channels": 2,
     "sample_rate": 48000,
     "bits": 24,
-    "duration_seconds": 0.5375
+    "duration_seconds": 0.5375,
+    "location": "FMOD/ChordPulse/Assets"
   },
   {
     "file": "Woodwinds/BrettTenor_Staccato_Main_A#3_vl1_rr3.wav",
@@ -648,7 +678,8 @@
     "channels": 2,
     "sample_rate": 48000,
     "bits": 24,
-    "duration_seconds": 0.651542
+    "duration_seconds": 0.651542,
+    "location": "FMOD/ChordPulse/Assets"
   },
   {
     "file": "Woodwinds/BrettTenor_Staccato_Main_C4_vl1_rr7.wav",
@@ -669,7 +700,8 @@
     "channels": 2,
     "sample_rate": 48000,
     "bits": 24,
-    "duration_seconds": 0.583583
+    "duration_seconds": 0.583583,
+    "location": "FMOD/ChordPulse/Assets"
   },
   {
     "file": "Woodwinds/BrettTenor_Staccato_Main_E4_vl1_rr1.wav",
@@ -690,7 +722,8 @@
     "channels": 2,
     "sample_rate": 48000,
     "bits": 24,
-    "duration_seconds": 0.616771
+    "duration_seconds": 0.616771,
+    "location": "FMOD/ChordPulse/Assets"
   },
   {
     "file": "Woodwinds/BrettTenor_Staccato_Main_A4_vl1_rr5.wav",
@@ -711,7 +744,8 @@
     "channels": 2,
     "sample_rate": 48000,
     "bits": 24,
-    "duration_seconds": 0.644875
+    "duration_seconds": 0.644875,
+    "location": "FMOD/ChordPulse/Assets"
   },
   {
     "file": "Woodwinds/Main_BallWhistle_Short-001.wav",
@@ -732,7 +766,8 @@
     "channels": 2,
     "sample_rate": 44100,
     "bits": 16,
-    "duration_seconds": 1.09381
+    "duration_seconds": 1.09381,
+    "location": "SampleLibrary"
   },
   {
     "file": "Woodwinds/Main_BallWhistle_Long-001.wav",
@@ -753,7 +788,8 @@
     "channels": 2,
     "sample_rate": 44100,
     "bits": 16,
-    "duration_seconds": 2.048118
+    "duration_seconds": 2.048118,
+    "location": "SampleLibrary"
   },
   {
     "file": "Mallets/glock_medium_G4.wav",
@@ -774,7 +810,8 @@
     "channels": 2,
     "sample_rate": 44100,
     "bits": 16,
-    "duration_seconds": 7.206712
+    "duration_seconds": 7.206712,
+    "location": "FMOD/ChordPulse/Assets"
   },
   {
     "file": "Mallets/glock_medium_C5.wav",
@@ -795,7 +832,8 @@
     "channels": 2,
     "sample_rate": 44100,
     "bits": 16,
-    "duration_seconds": 7.206712
+    "duration_seconds": 7.206712,
+    "location": "FMOD/ChordPulse/Assets"
   },
   {
     "file": "Mallets/glock_medium_G5.wav",
@@ -816,7 +854,8 @@
     "channels": 2,
     "sample_rate": 44100,
     "bits": 16,
-    "duration_seconds": 6.9539
+    "duration_seconds": 6.9539,
+    "location": "FMOD/ChordPulse/Assets"
   },
   {
     "file": "Mallets/glock_medium_C6.wav",
@@ -837,7 +876,8 @@
     "channels": 2,
     "sample_rate": 44100,
     "bits": 16,
-    "duration_seconds": 7.206712
+    "duration_seconds": 7.206712,
+    "location": "FMOD/ChordPulse/Assets"
   },
   {
     "file": "Mallets/Marimba_hit_Outrigger_F3_loud_01.wav",
@@ -858,7 +898,8 @@
     "channels": 2,
     "sample_rate": 44100,
     "bits": 24,
-    "duration_seconds": 6.008435
+    "duration_seconds": 6.008435,
+    "location": "FMOD/ChordPulse/Assets"
   },
   {
     "file": "Mallets/Marimba_hit_Outrigger_C4_loud_01.wav",
@@ -879,7 +920,8 @@
     "channels": 2,
     "sample_rate": 44100,
     "bits": 24,
-    "duration_seconds": 3.841723
+    "duration_seconds": 3.841723,
+    "location": "FMOD/ChordPulse/Assets"
   },
   {
     "file": "Mallets/Marimba_hit_Outrigger_G4_loud_01.wav",
@@ -900,7 +942,8 @@
     "channels": 2,
     "sample_rate": 44100,
     "bits": 24,
-    "duration_seconds": 3.023651
+    "duration_seconds": 3.023651,
+    "location": "FMOD/ChordPulse/Assets"
   },
   {
     "file": "Mallets/Marimba_hit_Outrigger_F5_loud_01.wav",
@@ -921,7 +964,8 @@
     "channels": 2,
     "sample_rate": 44100,
     "bits": 24,
-    "duration_seconds": 2.083379
+    "duration_seconds": 2.083379,
+    "location": "FMOD/ChordPulse/Assets"
   },
   {
     "file": "Mallets/Marimba_hit_Outrigger_C6_loud_01.wav",
@@ -942,7 +986,8 @@
     "channels": 2,
     "sample_rate": 44100,
     "bits": 24,
-    "duration_seconds": 1.784195
+    "duration_seconds": 1.784195,
+    "location": "FMOD/ChordPulse/Assets"
   },
   {
     "file": "Mallets/Xylo_Medium_G4_ff_01_far.wav",
@@ -963,7 +1008,8 @@
     "channels": 2,
     "sample_rate": 44100,
     "bits": 24,
-    "duration_seconds": 2.509841
+    "duration_seconds": 2.509841,
+    "location": "FMOD/ChordPulse/Assets"
   },
   {
     "file": "Mallets/Xylo_Medium_C5_ff_01_far.wav",
@@ -984,7 +1030,8 @@
     "channels": 2,
     "sample_rate": 44100,
     "bits": 24,
-    "duration_seconds": 1.886961
+    "duration_seconds": 1.886961,
+    "location": "FMOD/ChordPulse/Assets"
   },
   {
     "file": "Mallets/Xylo_Medium_G5_ff_01_far.wav",
@@ -1005,7 +1052,8 @@
     "channels": 2,
     "sample_rate": 44100,
     "bits": 24,
-    "duration_seconds": 1.616576
+    "duration_seconds": 1.616576,
+    "location": "FMOD/ChordPulse/Assets"
   },
   {
     "file": "Mallets/Xylo_Medium_C6_ff_01_far.wav",
@@ -1026,7 +1074,8 @@
     "channels": 2,
     "sample_rate": 44100,
     "bits": 24,
-    "duration_seconds": 1.469569
+    "duration_seconds": 1.469569,
+    "location": "FMOD/ChordPulse/Assets"
   },
   {
     "file": "Mallets/Vibes_hard_C3_v3_rr1_Main.wav",
@@ -1047,7 +1096,8 @@
     "channels": 2,
     "sample_rate": 44100,
     "bits": 16,
-    "duration_seconds": 12.401179
+    "duration_seconds": 12.401179,
+    "location": "FMOD/ChordPulse/Assets"
   },
   {
     "file": "Mallets/Vibes_hard_E3_v3_rr1_Main.wav",
@@ -1068,7 +1118,8 @@
     "channels": 2,
     "sample_rate": 44100,
     "bits": 16,
-    "duration_seconds": 14.269977
+    "duration_seconds": 14.269977,
+    "location": "FMOD/ChordPulse/Assets"
   },
   {
     "file": "Mallets/Vibes_hard_D4_v3_rr1_Main.wav",
@@ -1089,7 +1140,8 @@
     "channels": 2,
     "sample_rate": 44100,
     "bits": 16,
-    "duration_seconds": 14.600385
+    "duration_seconds": 14.600385,
+    "location": "FMOD/ChordPulse/Assets"
   },
   {
     "file": "Mallets/Vibes_hard_A4_v3_rr1_Main.wav",
@@ -1110,7 +1162,8 @@
     "channels": 2,
     "sample_rate": 44100,
     "bits": 16,
-    "duration_seconds": 10.994354
+    "duration_seconds": 10.994354,
+    "location": "FMOD/ChordPulse/Assets"
   },
   {
     "file": "Mallets/Vibes_hard_C5_v3_rr1_Main.wav",
@@ -1131,7 +1184,8 @@
     "channels": 2,
     "sample_rate": 44100,
     "bits": 16,
-    "duration_seconds": 6.206961
+    "duration_seconds": 6.206961,
+    "location": "FMOD/ChordPulse/Assets"
   },
   {
     "file": "Mallets/KSHarp_C3_mf.wav",
@@ -1152,7 +1206,8 @@
     "channels": 2,
     "sample_rate": 44100,
     "bits": 16,
-    "duration_seconds": 8.963016
+    "duration_seconds": 8.963016,
+    "location": "SampleLibrary"
   },
   {
     "file": "Mallets/KSHarp_D4_mf.wav",
@@ -1173,7 +1228,8 @@
     "channels": 2,
     "sample_rate": 44100,
     "bits": 16,
-    "duration_seconds": 10.893673
+    "duration_seconds": 10.893673,
+    "location": "FMOD/ChordPulse/Assets"
   },
   {
     "file": "Mallets/KSHarp_F4_mf.wav",
@@ -1194,7 +1250,8 @@
     "channels": 2,
     "sample_rate": 44100,
     "bits": 16,
-    "duration_seconds": 10.847234
+    "duration_seconds": 10.847234,
+    "location": "FMOD/ChordPulse/Assets"
   },
   {
     "file": "Mallets/KSHarp_A4_mf.wav",
@@ -1215,7 +1272,8 @@
     "channels": 2,
     "sample_rate": 44100,
     "bits": 16,
-    "duration_seconds": 12.151769
+    "duration_seconds": 12.151769,
+    "location": "FMOD/ChordPulse/Assets"
   },
   {
     "file": "Mallets/KSHarp_C5_mf.wav",
@@ -1236,7 +1294,8 @@
     "channels": 2,
     "sample_rate": 44100,
     "bits": 16,
-    "duration_seconds": 7.013016
+    "duration_seconds": 7.013016,
+    "location": "FMOD/ChordPulse/Assets"
   },
   {
     "file": "Mallets/KSHarp_E5_mf.wav",
@@ -1257,7 +1316,8 @@
     "channels": 2,
     "sample_rate": 44100,
     "bits": 16,
-    "duration_seconds": 6.641383
+    "duration_seconds": 6.641383,
+    "location": "FMOD/ChordPulse/Assets"
   },
   {
     "file": "Mallets/Mbira6_Normal_MainSpirit_C#4_k2_vl3_rr2.wav",
@@ -1278,7 +1338,8 @@
     "channels": 2,
     "sample_rate": 48000,
     "bits": 24,
-    "duration_seconds": 4.808104
+    "duration_seconds": 4.808104,
+    "location": "FMOD/ChordPulse/Assets"
   },
   {
     "file": "Mallets/Mbira6_Normal_MainSpirit_D#4_k13_vl3_rr2.wav",
@@ -1299,7 +1360,8 @@
     "channels": 2,
     "sample_rate": 48000,
     "bits": 24,
-    "duration_seconds": 3.010542
+    "duration_seconds": 3.010542,
+    "location": "FMOD/ChordPulse/Assets"
   },
   {
     "file": "Mallets/Mbira6_Normal_MainSpirit_F#4_k14_vl3_rr2.wav",
@@ -1320,7 +1382,8 @@
     "channels": 2,
     "sample_rate": 48000,
     "bits": 24,
-    "duration_seconds": 4.122167
+    "duration_seconds": 4.122167,
+    "location": "SampleLibrary"
   },
   {
     "file": "Mallets/Mbira6_Normal_MainSpirit_A4_k1_vl3_rr2.wav",
@@ -1341,7 +1404,8 @@
     "channels": 2,
     "sample_rate": 48000,
     "bits": 24,
-    "duration_seconds": 3.295417
+    "duration_seconds": 3.295417,
+    "location": "SampleLibrary"
   },
   {
     "file": "Mallets/Mbira6_Normal_MainSpirit_B4_k15_vl3_rr2.wav",
@@ -1362,7 +1426,8 @@
     "channels": 2,
     "sample_rate": 48000,
     "bits": 24,
-    "duration_seconds": 3.287604
+    "duration_seconds": 3.287604,
+    "location": "SampleLibrary"
   },
   {
     "file": "WorldPerc/Quinto_HitN_v3_rr1_Sum.wav",
@@ -1383,7 +1448,8 @@
     "channels": 2,
     "sample_rate": 44100,
     "bits": 16,
-    "duration_seconds": 1.175215
+    "duration_seconds": 1.175215,
+    "location": "FMOD/ChordPulse/Assets"
   },
   {
     "file": "WorldPerc/Conga_HitN_v3_rr1_Sum.wav",
@@ -1404,7 +1470,8 @@
     "channels": 2,
     "sample_rate": 44100,
     "bits": 16,
-    "duration_seconds": 1.309637
+    "duration_seconds": 1.309637,
+    "location": "FMOD/ChordPulse/Assets"
   },
   {
     "file": "WorldPerc/Conga_HitFM_v2_rr1_Sum.wav",
@@ -1425,7 +1492,8 @@
     "channels": 2,
     "sample_rate": 44100,
     "bits": 16,
-    "duration_seconds": 0.900794
+    "duration_seconds": 0.900794,
+    "location": "SampleLibrary"
   },
   {
     "file": "WorldPerc/Tumba_HitFM_v3_rr1_Sum.wav",
@@ -1446,7 +1514,8 @@
     "channels": 2,
     "sample_rate": 44100,
     "bits": 16,
-    "duration_seconds": 0.521746
+    "duration_seconds": 0.521746,
+    "location": "FMOD/ChordPulse/Assets"
   },
   {
     "file": "WorldPerc/BongoH_Hit1_v3_rr1_Mid.wav",
@@ -1467,7 +1536,8 @@
     "channels": 2,
     "sample_rate": 44100,
     "bits": 16,
-    "duration_seconds": 1.162721
+    "duration_seconds": 1.162721,
+    "location": "FMOD/ChordPulse/Assets"
   },
   {
     "file": "WorldPerc/BongoL_Hit1_v3_rr1_Mid.wav",
@@ -1488,7 +1558,8 @@
     "channels": 2,
     "sample_rate": 44100,
     "bits": 16,
-    "duration_seconds": 1.185488
+    "duration_seconds": 1.185488,
+    "location": "FMOD/ChordPulse/Assets"
   },
   {
     "file": "WorldPerc/BongoH_HitMuted1_v3_rr1_Mid.wav",
@@ -1509,7 +1580,8 @@
     "channels": 2,
     "sample_rate": 44100,
     "bits": 16,
-    "duration_seconds": 1.217732
+    "duration_seconds": 1.217732,
+    "location": "SampleLibrary"
   },
   {
     "file": "WorldPerc/Cowbell1_Hit_v4_rr1_Mid.wav",
@@ -1530,7 +1602,8 @@
     "channels": 2,
     "sample_rate": 44100,
     "bits": 16,
-    "duration_seconds": 1.105306
+    "duration_seconds": 1.105306,
+    "location": "SampleLibrary"
   },
   {
     "file": "WorldPerc/Cowbell1_Muted_v3_rr1_Mid.wav",
@@ -1551,7 +1624,8 @@
     "channels": 2,
     "sample_rate": 44100,
     "bits": 16,
-    "duration_seconds": 1.108753
+    "duration_seconds": 1.108753,
+    "location": "FMOD/ChordPulse/Assets"
   },
   {
     "file": "WorldPerc/Cowbell2_Normal_v3_rr1_Mid.wav",
@@ -1572,7 +1646,8 @@
     "channels": 2,
     "sample_rate": 44100,
     "bits": 16,
-    "duration_seconds": 1.785397
+    "duration_seconds": 1.785397,
+    "location": "FMOD/ChordPulse/Assets"
   },
   {
     "file": "WorldPerc/Guiro_Hit_rr1_Mid.wav",
@@ -1593,7 +1668,8 @@
     "channels": 2,
     "sample_rate": 44100,
     "bits": 16,
-    "duration_seconds": 1.28254
+    "duration_seconds": 1.28254,
+    "location": "SampleLibrary"
   },
   {
     "file": "WorldPerc/Guiro_Fast_rr1_Mid.wav",
@@ -1614,7 +1690,8 @@
     "channels": 2,
     "sample_rate": 44100,
     "bits": 16,
-    "duration_seconds": 1.513832
+    "duration_seconds": 1.513832,
+    "location": "FMOD/ChordPulse/Assets"
   },
   {
     "file": "WorldPerc/Guiro_Slow_rr2_Mid.wav",
@@ -1635,7 +1712,8 @@
     "channels": 2,
     "sample_rate": 44100,
     "bits": 16,
-    "duration_seconds": 2.43907
+    "duration_seconds": 2.43907,
+    "location": "SampleLibrary"
   },
   {
     "file": "WorldPerc/Claves1_Hit_v2_rr1_Mid.wav",
@@ -1656,7 +1734,8 @@
     "channels": 2,
     "sample_rate": 44100,
     "bits": 16,
-    "duration_seconds": 1.08678
+    "duration_seconds": 1.08678,
+    "location": "SampleLibrary"
   },
   {
     "file": "WorldPerc/Claves1_Hit_v3_rr1_Mid.wav",
@@ -1677,7 +1756,8 @@
     "channels": 2,
     "sample_rate": 44100,
     "bits": 16,
-    "duration_seconds": 1.296259
+    "duration_seconds": 1.296259,
+    "location": "FMOD/ChordPulse/Assets"
   },
   {
     "file": "WorldPerc/Claves2_Hit_v3_rr1_Mid.wav",
@@ -1698,7 +1778,8 @@
     "channels": 2,
     "sample_rate": 44100,
     "bits": 16,
-    "duration_seconds": 1.279728
+    "duration_seconds": 1.279728,
+    "location": "SampleLibrary"
   },
   {
     "file": "WorldPerc/Agogo_High_v2_rr1_Mid.wav",
@@ -1719,7 +1800,8 @@
     "channels": 2,
     "sample_rate": 44100,
     "bits": 16,
-    "duration_seconds": 1.138503
+    "duration_seconds": 1.138503,
+    "location": "SampleLibrary"
   },
   {
     "file": "WorldPerc/Agogo_High_v3_rr1_Mid.wav",
@@ -1740,7 +1822,8 @@
     "channels": 2,
     "sample_rate": 44100,
     "bits": 16,
-    "duration_seconds": 1.117959
+    "duration_seconds": 1.117959,
+    "location": "FMOD/ChordPulse/Assets"
   },
   {
     "file": "WorldPerc/Agogo_Low_v2_rr1_Mid.wav",
@@ -1761,7 +1844,8 @@
     "channels": 2,
     "sample_rate": 44100,
     "bits": 16,
-    "duration_seconds": 2.447279
+    "duration_seconds": 2.447279,
+    "location": "FMOD/ChordPulse/Assets"
   },
   {
     "file": "SynthBass/AT20V_AcidBass_A1_v100.wav",
@@ -1781,7 +1865,8 @@
     "bits": 24,
     "duration_seconds": 0.861633,
     "modifications": "None: byte-identical original WAV",
-    "usage": "Electric instrument candidate"
+    "usage": "Electric instrument candidate",
+    "location": "SampleLibrary"
   },
   {
     "file": "SynthBass/AT20V_AcidBass_A2_v100.wav",
@@ -1801,7 +1886,8 @@
     "bits": 24,
     "duration_seconds": 2.0,
     "modifications": "None: byte-identical original WAV",
-    "usage": "Electric instrument candidate"
+    "usage": "Electric instrument candidate",
+    "location": "FMOD/ChordPulse/Assets"
   },
   {
     "file": "SynthBass/AT20V_AcidBass_C2_v100.wav",
@@ -1821,7 +1907,8 @@
     "bits": 24,
     "duration_seconds": 0.881565,
     "modifications": "None: byte-identical original WAV",
-    "usage": "Electric instrument candidate"
+    "usage": "Electric instrument candidate",
+    "location": "FMOD/ChordPulse/Assets"
   },
   {
     "file": "SynthBass/AT20V_AcidBass_E2_v100.wav",
@@ -1841,7 +1928,8 @@
     "bits": 24,
     "duration_seconds": 0.884671,
     "modifications": "None: byte-identical original WAV",
-    "usage": "Electric instrument candidate"
+    "usage": "Electric instrument candidate",
+    "location": "FMOD/ChordPulse/Assets"
   },
   {
     "file": "SynthBass/AT20V_FatSawBass_A1_v100.wav",
@@ -1861,7 +1949,8 @@
     "bits": 24,
     "duration_seconds": 1.135147,
     "modifications": "None: byte-identical original WAV",
-    "usage": "Electric instrument candidate"
+    "usage": "Electric instrument candidate",
+    "location": "SampleLibrary"
   },
   {
     "file": "SynthBass/AT20V_FatSawBass_E1_v100.wav",
@@ -1881,7 +1970,8 @@
     "bits": 24,
     "duration_seconds": 2.5,
     "modifications": "None: byte-identical original WAV",
-    "usage": "Electric instrument candidate"
+    "usage": "Electric instrument candidate",
+    "location": "SampleLibrary"
   },
   {
     "file": "SynthBass/AT20V_FatSawBass_E2_v100.wav",
@@ -1901,7 +1991,8 @@
     "bits": 24,
     "duration_seconds": 1.13839,
     "modifications": "None: byte-identical original WAV",
-    "usage": "Electric instrument candidate"
+    "usage": "Electric instrument candidate",
+    "location": "SampleLibrary"
   },
   {
     "file": "Synth/AT20V_GlassPad_A3_v90.wav",
@@ -1921,7 +2012,8 @@
     "bits": 24,
     "duration_seconds": 6.5,
     "modifications": "None: byte-identical original WAV",
-    "usage": "Electric instrument candidate"
+    "usage": "Electric instrument candidate",
+    "location": "FMOD/ChordPulse/Assets"
   },
   {
     "file": "Synth/AT20V_LaserZap_C4_v100.wav",
@@ -1941,7 +2033,8 @@
     "bits": 24,
     "duration_seconds": 0.459093,
     "modifications": "None: byte-identical original WAV",
-    "usage": "Electric instrument candidate"
+    "usage": "Electric instrument candidate",
+    "location": "SampleLibrary"
   },
   {
     "file": "Synth/AT20V_ResoPluck_A3_v100.wav",
@@ -1961,7 +2054,8 @@
     "bits": 24,
     "duration_seconds": 2.2,
     "modifications": "None: byte-identical original WAV",
-    "usage": "Electric instrument candidate"
+    "usage": "Electric instrument candidate",
+    "location": "SampleLibrary"
   },
   {
     "file": "Synth/AT20V_ResoPluck_A4_v100.wav",
@@ -1981,7 +2075,8 @@
     "bits": 24,
     "duration_seconds": 0.370159,
     "modifications": "None: byte-identical original WAV",
-    "usage": "Electric instrument candidate"
+    "usage": "Electric instrument candidate",
+    "location": "SampleLibrary"
   },
   {
     "file": "Synth/AT20V_ResoPluck_C4_v100.wav",
@@ -2001,7 +2096,8 @@
     "bits": 24,
     "duration_seconds": 2.2,
     "modifications": "None: byte-identical original WAV",
-    "usage": "Electric instrument candidate"
+    "usage": "Electric instrument candidate",
+    "location": "SampleLibrary"
   },
   {
     "file": "Synth/AT20V_ResoPluck_E4_v100.wav",
@@ -2021,7 +2117,8 @@
     "bits": 24,
     "duration_seconds": 2.2,
     "modifications": "None: byte-identical original WAV",
-    "usage": "Electric instrument candidate"
+    "usage": "Electric instrument candidate",
+    "location": "SampleLibrary"
   },
   {
     "file": "Synth/AT20V_RingBell_C5_v100.wav",
@@ -2041,7 +2138,8 @@
     "bits": 24,
     "duration_seconds": 3.377642,
     "modifications": "None: byte-identical original WAV",
-    "usage": "Electric instrument candidate"
+    "usage": "Electric instrument candidate",
+    "location": "SampleLibrary"
   },
   {
     "file": "Synth/AT20V_RingBell_E5_v100.wav",
@@ -2061,7 +2159,8 @@
     "bits": 24,
     "duration_seconds": 4.0,
     "modifications": "None: byte-identical original WAV",
-    "usage": "Electric instrument candidate"
+    "usage": "Electric instrument candidate",
+    "location": "SampleLibrary"
   },
   {
     "file": "Synth/AT20V_RingBell_G5_v100.wav",
@@ -2081,7 +2180,8 @@
     "bits": 24,
     "duration_seconds": 3.347982,
     "modifications": "None: byte-identical original WAV",
-    "usage": "Electric instrument candidate"
+    "usage": "Electric instrument candidate",
+    "location": "SampleLibrary"
   },
   {
     "file": "Synth/AT20V_ScreamLead_A3_v105.wav",
@@ -2101,7 +2201,8 @@
     "bits": 24,
     "duration_seconds": 3.4,
     "modifications": "None: byte-identical original WAV",
-    "usage": "Electric instrument candidate"
+    "usage": "Electric instrument candidate",
+    "location": "FMOD/ChordPulse/Assets"
   },
   {
     "file": "Synth/AT20V_ScreamLead_A4_v105.wav",
@@ -2121,7 +2222,8 @@
     "bits": 24,
     "duration_seconds": 1.561361,
     "modifications": "None: byte-identical original WAV",
-    "usage": "Electric instrument candidate"
+    "usage": "Electric instrument candidate",
+    "location": "FMOD/ChordPulse/Assets"
   },
   {
     "file": "Synth/AT20V_ScreamLead_E4_v105.wav",
@@ -2141,7 +2243,8 @@
     "bits": 24,
     "duration_seconds": 3.4,
     "modifications": "None: byte-identical original WAV",
-    "usage": "Electric instrument candidate"
+    "usage": "Electric instrument candidate",
+    "location": "FMOD/ChordPulse/Assets"
   },
   {
     "file": "SynthBass/AT303_DeepRoot_C2_v100.wav",
@@ -2161,7 +2264,8 @@
     "bits": 24,
     "duration_seconds": 0.843651,
     "modifications": "None: byte-identical original WAV",
-    "usage": "Electric instrument candidate"
+    "usage": "Electric instrument candidate",
+    "location": "SampleLibrary"
   },
   {
     "file": "SynthBass/AT303_DeepRoot_F1_v100.wav",
@@ -2181,7 +2285,8 @@
     "bits": 24,
     "duration_seconds": 0.574717,
     "modifications": "None: byte-identical original WAV",
-    "usage": "Electric instrument candidate"
+    "usage": "Electric instrument candidate",
+    "location": "SampleLibrary"
   },
   {
     "file": "SynthBass/AT303_HotBox_A2_v100.wav",
@@ -2201,7 +2306,8 @@
     "bits": 24,
     "duration_seconds": 0.735805,
     "modifications": "None: byte-identical original WAV",
-    "usage": "Electric instrument candidate"
+    "usage": "Electric instrument candidate",
+    "location": "SampleLibrary"
   },
   {
     "file": "SynthBass/AT303_HotBox_D2_v100.wav",
@@ -2221,7 +2327,8 @@
     "bits": 24,
     "duration_seconds": 0.650522,
     "modifications": "None: byte-identical original WAV",
-    "usage": "Electric instrument candidate"
+    "usage": "Electric instrument candidate",
+    "location": "SampleLibrary"
   },
   {
     "file": "SynthBass/AT303_Pocket_D2_v100.wav",
@@ -2241,7 +2348,8 @@
     "bits": 24,
     "duration_seconds": 0.547324,
     "modifications": "None: byte-identical original WAV",
-    "usage": "Electric instrument candidate"
+    "usage": "Electric instrument candidate",
+    "location": "FMOD/ChordPulse/Assets"
   },
   {
     "file": "SynthBass/AT303_Pocket_G1_v100.wav",
@@ -2261,7 +2369,8 @@
     "bits": 24,
     "duration_seconds": 0.554989,
     "modifications": "None: byte-identical original WAV",
-    "usage": "Electric instrument candidate"
+    "usage": "Electric instrument candidate",
+    "location": "FMOD/ChordPulse/Assets"
   },
   {
     "file": "SynthBass/AT303_RubberRoot_A1_v100.wav",
@@ -2281,7 +2390,8 @@
     "bits": 24,
     "duration_seconds": 0.551655,
     "modifications": "None: byte-identical original WAV",
-    "usage": "Electric instrument candidate"
+    "usage": "Electric instrument candidate",
+    "location": "FMOD/ChordPulse/Assets"
   },
   {
     "file": "SynthBass/AT303_RubberRoot_E2_v100.wav",
@@ -2301,7 +2411,8 @@
     "bits": 24,
     "duration_seconds": 0.647098,
     "modifications": "None: byte-identical original WAV",
-    "usage": "Electric instrument candidate"
+    "usage": "Electric instrument candidate",
+    "location": "FMOD/ChordPulse/Assets"
   },
   {
     "file": "SynthBass/AT303_Screamer_A2_v127.wav",
@@ -2321,7 +2432,8 @@
     "bits": 24,
     "duration_seconds": 0.645261,
     "modifications": "None: byte-identical original WAV",
-    "usage": "Electric instrument candidate"
+    "usage": "Electric instrument candidate",
+    "location": "SampleLibrary"
   },
   {
     "file": "SynthBass/AT303_Screamer_E3_v127.wav",
@@ -2341,7 +2453,8 @@
     "bits": 24,
     "duration_seconds": 0.645782,
     "modifications": "None: byte-identical original WAV",
-    "usage": "Electric instrument candidate"
+    "usage": "Electric instrument candidate",
+    "location": "SampleLibrary"
   },
   {
     "file": "SynthBass/AT303_Squelch_A1_v127.wav",
@@ -2361,7 +2474,8 @@
     "bits": 24,
     "duration_seconds": 0.646712,
     "modifications": "None: byte-identical original WAV",
-    "usage": "Electric instrument candidate"
+    "usage": "Electric instrument candidate",
+    "location": "FMOD/ChordPulse/Assets"
   },
   {
     "file": "SynthBass/AT303_Squelch_A2_v127.wav",
@@ -2381,7 +2495,8 @@
     "bits": 24,
     "duration_seconds": 0.648073,
     "modifications": "None: byte-identical original WAV",
-    "usage": "Electric instrument candidate"
+    "usage": "Electric instrument candidate",
+    "location": "FMOD/ChordPulse/Assets"
   },
   {
     "file": "SynthBass/AT303_Squelch_C2_v127.wav",
@@ -2401,7 +2516,8 @@
     "bits": 24,
     "duration_seconds": 0.646893,
     "modifications": "None: byte-identical original WAV",
-    "usage": "Electric instrument candidate"
+    "usage": "Electric instrument candidate",
+    "location": "FMOD/ChordPulse/Assets"
   },
   {
     "file": "SynthBass/AT303_Squelch_E2_v127.wav",
@@ -2421,7 +2537,8 @@
     "bits": 24,
     "duration_seconds": 0.646961,
     "modifications": "None: byte-identical original WAV",
-    "usage": "Electric instrument candidate"
+    "usage": "Electric instrument candidate",
+    "location": "FMOD/ChordPulse/Assets"
   },
   {
     "file": "SynthBass/AT700_Bass700_A1_v100.wav",
@@ -2441,7 +2558,8 @@
     "bits": 24,
     "duration_seconds": 1.8,
     "modifications": "None: byte-identical original WAV",
-    "usage": "Electric instrument candidate"
+    "usage": "Electric instrument candidate",
+    "location": "SampleLibrary"
   },
   {
     "file": "SynthBass/AT700_Bass700_E1_v100.wav",
@@ -2461,7 +2579,8 @@
     "bits": 24,
     "duration_seconds": 1.048526,
     "modifications": "None: byte-identical original WAV",
-    "usage": "Electric instrument candidate"
+    "usage": "Electric instrument candidate",
+    "location": "SampleLibrary"
   },
   {
     "file": "SynthBass/AT700_Bass700_E2_v100.wav",
@@ -2481,7 +2600,8 @@
     "bits": 24,
     "duration_seconds": 1.073016,
     "modifications": "None: byte-identical original WAV",
-    "usage": "Electric instrument candidate"
+    "usage": "Electric instrument candidate",
+    "location": "SampleLibrary"
   },
   {
     "file": "Synth/AT700_BrassStab_Bb3_v100.wav",
@@ -2501,7 +2621,8 @@
     "bits": 24,
     "duration_seconds": 2.50034,
     "modifications": "None: byte-identical original WAV",
-    "usage": "Electric instrument candidate"
+    "usage": "Electric instrument candidate",
+    "location": "FMOD/ChordPulse/Assets"
   },
   {
     "file": "Synth/AT700_BrassStab_F4_v100.wav",
@@ -2521,7 +2642,8 @@
     "bits": 24,
     "duration_seconds": 2.541043,
     "modifications": "None: byte-identical original WAV",
-    "usage": "Electric instrument candidate"
+    "usage": "Electric instrument candidate",
+    "location": "FMOD/ChordPulse/Assets"
   },
   {
     "file": "Synth/AT700_EnsembleStrings_A2_v90.wav",
@@ -2541,7 +2663,8 @@
     "bits": 24,
     "duration_seconds": 5.0,
     "modifications": "None: byte-identical original WAV",
-    "usage": "Electric instrument candidate"
+    "usage": "Electric instrument candidate",
+    "location": "FMOD/ChordPulse/Assets"
   },
   {
     "file": "Synth/AT700_FatSawLead_A3_v100.wav",
@@ -2561,7 +2684,8 @@
     "bits": 24,
     "duration_seconds": 2.7,
     "modifications": "None: byte-identical original WAV",
-    "usage": "Electric instrument candidate"
+    "usage": "Electric instrument candidate",
+    "location": "SampleLibrary"
   },
   {
     "file": "Synth/AT700_FatSawLead_A4_v100.wav",
@@ -2581,7 +2705,8 @@
     "bits": 24,
     "duration_seconds": 2.042063,
     "modifications": "None: byte-identical original WAV",
-    "usage": "Electric instrument candidate"
+    "usage": "Electric instrument candidate",
+    "location": "SampleLibrary"
   },
   {
     "file": "Synth/AT700_FatSawLead_E4_v100.wav",
@@ -2601,7 +2726,8 @@
     "bits": 24,
     "duration_seconds": 2.7,
     "modifications": "None: byte-identical original WAV",
-    "usage": "Electric instrument candidate"
+    "usage": "Electric instrument candidate",
+    "location": "SampleLibrary"
   },
   {
     "file": "Synth/AT700_Flute_A4_v96.wav",
@@ -2621,7 +2747,8 @@
     "bits": 24,
     "duration_seconds": 2.033855,
     "modifications": "None: byte-identical original WAV",
-    "usage": "Electric instrument candidate"
+    "usage": "Electric instrument candidate",
+    "location": "SampleLibrary"
   },
   {
     "file": "Synth/AT700_Flute_D4_v96.wav",
@@ -2641,7 +2768,8 @@
     "bits": 24,
     "duration_seconds": 2.015261,
     "modifications": "None: byte-identical original WAV",
-    "usage": "Electric instrument candidate"
+    "usage": "Electric instrument candidate",
+    "location": "SampleLibrary"
   },
   {
     "file": "Synth/AT700_LaserZap_C4_v100.wav",
@@ -2661,7 +2789,8 @@
     "bits": 24,
     "duration_seconds": 1.080159,
     "modifications": "None: byte-identical original WAV",
-    "usage": "Electric instrument candidate"
+    "usage": "Electric instrument candidate",
+    "location": "SampleLibrary"
   },
   {
     "file": "Synth/AT700_RingBell_C5_v100.wav",
@@ -2681,7 +2810,8 @@
     "bits": 24,
     "duration_seconds": 4.0,
     "modifications": "None: byte-identical original WAV",
-    "usage": "Electric instrument candidate"
+    "usage": "Electric instrument candidate",
+    "location": "SampleLibrary"
   },
   {
     "file": "Synth/AT700_RingBell_G5_v100.wav",
@@ -2701,7 +2831,8 @@
     "bits": 24,
     "duration_seconds": 4.0,
     "modifications": "None: byte-identical original WAV",
-    "usage": "Electric instrument candidate"
+    "usage": "Electric instrument candidate",
+    "location": "SampleLibrary"
   },
   {
     "file": "SynthBass/AT700_SubPulse_C1_v100.wav",
@@ -2721,7 +2852,8 @@
     "bits": 24,
     "duration_seconds": 2.2,
     "modifications": "None: byte-identical original WAV",
-    "usage": "Electric instrument candidate"
+    "usage": "Electric instrument candidate",
+    "location": "SampleLibrary"
   },
   {
     "file": "SynthBass/AT700_SubPulse_F1_v100.wav",
@@ -2741,7 +2873,8 @@
     "bits": 24,
     "duration_seconds": 1.433583,
     "modifications": "None: byte-identical original WAV",
-    "usage": "Electric instrument candidate"
+    "usage": "Electric instrument candidate",
+    "location": "SampleLibrary"
   },
   {
     "file": "Synth/AT700_SyncSweep_A3_v100.wav",
@@ -2761,7 +2894,8 @@
     "bits": 24,
     "duration_seconds": 2.7,
     "modifications": "None: byte-identical original WAV",
-    "usage": "Electric instrument candidate"
+    "usage": "Electric instrument candidate",
+    "location": "SampleLibrary"
   },
   {
     "file": "Synth/AT700_SyncSweep_E4_v100.wav",
@@ -2781,7 +2915,8 @@
     "bits": 24,
     "duration_seconds": 2.58737,
     "modifications": "None: byte-identical original WAV",
-    "usage": "Electric instrument candidate"
+    "usage": "Electric instrument candidate",
+    "location": "SampleLibrary"
   },
   {
     "file": "Synth/AT700_Thunder_C2_v100.wav",
@@ -2801,7 +2936,8 @@
     "bits": 24,
     "duration_seconds": 6.5,
     "modifications": "None: byte-identical original WAV",
-    "usage": "Electric instrument candidate"
+    "usage": "Electric instrument candidate",
+    "location": "SampleLibrary"
   },
   {
     "file": "Synth/AT700_TineKeys_C3_v110.wav",
@@ -2821,7 +2957,8 @@
     "bits": 24,
     "duration_seconds": 2.8,
     "modifications": "None: byte-identical original WAV",
-    "usage": "Electric instrument candidate"
+    "usage": "Electric instrument candidate",
+    "location": "SampleLibrary"
   },
   {
     "file": "Synth/AT700_TineKeys_E3_v110.wav",
@@ -2841,7 +2978,8 @@
     "bits": 24,
     "duration_seconds": 2.8,
     "modifications": "None: byte-identical original WAV",
-    "usage": "Electric instrument candidate"
+    "usage": "Electric instrument candidate",
+    "location": "SampleLibrary"
   },
   {
     "file": "Synth/AT700_TineKeys_G3_v110.wav",
@@ -2861,7 +2999,8 @@
     "bits": 24,
     "duration_seconds": 1.925692,
     "modifications": "None: byte-identical original WAV",
-    "usage": "Electric instrument candidate"
+    "usage": "Electric instrument candidate",
+    "location": "SampleLibrary"
   },
   {
     "file": "Synth/ATFS1_BreathFlute_A4_v96.wav",
@@ -2881,7 +3020,8 @@
     "bits": 24,
     "duration_seconds": 2.7,
     "modifications": "None: byte-identical original WAV",
-    "usage": "Electric instrument candidate"
+    "usage": "Electric instrument candidate",
+    "location": "SampleLibrary"
   },
   {
     "file": "Synth/ATFS1_BreathFlute_D4_v96.wav",
@@ -2901,7 +3041,8 @@
     "bits": 24,
     "duration_seconds": 2.7,
     "modifications": "None: byte-identical original WAV",
-    "usage": "Electric instrument candidate"
+    "usage": "Electric instrument candidate",
+    "location": "SampleLibrary"
   },
   {
     "file": "SynthBass/ATFS1_FormantBass_A1_v100.wav",
@@ -2921,7 +3062,8 @@
     "bits": 24,
     "duration_seconds": 1.8,
     "modifications": "None: byte-identical original WAV",
-    "usage": "Electric instrument candidate"
+    "usage": "Electric instrument candidate",
+    "location": "SampleLibrary"
   },
   {
     "file": "SynthBass/ATFS1_FormantBass_E1_v100.wav",
@@ -2941,7 +3083,8 @@
     "bits": 24,
     "duration_seconds": 1.8,
     "modifications": "None: byte-identical original WAV",
-    "usage": "Electric instrument candidate"
+    "usage": "Electric instrument candidate",
+    "location": "SampleLibrary"
   },
   {
     "file": "SynthBass/ATFS1_FormantBass_E2_v100.wav",
@@ -2961,7 +3104,8 @@
     "bits": 24,
     "duration_seconds": 1.8,
     "modifications": "None: byte-identical original WAV",
-    "usage": "Electric instrument candidate"
+    "usage": "Electric instrument candidate",
+    "location": "SampleLibrary"
   },
   {
     "file": "Synth/ATFS1_FormantBells_C5_v100.wav",
@@ -2981,7 +3125,8 @@
     "bits": 24,
     "duration_seconds": 4.0,
     "modifications": "None: byte-identical original WAV",
-    "usage": "Electric instrument candidate"
+    "usage": "Electric instrument candidate",
+    "location": "FMOD/ChordPulse/Assets"
   },
   {
     "file": "Synth/ATFS1_FormantBells_G5_v100.wav",
@@ -3001,7 +3146,8 @@
     "bits": 24,
     "duration_seconds": 4.0,
     "modifications": "None: byte-identical original WAV",
-    "usage": "Electric instrument candidate"
+    "usage": "Electric instrument candidate",
+    "location": "FMOD/ChordPulse/Assets"
   },
   {
     "file": "Synth/ATFS1_GlassMarimba_C4_v100.wav",
@@ -3021,7 +3167,8 @@
     "bits": 24,
     "duration_seconds": 2.4,
     "modifications": "None: byte-identical original WAV",
-    "usage": "Electric instrument candidate"
+    "usage": "Electric instrument candidate",
+    "location": "FMOD/ChordPulse/Assets"
   },
   {
     "file": "Synth/ATFS1_GlassMarimba_C5_v100.wav",
@@ -3041,7 +3188,8 @@
     "bits": 24,
     "duration_seconds": 2.200295,
     "modifications": "None: byte-identical original WAV",
-    "usage": "Electric instrument candidate"
+    "usage": "Electric instrument candidate",
+    "location": "FMOD/ChordPulse/Assets"
   },
   {
     "file": "Synth/ATFS1_GlassMarimba_G4_v100.wav",
@@ -3061,7 +3209,8 @@
     "bits": 24,
     "duration_seconds": 2.4,
     "modifications": "None: byte-identical original WAV",
-    "usage": "Electric instrument candidate"
+    "usage": "Electric instrument candidate",
+    "location": "FMOD/ChordPulse/Assets"
   },
   {
     "file": "Synth/ATFS1_HighChoir_B4_v90.wav",
@@ -3081,7 +3230,8 @@
     "bits": 24,
     "duration_seconds": 4.5,
     "modifications": "None: byte-identical original WAV",
-    "usage": "Electric instrument candidate"
+    "usage": "Electric instrument candidate",
+    "location": "SampleLibrary"
   },
   {
     "file": "Synth/ATFS1_HighChoir_E4_v90.wav",
@@ -3101,7 +3251,8 @@
     "bits": 24,
     "duration_seconds": 4.5,
     "modifications": "None: byte-identical original WAV",
-    "usage": "Electric instrument candidate"
+    "usage": "Electric instrument candidate",
+    "location": "SampleLibrary"
   },
   {
     "file": "Synth/ATFS1_LaLaLead_A3_v100.wav",
@@ -3121,7 +3272,8 @@
     "bits": 24,
     "duration_seconds": 2.7,
     "modifications": "None: byte-identical original WAV",
-    "usage": "Electric instrument candidate"
+    "usage": "Electric instrument candidate",
+    "location": "FMOD/ChordPulse/Assets"
   },
   {
     "file": "Synth/ATFS1_LaLaLead_E4_v100.wav",
@@ -3141,7 +3293,8 @@
     "bits": 24,
     "duration_seconds": 2.7,
     "modifications": "None: byte-identical original WAV",
-    "usage": "Electric instrument candidate"
+    "usage": "Electric instrument candidate",
+    "location": "FMOD/ChordPulse/Assets"
   },
   {
     "file": "SynthBass/ATFS1_OddSubBass_C1_v100.wav",
@@ -3161,7 +3314,8 @@
     "bits": 24,
     "duration_seconds": 2.2,
     "modifications": "None: byte-identical original WAV",
-    "usage": "Electric instrument candidate"
+    "usage": "Electric instrument candidate",
+    "location": "SampleLibrary"
   },
   {
     "file": "SynthBass/ATFS1_OddSubBass_G1_v100.wav",
@@ -3181,7 +3335,8 @@
     "bits": 24,
     "duration_seconds": 2.097687,
     "modifications": "None: byte-identical original WAV",
-    "usage": "Electric instrument candidate"
+    "usage": "Electric instrument candidate",
+    "location": "SampleLibrary"
   },
   {
     "file": "Synth/ATFS1_TinePiano_C3_v110.wav",
@@ -3201,7 +3356,8 @@
     "bits": 24,
     "duration_seconds": 2.8,
     "modifications": "None: byte-identical original WAV",
-    "usage": "Electric instrument candidate"
+    "usage": "Electric instrument candidate",
+    "location": "FMOD/ChordPulse/Assets"
   },
   {
     "file": "Synth/ATFS1_TinePiano_C4_v110.wav",
@@ -3221,7 +3377,8 @@
     "bits": 24,
     "duration_seconds": 2.771973,
     "modifications": "None: byte-identical original WAV",
-    "usage": "Electric instrument candidate"
+    "usage": "Electric instrument candidate",
+    "location": "FMOD/ChordPulse/Assets"
   },
   {
     "file": "Synth/ATFS1_TinePiano_E3_v110.wav",
@@ -3241,7 +3398,8 @@
     "bits": 24,
     "duration_seconds": 2.8,
     "modifications": "None: byte-identical original WAV",
-    "usage": "Electric instrument candidate"
+    "usage": "Electric instrument candidate",
+    "location": "FMOD/ChordPulse/Assets"
   },
   {
     "file": "Synth/ATFS1_TinePiano_G3_v110.wav",
@@ -3261,7 +3419,8 @@
     "bits": 24,
     "duration_seconds": 2.799977,
     "modifications": "None: byte-identical original WAV",
-    "usage": "Electric instrument candidate"
+    "usage": "Electric instrument candidate",
+    "location": "FMOD/ChordPulse/Assets"
   },
   {
     "file": "Synth/ATFS1_VowelChoir_C3_v90.wav",
@@ -3281,7 +3440,8 @@
     "bits": 24,
     "duration_seconds": 4.5,
     "modifications": "None: byte-identical original WAV",
-    "usage": "Electric instrument candidate"
+    "usage": "Electric instrument candidate",
+    "location": "FMOD/ChordPulse/Assets"
   },
   {
     "file": "Synth/ATFS1_VowelChoir_C4_v90.wav",
@@ -3301,7 +3461,8 @@
     "bits": 24,
     "duration_seconds": 4.5,
     "modifications": "None: byte-identical original WAV",
-    "usage": "Electric instrument candidate"
+    "usage": "Electric instrument candidate",
+    "location": "FMOD/ChordPulse/Assets"
   },
   {
     "file": "Synth/ATFS1_VowelChoir_G3_v90.wav",
@@ -3321,7 +3482,8 @@
     "bits": 24,
     "duration_seconds": 4.5,
     "modifications": "None: byte-identical original WAV",
-    "usage": "Electric instrument candidate"
+    "usage": "Electric instrument candidate",
+    "location": "FMOD/ChordPulse/Assets"
   },
   {
     "file": "Synth/ATFS1_WhisperPad_A2_v90.wav",
@@ -3341,7 +3503,8 @@
     "bits": 24,
     "duration_seconds": 5.5,
     "modifications": "None: byte-identical original WAV",
-    "usage": "Electric instrument candidate"
+    "usage": "Electric instrument candidate",
+    "location": "SampleLibrary"
   },
   {
     "file": "SynthBass/DeviceNTI_CrownBass_C1_v100.wav",
@@ -3361,7 +3524,8 @@
     "bits": 24,
     "duration_seconds": 1.04424,
     "modifications": "None: byte-identical original WAV",
-    "usage": "Electric instrument candidate"
+    "usage": "Electric instrument candidate",
+    "location": "SampleLibrary"
   },
   {
     "file": "SynthBass/DeviceNTI_CrownBass_C2_v100.wav",
@@ -3381,7 +3545,8 @@
     "bits": 24,
     "duration_seconds": 1.044694,
     "modifications": "None: byte-identical original WAV",
-    "usage": "Electric instrument candidate"
+    "usage": "Electric instrument candidate",
+    "location": "SampleLibrary"
   },
   {
     "file": "SynthBass/DeviceNTI_CrownBass_G1_v100.wav",
@@ -3401,7 +3566,8 @@
     "bits": 24,
     "duration_seconds": 1.006168,
     "modifications": "None: byte-identical original WAV",
-    "usage": "Electric instrument candidate"
+    "usage": "Electric instrument candidate",
+    "location": "SampleLibrary"
   },
   {
     "file": "Synth/DeviceNTI_FunkTine_C3Eb3G3Bb3_v110.wav",
@@ -3421,7 +3587,8 @@
     "bits": 24,
     "duration_seconds": 2.378753,
     "modifications": "None: byte-identical original WAV",
-    "usage": "Electric instrument candidate"
+    "usage": "Electric instrument candidate",
+    "location": "SampleLibrary"
   },
   {
     "file": "Synth/DeviceNTI_HammerStab_C3Eb3G3_v100.wav",
@@ -3441,7 +3608,8 @@
     "bits": 24,
     "duration_seconds": 1.9,
     "modifications": "None: byte-identical original WAV",
-    "usage": "Electric instrument candidate"
+    "usage": "Electric instrument candidate",
+    "location": "SampleLibrary"
   },
   {
     "file": "Synth/DeviceNTI_HammerStab_F3Ab3C4_v100.wav",
@@ -3461,7 +3629,8 @@
     "bits": 24,
     "duration_seconds": 1.9,
     "modifications": "None: byte-identical original WAV",
-    "usage": "Electric instrument candidate"
+    "usage": "Electric instrument candidate",
+    "location": "SampleLibrary"
   },
   {
     "file": "Synth/DeviceNTI_HeldBreath_C2_v90.wav",
@@ -3481,7 +3650,8 @@
     "bits": 24,
     "duration_seconds": 6.0,
     "modifications": "None: byte-identical original WAV",
-    "usage": "Electric instrument candidate"
+    "usage": "Electric instrument candidate",
+    "location": "SampleLibrary"
   },
   {
     "file": "Synth/DeviceNTI_HollowGong_C2_v100.wav",
@@ -3501,7 +3671,8 @@
     "bits": 24,
     "duration_seconds": 2.599297,
     "modifications": "None: byte-identical original WAV",
-    "usage": "Electric instrument candidate"
+    "usage": "Electric instrument candidate",
+    "location": "SampleLibrary"
   },
   {
     "file": "Synth/DeviceNTI_HornSection_G3Bb3D4_v100.wav",
@@ -3521,7 +3692,8 @@
     "bits": 24,
     "duration_seconds": 2.2,
     "modifications": "None: byte-identical original WAV",
-    "usage": "Electric instrument candidate"
+    "usage": "Electric instrument candidate",
+    "location": "SampleLibrary"
   },
   {
     "file": "Synth/DeviceNTI_RiteBell_C4_v100.wav",
@@ -3541,7 +3713,8 @@
     "bits": 24,
     "duration_seconds": 2.739252,
     "modifications": "None: byte-identical original WAV",
-    "usage": "Electric instrument candidate"
+    "usage": "Electric instrument candidate",
+    "location": "SampleLibrary"
   },
   {
     "file": "SynthBass/DeviceNTI_SineSub_C1_v100.wav",
@@ -3561,7 +3734,8 @@
     "bits": 24,
     "duration_seconds": 1.113469,
     "modifications": "None: byte-identical original WAV",
-    "usage": "Electric instrument candidate"
+    "usage": "Electric instrument candidate",
+    "location": "SampleLibrary"
   },
   {
     "file": "SynthBass/DeviceNTI_SineSub_C2_v100.wav",
@@ -3581,7 +3755,8 @@
     "bits": 24,
     "duration_seconds": 1.133039,
     "modifications": "None: byte-identical original WAV",
-    "usage": "Electric instrument candidate"
+    "usage": "Electric instrument candidate",
+    "location": "FMOD/ChordPulse/Assets"
   },
   {
     "file": "SynthBass/DeviceNTI_SineSub_F1_v100.wav",
@@ -3601,7 +3776,8 @@
     "bits": 24,
     "duration_seconds": 1.127279,
     "modifications": "None: byte-identical original WAV",
-    "usage": "Electric instrument candidate"
+    "usage": "Electric instrument candidate",
+    "location": "FMOD/ChordPulse/Assets"
   },
   {
     "file": "Synth/DeviceNTI_SundayOrgan_C3G3C4_v100.wav",
@@ -3621,7 +3797,8 @@
     "bits": 24,
     "duration_seconds": 2.7,
     "modifications": "None: byte-identical original WAV",
-    "usage": "Electric instrument candidate"
+    "usage": "Electric instrument candidate",
+    "location": "SampleLibrary"
   },
   {
     "file": "Synth/DeviceNTI_SundayOrgan_F2C3F3_v100.wav",
@@ -3641,7 +3818,8 @@
     "bits": 24,
     "duration_seconds": 2.188821,
     "modifications": "None: byte-identical original WAV",
-    "usage": "Electric instrument candidate"
+    "usage": "Electric instrument candidate",
+    "location": "SampleLibrary"
   },
   {
     "file": "Synth/DeviceNTI_VibeMallet_C4_v100.wav",
@@ -3661,7 +3839,8 @@
     "bits": 24,
     "duration_seconds": 1.9961,
     "modifications": "None: byte-identical original WAV",
-    "usage": "Electric instrument candidate"
+    "usage": "Electric instrument candidate",
+    "location": "SampleLibrary"
   },
   {
     "file": "Synth/DeviceNTI_VibeMallet_Eb4_v100.wav",
@@ -3681,7 +3860,8 @@
     "bits": 24,
     "duration_seconds": 3.0,
     "modifications": "None: byte-identical original WAV",
-    "usage": "Electric instrument candidate"
+    "usage": "Electric instrument candidate",
+    "location": "SampleLibrary"
   },
   {
     "file": "Synth/DeviceNTI_VibeMallet_G4_v100.wav",
@@ -3701,7 +3881,8 @@
     "bits": 24,
     "duration_seconds": 2.116372,
     "modifications": "None: byte-identical original WAV",
-    "usage": "Electric instrument candidate"
+    "usage": "Electric instrument candidate",
+    "location": "SampleLibrary"
   },
   {
     "file": "Guitar/Thrum_BaritoneNote_B1_v100.wav",
@@ -3721,7 +3902,8 @@
     "bits": 24,
     "duration_seconds": 2.235828,
     "modifications": "None: byte-identical original WAV",
-    "usage": "Electric instrument candidate"
+    "usage": "Electric instrument candidate",
+    "location": "SampleLibrary"
   },
   {
     "file": "Guitar/Thrum_BaritoneNote_E2_v100.wav",
@@ -3741,7 +3923,8 @@
     "bits": 24,
     "duration_seconds": 1.646145,
     "modifications": "None: byte-identical original WAV",
-    "usage": "Electric instrument candidate"
+    "usage": "Electric instrument candidate",
+    "location": "SampleLibrary"
   },
   {
     "file": "Guitar/Thrum_CleanChordEm_E2B2E3G3B3E4_v100.wav",
@@ -3761,7 +3944,8 @@
     "bits": 24,
     "duration_seconds": 2.078027,
     "modifications": "None: byte-identical original WAV",
-    "usage": "Electric instrument candidate"
+    "usage": "Electric instrument candidate",
+    "location": "SampleLibrary"
   },
   {
     "file": "Guitar/Thrum_CleanNote_A3_v100.wav",
@@ -3781,7 +3965,8 @@
     "bits": 24,
     "duration_seconds": 1.586281,
     "modifications": "None: byte-identical original WAV",
-    "usage": "Electric instrument candidate"
+    "usage": "Electric instrument candidate",
+    "location": "FMOD/ChordPulse/Assets"
   },
   {
     "file": "Guitar/Thrum_CleanNote_D4_v100.wav",
@@ -3801,7 +3986,8 @@
     "bits": 24,
     "duration_seconds": 1.665397,
     "modifications": "None: byte-identical original WAV",
-    "usage": "Electric instrument candidate"
+    "usage": "Electric instrument candidate",
+    "location": "FMOD/ChordPulse/Assets"
   },
   {
     "file": "Guitar/Thrum_CleanNote_E3_v100.wav",
@@ -3821,7 +4007,8 @@
     "bits": 24,
     "duration_seconds": 2.500431,
     "modifications": "None: byte-identical original WAV",
-    "usage": "Electric instrument candidate"
+    "usage": "Electric instrument candidate",
+    "location": "FMOD/ChordPulse/Assets"
   },
   {
     "file": "Guitar/Thrum_CleanNote_G4_v100.wav",
@@ -3841,7 +4028,8 @@
     "bits": 24,
     "duration_seconds": 1.726667,
     "modifications": "None: byte-identical original WAV",
-    "usage": "Electric instrument candidate"
+    "usage": "Electric instrument candidate",
+    "location": "FMOD/ChordPulse/Assets"
   },
   {
     "file": "Guitar/Thrum_CrunchNote_A2_v100.wav",
@@ -3861,7 +4049,8 @@
     "bits": 24,
     "duration_seconds": 1.485102,
     "modifications": "None: byte-identical original WAV",
-    "usage": "Electric instrument candidate"
+    "usage": "Electric instrument candidate",
+    "location": "SampleLibrary"
   },
   {
     "file": "Guitar/Thrum_CrunchNote_E2_v100.wav",
@@ -3881,7 +4070,8 @@
     "bits": 24,
     "duration_seconds": 1.514082,
     "modifications": "None: byte-identical original WAV",
-    "usage": "Electric instrument candidate"
+    "usage": "Electric instrument candidate",
+    "location": "SampleLibrary"
   },
   {
     "file": "Guitar/Thrum_CrunchNote_E3_v100.wav",
@@ -3901,7 +4091,8 @@
     "bits": 24,
     "duration_seconds": 1.506168,
     "modifications": "None: byte-identical original WAV",
-    "usage": "Electric instrument candidate"
+    "usage": "Electric instrument candidate",
+    "location": "SampleLibrary"
   },
   {
     "file": "Guitar/Thrum_DIChordEm_E2B2E3G3B3E4_v100.wav",
@@ -3921,7 +4112,8 @@
     "bits": 24,
     "duration_seconds": 1.5322,
     "modifications": "None: byte-identical original WAV",
-    "usage": "Electric instrument candidate"
+    "usage": "Electric instrument candidate",
+    "location": "SampleLibrary"
   },
   {
     "file": "Guitar/Thrum_DINote_A3_v100.wav",
@@ -3941,7 +4133,8 @@
     "bits": 24,
     "duration_seconds": 1.918095,
     "modifications": "None: byte-identical original WAV",
-    "usage": "Electric instrument candidate"
+    "usage": "Electric instrument candidate",
+    "location": "SampleLibrary"
   },
   {
     "file": "Guitar/Thrum_DINote_E3_v100.wav",
@@ -3961,7 +4154,8 @@
     "bits": 24,
     "duration_seconds": 2.2,
     "modifications": "None: byte-identical original WAV",
-    "usage": "Electric instrument candidate"
+    "usage": "Electric instrument candidate",
+    "location": "SampleLibrary"
   },
   {
     "file": "Guitar/Thrum_DINote_E4_v100.wav",
@@ -3981,7 +4175,8 @@
     "bits": 24,
     "duration_seconds": 2.042426,
     "modifications": "None: byte-identical original WAV",
-    "usage": "Electric instrument candidate"
+    "usage": "Electric instrument candidate",
+    "location": "SampleLibrary"
   },
   {
     "file": "Guitar/Thrum_FuzzPowerA5_A1E2A2_v100.wav",
@@ -4001,7 +4196,8 @@
     "bits": 24,
     "duration_seconds": 2.585578,
     "modifications": "None: byte-identical original WAV",
-    "usage": "Electric instrument candidate"
+    "usage": "Electric instrument candidate",
+    "location": "SampleLibrary"
   },
   {
     "file": "Guitar/Thrum_HarmonicBell_B4_v100.wav",
@@ -4021,7 +4217,8 @@
     "bits": 24,
     "duration_seconds": 3.6,
     "modifications": "None: byte-identical original WAV",
-    "usage": "Electric instrument candidate"
+    "usage": "Electric instrument candidate",
+    "location": "SampleLibrary"
   },
   {
     "file": "Guitar/Thrum_HarmonicBell_E4_v100.wav",
@@ -4041,7 +4238,8 @@
     "bits": 24,
     "duration_seconds": 3.6,
     "modifications": "None: byte-identical original WAV",
-    "usage": "Electric instrument candidate"
+    "usage": "Electric instrument candidate",
+    "location": "SampleLibrary"
   },
   {
     "file": "Guitar/Thrum_PowerChordE5_E2B2E3_v100.wav",
@@ -4061,7 +4259,8 @@
     "bits": 24,
     "duration_seconds": 2.5,
     "modifications": "None: byte-identical original WAV",
-    "usage": "Electric instrument candidate"
+    "usage": "Electric instrument candidate",
+    "location": "FMOD/ChordPulse/Assets"
   },
   {
     "file": "Guitar/Thrum_TwangNote_B3_v100.wav",
@@ -4081,7 +4280,8 @@
     "bits": 24,
     "duration_seconds": 1.271497,
     "modifications": "None: byte-identical original WAV",
-    "usage": "Electric instrument candidate"
+    "usage": "Electric instrument candidate",
+    "location": "FMOD/ChordPulse/Assets"
   },
   {
     "file": "Guitar/Thrum_TwangNote_E3_v100.wav",
@@ -4101,7 +4301,8 @@
     "bits": 24,
     "duration_seconds": 2.020862,
     "modifications": "None: byte-identical original WAV",
-    "usage": "Electric instrument candidate"
+    "usage": "Electric instrument candidate",
+    "location": "FMOD/ChordPulse/Assets"
   },
   {
     "file": "FMKeys/Clavisynth_C2_vl3.wav",
@@ -4121,7 +4322,8 @@
     "bits": 24,
     "duration_seconds": 6.642245,
     "modifications": "None: byte-identical original WAV",
-    "usage": "Electric instrument candidate"
+    "usage": "Electric instrument candidate",
+    "location": "FMOD/ChordPulse/Assets"
   },
   {
     "file": "FMKeys/Clavisynth_C3_vl3.wav",
@@ -4141,7 +4343,8 @@
     "bits": 24,
     "duration_seconds": 3.588186,
     "modifications": "None: byte-identical original WAV",
-    "usage": "Electric instrument candidate"
+    "usage": "Electric instrument candidate",
+    "location": "FMOD/ChordPulse/Assets"
   },
   {
     "file": "FMKeys/Clavisynth_C4_vl3.wav",
@@ -4161,7 +4364,8 @@
     "bits": 24,
     "duration_seconds": 1.958526,
     "modifications": "None: byte-identical original WAV",
-    "usage": "Electric instrument candidate"
+    "usage": "Electric instrument candidate",
+    "location": "FMOD/ChordPulse/Assets"
   },
   {
     "file": "FMKeys/Clavisynth_C5_vl3.wav",
@@ -4181,7 +4385,8 @@
     "bits": 24,
     "duration_seconds": 0.994376,
     "modifications": "None: byte-identical original WAV",
-    "usage": "Electric instrument candidate"
+    "usage": "Electric instrument candidate",
+    "location": "SampleLibrary"
   },
   {
     "file": "FMKeys/FMPiano_C2_vl3.wav",
@@ -4201,7 +4406,8 @@
     "bits": 24,
     "duration_seconds": 12.064059,
     "modifications": "None: byte-identical original WAV",
-    "usage": "Electric instrument candidate"
+    "usage": "Electric instrument candidate",
+    "location": "SampleLibrary"
   },
   {
     "file": "FMKeys/FMPiano_C3_vl3.wav",
@@ -4221,7 +4427,8 @@
     "bits": 24,
     "duration_seconds": 10.127438,
     "modifications": "None: byte-identical original WAV",
-    "usage": "Electric instrument candidate"
+    "usage": "Electric instrument candidate",
+    "location": "FMOD/ChordPulse/Assets"
   },
   {
     "file": "FMKeys/FMPiano_C4_vl3.wav",
@@ -4241,7 +4448,8 @@
     "bits": 24,
     "duration_seconds": 7.416395,
     "modifications": "None: byte-identical original WAV",
-    "usage": "Electric instrument candidate"
+    "usage": "Electric instrument candidate",
+    "location": "FMOD/ChordPulse/Assets"
   },
   {
     "file": "FMKeys/FMPiano_C5_vl3.wav",
@@ -4261,7 +4469,8 @@
     "bits": 24,
     "duration_seconds": 5.301497,
     "modifications": "None: byte-identical original WAV",
-    "usage": "Electric instrument candidate"
+    "usage": "Electric instrument candidate",
+    "location": "FMOD/ChordPulse/Assets"
   },
   {
     "file": "Synth/Cowsynth_tuned_g3.wav",
@@ -4281,7 +4490,8 @@
     "bits": 16,
     "duration_seconds": 4.333333,
     "modifications": "None: byte-identical original WAV (renamed with Cowsynth_ prefix)",
-    "usage": "Electric instrument candidate"
+    "usage": "Electric instrument candidate",
+    "location": "SampleLibrary"
   },
   {
     "file": "Synth/Cowsynth_tuned_a3.wav",
@@ -4301,7 +4511,8 @@
     "bits": 16,
     "duration_seconds": 13.333333,
     "modifications": "None: byte-identical original WAV (renamed with Cowsynth_ prefix)",
-    "usage": "Electric instrument candidate"
+    "usage": "Electric instrument candidate",
+    "location": "SampleLibrary"
   },
   {
     "file": "Synth/Cowsynth_tuned_c4.wav",
@@ -4321,7 +4532,8 @@
     "bits": 16,
     "duration_seconds": 6.666667,
     "modifications": "None: byte-identical original WAV (renamed with Cowsynth_ prefix)",
-    "usage": "Electric instrument candidate"
+    "usage": "Electric instrument candidate",
+    "location": "SampleLibrary"
   },
   {
     "file": "Synth/Cowsynth_tuned_d4.wav",
@@ -4341,7 +4553,8 @@
     "bits": 16,
     "duration_seconds": 7.333333,
     "modifications": "None: byte-identical original WAV (renamed with Cowsynth_ prefix)",
-    "usage": "Electric instrument candidate"
+    "usage": "Electric instrument candidate",
+    "location": "SampleLibrary"
   },
   {
     "file": "Synth/Cowsynth_tuned_e4.wav",
@@ -4361,7 +4574,8 @@
     "bits": 16,
     "duration_seconds": 7.666667,
     "modifications": "None: byte-identical original WAV (renamed with Cowsynth_ prefix)",
-    "usage": "Electric instrument candidate"
+    "usage": "Electric instrument candidate",
+    "location": "SampleLibrary"
   },
   {
     "file": "Synth/Cowsynth_natural_cchirp_1.wav",
@@ -4381,7 +4595,8 @@
     "bits": 16,
     "duration_seconds": 0.130567,
     "modifications": "None: byte-identical original WAV (renamed with Cowsynth_ prefix)",
-    "usage": "Electric instrument candidate"
+    "usage": "Electric instrument candidate",
+    "location": "SampleLibrary"
   },
   {
     "file": "AcousticDrums/JazzKit/Virtuosity_mid_kick_snoff_vl4_rr1.flac",
@@ -4402,7 +4617,8 @@
     "channels": 2,
     "sample_rate": 48000,
     "bits": 24,
-    "duration_seconds": 3.085688
+    "duration_seconds": 3.085688,
+    "location": "SampleLibrary"
   },
   {
     "file": "AcousticDrums/JazzKit/Virtuosity_mid_kick_snon_vl4_rr1.flac",
@@ -4423,7 +4639,8 @@
     "channels": 2,
     "sample_rate": 48000,
     "bits": 24,
-    "duration_seconds": 2.359479
+    "duration_seconds": 2.359479,
+    "location": "SampleLibrary"
   },
   {
     "file": "AcousticDrums/JazzKit/Virtuosity_mid_snare_center_vl36.flac",
@@ -4444,7 +4661,8 @@
     "channels": 2,
     "sample_rate": 48000,
     "bits": 24,
-    "duration_seconds": 1.902375
+    "duration_seconds": 1.902375,
+    "location": "SampleLibrary"
   },
   {
     "file": "AcousticDrums/JazzKit/Virtuosity_mid_snare_rimshot_vl12.flac",
@@ -4465,7 +4683,8 @@
     "channels": 2,
     "sample_rate": 48000,
     "bits": 24,
-    "duration_seconds": 1.970708
+    "duration_seconds": 1.970708,
+    "location": "SampleLibrary"
   },
   {
     "file": "AcousticDrums/JazzKit/Virtuosity_mid_snare_crossstick_vl16.flac",
@@ -4486,7 +4705,8 @@
     "channels": 2,
     "sample_rate": 48000,
     "bits": 24,
-    "duration_seconds": 2.536417
+    "duration_seconds": 2.536417,
+    "location": "SampleLibrary"
   },
   {
     "file": "AcousticDrums/JazzKit/Virtuosity_mid_snare_roll_vl5.wav",
@@ -4507,7 +4727,8 @@
     "channels": 2,
     "sample_rate": 48000,
     "bits": 24,
-    "duration_seconds": 10.1915
+    "duration_seconds": 10.1915,
+    "location": "SampleLibrary"
   },
   {
     "file": "AcousticDrums/JazzKit/Virtuosity_mid_htom_center_vl16.flac",
@@ -4528,7 +4749,8 @@
     "channels": 2,
     "sample_rate": 48000,
     "bits": 24,
-    "duration_seconds": 2.232604
+    "duration_seconds": 2.232604,
+    "location": "SampleLibrary"
   },
   {
     "file": "AcousticDrums/JazzKit/Virtuosity_mid_ltom_center_vl16.flac",
@@ -4549,7 +4771,8 @@
     "channels": 2,
     "sample_rate": 48000,
     "bits": 24,
-    "duration_seconds": 4.188375
+    "duration_seconds": 4.188375,
+    "location": "SampleLibrary"
   },
   {
     "file": "AcousticDrums/JazzKit/Virtuosity_mid_hh_closed_vl4_rr1.flac",
@@ -4570,7 +4793,8 @@
     "channels": 2,
     "sample_rate": 48000,
     "bits": 24,
-    "duration_seconds": 0.781042
+    "duration_seconds": 0.781042,
+    "location": "SampleLibrary"
   },
   {
     "file": "AcousticDrums/JazzKit/Virtuosity_mid_hh_open_vl4_rr1.flac",
@@ -4591,7 +4815,8 @@
     "channels": 2,
     "sample_rate": 48000,
     "bits": 24,
-    "duration_seconds": 11.414375
+    "duration_seconds": 11.414375,
+    "location": "SampleLibrary"
   },
   {
     "file": "AcousticDrums/JazzKit/Virtuosity_mid_hh_pedal_vl3_rr1.flac",
@@ -4612,7 +4837,8 @@
     "channels": 2,
     "sample_rate": 48000,
     "bits": 24,
-    "duration_seconds": 2.311562
+    "duration_seconds": 2.311562,
+    "location": "SampleLibrary"
   },
   {
     "file": "AcousticDrums/JazzKit/Virtuosity_mid_ride_ride_vl3_rr1.flac",
@@ -4633,7 +4859,8 @@
     "channels": 2,
     "sample_rate": 48000,
     "bits": 24,
-    "duration_seconds": 7.774542
+    "duration_seconds": 7.774542,
+    "location": "SampleLibrary"
   },
   {
     "file": "AcousticDrums/JazzKit/Virtuosity_mid_ride_bell_vl3_rr1.flac",
@@ -4654,7 +4881,8 @@
     "channels": 2,
     "sample_rate": 48000,
     "bits": 24,
-    "duration_seconds": 7.124604
+    "duration_seconds": 7.124604,
+    "location": "SampleLibrary"
   },
   {
     "file": "AcousticDrums/JazzKit/Virtuosity_mid_crash_crash_vl3_rr1.flac",
@@ -4675,7 +4903,8 @@
     "channels": 2,
     "sample_rate": 48000,
     "bits": 24,
-    "duration_seconds": 14.107229
+    "duration_seconds": 14.107229,
+    "location": "SampleLibrary"
   },
   {
     "file": "AcousticDrums/JazzKit/Virtuosity_lofi_kick_snoff_vl4_rr1.flac",
@@ -4696,7 +4925,8 @@
     "channels": 1,
     "sample_rate": 48000,
     "bits": 24,
-    "duration_seconds": 3.085688
+    "duration_seconds": 3.085688,
+    "location": "SampleLibrary"
   },
   {
     "file": "AcousticDrums/JazzKit/Virtuosity_lofi_snare_center_vl36.flac",
@@ -4717,7 +4947,8 @@
     "channels": 1,
     "sample_rate": 48000,
     "bits": 24,
-    "duration_seconds": 1.902375
+    "duration_seconds": 1.902375,
+    "location": "SampleLibrary"
   },
   {
     "file": "AcousticDrums/JazzKit/Virtuosity_lofi_hh_closed_vl4_rr1.flac",
@@ -4738,7 +4969,8 @@
     "channels": 1,
     "sample_rate": 48000,
     "bits": 24,
-    "duration_seconds": 0.781042
+    "duration_seconds": 0.781042,
+    "location": "SampleLibrary"
   },
   {
     "file": "AcousticDrums/RockKit/BigRusty_kick_k_vl14_rr1.flac",
@@ -4759,7 +4991,8 @@
     "channels": 1,
     "sample_rate": 44100,
     "bits": 16,
-    "duration_seconds": 1.698571
+    "duration_seconds": 1.698571,
+    "location": "SampleLibrary"
   },
   {
     "file": "AcousticDrums/RockKit/BigRusty_oh_k_vl14_rr1.flac",
@@ -4780,7 +5013,8 @@
     "channels": 2,
     "sample_rate": 44100,
     "bits": 16,
-    "duration_seconds": 1.698571
+    "duration_seconds": 1.698571,
+    "location": "SampleLibrary"
   },
   {
     "file": "AcousticDrums/RockKit/BigRusty_top_sn_center_vl10_rr1.flac",
@@ -4801,7 +5035,8 @@
     "channels": 1,
     "sample_rate": 44100,
     "bits": 16,
-    "duration_seconds": 1.927506
+    "duration_seconds": 1.927506,
+    "location": "SampleLibrary"
   },
   {
     "file": "AcousticDrums/RockKit/BigRusty_oh_sn_center_vl10_rr1.flac",
@@ -4822,7 +5057,8 @@
     "channels": 2,
     "sample_rate": 44100,
     "bits": 16,
-    "duration_seconds": 1.927506
+    "duration_seconds": 1.927506,
+    "location": "SampleLibrary"
   },
   {
     "file": "AcousticDrums/RockKit/BigRusty_top_sn_rims_vl6_rr1.flac",
@@ -4843,7 +5079,8 @@
     "channels": 1,
     "sample_rate": 44100,
     "bits": 16,
-    "duration_seconds": 1.632925
+    "duration_seconds": 1.632925,
+    "location": "SampleLibrary"
   },
   {
     "file": "AcousticDrums/RockKit/BigRusty_oh_sn_rims_vl6_rr1.flac",
@@ -4864,7 +5101,8 @@
     "channels": 2,
     "sample_rate": 44100,
     "bits": 16,
-    "duration_seconds": 1.632925
+    "duration_seconds": 1.632925,
+    "location": "SampleLibrary"
   },
   {
     "file": "AcousticDrums/RockKit/BigRusty_top_sn_ss_vl4_rr1.flac",
@@ -4885,7 +5123,8 @@
     "channels": 1,
     "sample_rate": 44100,
     "bits": 16,
-    "duration_seconds": 1.838458
+    "duration_seconds": 1.838458,
+    "location": "SampleLibrary"
   },
   {
     "file": "AcousticDrums/RockKit/BigRusty_oh_sn_ss_vl4_rr1.flac",
@@ -4906,7 +5145,8 @@
     "channels": 2,
     "sample_rate": 44100,
     "bits": 16,
-    "duration_seconds": 1.838458
+    "duration_seconds": 1.838458,
+    "location": "SampleLibrary"
   },
   {
     "file": "AcousticDrums/RockKit/BigRusty_cl_t14_vl6_rr1.flac",
@@ -4927,7 +5167,8 @@
     "channels": 1,
     "sample_rate": 44100,
     "bits": 16,
-    "duration_seconds": 2.496712
+    "duration_seconds": 2.496712,
+    "location": "SampleLibrary"
   },
   {
     "file": "AcousticDrums/RockKit/BigRusty_oh_t14_vl6_rr1.flac",
@@ -4948,7 +5189,8 @@
     "channels": 2,
     "sample_rate": 44100,
     "bits": 16,
-    "duration_seconds": 2.496712
+    "duration_seconds": 2.496712,
+    "location": "SampleLibrary"
   },
   {
     "file": "AcousticDrums/RockKit/BigRusty_cl_t18_vl8_rr1.flac",
@@ -4969,7 +5211,8 @@
     "channels": 1,
     "sample_rate": 44100,
     "bits": 16,
-    "duration_seconds": 2.269909
+    "duration_seconds": 2.269909,
+    "location": "SampleLibrary"
   },
   {
     "file": "AcousticDrums/RockKit/BigRusty_oh_t18_vl8_rr1.flac",
@@ -4990,7 +5233,8 @@
     "channels": 2,
     "sample_rate": 44100,
     "bits": 16,
-    "duration_seconds": 2.269909
+    "duration_seconds": 2.269909,
+    "location": "SampleLibrary"
   },
   {
     "file": "AcousticDrums/RockKit/BigRusty_cl_t22_vl7_rr1.flac",
@@ -5011,7 +5255,8 @@
     "channels": 1,
     "sample_rate": 44100,
     "bits": 16,
-    "duration_seconds": 2.980862
+    "duration_seconds": 2.980862,
+    "location": "SampleLibrary"
   },
   {
     "file": "AcousticDrums/RockKit/BigRusty_oh_t22_vl7_rr1.flac",
@@ -5032,7 +5277,8 @@
     "channels": 2,
     "sample_rate": 44100,
     "bits": 16,
-    "duration_seconds": 2.980862
+    "duration_seconds": 2.980862,
+    "location": "SampleLibrary"
   },
   {
     "file": "AcousticDrums/RockKit/BigRusty_cl_ht_cl_vl6_rr1.flac",
@@ -5053,7 +5299,8 @@
     "channels": 1,
     "sample_rate": 44100,
     "bits": 16,
-    "duration_seconds": 1.242358
+    "duration_seconds": 1.242358,
+    "location": "SampleLibrary"
   },
   {
     "file": "AcousticDrums/RockKit/BigRusty_oh_ht_cl_vl6_rr1.flac",
@@ -5074,7 +5321,8 @@
     "channels": 2,
     "sample_rate": 44100,
     "bits": 16,
-    "duration_seconds": 1.242358
+    "duration_seconds": 1.242358,
+    "location": "SampleLibrary"
   },
   {
     "file": "AcousticDrums/RockKit/BigRusty_cl_ht_open_vl6_rr1.flac",
@@ -5095,7 +5343,8 @@
     "channels": 1,
     "sample_rate": 44100,
     "bits": 16,
-    "duration_seconds": 9.911769
+    "duration_seconds": 9.911769,
+    "location": "SampleLibrary"
   },
   {
     "file": "AcousticDrums/RockKit/BigRusty_oh_ht_open_vl6_rr1.flac",
@@ -5116,7 +5365,8 @@
     "channels": 2,
     "sample_rate": 44100,
     "bits": 16,
-    "duration_seconds": 9.911769
+    "duration_seconds": 9.911769,
+    "location": "SampleLibrary"
   },
   {
     "file": "AcousticDrums/RockKit/BigRusty_cl_cr_vl5_rr1.flac",
@@ -5137,7 +5387,8 @@
     "channels": 1,
     "sample_rate": 44100,
     "bits": 16,
-    "duration_seconds": 17.19839
+    "duration_seconds": 17.19839,
+    "location": "SampleLibrary"
   },
   {
     "file": "AcousticDrums/RockKit/BigRusty_oh_cr_vl5_rr1.flac",
@@ -5158,7 +5409,8 @@
     "channels": 2,
     "sample_rate": 44100,
     "bits": 16,
-    "duration_seconds": 17.19839
+    "duration_seconds": 17.19839,
+    "location": "SampleLibrary"
   },
   {
     "file": "AcousticDrums/RockKit/BigRusty_cl_cn_vl5_rr1.flac",
@@ -5179,7 +5431,8 @@
     "channels": 1,
     "sample_rate": 44100,
     "bits": 16,
-    "duration_seconds": 9.499796
+    "duration_seconds": 9.499796,
+    "location": "SampleLibrary"
   },
   {
     "file": "AcousticDrums/RockKit/BigRusty_oh_cn_vl5_rr1.flac",
@@ -5200,7 +5453,8 @@
     "channels": 2,
     "sample_rate": 44100,
     "bits": 16,
-    "duration_seconds": 9.499796
+    "duration_seconds": 9.499796,
+    "location": "SampleLibrary"
   },
   {
     "file": "AcousticDrums/RockKit/BigRusty_cl_rd_vl10_rr1.flac",
@@ -5221,7 +5475,8 @@
     "channels": 1,
     "sample_rate": 44100,
     "bits": 16,
-    "duration_seconds": 18.411406
+    "duration_seconds": 18.411406,
+    "location": "SampleLibrary"
   },
   {
     "file": "AcousticDrums/RockKit/BigRusty_oh_rd_vl10_rr1.flac",
@@ -5242,7 +5497,8 @@
     "channels": 2,
     "sample_rate": 44100,
     "bits": 16,
-    "duration_seconds": 18.411406
+    "duration_seconds": 18.411406,
+    "location": "SampleLibrary"
   },
   {
     "file": "AcousticDrums/RockKit/BigRusty_cl_rd_bl_vl4_rr1.flac",
@@ -5263,7 +5519,8 @@
     "channels": 1,
     "sample_rate": 44100,
     "bits": 16,
-    "duration_seconds": 11.583175
+    "duration_seconds": 11.583175,
+    "location": "SampleLibrary"
   },
   {
     "file": "AcousticDrums/RockKit/BigRusty_oh_rd_bl_vl4_rr1.flac",
@@ -5284,6 +5541,1721 @@
     "channels": 2,
     "sample_rate": 44100,
     "bits": 16,
-    "duration_seconds": 11.583175
+    "duration_seconds": 11.583175,
+    "location": "SampleLibrary"
+  },
+  {
+    "file": "Sparkle/BellTree_Hit_C5_rr1_Mid.wav",
+    "pack": "Versilian Community Sample Library",
+    "instrument": "Bell tree",
+    "creator": "Versilian Studios (Sam Gossner) and contributors",
+    "source_url": "https://github.com/sgossner/VCSL",
+    "source_commit": "c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e",
+    "source_path": "Idiophones/Struck Idiophones/Bell Tree/Individual/BellTree_Hit_C5_rr1_Mid.wav",
+    "download_url": "https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Idiophones/Struck%20Idiophones/Bell%20Tree/Individual/BellTree_Hit_C5_rr1_Mid.wav",
+    "license": "CC0-1.0",
+    "license_evidence": "VCSL-ORIGINAL-LICENSE.txt",
+    "root_note": "C5",
+    "root_note_evidence": "Creator filename; octave convention not verified",
+    "usage": "Sparkle candidate",
+    "sha256": "d5cbf5465a4734d72bcc69cabfd56753227f3b54c977a0ffb9ac6fcbacafe422",
+    "modifications": "None: byte-identical original WAV",
+    "channels": 2,
+    "sample_rate": 44100,
+    "bits": 16,
+    "duration_seconds": 5.86254,
+    "location": "SampleLibrary"
+  },
+  {
+    "file": "Sparkle/BellTree_Hit_E5_rr1_Mid.wav",
+    "pack": "Versilian Community Sample Library",
+    "instrument": "Bell tree",
+    "creator": "Versilian Studios (Sam Gossner) and contributors",
+    "source_url": "https://github.com/sgossner/VCSL",
+    "source_commit": "c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e",
+    "source_path": "Idiophones/Struck Idiophones/Bell Tree/Individual/BellTree_Hit_E5_rr1_Mid.wav",
+    "download_url": "https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Idiophones/Struck%20Idiophones/Bell%20Tree/Individual/BellTree_Hit_E5_rr1_Mid.wav",
+    "license": "CC0-1.0",
+    "license_evidence": "VCSL-ORIGINAL-LICENSE.txt",
+    "root_note": "E5",
+    "root_note_evidence": "Creator filename; octave convention not verified",
+    "usage": "Sparkle candidate",
+    "sha256": "71aeec32c08bc636c16f1271d52fc56ba14ff6e163f014b53538c87deb02e282",
+    "modifications": "None: byte-identical original WAV",
+    "channels": 2,
+    "sample_rate": 44100,
+    "bits": 16,
+    "duration_seconds": 3.553243,
+    "location": "SampleLibrary"
+  },
+  {
+    "file": "Sparkle/BellTree_Hit_G#5_rr1_Mid.wav",
+    "pack": "Versilian Community Sample Library",
+    "instrument": "Bell tree",
+    "creator": "Versilian Studios (Sam Gossner) and contributors",
+    "source_url": "https://github.com/sgossner/VCSL",
+    "source_commit": "c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e",
+    "source_path": "Idiophones/Struck Idiophones/Bell Tree/Individual/BellTree_Hit_G#5_rr1_Mid.wav",
+    "download_url": "https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Idiophones/Struck%20Idiophones/Bell%20Tree/Individual/BellTree_Hit_G%235_rr1_Mid.wav",
+    "license": "CC0-1.0",
+    "license_evidence": "VCSL-ORIGINAL-LICENSE.txt",
+    "root_note": "G#5",
+    "root_note_evidence": "Creator filename; octave convention not verified",
+    "usage": "Sparkle candidate",
+    "sha256": "5533a0e57b07839b849d14ad63fd4efbcfd2e7cf77801af5481d91c1f6358bc2",
+    "modifications": "None: byte-identical original WAV",
+    "channels": 2,
+    "sample_rate": 44100,
+    "bits": 16,
+    "duration_seconds": 4.893469,
+    "location": "SampleLibrary"
+  },
+  {
+    "file": "Sparkle/BellTree_Stroke_1_Mid.wav",
+    "pack": "Versilian Community Sample Library",
+    "instrument": "Bell tree",
+    "creator": "Versilian Studios (Sam Gossner) and contributors",
+    "source_url": "https://github.com/sgossner/VCSL",
+    "source_commit": "c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e",
+    "source_path": "Idiophones/Struck Idiophones/Bell Tree/Stroke/BellTree_Stroke_1_Mid.wav",
+    "download_url": "https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Idiophones/Struck%20Idiophones/Bell%20Tree/Stroke/BellTree_Stroke_1_Mid.wav",
+    "license": "CC0-1.0",
+    "license_evidence": "VCSL-ORIGINAL-LICENSE.txt",
+    "root_note": null,
+    "root_note_evidence": "Unpitched, FX or untuned; not assigned (see filename)",
+    "usage": "Sparkle candidate",
+    "sha256": "aae960ec30aaf8217ca6421d540adefd43012ddb12275be3022818f3a0478cdf",
+    "modifications": "None: byte-identical original WAV",
+    "channels": 2,
+    "sample_rate": 44100,
+    "bits": 16,
+    "duration_seconds": 4.563651,
+    "location": "SampleLibrary"
+  },
+  {
+    "file": "Sparkle/Sleighbells_Hit_rr1_Mid.wav",
+    "pack": "Versilian Community Sample Library",
+    "instrument": "Sleigh bells",
+    "creator": "Versilian Studios (Sam Gossner) and contributors",
+    "source_url": "https://github.com/sgossner/VCSL",
+    "source_commit": "c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e",
+    "source_path": "Idiophones/Struck Idiophones/Sleigh Bells/Sleighbells_Hit_rr1_Mid.wav",
+    "download_url": "https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Idiophones/Struck%20Idiophones/Sleigh%20Bells/Sleighbells_Hit_rr1_Mid.wav",
+    "license": "CC0-1.0",
+    "license_evidence": "VCSL-ORIGINAL-LICENSE.txt",
+    "root_note": null,
+    "root_note_evidence": "Unpitched, FX or untuned; not assigned (see filename)",
+    "usage": "Sparkle candidate",
+    "sha256": "cc424c298ac98a783ebf37ce6f2152a19b227ff89c5c20bc2462ddc8261fefc5",
+    "modifications": "None: byte-identical original WAV",
+    "channels": 2,
+    "sample_rate": 44100,
+    "bits": 16,
+    "duration_seconds": 2.5,
+    "location": "FMOD/ChordPulse/Assets"
+  },
+  {
+    "file": "Sparkle/sleighbell1_shake1.wav",
+    "pack": "Versilian Community Sample Library",
+    "instrument": "Sleigh bells",
+    "creator": "Versilian Studios (Sam Gossner) and contributors",
+    "source_url": "https://github.com/sgossner/VCSL",
+    "source_commit": "c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e",
+    "source_path": "Idiophones/Struck Idiophones/Sleigh Bells/sleighbell1_shake1.wav",
+    "download_url": "https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Idiophones/Struck%20Idiophones/Sleigh%20Bells/sleighbell1_shake1.wav",
+    "license": "CC0-1.0",
+    "license_evidence": "VCSL-ORIGINAL-LICENSE.txt",
+    "root_note": null,
+    "root_note_evidence": "Unpitched, FX or untuned; not assigned (see filename)",
+    "usage": "Sparkle candidate",
+    "sha256": "25aa6a5aa83b31835f4d6066d5cd0e5c06c7c3144d9b39ffa7854cb148a20786",
+    "modifications": "None: byte-identical original WAV",
+    "channels": 2,
+    "sample_rate": 44100,
+    "bits": 24,
+    "duration_seconds": 5.253379,
+    "location": "SampleLibrary"
+  },
+  {
+    "file": "Sparkle/Tamb1_Hit_v2_rr1_Mid.wav",
+    "pack": "Versilian Community Sample Library",
+    "instrument": "Tambourine",
+    "creator": "Versilian Studios (Sam Gossner) and contributors",
+    "source_url": "https://github.com/sgossner/VCSL",
+    "source_commit": "c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e",
+    "source_path": "Idiophones/Struck Idiophones/Tambourine 1/Tamb1_Hit_v2_rr1_Mid.wav",
+    "download_url": "https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Idiophones/Struck%20Idiophones/Tambourine%201/Tamb1_Hit_v2_rr1_Mid.wav",
+    "license": "CC0-1.0",
+    "license_evidence": "VCSL-ORIGINAL-LICENSE.txt",
+    "root_note": null,
+    "root_note_evidence": "Unpitched, FX or untuned; not assigned (see filename)",
+    "usage": "Sparkle candidate",
+    "sha256": "885ebf1d70f8e888f576682e4e4112b92b69649162f392c83b3379c91a09cf41",
+    "modifications": "None: byte-identical original WAV",
+    "channels": 2,
+    "sample_rate": 44100,
+    "bits": 16,
+    "duration_seconds": 1.661859,
+    "location": "FMOD/ChordPulse/Assets"
+  },
+  {
+    "file": "Sparkle/Tamb1_Shake_rr1_Mid.wav",
+    "pack": "Versilian Community Sample Library",
+    "instrument": "Tambourine",
+    "creator": "Versilian Studios (Sam Gossner) and contributors",
+    "source_url": "https://github.com/sgossner/VCSL",
+    "source_commit": "c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e",
+    "source_path": "Idiophones/Struck Idiophones/Tambourine 1/Tamb1_Shake_rr1_Mid.wav",
+    "download_url": "https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Idiophones/Struck%20Idiophones/Tambourine%201/Tamb1_Shake_rr1_Mid.wav",
+    "license": "CC0-1.0",
+    "license_evidence": "VCSL-ORIGINAL-LICENSE.txt",
+    "root_note": null,
+    "root_note_evidence": "Unpitched, FX or untuned; not assigned (see filename)",
+    "usage": "Sparkle candidate",
+    "sha256": "5876b66d1e8009b3ee884ff3bf52fbc420b44f9ddffffe830b4074d3dfc09924",
+    "modifications": "None: byte-identical original WAV",
+    "channels": 2,
+    "sample_rate": 44100,
+    "bits": 16,
+    "duration_seconds": 1.46737,
+    "location": "SampleLibrary"
+  },
+  {
+    "file": "Sparkle/Tamb1_Roll_v3_rr1_Mid.wav",
+    "pack": "Versilian Community Sample Library",
+    "instrument": "Tambourine",
+    "creator": "Versilian Studios (Sam Gossner) and contributors",
+    "source_url": "https://github.com/sgossner/VCSL",
+    "source_commit": "c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e",
+    "source_path": "Idiophones/Struck Idiophones/Tambourine 1/Tamb1_Roll_v3_rr1_Mid.wav",
+    "download_url": "https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Idiophones/Struck%20Idiophones/Tambourine%201/Tamb1_Roll_v3_rr1_Mid.wav",
+    "license": "CC0-1.0",
+    "license_evidence": "VCSL-ORIGINAL-LICENSE.txt",
+    "root_note": null,
+    "root_note_evidence": "Unpitched, FX or untuned; not assigned (see filename)",
+    "usage": "Sparkle candidate",
+    "sha256": "23dfe482f0b24b7ade9e8a9a19761b6ef3cff0dca59e353b4b5ede84c0b2bf61",
+    "modifications": "None: byte-identical original WAV",
+    "channels": 2,
+    "sample_rate": 44100,
+    "bits": 16,
+    "duration_seconds": 9.703039,
+    "location": "SampleLibrary"
+  },
+  {
+    "file": "Sparkle/Triangle1_Hit_v2_rr1_Mid.wav",
+    "pack": "Versilian Community Sample Library",
+    "instrument": "Triangle",
+    "creator": "Versilian Studios (Sam Gossner) and contributors",
+    "source_url": "https://github.com/sgossner/VCSL",
+    "source_commit": "c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e",
+    "source_path": "Idiophones/Struck Idiophones/Triangles/Triangle1_Hit_v2_rr1_Mid.wav",
+    "download_url": "https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Idiophones/Struck%20Idiophones/Triangles/Triangle1_Hit_v2_rr1_Mid.wav",
+    "license": "CC0-1.0",
+    "license_evidence": "VCSL-ORIGINAL-LICENSE.txt",
+    "root_note": null,
+    "root_note_evidence": "Unpitched, FX or untuned; not assigned (see filename)",
+    "usage": "Sparkle candidate",
+    "sha256": "bec62db48c6a052bff1b54f88c11fc6cb6131b9633da2afb35636291754971af",
+    "modifications": "None: byte-identical original WAV",
+    "channels": 2,
+    "sample_rate": 44100,
+    "bits": 16,
+    "duration_seconds": 6.005215,
+    "location": "FMOD/ChordPulse/Assets"
+  },
+  {
+    "file": "Sparkle/Triangle1_hitFM_v2_rr1_Mid.wav",
+    "pack": "Versilian Community Sample Library",
+    "instrument": "Triangle",
+    "creator": "Versilian Studios (Sam Gossner) and contributors",
+    "source_url": "https://github.com/sgossner/VCSL",
+    "source_commit": "c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e",
+    "source_path": "Idiophones/Struck Idiophones/Triangles/Triangle1_hitFM_v2_rr1_Mid.wav",
+    "download_url": "https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Idiophones/Struck%20Idiophones/Triangles/Triangle1_hitFM_v2_rr1_Mid.wav",
+    "license": "CC0-1.0",
+    "license_evidence": "VCSL-ORIGINAL-LICENSE.txt",
+    "root_note": null,
+    "root_note_evidence": "Unpitched, FX or untuned; not assigned (see filename)",
+    "usage": "Sparkle candidate",
+    "sha256": "5afe80fc2bd326951ee17ad3796c1f08bd6d26f4c675648a3bac7088c67629a6",
+    "modifications": "None: byte-identical original WAV",
+    "channels": 2,
+    "sample_rate": 44100,
+    "bits": 16,
+    "duration_seconds": 2.229932,
+    "location": "FMOD/ChordPulse/Assets"
+  },
+  {
+    "file": "Sparkle/sus_C4_r01_main.wav",
+    "pack": "Versilian Community Sample Library",
+    "instrument": "Hand chimes",
+    "creator": "Versilian Studios (Sam Gossner) and contributors",
+    "source_url": "https://github.com/sgossner/VCSL",
+    "source_commit": "c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e",
+    "source_path": "Idiophones/Struck Idiophones/Hand Chimes/sus_C4_r01_main.wav",
+    "download_url": "https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Idiophones/Struck%20Idiophones/Hand%20Chimes/sus_C4_r01_main.wav",
+    "license": "CC0-1.0",
+    "license_evidence": "VCSL-ORIGINAL-LICENSE.txt",
+    "root_note": "C4",
+    "root_note_evidence": "Creator filename; octave convention not verified",
+    "usage": "Sparkle candidate",
+    "sha256": "89980f18db9e08a137d1fc18f0505281bd6c192021b9dd33dafb7d3117ef608c",
+    "modifications": "None: byte-identical original WAV",
+    "channels": 2,
+    "sample_rate": 44100,
+    "bits": 24,
+    "duration_seconds": 8.210544,
+    "location": "SampleLibrary"
+  },
+  {
+    "file": "Sparkle/sus_C5_r01_main.wav",
+    "pack": "Versilian Community Sample Library",
+    "instrument": "Hand chimes",
+    "creator": "Versilian Studios (Sam Gossner) and contributors",
+    "source_url": "https://github.com/sgossner/VCSL",
+    "source_commit": "c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e",
+    "source_path": "Idiophones/Struck Idiophones/Hand Chimes/sus_C5_r01_main.wav",
+    "download_url": "https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Idiophones/Struck%20Idiophones/Hand%20Chimes/sus_C5_r01_main.wav",
+    "license": "CC0-1.0",
+    "license_evidence": "VCSL-ORIGINAL-LICENSE.txt",
+    "root_note": "C5",
+    "root_note_evidence": "Creator filename; octave convention not verified",
+    "usage": "Sparkle candidate",
+    "sha256": "836f13d448c9d6d685da634368615c2f7c03b6fb5b99ac93627e1fbb40368e58",
+    "modifications": "None: byte-identical original WAV",
+    "channels": 2,
+    "sample_rate": 44100,
+    "bits": 24,
+    "duration_seconds": 7.141565,
+    "location": "SampleLibrary"
+  },
+  {
+    "file": "Sparkle/sus_A4_r01_main.wav",
+    "pack": "Versilian Community Sample Library",
+    "instrument": "Hand chimes",
+    "creator": "Versilian Studios (Sam Gossner) and contributors",
+    "source_url": "https://github.com/sgossner/VCSL",
+    "source_commit": "c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e",
+    "source_path": "Idiophones/Struck Idiophones/Hand Chimes/sus_A4_r01_main.wav",
+    "download_url": "https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Idiophones/Struck%20Idiophones/Hand%20Chimes/sus_A4_r01_main.wav",
+    "license": "CC0-1.0",
+    "license_evidence": "VCSL-ORIGINAL-LICENSE.txt",
+    "root_note": "A4",
+    "root_note_evidence": "Creator filename; octave convention not verified",
+    "usage": "Sparkle candidate",
+    "sha256": "43604b3b049f3d7c60c6e5c8601d7027045ded1f124debcd65c2ccef723daaa1",
+    "modifications": "None: byte-identical original WAV",
+    "channels": 2,
+    "sample_rate": 44100,
+    "bits": 24,
+    "duration_seconds": 8.861224,
+    "location": "SampleLibrary"
+  },
+  {
+    "file": "Sparkle/sus_C6_r01_main.wav",
+    "pack": "Versilian Community Sample Library",
+    "instrument": "Hand chimes",
+    "creator": "Versilian Studios (Sam Gossner) and contributors",
+    "source_url": "https://github.com/sgossner/VCSL",
+    "source_commit": "c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e",
+    "source_path": "Idiophones/Struck Idiophones/Hand Chimes/sus_C6_r01_main.wav",
+    "download_url": "https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Idiophones/Struck%20Idiophones/Hand%20Chimes/sus_C6_r01_main.wav",
+    "license": "CC0-1.0",
+    "license_evidence": "VCSL-ORIGINAL-LICENSE.txt",
+    "root_note": "C6",
+    "root_note_evidence": "Creator filename; octave convention not verified",
+    "usage": "Sparkle candidate",
+    "sha256": "202a0c95519668c7afb72835c5fd3a9a80805ba3cc9ea8bfc2f40a48d05b0283",
+    "modifications": "None: byte-identical original WAV",
+    "channels": 2,
+    "sample_rate": 44100,
+    "bits": 24,
+    "duration_seconds": 3.609274,
+    "location": "SampleLibrary"
+  },
+  {
+    "file": "Sparkle/glass1_D#4_Fast_1_Decay.wav",
+    "pack": "Versilian Community Sample Library",
+    "instrument": "Wine glasses",
+    "creator": "Versilian Studios (Sam Gossner) and contributors",
+    "source_url": "https://github.com/sgossner/VCSL",
+    "source_commit": "c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e",
+    "source_path": "Idiophones/Friction Idiophones/Wine Glasses/Releases/Fast/glass1_D#4_Fast_1_Decay.wav",
+    "download_url": "https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Idiophones/Friction%20Idiophones/Wine%20Glasses/Releases/Fast/glass1_D%234_Fast_1_Decay.wav",
+    "license": "CC0-1.0",
+    "license_evidence": "VCSL-ORIGINAL-LICENSE.txt",
+    "root_note": "D#4",
+    "root_note_evidence": "Creator filename; octave convention not verified",
+    "usage": "Sparkle candidate",
+    "sha256": "bab9b423a5c9177d07d899f10f281f1cd6085704859a7f25b3cc80cefb9c0083",
+    "modifications": "None: byte-identical original WAV",
+    "channels": 2,
+    "sample_rate": 44100,
+    "bits": 24,
+    "duration_seconds": 3.082608,
+    "location": "SampleLibrary"
+  },
+  {
+    "file": "Sparkle/glass2_F#4_Fast_1_Decay.wav",
+    "pack": "Versilian Community Sample Library",
+    "instrument": "Wine glasses",
+    "creator": "Versilian Studios (Sam Gossner) and contributors",
+    "source_url": "https://github.com/sgossner/VCSL",
+    "source_commit": "c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e",
+    "source_path": "Idiophones/Friction Idiophones/Wine Glasses/Releases/Fast/glass2_F#4_Fast_1_Decay.wav",
+    "download_url": "https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Idiophones/Friction%20Idiophones/Wine%20Glasses/Releases/Fast/glass2_F%234_Fast_1_Decay.wav",
+    "license": "CC0-1.0",
+    "license_evidence": "VCSL-ORIGINAL-LICENSE.txt",
+    "root_note": "F#4",
+    "root_note_evidence": "Creator filename; octave convention not verified",
+    "usage": "Sparkle candidate",
+    "sha256": "ddd5d9a9cecc15d2a662c2bc20140f8d22bdaa4b8206b456a0bb4836f2c14030",
+    "modifications": "None: byte-identical original WAV",
+    "channels": 2,
+    "sample_rate": 44100,
+    "bits": 24,
+    "duration_seconds": 2.675714,
+    "location": "SampleLibrary"
+  },
+  {
+    "file": "Sparkle/glass3_A#4_Fast_1_Decay.wav",
+    "pack": "Versilian Community Sample Library",
+    "instrument": "Wine glasses",
+    "creator": "Versilian Studios (Sam Gossner) and contributors",
+    "source_url": "https://github.com/sgossner/VCSL",
+    "source_commit": "c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e",
+    "source_path": "Idiophones/Friction Idiophones/Wine Glasses/Releases/Fast/glass3_A#4_Fast_1_Decay.wav",
+    "download_url": "https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Idiophones/Friction%20Idiophones/Wine%20Glasses/Releases/Fast/glass3_A%234_Fast_1_Decay.wav",
+    "license": "CC0-1.0",
+    "license_evidence": "VCSL-ORIGINAL-LICENSE.txt",
+    "root_note": "A#4",
+    "root_note_evidence": "Creator filename; octave convention not verified",
+    "usage": "Sparkle candidate",
+    "sha256": "1a30b049275b56b549588c60fccccf45b1b2a5ee8b13f5012315acf3b1c81434",
+    "modifications": "None: byte-identical original WAV",
+    "channels": 2,
+    "sample_rate": 44100,
+    "bits": 24,
+    "duration_seconds": 1.588322,
+    "location": "SampleLibrary"
+  },
+  {
+    "file": "Sparkle/glass4_D5_Fast_1_Decay.wav",
+    "pack": "Versilian Community Sample Library",
+    "instrument": "Wine glasses",
+    "creator": "Versilian Studios (Sam Gossner) and contributors",
+    "source_url": "https://github.com/sgossner/VCSL",
+    "source_commit": "c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e",
+    "source_path": "Idiophones/Friction Idiophones/Wine Glasses/Releases/Fast/glass4_D5_Fast_1_Decay.wav",
+    "download_url": "https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Idiophones/Friction%20Idiophones/Wine%20Glasses/Releases/Fast/glass4_D5_Fast_1_Decay.wav",
+    "license": "CC0-1.0",
+    "license_evidence": "VCSL-ORIGINAL-LICENSE.txt",
+    "root_note": "D5",
+    "root_note_evidence": "Creator filename; octave convention not verified",
+    "usage": "Sparkle candidate",
+    "sha256": "2cd999d87a803f5b852deadfab0b5b8fa25cf00fc4a9ddca5658d5f305df66e4",
+    "modifications": "None: byte-identical original WAV",
+    "channels": 2,
+    "sample_rate": 44100,
+    "bits": 24,
+    "duration_seconds": 1.320454,
+    "location": "SampleLibrary"
+  },
+  {
+    "file": "Sparkle/Fing_Cymb.wav",
+    "pack": "Versilian Community Sample Library",
+    "instrument": "Finger cymbals",
+    "creator": "Versilian Studios (Sam Gossner) and contributors",
+    "source_url": "https://github.com/sgossner/VCSL",
+    "source_commit": "c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e",
+    "source_path": "Idiophones/Struck Idiophones/Finger Cymbals/Fing_Cymb.wav",
+    "download_url": "https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Idiophones/Struck%20Idiophones/Finger%20Cymbals/Fing_Cymb.wav",
+    "license": "CC0-1.0",
+    "license_evidence": "VCSL-ORIGINAL-LICENSE.txt",
+    "root_note": null,
+    "root_note_evidence": "Unpitched, FX or untuned; not assigned (see filename)",
+    "usage": "Sparkle candidate",
+    "sha256": "6d39abaeff2a09fc8dcd366664ebad47f570c95b0e0440fde1bb6b7dbd33be32",
+    "modifications": "None: byte-identical original WAV",
+    "channels": 2,
+    "sample_rate": 44100,
+    "bits": 24,
+    "duration_seconds": 6.342812,
+    "location": "SampleLibrary"
+  },
+  {
+    "file": "Sparkle/HB_1.wav",
+    "pack": "Versilian Community Sample Library",
+    "instrument": "Nepalese hand bells",
+    "creator": "Versilian Studios (Sam Gossner) and contributors",
+    "source_url": "https://github.com/sgossner/VCSL",
+    "source_commit": "c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e",
+    "source_path": "Idiophones/Struck Idiophones/Hand Bells, Nepalese/HB_1.wav",
+    "download_url": "https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Idiophones/Struck%20Idiophones/Hand%20Bells%2C%20Nepalese/HB_1.wav",
+    "license": "CC0-1.0",
+    "license_evidence": "VCSL-ORIGINAL-LICENSE.txt",
+    "root_note": null,
+    "root_note_evidence": "Unpitched, FX or untuned; not assigned (see filename)",
+    "usage": "Sparkle candidate",
+    "sha256": "46e19962db5cb9b339f22609f1c529cd187249c36f3bcd05d4002179c403c222",
+    "modifications": "None: byte-identical original WAV",
+    "channels": 2,
+    "sample_rate": 44100,
+    "bits": 24,
+    "duration_seconds": 2.998322,
+    "location": "SampleLibrary"
+  },
+  {
+    "file": "Sparkle/HB_2.wav",
+    "pack": "Versilian Community Sample Library",
+    "instrument": "Nepalese hand bells",
+    "creator": "Versilian Studios (Sam Gossner) and contributors",
+    "source_url": "https://github.com/sgossner/VCSL",
+    "source_commit": "c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e",
+    "source_path": "Idiophones/Struck Idiophones/Hand Bells, Nepalese/HB_2.wav",
+    "download_url": "https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Idiophones/Struck%20Idiophones/Hand%20Bells%2C%20Nepalese/HB_2.wav",
+    "license": "CC0-1.0",
+    "license_evidence": "VCSL-ORIGINAL-LICENSE.txt",
+    "root_note": null,
+    "root_note_evidence": "Unpitched, FX or untuned; not assigned (see filename)",
+    "usage": "Sparkle candidate",
+    "sha256": "e201ef095eac406a1bd5a9ec774229b57f40407d633e6dbeed53c67ebb973d56",
+    "modifications": "None: byte-identical original WAV",
+    "channels": 2,
+    "sample_rate": 44100,
+    "bits": 24,
+    "duration_seconds": 1.269433,
+    "location": "SampleLibrary"
+  },
+  {
+    "file": "Quirky/flexatone_slap1.wav",
+    "pack": "Versilian Community Sample Library",
+    "instrument": "Flexatone",
+    "creator": "Versilian Studios (Sam Gossner) and contributors",
+    "source_url": "https://github.com/sgossner/VCSL",
+    "source_commit": "c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e",
+    "source_path": "Idiophones/Struck Idiophones/Flexatone/flexatone_slap1.wav",
+    "download_url": "https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Idiophones/Struck%20Idiophones/Flexatone/flexatone_slap1.wav",
+    "license": "CC0-1.0",
+    "license_evidence": "VCSL-ORIGINAL-LICENSE.txt",
+    "root_note": null,
+    "root_note_evidence": "Unpitched, FX or untuned; not assigned (see filename)",
+    "usage": "Quirky candidate",
+    "sha256": "77f07de7f2257ab08e586545d495e25ce715f13ba8584ba39f9ddc4a376d3c75",
+    "modifications": "None: byte-identical original WAV",
+    "channels": 2,
+    "sample_rate": 44100,
+    "bits": 24,
+    "duration_seconds": 1.006553,
+    "location": "SampleLibrary"
+  },
+  {
+    "file": "Quirky/flexatone1.wav",
+    "pack": "Versilian Community Sample Library",
+    "instrument": "Flexatone",
+    "creator": "Versilian Studios (Sam Gossner) and contributors",
+    "source_url": "https://github.com/sgossner/VCSL",
+    "source_commit": "c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e",
+    "source_path": "Idiophones/Struck Idiophones/Flexatone/flexatone1.wav",
+    "download_url": "https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Idiophones/Struck%20Idiophones/Flexatone/flexatone1.wav",
+    "license": "CC0-1.0",
+    "license_evidence": "VCSL-ORIGINAL-LICENSE.txt",
+    "root_note": null,
+    "root_note_evidence": "Unpitched, FX or untuned; not assigned (see filename)",
+    "usage": "Quirky candidate",
+    "sha256": "043e96282afcb2079f7460cd49dbf78b200b584292d62fae4c6ae5eb898bdac6",
+    "modifications": "None: byte-identical original WAV",
+    "channels": 2,
+    "sample_rate": 44100,
+    "bits": 24,
+    "duration_seconds": 3.800839,
+    "location": "SampleLibrary"
+  },
+  {
+    "file": "Quirky/flexatone_fast.wav",
+    "pack": "Versilian Community Sample Library",
+    "instrument": "Flexatone",
+    "creator": "Versilian Studios (Sam Gossner) and contributors",
+    "source_url": "https://github.com/sgossner/VCSL",
+    "source_commit": "c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e",
+    "source_path": "Idiophones/Struck Idiophones/Flexatone/flexatone_fast.wav",
+    "download_url": "https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Idiophones/Struck%20Idiophones/Flexatone/flexatone_fast.wav",
+    "license": "CC0-1.0",
+    "license_evidence": "VCSL-ORIGINAL-LICENSE.txt",
+    "root_note": null,
+    "root_note_evidence": "Unpitched, FX or untuned; not assigned (see filename)",
+    "usage": "Quirky candidate",
+    "sha256": "e7ed4d1b90b1f1fb1b369ee9b497ed16ebab9eb43290e8e95d2c62ad8a2229db",
+    "modifications": "None: byte-identical original WAV",
+    "channels": 2,
+    "sample_rate": 44100,
+    "bits": 24,
+    "duration_seconds": 4.321315,
+    "location": "SampleLibrary"
+  },
+  {
+    "file": "Quirky/Ratchet1_Crank_rr1_Mid.wav",
+    "pack": "Versilian Community Sample Library",
+    "instrument": "Ratchet",
+    "creator": "Versilian Studios (Sam Gossner) and contributors",
+    "source_url": "https://github.com/sgossner/VCSL",
+    "source_commit": "c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e",
+    "source_path": "Idiophones/Struck Idiophones/Ratchet/Ratchet1_Crank_rr1_Mid.wav",
+    "download_url": "https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Idiophones/Struck%20Idiophones/Ratchet/Ratchet1_Crank_rr1_Mid.wav",
+    "license": "CC0-1.0",
+    "license_evidence": "VCSL-ORIGINAL-LICENSE.txt",
+    "root_note": null,
+    "root_note_evidence": "Unpitched, FX or untuned; not assigned (see filename)",
+    "usage": "Quirky candidate",
+    "sha256": "40108f3c5e704635d7af039f3202463415228103c260f642e8f231b100b06bec",
+    "modifications": "None: byte-identical original WAV",
+    "channels": 2,
+    "sample_rate": 44100,
+    "bits": 16,
+    "duration_seconds": 1.579796,
+    "location": "SampleLibrary"
+  },
+  {
+    "file": "Quirky/Ratchet2_Fast_rr1_Mid.wav",
+    "pack": "Versilian Community Sample Library",
+    "instrument": "Ratchet",
+    "creator": "Versilian Studios (Sam Gossner) and contributors",
+    "source_url": "https://github.com/sgossner/VCSL",
+    "source_commit": "c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e",
+    "source_path": "Idiophones/Struck Idiophones/Ratchet/Ratchet2_Fast_rr1_Mid.wav",
+    "download_url": "https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Idiophones/Struck%20Idiophones/Ratchet/Ratchet2_Fast_rr1_Mid.wav",
+    "license": "CC0-1.0",
+    "license_evidence": "VCSL-ORIGINAL-LICENSE.txt",
+    "root_note": null,
+    "root_note_evidence": "Unpitched, FX or untuned; not assigned (see filename)",
+    "usage": "Quirky candidate",
+    "sha256": "f4b66db2382097bb0f44edb56ee368023999996ebaef4810384b54d6223bf1a9",
+    "modifications": "None: byte-identical original WAV",
+    "channels": 2,
+    "sample_rate": 44100,
+    "bits": 16,
+    "duration_seconds": 8.762449,
+    "location": "SampleLibrary"
+  },
+  {
+    "file": "Quirky/slapstick_rr1.wav",
+    "pack": "Versilian Community Sample Library",
+    "instrument": "Slapstick",
+    "creator": "Versilian Studios (Sam Gossner) and contributors",
+    "source_url": "https://github.com/sgossner/VCSL",
+    "source_commit": "c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e",
+    "source_path": "Idiophones/Struck Idiophones/Slapstick/slapstick_rr1.wav",
+    "download_url": "https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Idiophones/Struck%20Idiophones/Slapstick/slapstick_rr1.wav",
+    "license": "CC0-1.0",
+    "license_evidence": "VCSL-ORIGINAL-LICENSE.txt",
+    "root_note": null,
+    "root_note_evidence": "Unpitched, FX or untuned; not assigned (see filename)",
+    "usage": "Quirky candidate",
+    "sha256": "e73b38bf43b385d95e2c790e7424526a91af8d1cdf484002912a4a8eabe73300",
+    "modifications": "None: byte-identical original WAV",
+    "channels": 2,
+    "sample_rate": 44100,
+    "bits": 24,
+    "duration_seconds": 1.308299,
+    "location": "FMOD/ChordPulse/Assets"
+  },
+  {
+    "file": "Quirky/Main_SirenWhistle-002.wav",
+    "pack": "Versilian Community Sample Library",
+    "instrument": "Siren whistle",
+    "creator": "Versilian Studios (Sam Gossner) and contributors",
+    "source_url": "https://github.com/sgossner/VCSL",
+    "source_commit": "c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e",
+    "source_path": "Aerophones/Free Aerophones/Siren/Main_SirenWhistle-002.wav",
+    "download_url": "https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Aerophones/Free%20Aerophones/Siren/Main_SirenWhistle-002.wav",
+    "license": "CC0-1.0",
+    "license_evidence": "VCSL-ORIGINAL-LICENSE.txt",
+    "root_note": null,
+    "root_note_evidence": "Unpitched, FX or untuned; not assigned (see filename)",
+    "usage": "Quirky candidate",
+    "sha256": "884e9acc5e06fd2926f336af86e1c95b3adb0a1fadae5b553d3f1e2f3e6fc98b",
+    "modifications": "None: byte-identical original WAV",
+    "channels": 2,
+    "sample_rate": 44100,
+    "bits": 16,
+    "duration_seconds": 3.861111,
+    "location": "FMOD/ChordPulse/Assets"
+  },
+  {
+    "file": "Quirky/Main_SirenWhistle-005.wav",
+    "pack": "Versilian Community Sample Library",
+    "instrument": "Siren whistle",
+    "creator": "Versilian Studios (Sam Gossner) and contributors",
+    "source_url": "https://github.com/sgossner/VCSL",
+    "source_commit": "c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e",
+    "source_path": "Aerophones/Free Aerophones/Siren/Main_SirenWhistle-005.wav",
+    "download_url": "https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Aerophones/Free%20Aerophones/Siren/Main_SirenWhistle-005.wav",
+    "license": "CC0-1.0",
+    "license_evidence": "VCSL-ORIGINAL-LICENSE.txt",
+    "root_note": null,
+    "root_note_evidence": "Unpitched, FX or untuned; not assigned (see filename)",
+    "usage": "Quirky candidate",
+    "sha256": "af2b14be1fb293c848a8945a7d9bc2470c66437203716ebd236b6591383330b6",
+    "modifications": "None: byte-identical original WAV",
+    "channels": 2,
+    "sample_rate": 44100,
+    "bits": 16,
+    "duration_seconds": 2.087937,
+    "location": "FMOD/ChordPulse/Assets"
+  },
+  {
+    "file": "Quirky/Main_TrainLow_Short-001.wav",
+    "pack": "Versilian Community Sample Library",
+    "instrument": "Train whistle (toy)",
+    "creator": "Versilian Studios (Sam Gossner) and contributors",
+    "source_url": "https://github.com/sgossner/VCSL",
+    "source_commit": "c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e",
+    "source_path": "Aerophones/Edge-blown Aerophones/Train Whistle, Toy/Main_TrainLow_Short-001.wav",
+    "download_url": "https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Aerophones/Edge-blown%20Aerophones/Train%20Whistle%2C%20Toy/Main_TrainLow_Short-001.wav",
+    "license": "CC0-1.0",
+    "license_evidence": "VCSL-ORIGINAL-LICENSE.txt",
+    "root_note": null,
+    "root_note_evidence": "Unpitched, FX or untuned; not assigned (see filename)",
+    "usage": "Quirky candidate",
+    "sha256": "f92e932bb4fb1150bc0354b6d014a85e3ed432795d6fc8c8a8affa72e009dbbe",
+    "modifications": "None: byte-identical original WAV",
+    "channels": 2,
+    "sample_rate": 44100,
+    "bits": 16,
+    "duration_seconds": 1.118118,
+    "location": "SampleLibrary"
+  },
+  {
+    "file": "Quirky/Main_TrainLow_Fall-001.wav",
+    "pack": "Versilian Community Sample Library",
+    "instrument": "Train whistle (toy)",
+    "creator": "Versilian Studios (Sam Gossner) and contributors",
+    "source_url": "https://github.com/sgossner/VCSL",
+    "source_commit": "c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e",
+    "source_path": "Aerophones/Edge-blown Aerophones/Train Whistle, Toy/Main_TrainLow_Fall-001.wav",
+    "download_url": "https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Aerophones/Edge-blown%20Aerophones/Train%20Whistle%2C%20Toy/Main_TrainLow_Fall-001.wav",
+    "license": "CC0-1.0",
+    "license_evidence": "VCSL-ORIGINAL-LICENSE.txt",
+    "root_note": null,
+    "root_note_evidence": "Unpitched, FX or untuned; not assigned (see filename)",
+    "usage": "Quirky candidate",
+    "sha256": "fddc8d1c7a0d5a74ad484587be6f6ee5295deffcd11fb47f6f4bf136e2e0ef6b",
+    "modifications": "None: byte-identical original WAV",
+    "channels": 2,
+    "sample_rate": 44100,
+    "bits": 16,
+    "duration_seconds": 2.104082,
+    "location": "SampleLibrary"
+  },
+  {
+    "file": "Quirky/Main_TrainMed_Short-001.wav",
+    "pack": "Versilian Community Sample Library",
+    "instrument": "Train whistle (toy)",
+    "creator": "Versilian Studios (Sam Gossner) and contributors",
+    "source_url": "https://github.com/sgossner/VCSL",
+    "source_commit": "c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e",
+    "source_path": "Aerophones/Edge-blown Aerophones/Train Whistle, Toy/Main_TrainMed_Short-001.wav",
+    "download_url": "https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Aerophones/Edge-blown%20Aerophones/Train%20Whistle%2C%20Toy/Main_TrainMed_Short-001.wav",
+    "license": "CC0-1.0",
+    "license_evidence": "VCSL-ORIGINAL-LICENSE.txt",
+    "root_note": null,
+    "root_note_evidence": "Unpitched, FX or untuned; not assigned (see filename)",
+    "usage": "Quirky candidate",
+    "sha256": "221d2ce7d147de65f1e1c6881887b4bebe8f2c94d5270cf4b36af2eeff341be5",
+    "modifications": "None: byte-identical original WAV",
+    "channels": 2,
+    "sample_rate": 44100,
+    "bits": 16,
+    "duration_seconds": 1.319456,
+    "location": "SampleLibrary"
+  },
+  {
+    "file": "Quirky/Didgeridoo1_Bark1_Main_rr3.wav",
+    "pack": "Versilian Community Sample Library",
+    "instrument": "Didgeridoo",
+    "creator": "Versilian Studios (Sam Gossner) and contributors",
+    "source_url": "https://github.com/sgossner/VCSL",
+    "source_commit": "c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e",
+    "source_path": "Aerophones/Lip Aerophones/Didgeridoo/Didgeridoo1_Bark1_Main_rr3.wav",
+    "download_url": "https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Aerophones/Lip%20Aerophones/Didgeridoo/Didgeridoo1_Bark1_Main_rr3.wav",
+    "license": "CC0-1.0",
+    "license_evidence": "VCSL-ORIGINAL-LICENSE.txt",
+    "root_note": null,
+    "root_note_evidence": "Unpitched, FX or untuned; not assigned (see filename)",
+    "usage": "Quirky candidate",
+    "sha256": "4c91d328d892da07c4cf717f2f44a862833ea23d1abca53087f00ced2d354e25",
+    "modifications": "None: byte-identical original WAV",
+    "channels": 2,
+    "sample_rate": 44100,
+    "bits": 24,
+    "duration_seconds": 0.463039,
+    "location": "SampleLibrary"
+  },
+  {
+    "file": "Quirky/Didgeridoo1_BarkDown2_Main.wav",
+    "pack": "Versilian Community Sample Library",
+    "instrument": "Didgeridoo",
+    "creator": "Versilian Studios (Sam Gossner) and contributors",
+    "source_url": "https://github.com/sgossner/VCSL",
+    "source_commit": "c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e",
+    "source_path": "Aerophones/Lip Aerophones/Didgeridoo/Didgeridoo1_BarkDown2_Main.wav",
+    "download_url": "https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Aerophones/Lip%20Aerophones/Didgeridoo/Didgeridoo1_BarkDown2_Main.wav",
+    "license": "CC0-1.0",
+    "license_evidence": "VCSL-ORIGINAL-LICENSE.txt",
+    "root_note": null,
+    "root_note_evidence": "Unpitched, FX or untuned; not assigned (see filename)",
+    "usage": "Quirky candidate",
+    "sha256": "64ea0a7cf688ab4da28d2787e70b5d202945eb0197a1bde8f13ac4cf48bcc47c",
+    "modifications": "None: byte-identical original WAV",
+    "channels": 2,
+    "sample_rate": 44100,
+    "bits": 24,
+    "duration_seconds": 2.125442,
+    "location": "SampleLibrary"
+  },
+  {
+    "file": "Quirky/Didgeridoo1_Short1_Main_rr2.wav",
+    "pack": "Versilian Community Sample Library",
+    "instrument": "Didgeridoo",
+    "creator": "Versilian Studios (Sam Gossner) and contributors",
+    "source_url": "https://github.com/sgossner/VCSL",
+    "source_commit": "c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e",
+    "source_path": "Aerophones/Lip Aerophones/Didgeridoo/Didgeridoo1_Short1_Main_rr2.wav",
+    "download_url": "https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Aerophones/Lip%20Aerophones/Didgeridoo/Didgeridoo1_Short1_Main_rr2.wav",
+    "license": "CC0-1.0",
+    "license_evidence": "VCSL-ORIGINAL-LICENSE.txt",
+    "root_note": null,
+    "root_note_evidence": "Unpitched, FX or untuned; not assigned (see filename)",
+    "usage": "Quirky candidate",
+    "sha256": "eae62adf204bb0fe3f669eab2077f9890d75ed21e1152dc4a74cbb326de48a61",
+    "modifications": "None: byte-identical original WAV",
+    "channels": 2,
+    "sample_rate": 44100,
+    "bits": 24,
+    "duration_seconds": 0.374399,
+    "location": "SampleLibrary"
+  },
+  {
+    "file": "Quirky/Anvil_Hit1_v3_rr1_Mid.wav",
+    "pack": "Versilian Community Sample Library",
+    "instrument": "Anvil",
+    "creator": "Versilian Studios (Sam Gossner) and contributors",
+    "source_url": "https://github.com/sgossner/VCSL",
+    "source_commit": "c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e",
+    "source_path": "Idiophones/Struck Idiophones/Anvil/Anvil_Hit1_v3_rr1_Mid.wav",
+    "download_url": "https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Idiophones/Struck%20Idiophones/Anvil/Anvil_Hit1_v3_rr1_Mid.wav",
+    "license": "CC0-1.0",
+    "license_evidence": "VCSL-ORIGINAL-LICENSE.txt",
+    "root_note": null,
+    "root_note_evidence": "Unpitched, FX or untuned; not assigned (see filename)",
+    "usage": "Quirky candidate",
+    "sha256": "f832799b7cabeb06163a18ac49d373d21bc5271fc316f9f61e6d6f17ef669a18",
+    "modifications": "None: byte-identical original WAV",
+    "channels": 2,
+    "sample_rate": 44100,
+    "bits": 16,
+    "duration_seconds": 2.325488,
+    "location": "SampleLibrary"
+  },
+  {
+    "file": "Quirky/Anvil_Hit2_v3_rr1_Mid.wav",
+    "pack": "Versilian Community Sample Library",
+    "instrument": "Anvil",
+    "creator": "Versilian Studios (Sam Gossner) and contributors",
+    "source_url": "https://github.com/sgossner/VCSL",
+    "source_commit": "c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e",
+    "source_path": "Idiophones/Struck Idiophones/Anvil/Anvil_Hit2_v3_rr1_Mid.wav",
+    "download_url": "https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Idiophones/Struck%20Idiophones/Anvil/Anvil_Hit2_v3_rr1_Mid.wav",
+    "license": "CC0-1.0",
+    "license_evidence": "VCSL-ORIGINAL-LICENSE.txt",
+    "root_note": null,
+    "root_note_evidence": "Unpitched, FX or untuned; not assigned (see filename)",
+    "usage": "Quirky candidate",
+    "sha256": "1482a60b6da77eecb02dea1710ddc9c6711db4bb6feb0b113cba5de4cf188b0b",
+    "modifications": "None: byte-identical original WAV",
+    "channels": 2,
+    "sample_rate": 44100,
+    "bits": 16,
+    "duration_seconds": 2.044354,
+    "location": "FMOD/ChordPulse/Assets"
+  },
+  {
+    "file": "Quirky/BrakeDrum1_Hammer_v3_rr1_Mid.wav",
+    "pack": "Versilian Community Sample Library",
+    "instrument": "Brake drum",
+    "creator": "Versilian Studios (Sam Gossner) and contributors",
+    "source_url": "https://github.com/sgossner/VCSL",
+    "source_commit": "c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e",
+    "source_path": "Idiophones/Struck Idiophones/Brake Drum/BrakeDrum1_Hammer_v3_rr1_Mid.wav",
+    "download_url": "https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Idiophones/Struck%20Idiophones/Brake%20Drum/BrakeDrum1_Hammer_v3_rr1_Mid.wav",
+    "license": "CC0-1.0",
+    "license_evidence": "VCSL-ORIGINAL-LICENSE.txt",
+    "root_note": null,
+    "root_note_evidence": "Unpitched, FX or untuned; not assigned (see filename)",
+    "usage": "Quirky candidate",
+    "sha256": "a488e7cdca983fc53c4399fa0c492d582510dd48ee35e5336113b0041f8f55b1",
+    "modifications": "None: byte-identical original WAV",
+    "channels": 2,
+    "sample_rate": 44100,
+    "bits": 16,
+    "duration_seconds": 1.69678,
+    "location": "SampleLibrary"
+  },
+  {
+    "file": "Quirky/LogDrumHi_MedM_v3_rr1_Sum.wav",
+    "pack": "Versilian Community Sample Library",
+    "instrument": "Slit drum",
+    "creator": "Versilian Studios (Sam Gossner) and contributors",
+    "source_url": "https://github.com/sgossner/VCSL",
+    "source_commit": "c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e",
+    "source_path": "Idiophones/Struck Idiophones/Slit Drum/LogDrumHi_MedM_v3_rr1_Sum.wav",
+    "download_url": "https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Idiophones/Struck%20Idiophones/Slit%20Drum/LogDrumHi_MedM_v3_rr1_Sum.wav",
+    "license": "CC0-1.0",
+    "license_evidence": "VCSL-ORIGINAL-LICENSE.txt",
+    "root_note": null,
+    "root_note_evidence": "Unpitched, FX or untuned; not assigned (see filename)",
+    "usage": "Quirky candidate",
+    "sha256": "e56b10659b821bbf4eeb3cc371f42ea60414adcbd66ad0ead9e7a62cdd11fe3f",
+    "modifications": "None: byte-identical original WAV",
+    "channels": 2,
+    "sample_rate": 44100,
+    "bits": 16,
+    "duration_seconds": 1.518594,
+    "location": "FMOD/ChordPulse/Assets"
+  },
+  {
+    "file": "Quirky/LogDrumLo_MedM_v3_rr1_Sum.wav",
+    "pack": "Versilian Community Sample Library",
+    "instrument": "Slit drum",
+    "creator": "Versilian Studios (Sam Gossner) and contributors",
+    "source_url": "https://github.com/sgossner/VCSL",
+    "source_commit": "c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e",
+    "source_path": "Idiophones/Struck Idiophones/Slit Drum/LogDrumLo_MedM_v3_rr1_Sum.wav",
+    "download_url": "https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Idiophones/Struck%20Idiophones/Slit%20Drum/LogDrumLo_MedM_v3_rr1_Sum.wav",
+    "license": "CC0-1.0",
+    "license_evidence": "VCSL-ORIGINAL-LICENSE.txt",
+    "root_note": null,
+    "root_note_evidence": "Unpitched, FX or untuned; not assigned (see filename)",
+    "usage": "Quirky candidate",
+    "sha256": "1428c9b05398c3b08aac4c36c5c5f57c52bca3c89627d693f3ecc00759c43fea",
+    "modifications": "None: byte-identical original WAV",
+    "channels": 2,
+    "sample_rate": 44100,
+    "bits": 16,
+    "duration_seconds": 1.251474,
+    "location": "FMOD/ChordPulse/Assets"
+  },
+  {
+    "file": "Quirky/wood_click_ff.wav",
+    "pack": "Versilian Community Sample Library",
+    "instrument": "Woodblock",
+    "creator": "Versilian Studios (Sam Gossner) and contributors",
+    "source_url": "https://github.com/sgossner/VCSL",
+    "source_commit": "c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e",
+    "source_path": "Idiophones/Struck Idiophones/Woodblock/wood_click_ff.wav",
+    "download_url": "https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Idiophones/Struck%20Idiophones/Woodblock/wood_click_ff.wav",
+    "license": "CC0-1.0",
+    "license_evidence": "VCSL-ORIGINAL-LICENSE.txt",
+    "root_note": null,
+    "root_note_evidence": "Unpitched, FX or untuned; not assigned (see filename)",
+    "usage": "Quirky candidate",
+    "sha256": "9a911c66212d50a09494821bf9af8ce6e007612e232b5905f838348cb1d63b75",
+    "modifications": "None: byte-identical original WAV",
+    "channels": 2,
+    "sample_rate": 44100,
+    "bits": 24,
+    "duration_seconds": 0.757982,
+    "location": "FMOD/ChordPulse/Assets"
+  },
+  {
+    "file": "Quirky/Gliss_Up_Med_ff_1.wav",
+    "pack": "Versilian Community Sample Library",
+    "instrument": "Dan tranh (zither) FX",
+    "creator": "Versilian Studios (Sam Gossner) and contributors",
+    "source_url": "https://github.com/sgossner/VCSL",
+    "source_commit": "c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e",
+    "source_path": "Chordophones/Zithers/Dan Tranh/Gliss/Gliss_Up_Med_ff_1.wav",
+    "download_url": "https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Chordophones/Zithers/Dan%20Tranh/Gliss/Gliss_Up_Med_ff_1.wav",
+    "license": "CC0-1.0",
+    "license_evidence": "VCSL-ORIGINAL-LICENSE.txt",
+    "root_note": null,
+    "root_note_evidence": "Unpitched, FX or untuned; not assigned (see filename)",
+    "usage": "Quirky candidate",
+    "sha256": "4d24b9b4e8a05a048ffa23ba0216532a6db5d52bd953ded0d221b06a918066f5",
+    "modifications": "None: byte-identical original WAV",
+    "channels": 1,
+    "sample_rate": 44100,
+    "bits": 24,
+    "duration_seconds": 8.193265,
+    "location": "SampleLibrary"
+  },
+  {
+    "file": "Quirky/Gliss_Dwn_Med_ff_1.wav",
+    "pack": "Versilian Community Sample Library",
+    "instrument": "Dan tranh (zither) FX",
+    "creator": "Versilian Studios (Sam Gossner) and contributors",
+    "source_url": "https://github.com/sgossner/VCSL",
+    "source_commit": "c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e",
+    "source_path": "Chordophones/Zithers/Dan Tranh/Gliss/Gliss_Dwn_Med_ff_1.wav",
+    "download_url": "https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Chordophones/Zithers/Dan%20Tranh/Gliss/Gliss_Dwn_Med_ff_1.wav",
+    "license": "CC0-1.0",
+    "license_evidence": "VCSL-ORIGINAL-LICENSE.txt",
+    "root_note": null,
+    "root_note_evidence": "Unpitched, FX or untuned; not assigned (see filename)",
+    "usage": "Quirky candidate",
+    "sha256": "caa3a84262b20ae34316345d4734069c82265f1ee6b654aef75aad9d645c28cf",
+    "modifications": "None: byte-identical original WAV",
+    "channels": 1,
+    "sample_rate": 44100,
+    "bits": 24,
+    "duration_seconds": 9.391882,
+    "location": "SampleLibrary"
+  },
+  {
+    "file": "Quirky/FX_05c.wav",
+    "pack": "Versilian Community Sample Library",
+    "instrument": "Dan tranh (zither) FX",
+    "creator": "Versilian Studios (Sam Gossner) and contributors",
+    "source_url": "https://github.com/sgossner/VCSL",
+    "source_commit": "c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e",
+    "source_path": "Chordophones/Zithers/Dan Tranh/FX/FX_05c.wav",
+    "download_url": "https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Chordophones/Zithers/Dan%20Tranh/FX/FX_05c.wav",
+    "license": "CC0-1.0",
+    "license_evidence": "VCSL-ORIGINAL-LICENSE.txt",
+    "root_note": null,
+    "root_note_evidence": "Unpitched, FX or untuned; not assigned (see filename)",
+    "usage": "Quirky candidate",
+    "sha256": "5454035366b16c21ae3f370c15216247e1fdc43e414888fe11f5065139cc3616",
+    "modifications": "None: byte-identical original WAV",
+    "channels": 1,
+    "sample_rate": 44100,
+    "bits": 24,
+    "duration_seconds": 2.751361,
+    "location": "SampleLibrary"
+  },
+  {
+    "file": "Quirky/FX_30.wav",
+    "pack": "Versilian Community Sample Library",
+    "instrument": "Dan tranh (zither) FX",
+    "creator": "Versilian Studios (Sam Gossner) and contributors",
+    "source_url": "https://github.com/sgossner/VCSL",
+    "source_commit": "c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e",
+    "source_path": "Chordophones/Zithers/Dan Tranh/FX/FX_30.wav",
+    "download_url": "https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Chordophones/Zithers/Dan%20Tranh/FX/FX_30.wav",
+    "license": "CC0-1.0",
+    "license_evidence": "VCSL-ORIGINAL-LICENSE.txt",
+    "root_note": null,
+    "root_note_evidence": "Unpitched, FX or untuned; not assigned (see filename)",
+    "usage": "Quirky candidate",
+    "sha256": "cd536e36b63b4dc7339742f8ac052c410f775ae9240b9897cacd29d926cb69ac",
+    "modifications": "None: byte-identical original WAV",
+    "channels": 1,
+    "sample_rate": 44100,
+    "bits": 24,
+    "duration_seconds": 0.41254,
+    "location": "SampleLibrary"
+  },
+  {
+    "file": "Chiptune/Chip_Arp_Am.wav",
+    "pack": "Chord Pulse chiptune (generated)",
+    "instrument": "25% pulse chord arpeggio (60 Hz)",
+    "creator": "Chord Pulse project (generated)",
+    "source_url": "Tools/gen_chiptune.py",
+    "generator": "Tools/gen_chiptune.py",
+    "license": "Project-original (no third-party audio)",
+    "license_evidence": "Synthesized from scratch by Tools/gen_chiptune.py",
+    "root_note": null,
+    "root_note_evidence": "Chord, drum or FX; not assigned",
+    "usage": "Chiptune candidate",
+    "sha256": "cf4633a58b3b5616327da4e2f6b93707adab2074851e773e1762a4031732d2d4",
+    "modifications": "Generated",
+    "channels": 1,
+    "sample_rate": 44100,
+    "bits": 16,
+    "duration_seconds": 0.6,
+    "location": "SampleLibrary"
+  },
+  {
+    "file": "Chiptune/Chip_Arp_C.wav",
+    "pack": "Chord Pulse chiptune (generated)",
+    "instrument": "25% pulse chord arpeggio (60 Hz)",
+    "creator": "Chord Pulse project (generated)",
+    "source_url": "Tools/gen_chiptune.py",
+    "generator": "Tools/gen_chiptune.py",
+    "license": "Project-original (no third-party audio)",
+    "license_evidence": "Synthesized from scratch by Tools/gen_chiptune.py",
+    "root_note": null,
+    "root_note_evidence": "Chord, drum or FX; not assigned",
+    "usage": "Chiptune candidate",
+    "sha256": "2afeeb6488b118c055d808b5a25d83ee4c262cff1dd13f484f6bc987ee6f93fb",
+    "modifications": "Generated",
+    "channels": 1,
+    "sample_rate": 44100,
+    "bits": 16,
+    "duration_seconds": 0.6,
+    "location": "SampleLibrary"
+  },
+  {
+    "file": "Chiptune/Chip_Arp_F.wav",
+    "pack": "Chord Pulse chiptune (generated)",
+    "instrument": "25% pulse chord arpeggio (60 Hz)",
+    "creator": "Chord Pulse project (generated)",
+    "source_url": "Tools/gen_chiptune.py",
+    "generator": "Tools/gen_chiptune.py",
+    "license": "Project-original (no third-party audio)",
+    "license_evidence": "Synthesized from scratch by Tools/gen_chiptune.py",
+    "root_note": null,
+    "root_note_evidence": "Chord, drum or FX; not assigned",
+    "usage": "Chiptune candidate",
+    "sha256": "dc32e9451165bfa01016b8e357747f388ea052e0a071e8e328a7d36c4143da5a",
+    "modifications": "Generated",
+    "channels": 1,
+    "sample_rate": 44100,
+    "bits": 16,
+    "duration_seconds": 0.6,
+    "location": "SampleLibrary"
+  },
+  {
+    "file": "Chiptune/Chip_Arp_G.wav",
+    "pack": "Chord Pulse chiptune (generated)",
+    "instrument": "25% pulse chord arpeggio (60 Hz)",
+    "creator": "Chord Pulse project (generated)",
+    "source_url": "Tools/gen_chiptune.py",
+    "generator": "Tools/gen_chiptune.py",
+    "license": "Project-original (no third-party audio)",
+    "license_evidence": "Synthesized from scratch by Tools/gen_chiptune.py",
+    "root_note": null,
+    "root_note_evidence": "Chord, drum or FX; not assigned",
+    "usage": "Chiptune candidate",
+    "sha256": "3c9790170cba0dbb91823fa7dfddde10bfa75d0cf9d4b882d7c7cfde81ec4517",
+    "modifications": "Generated",
+    "channels": 1,
+    "sample_rate": 44100,
+    "bits": 16,
+    "duration_seconds": 0.6,
+    "location": "SampleLibrary"
+  },
+  {
+    "file": "Chiptune/Chip_FX_Coin.wav",
+    "pack": "Chord Pulse chiptune (generated)",
+    "instrument": "pulse FX",
+    "creator": "Chord Pulse project (generated)",
+    "source_url": "Tools/gen_chiptune.py",
+    "generator": "Tools/gen_chiptune.py",
+    "license": "Project-original (no third-party audio)",
+    "license_evidence": "Synthesized from scratch by Tools/gen_chiptune.py",
+    "root_note": null,
+    "root_note_evidence": "Chord, drum or FX; not assigned",
+    "usage": "Chiptune candidate",
+    "sha256": "dc02cb76eeed2ae79f77fe11e9e4d8180f71aa40e4645d3d6d99a7f67ec5230d",
+    "modifications": "Generated",
+    "channels": 1,
+    "sample_rate": 44100,
+    "bits": 16,
+    "duration_seconds": 0.349977,
+    "location": "SampleLibrary"
+  },
+  {
+    "file": "Chiptune/Chip_FX_PowerUp.wav",
+    "pack": "Chord Pulse chiptune (generated)",
+    "instrument": "pulse FX",
+    "creator": "Chord Pulse project (generated)",
+    "source_url": "Tools/gen_chiptune.py",
+    "generator": "Tools/gen_chiptune.py",
+    "license": "Project-original (no third-party audio)",
+    "license_evidence": "Synthesized from scratch by Tools/gen_chiptune.py",
+    "root_note": null,
+    "root_note_evidence": "Chord, drum or FX; not assigned",
+    "usage": "Chiptune candidate",
+    "sha256": "032b8f48153681d6fc4fe2b94d1ab2a14e339309c6a40f2d1d17fde789b1fc0d",
+    "modifications": "Generated",
+    "channels": 1,
+    "sample_rate": 44100,
+    "bits": 16,
+    "duration_seconds": 0.5,
+    "location": "SampleLibrary"
+  },
+  {
+    "file": "Chiptune/Chip_HatClosed.wav",
+    "pack": "Chord Pulse chiptune (generated)",
+    "instrument": "short-mode noise hi-hat",
+    "creator": "Chord Pulse project (generated)",
+    "source_url": "Tools/gen_chiptune.py",
+    "generator": "Tools/gen_chiptune.py",
+    "license": "Project-original (no third-party audio)",
+    "license_evidence": "Synthesized from scratch by Tools/gen_chiptune.py",
+    "root_note": null,
+    "root_note_evidence": "Chord, drum or FX; not assigned",
+    "usage": "Chiptune candidate",
+    "sha256": "9e839e740decd71aac2a8374e760979090e11a9f8f4021c4a7b6bb16cce3f1a5",
+    "modifications": "Generated",
+    "channels": 1,
+    "sample_rate": 44100,
+    "bits": 16,
+    "duration_seconds": 0.06,
+    "location": "SampleLibrary"
+  },
+  {
+    "file": "Chiptune/Chip_HatOpen.wav",
+    "pack": "Chord Pulse chiptune (generated)",
+    "instrument": "short-mode noise hi-hat",
+    "creator": "Chord Pulse project (generated)",
+    "source_url": "Tools/gen_chiptune.py",
+    "generator": "Tools/gen_chiptune.py",
+    "license": "Project-original (no third-party audio)",
+    "license_evidence": "Synthesized from scratch by Tools/gen_chiptune.py",
+    "root_note": null,
+    "root_note_evidence": "Chord, drum or FX; not assigned",
+    "usage": "Chiptune candidate",
+    "sha256": "5a2737b3fb01f894c8019d7fe75a2d64fb54bbb58a107093c3f05cbf4b0567c1",
+    "modifications": "Generated",
+    "channels": 1,
+    "sample_rate": 44100,
+    "bits": 16,
+    "duration_seconds": 0.3,
+    "location": "SampleLibrary"
+  },
+  {
+    "file": "Chiptune/Chip_Kick.wav",
+    "pack": "Chord Pulse chiptune (generated)",
+    "instrument": "triangle pitch-drop kick",
+    "creator": "Chord Pulse project (generated)",
+    "source_url": "Tools/gen_chiptune.py",
+    "generator": "Tools/gen_chiptune.py",
+    "license": "Project-original (no third-party audio)",
+    "license_evidence": "Synthesized from scratch by Tools/gen_chiptune.py",
+    "root_note": null,
+    "root_note_evidence": "Chord, drum or FX; not assigned",
+    "usage": "Chiptune candidate",
+    "sha256": "afc9737e85d2ed8919cdfc589dbfe13471ddc175b1e8d755f8bc0afb6ba62b3f",
+    "modifications": "Generated",
+    "channels": 1,
+    "sample_rate": 44100,
+    "bits": 16,
+    "duration_seconds": 0.25,
+    "location": "SampleLibrary"
+  },
+  {
+    "file": "Chiptune/Chip_Pulse12_Pluck_C3.wav",
+    "pack": "Chord Pulse chiptune (generated)",
+    "instrument": "pulse pluck",
+    "creator": "Chord Pulse project (generated)",
+    "source_url": "Tools/gen_chiptune.py",
+    "generator": "Tools/gen_chiptune.py",
+    "license": "Project-original (no third-party audio)",
+    "license_evidence": "Synthesized from scratch by Tools/gen_chiptune.py",
+    "root_note": "C3",
+    "root_note_evidence": "Synthesized at exact equal-tempered pitch (A4=440 Hz)",
+    "usage": "Chiptune candidate",
+    "sha256": "3b930a7908e16d56c085782b255871e66e447988e703f3464efc1029ef8d1b3d",
+    "modifications": "Generated",
+    "channels": 1,
+    "sample_rate": 44100,
+    "bits": 16,
+    "duration_seconds": 0.6,
+    "location": "SampleLibrary"
+  },
+  {
+    "file": "Chiptune/Chip_Pulse12_Pluck_C4.wav",
+    "pack": "Chord Pulse chiptune (generated)",
+    "instrument": "pulse pluck",
+    "creator": "Chord Pulse project (generated)",
+    "source_url": "Tools/gen_chiptune.py",
+    "generator": "Tools/gen_chiptune.py",
+    "license": "Project-original (no third-party audio)",
+    "license_evidence": "Synthesized from scratch by Tools/gen_chiptune.py",
+    "root_note": "C4",
+    "root_note_evidence": "Synthesized at exact equal-tempered pitch (A4=440 Hz)",
+    "usage": "Chiptune candidate",
+    "sha256": "9126420b9f6f0ac7e90e216778fd66b2c261a925dec9e635cfa549d790a15dd6",
+    "modifications": "Generated",
+    "channels": 1,
+    "sample_rate": 44100,
+    "bits": 16,
+    "duration_seconds": 0.6,
+    "location": "SampleLibrary"
+  },
+  {
+    "file": "Chiptune/Chip_Pulse12_Pluck_C5.wav",
+    "pack": "Chord Pulse chiptune (generated)",
+    "instrument": "pulse pluck",
+    "creator": "Chord Pulse project (generated)",
+    "source_url": "Tools/gen_chiptune.py",
+    "generator": "Tools/gen_chiptune.py",
+    "license": "Project-original (no third-party audio)",
+    "license_evidence": "Synthesized from scratch by Tools/gen_chiptune.py",
+    "root_note": "C5",
+    "root_note_evidence": "Synthesized at exact equal-tempered pitch (A4=440 Hz)",
+    "usage": "Chiptune candidate",
+    "sha256": "18adb1995f32aceeebd2247f72dc6c129d95e8a487da726dde38d2cc6b135835",
+    "modifications": "Generated",
+    "channels": 1,
+    "sample_rate": 44100,
+    "bits": 16,
+    "duration_seconds": 0.6,
+    "location": "SampleLibrary"
+  },
+  {
+    "file": "Chiptune/Chip_Pulse25_Pluck_C3.wav",
+    "pack": "Chord Pulse chiptune (generated)",
+    "instrument": "pulse pluck",
+    "creator": "Chord Pulse project (generated)",
+    "source_url": "Tools/gen_chiptune.py",
+    "generator": "Tools/gen_chiptune.py",
+    "license": "Project-original (no third-party audio)",
+    "license_evidence": "Synthesized from scratch by Tools/gen_chiptune.py",
+    "root_note": "C3",
+    "root_note_evidence": "Synthesized at exact equal-tempered pitch (A4=440 Hz)",
+    "usage": "Chiptune candidate",
+    "sha256": "5b1dd390250320fc843a617213b77c813e77075f254661345376e767fa60a0b8",
+    "modifications": "Generated",
+    "channels": 1,
+    "sample_rate": 44100,
+    "bits": 16,
+    "duration_seconds": 0.6,
+    "location": "FMOD/ChordPulse/Assets"
+  },
+  {
+    "file": "Chiptune/Chip_Pulse25_Pluck_C4.wav",
+    "pack": "Chord Pulse chiptune (generated)",
+    "instrument": "pulse pluck",
+    "creator": "Chord Pulse project (generated)",
+    "source_url": "Tools/gen_chiptune.py",
+    "generator": "Tools/gen_chiptune.py",
+    "license": "Project-original (no third-party audio)",
+    "license_evidence": "Synthesized from scratch by Tools/gen_chiptune.py",
+    "root_note": "C4",
+    "root_note_evidence": "Synthesized at exact equal-tempered pitch (A4=440 Hz)",
+    "usage": "Chiptune candidate",
+    "sha256": "2bfbe5dd68fd1cdf1a1b923da8b46ae2e7ef822f2a87b6bb35c2546acf4ee95c",
+    "modifications": "Generated",
+    "channels": 1,
+    "sample_rate": 44100,
+    "bits": 16,
+    "duration_seconds": 0.6,
+    "location": "FMOD/ChordPulse/Assets"
+  },
+  {
+    "file": "Chiptune/Chip_Pulse25_Pluck_C5.wav",
+    "pack": "Chord Pulse chiptune (generated)",
+    "instrument": "pulse pluck",
+    "creator": "Chord Pulse project (generated)",
+    "source_url": "Tools/gen_chiptune.py",
+    "generator": "Tools/gen_chiptune.py",
+    "license": "Project-original (no third-party audio)",
+    "license_evidence": "Synthesized from scratch by Tools/gen_chiptune.py",
+    "root_note": "C5",
+    "root_note_evidence": "Synthesized at exact equal-tempered pitch (A4=440 Hz)",
+    "usage": "Chiptune candidate",
+    "sha256": "ec2800d52535ffe6c1a442e2560b522f878df65db24b4c7e077ce0d1588c1212",
+    "modifications": "Generated",
+    "channels": 1,
+    "sample_rate": 44100,
+    "bits": 16,
+    "duration_seconds": 0.6,
+    "location": "FMOD/ChordPulse/Assets"
+  },
+  {
+    "file": "Chiptune/Chip_Pulse50_Lead_C4.wav",
+    "pack": "Chord Pulse chiptune (generated)",
+    "instrument": "pulse lead with vibrato",
+    "creator": "Chord Pulse project (generated)",
+    "source_url": "Tools/gen_chiptune.py",
+    "generator": "Tools/gen_chiptune.py",
+    "license": "Project-original (no third-party audio)",
+    "license_evidence": "Synthesized from scratch by Tools/gen_chiptune.py",
+    "root_note": "C4",
+    "root_note_evidence": "Synthesized at exact equal-tempered pitch (A4=440 Hz)",
+    "usage": "Chiptune candidate",
+    "sha256": "0f049b0e29223da59751b53895b2e6fafab03f198c570df61159470fc8414eda",
+    "modifications": "Generated",
+    "channels": 1,
+    "sample_rate": 44100,
+    "bits": 16,
+    "duration_seconds": 1.0,
+    "location": "FMOD/ChordPulse/Assets"
+  },
+  {
+    "file": "Chiptune/Chip_Pulse50_Pluck_C3.wav",
+    "pack": "Chord Pulse chiptune (generated)",
+    "instrument": "pulse pluck",
+    "creator": "Chord Pulse project (generated)",
+    "source_url": "Tools/gen_chiptune.py",
+    "generator": "Tools/gen_chiptune.py",
+    "license": "Project-original (no third-party audio)",
+    "license_evidence": "Synthesized from scratch by Tools/gen_chiptune.py",
+    "root_note": "C3",
+    "root_note_evidence": "Synthesized at exact equal-tempered pitch (A4=440 Hz)",
+    "usage": "Chiptune candidate",
+    "sha256": "453bdf4e71536d749971c0e63f94ed3a6c39ed11533ed8b8c40d14438f221559",
+    "modifications": "Generated",
+    "channels": 1,
+    "sample_rate": 44100,
+    "bits": 16,
+    "duration_seconds": 0.6,
+    "location": "SampleLibrary"
+  },
+  {
+    "file": "Chiptune/Chip_Pulse50_Pluck_C4.wav",
+    "pack": "Chord Pulse chiptune (generated)",
+    "instrument": "pulse pluck",
+    "creator": "Chord Pulse project (generated)",
+    "source_url": "Tools/gen_chiptune.py",
+    "generator": "Tools/gen_chiptune.py",
+    "license": "Project-original (no third-party audio)",
+    "license_evidence": "Synthesized from scratch by Tools/gen_chiptune.py",
+    "root_note": "C4",
+    "root_note_evidence": "Synthesized at exact equal-tempered pitch (A4=440 Hz)",
+    "usage": "Chiptune candidate",
+    "sha256": "887a03d5d961199729bed93686e5c3e8b7892c078c2fdf5b45b0c7532a2d9350",
+    "modifications": "Generated",
+    "channels": 1,
+    "sample_rate": 44100,
+    "bits": 16,
+    "duration_seconds": 0.6,
+    "location": "SampleLibrary"
+  },
+  {
+    "file": "Chiptune/Chip_Pulse50_Pluck_C5.wav",
+    "pack": "Chord Pulse chiptune (generated)",
+    "instrument": "pulse pluck",
+    "creator": "Chord Pulse project (generated)",
+    "source_url": "Tools/gen_chiptune.py",
+    "generator": "Tools/gen_chiptune.py",
+    "license": "Project-original (no third-party audio)",
+    "license_evidence": "Synthesized from scratch by Tools/gen_chiptune.py",
+    "root_note": "C5",
+    "root_note_evidence": "Synthesized at exact equal-tempered pitch (A4=440 Hz)",
+    "usage": "Chiptune candidate",
+    "sha256": "82ed7e14632a0e6d19693cf67faec9447381d0196eeff46f55f715454a1b64dc",
+    "modifications": "Generated",
+    "channels": 1,
+    "sample_rate": 44100,
+    "bits": 16,
+    "duration_seconds": 0.6,
+    "location": "SampleLibrary"
+  },
+  {
+    "file": "Chiptune/Chip_Snare.wav",
+    "pack": "Chord Pulse chiptune (generated)",
+    "instrument": "noise snare",
+    "creator": "Chord Pulse project (generated)",
+    "source_url": "Tools/gen_chiptune.py",
+    "generator": "Tools/gen_chiptune.py",
+    "license": "Project-original (no third-party audio)",
+    "license_evidence": "Synthesized from scratch by Tools/gen_chiptune.py",
+    "root_note": null,
+    "root_note_evidence": "Chord, drum or FX; not assigned",
+    "usage": "Chiptune candidate",
+    "sha256": "dd904f6ad8ef467f446952fefbb9eb74cd457fb89dea9169cf169c09b0d19390",
+    "modifications": "Generated",
+    "channels": 1,
+    "sample_rate": 44100,
+    "bits": 16,
+    "duration_seconds": 0.22,
+    "location": "SampleLibrary"
+  },
+  {
+    "file": "Chiptune/Chip_TriBass_C2.wav",
+    "pack": "Chord Pulse chiptune (generated)",
+    "instrument": "triangle bass",
+    "creator": "Chord Pulse project (generated)",
+    "source_url": "Tools/gen_chiptune.py",
+    "generator": "Tools/gen_chiptune.py",
+    "license": "Project-original (no third-party audio)",
+    "license_evidence": "Synthesized from scratch by Tools/gen_chiptune.py",
+    "root_note": "C2",
+    "root_note_evidence": "Synthesized at exact equal-tempered pitch (A4=440 Hz)",
+    "usage": "Chiptune candidate",
+    "sha256": "bcf2dddecd00827801eace32b11d9507f074ba370ecb94262f80c830b61174bb",
+    "modifications": "Generated",
+    "channels": 1,
+    "sample_rate": 44100,
+    "bits": 16,
+    "duration_seconds": 0.5,
+    "location": "FMOD/ChordPulse/Assets"
+  },
+  {
+    "file": "Chiptune/Chip_TriBass_C3.wav",
+    "pack": "Chord Pulse chiptune (generated)",
+    "instrument": "triangle bass",
+    "creator": "Chord Pulse project (generated)",
+    "source_url": "Tools/gen_chiptune.py",
+    "generator": "Tools/gen_chiptune.py",
+    "license": "Project-original (no third-party audio)",
+    "license_evidence": "Synthesized from scratch by Tools/gen_chiptune.py",
+    "root_note": "C3",
+    "root_note_evidence": "Synthesized at exact equal-tempered pitch (A4=440 Hz)",
+    "usage": "Chiptune candidate",
+    "sha256": "130ac69ad9dd60f4a58fc56cd3364384cf4c1002bdb4e1d487cbc9ed3acf6397",
+    "modifications": "Generated",
+    "channels": 1,
+    "sample_rate": 44100,
+    "bits": 16,
+    "duration_seconds": 0.5,
+    "location": "FMOD/ChordPulse/Assets"
+  },
+  {
+    "file": "Chiptune/Chip_TriBass_G2.wav",
+    "pack": "Chord Pulse chiptune (generated)",
+    "instrument": "triangle bass",
+    "creator": "Chord Pulse project (generated)",
+    "source_url": "Tools/gen_chiptune.py",
+    "generator": "Tools/gen_chiptune.py",
+    "license": "Project-original (no third-party audio)",
+    "license_evidence": "Synthesized from scratch by Tools/gen_chiptune.py",
+    "root_note": "G2",
+    "root_note_evidence": "Synthesized at exact equal-tempered pitch (A4=440 Hz)",
+    "usage": "Chiptune candidate",
+    "sha256": "3552b1ba75cb4290099e7f45d187d57291d03f3cf84342bcf6c6f67b7df10db9",
+    "modifications": "Generated",
+    "channels": 1,
+    "sample_rate": 44100,
+    "bits": 16,
+    "duration_seconds": 0.5,
+    "location": "FMOD/ChordPulse/Assets"
+  },
+  {
+    "file": "Vocals/794482__watermelondreams__weird-girl-vocal-fx-ahhhh.wav",
+    "pack": "Freesound",
+    "instrument": "Vocal one-shot: Weird Girl Vocal FX - ''Ahhhh''",
+    "creator": "WatermelonDreams (Freesound)",
+    "source_url": "https://freesound.org/people/WatermelonDreams/sounds/794482/",
+    "download_url": "https://freesound.org/people/WatermelonDreams/sounds/794482/download/794482__watermelondreams__weird-girl-vocal-fx-ahhhh.wav",
+    "manual_download": true,
+    "license": "CC0-1.0",
+    "license_evidence": "Freesound sound page links http://creativecommons.org/publicdomain/zero/1.0/ (checked 2026-11-27)",
+    "root_note": null,
+    "root_note_evidence": "Vocal; not assigned",
+    "usage": "Vocal chop candidate",
+    "sha256": "d725acca007e0734a9231708c4e3b58976e75f2ba264945fbe4570afbc05272e",
+    "modifications": "None: byte-identical original file (Freesound download name)",
+    "channels": 2,
+    "sample_rate": 44100,
+    "bits": 16,
+    "duration_seconds": 2.629,
+    "format_evidence": "Freesound page metadata",
+    "location": "SampleLibrary"
+  },
+  {
+    "file": "Vocals/794486__watermelondreams__weird-girl-vocal-fx-iiihhh.wav",
+    "pack": "Freesound",
+    "instrument": "Vocal one-shot: Weird Girl Vocal FX - \"IIIHHH!\"",
+    "creator": "WatermelonDreams (Freesound)",
+    "source_url": "https://freesound.org/people/WatermelonDreams/sounds/794486/",
+    "download_url": "https://freesound.org/people/WatermelonDreams/sounds/794486/download/794486__watermelondreams__weird-girl-vocal-fx-iiihhh.wav",
+    "manual_download": true,
+    "license": "CC0-1.0",
+    "license_evidence": "Freesound sound page links http://creativecommons.org/publicdomain/zero/1.0/ (checked 2026-11-27)",
+    "root_note": null,
+    "root_note_evidence": "Vocal; not assigned",
+    "usage": "Vocal chop candidate",
+    "sha256": "5d2e79ba22d2166515cb83bf4a306c26b2bef3b37fc577fc0f4b56433e3aeb8d",
+    "modifications": "None: byte-identical original file (Freesound download name)",
+    "channels": 2,
+    "sample_rate": 44100,
+    "bits": 16,
+    "duration_seconds": 2.493,
+    "format_evidence": "Freesound page metadata",
+    "location": "SampleLibrary"
+  },
+  {
+    "file": "Vocals/794484__watermelondreams__weird-girl-vocal-fx-eeehhh.wav",
+    "pack": "Freesound",
+    "instrument": "Vocal one-shot: Weird Girl Vocal FX - \"Eeehhh!\"",
+    "creator": "WatermelonDreams (Freesound)",
+    "source_url": "https://freesound.org/people/WatermelonDreams/sounds/794484/",
+    "download_url": "https://freesound.org/people/WatermelonDreams/sounds/794484/download/794484__watermelondreams__weird-girl-vocal-fx-eeehhh.wav",
+    "manual_download": true,
+    "license": "CC0-1.0",
+    "license_evidence": "Freesound sound page links http://creativecommons.org/publicdomain/zero/1.0/ (checked 2026-11-27)",
+    "root_note": null,
+    "root_note_evidence": "Vocal; not assigned",
+    "usage": "Vocal chop candidate",
+    "sha256": "4b0eb2fd13c28e8e5adc02712d6a1c6266d27c42a7772c58b544d131df12f12c",
+    "modifications": "None: byte-identical original file (Freesound download name)",
+    "channels": 2,
+    "sample_rate": 44100,
+    "bits": 16,
+    "duration_seconds": 2.515,
+    "format_evidence": "Freesound page metadata",
+    "location": "SampleLibrary"
+  },
+  {
+    "file": "Vocals/794478__watermelondreams__ufo-type-vocal-lalala.wav",
+    "pack": "Freesound",
+    "instrument": "Vocal one-shot: UFO-Type Vocal - \"Lalala\"",
+    "creator": "WatermelonDreams (Freesound)",
+    "source_url": "https://freesound.org/people/WatermelonDreams/sounds/794478/",
+    "download_url": "https://freesound.org/people/WatermelonDreams/sounds/794478/download/794478__watermelondreams__ufo-type-vocal-lalala.wav",
+    "manual_download": true,
+    "license": "CC0-1.0",
+    "license_evidence": "Freesound sound page links http://creativecommons.org/publicdomain/zero/1.0/ (checked 2026-11-27)",
+    "root_note": null,
+    "root_note_evidence": "Vocal; not assigned",
+    "usage": "Vocal chop candidate",
+    "sha256": "4475efd7a8221ed77b1050ab361caa8e4cd392d6f09054fa402052a18fcc3d04",
+    "modifications": "None: byte-identical original file (Freesound download name)",
+    "channels": 2,
+    "sample_rate": 44100,
+    "bits": 16,
+    "duration_seconds": 3.111,
+    "format_evidence": "Freesound page metadata",
+    "location": "SampleLibrary"
+  },
+  {
+    "file": "Vocals/794479__watermelondreams__ufo-type-vocal-oh-wow.wav",
+    "pack": "Freesound",
+    "instrument": "Vocal one-shot: UFO-Type Vocal - \"Oh Wow!\"",
+    "creator": "WatermelonDreams (Freesound)",
+    "source_url": "https://freesound.org/people/WatermelonDreams/sounds/794479/",
+    "download_url": "https://freesound.org/people/WatermelonDreams/sounds/794479/download/794479__watermelondreams__ufo-type-vocal-oh-wow.wav",
+    "manual_download": true,
+    "license": "CC0-1.0",
+    "license_evidence": "Freesound sound page links http://creativecommons.org/publicdomain/zero/1.0/ (checked 2026-11-27)",
+    "root_note": null,
+    "root_note_evidence": "Vocal; not assigned",
+    "usage": "Vocal chop candidate",
+    "sha256": "dd56f36ebbb5f6e6d9d946deecd6fe55b31ad8226fb1d019fd491e8fb0efadbe",
+    "modifications": "None: byte-identical original file (Freesound download name)",
+    "channels": 2,
+    "sample_rate": 44100,
+    "bits": 16,
+    "duration_seconds": 1.955,
+    "format_evidence": "Freesound page metadata",
+    "location": "SampleLibrary"
+  },
+  {
+    "file": "Vocals/794480__watermelondreams__ufo-type-vocal-ooh-baby.wav",
+    "pack": "Freesound",
+    "instrument": "Vocal one-shot: UFO-Type Vocal - \"Ooh Baby!\"",
+    "creator": "WatermelonDreams (Freesound)",
+    "source_url": "https://freesound.org/people/WatermelonDreams/sounds/794480/",
+    "download_url": "https://freesound.org/people/WatermelonDreams/sounds/794480/download/794480__watermelondreams__ufo-type-vocal-ooh-baby.wav",
+    "manual_download": true,
+    "license": "CC0-1.0",
+    "license_evidence": "Freesound sound page links http://creativecommons.org/publicdomain/zero/1.0/ (checked 2026-11-27)",
+    "root_note": null,
+    "root_note_evidence": "Vocal; not assigned",
+    "usage": "Vocal chop candidate",
+    "sha256": "45b08e2d0a01279b4d0a02edbed639e0331996c3b3b5ee369146509545e538de",
+    "modifications": "None: byte-identical original file (Freesound download name)",
+    "channels": 2,
+    "sample_rate": 44100,
+    "bits": 16,
+    "duration_seconds": 1.921,
+    "format_evidence": "Freesound page metadata",
+    "location": "SampleLibrary"
+  },
+  {
+    "file": "Vocals/593436__lil-lugger__hey-sample.wav",
+    "pack": "Freesound",
+    "instrument": "Vocal one-shot: Hey Sample",
+    "creator": "lil-lugger (Freesound)",
+    "source_url": "https://freesound.org/people/lil-lugger/sounds/593436/",
+    "download_url": "https://freesound.org/people/lil-lugger/sounds/593436/download/593436__lil-lugger__hey-sample.wav",
+    "manual_download": true,
+    "license": "CC0-1.0",
+    "license_evidence": "Freesound sound page links http://creativecommons.org/publicdomain/zero/1.0/ (checked 2026-11-27)",
+    "root_note": null,
+    "root_note_evidence": "Vocal; not assigned",
+    "usage": "Vocal chop candidate",
+    "sha256": "d677756e1bf41f295250126c64aafd2b897192d1be7519cbb40d195a4ac03339",
+    "modifications": "None: byte-identical original file (Freesound download name)",
+    "channels": 2,
+    "sample_rate": 44100,
+    "bits": 24,
+    "duration_seconds": 2.988,
+    "format_evidence": "Freesound page metadata",
+    "location": "SampleLibrary"
+  },
+  {
+    "file": "Vocals/390533__svproducties__trap_hey.aiff",
+    "pack": "Freesound",
+    "instrument": "Vocal one-shot: Trap_Hey",
+    "creator": "SVProducties (Freesound)",
+    "source_url": "https://freesound.org/people/SVProducties/sounds/390533/",
+    "download_url": "https://freesound.org/people/SVProducties/sounds/390533/download/390533__svproducties__trap_hey.aiff",
+    "manual_download": true,
+    "license": "CC0-1.0",
+    "license_evidence": "Freesound sound page links http://creativecommons.org/publicdomain/zero/1.0/ (checked 2026-11-27)",
+    "root_note": null,
+    "root_note_evidence": "Vocal; not assigned",
+    "usage": "Vocal chop candidate",
+    "sha256": "2705bc1ee48acbf5a27f88b1627dabbac3fce019fd6a7f149856c109e9ef076c",
+    "modifications": "None: byte-identical original file (Freesound download name)",
+    "channels": 1,
+    "sample_rate": 44100,
+    "bits": 16,
+    "duration_seconds": 0.895,
+    "format_evidence": "Freesound page metadata",
+    "location": "SampleLibrary"
+  },
+  {
+    "file": "Vocals/345431__artmasterrich__male_heyyy_01.wav",
+    "pack": "Freesound",
+    "instrument": "Vocal one-shot: Male_Heyyy_01",
+    "creator": "Artmasterrich (Freesound)",
+    "source_url": "https://freesound.org/people/Artmasterrich/sounds/345431/",
+    "download_url": "https://freesound.org/people/Artmasterrich/sounds/345431/download/345431__artmasterrich__male_heyyy_01.wav",
+    "manual_download": true,
+    "license": "CC0-1.0",
+    "license_evidence": "Freesound sound page links http://creativecommons.org/publicdomain/zero/1.0/ (checked 2026-11-27)",
+    "root_note": null,
+    "root_note_evidence": "Vocal; not assigned",
+    "usage": "Vocal chop candidate",
+    "sha256": "f2572a934735185951ca358bc6c68c1a384a313f915701aa259bb0073ef330b8",
+    "modifications": "None: byte-identical original file (Freesound download name)",
+    "channels": 2,
+    "sample_rate": 44100,
+    "bits": 16,
+    "duration_seconds": 0.812,
+    "format_evidence": "Freesound page metadata",
+    "location": "SampleLibrary"
+  },
+  {
+    "file": "Vocals/57204__jace__men-shouting-hey.wav",
+    "pack": "Freesound",
+    "instrument": "Vocal one-shot: Men Shouting Hey.wav",
+    "creator": "Jace (Freesound)",
+    "source_url": "https://freesound.org/people/Jace/sounds/57204/",
+    "download_url": "https://freesound.org/people/Jace/sounds/57204/download/57204__jace__men-shouting-hey.wav",
+    "manual_download": true,
+    "license": "CC0-1.0",
+    "license_evidence": "Freesound sound page links http://creativecommons.org/publicdomain/zero/1.0/ (checked 2026-11-27)",
+    "root_note": null,
+    "root_note_evidence": "Vocal; not assigned",
+    "usage": "Vocal chop candidate",
+    "sha256": "1516904abcf8d4154c0ba2f65d5e892582b423fc5c6fd0fd7c7176cb8eed1664",
+    "modifications": "None: byte-identical original file (Freesound download name)",
+    "channels": 2,
+    "sample_rate": 44100,
+    "bits": 32,
+    "duration_seconds": 1.294,
+    "format_evidence": "Freesound page metadata",
+    "location": "SampleLibrary"
+  },
+  {
+    "file": "Vocals/343868__reitanna__oooh-ooh-hoo-hoo.wav",
+    "pack": "Freesound",
+    "instrument": "Vocal one-shot: oooh ooh hoo hoo.wav",
+    "creator": "Reitanna (Freesound)",
+    "source_url": "https://freesound.org/people/Reitanna/sounds/343868/",
+    "download_url": "https://freesound.org/people/Reitanna/sounds/343868/download/343868__reitanna__oooh-ooh-hoo-hoo.wav",
+    "manual_download": true,
+    "license": "CC0-1.0",
+    "license_evidence": "Freesound sound page links http://creativecommons.org/publicdomain/zero/1.0/ (checked 2026-11-27)",
+    "root_note": null,
+    "root_note_evidence": "Vocal; not assigned",
+    "usage": "Vocal chop candidate",
+    "sha256": "d85156a39dda65a2b715ad9af8a50c9580d69ae3d027e7f89e665e20fac2cf62",
+    "modifications": "None: byte-identical original file (Freesound download name)",
+    "channels": 1,
+    "sample_rate": 44100,
+    "bits": 16,
+    "duration_seconds": 2.113,
+    "format_evidence": "Freesound page metadata",
+    "location": "SampleLibrary"
   }
 ]

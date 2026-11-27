@@ -82,6 +82,8 @@
 			<destination>{8193be18-e203-4a02-b8c6-a1d47b1f5d74}</destination>
 			<destination>{c000ede8-6e2d-4072-a9b7-a8a4cf610ee2}</destination>
 			<destination>{7c8a5c39-e467-4946-9238-bfa0bd5f2767}</destination>
+			<destination>{e71a8ca5-4192-4758-ac62-84e6d77a094b}</destination>
+			<destination>{8c498544-e24e-4c76-9526-d0969dae06f4}</destination>
 		</relationship>
 		<relationship name="mixerGroup">
 			<destination>{00a98fff-7537-4227-9c7e-de76bdb192df}</destination>
@@ -104,6 +106,8 @@
 			<destination>{8193be18-e203-4a02-b8c6-a1d47b1f5d74}</destination>
 			<destination>{c000ede8-6e2d-4072-a9b7-a8a4cf610ee2}</destination>
 			<destination>{7c8a5c39-e467-4946-9238-bfa0bd5f2767}</destination>
+			<destination>{e71a8ca5-4192-4758-ac62-84e6d77a094b}</destination>
+			<destination>{8c498544-e24e-4c76-9526-d0969dae06f4}</destination>
 		</relationship>
 	</object>
 	<object class="ParameterProxy" id="{5fd6ccec-e180-4957-90f7-481d1e95761e}">
@@ -420,6 +424,46 @@
 		</relationship>
 		<relationship name="audioFile">
 			<destination>{65da2626-8c06-459a-afea-76793f4ddbf0}</destination>
+		</relationship>
+	</object>
+	<object class="SingleSound" id="{e71a8ca5-4192-4758-ac62-84e6d77a094b}">
+		<property name="length">
+			<value>4</value>
+		</property>
+		<property name="volume">
+			<value>-17.7999992</value>
+		</property>
+		<property name="pitch">
+			<value>-10</value>
+		</property>
+		<relationship name="modulators">
+			<destination>{dd263519-ca5c-45a5-864b-1199c66dbf4b}</destination>
+		</relationship>
+		<relationship name="triggerConditions">
+			<destination>{6016518d-6554-4d14-b394-77baa9ccf673}</destination>
+		</relationship>
+		<relationship name="audioFile">
+			<destination>{5bcbce3e-3ff5-40b2-be77-b2d3a8a1f040}</destination>
+		</relationship>
+	</object>
+	<object class="SingleSound" id="{8c498544-e24e-4c76-9526-d0969dae06f4}">
+		<property name="length">
+			<value>4</value>
+		</property>
+		<property name="volume">
+			<value>-17.7999992</value>
+		</property>
+		<property name="pitch">
+			<value>-8</value>
+		</property>
+		<relationship name="modulators">
+			<destination>{8e44de8c-285d-4286-af95-b52eca0fafb9}</destination>
+		</relationship>
+		<relationship name="triggerConditions">
+			<destination>{f1699680-8e0c-4e60-b435-c4f9b7d663d7}</destination>
+		</relationship>
+		<relationship name="audioFile">
+			<destination>{5bcbce3e-3ff5-40b2-be77-b2d3a8a1f040}</destination>
 		</relationship>
 	</object>
 	<object class="EventMixerGroup" id="{00a98fff-7537-4227-9c7e-de76bdb192df}">
@@ -768,6 +812,50 @@
 		</property>
 		<property name="maximum">
 			<value>91.400000000000006</value>
+		</property>
+		<relationship name="parameter">
+			<destination>{54526f95-8176-4edf-b73c-dfa11aa94b68}</destination>
+		</relationship>
+	</object>
+	<object class="ADSRModulator" id="{dd263519-ca5c-45a5-864b-1199c66dbf4b}">
+		<property name="nameOfPropertyBeingModulated">
+			<value>volume</value>
+		</property>
+		<property name="attackTime">
+			<value>1</value>
+		</property>
+		<property name="releaseTime">
+			<value>120</value>
+		</property>
+	</object>
+	<object class="ParameterCondition" id="{6016518d-6554-4d14-b394-77baa9ccf673}">
+		<property name="minimum">
+			<value>61.600000000000001</value>
+		</property>
+		<property name="maximum">
+			<value>62.399999999999999</value>
+		</property>
+		<relationship name="parameter">
+			<destination>{54526f95-8176-4edf-b73c-dfa11aa94b68}</destination>
+		</relationship>
+	</object>
+	<object class="ADSRModulator" id="{8e44de8c-285d-4286-af95-b52eca0fafb9}">
+		<property name="nameOfPropertyBeingModulated">
+			<value>volume</value>
+		</property>
+		<property name="attackTime">
+			<value>1</value>
+		</property>
+		<property name="releaseTime">
+			<value>120</value>
+		</property>
+	</object>
+	<object class="ParameterCondition" id="{f1699680-8e0c-4e60-b435-c4f9b7d663d7}">
+		<property name="minimum">
+			<value>63.600000000000001</value>
+		</property>
+		<property name="maximum">
+			<value>64.400000000000006</value>
 		</property>
 		<relationship name="parameter">
 			<destination>{54526f95-8176-4edf-b73c-dfa11aa94b68}</destination>

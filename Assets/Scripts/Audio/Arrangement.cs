@@ -12,6 +12,8 @@ public struct ArrangementState
     public int SectionPhrase;
     /// <summary>Fever bed variant (pattern_fever.py VARIANTS) in the fever zone; 0 elsewhere.</summary>
     public int FeverVariant;
+    /// <summary>Chord progression of the step's phrase (progressions.py, <see cref="ProgressionSelector"/>).</summary>
+    public int Progression;
 }
 
 /// <summary>The state that should sound at a step, without lookahead. Implemented by SoundManager.</summary>
@@ -36,6 +38,8 @@ public static class PatternMatch
         if (c.FeatureLoop != 0 && c.FeatureLoop != s.FeatureLoop)
             return false;
         if (s.FeverVariant < 0 || s.FeverVariant > 7 || (c.FeverVariantMask & (1 << s.FeverVariant)) == 0)
+            return false;
+        if (s.Progression < 0 || s.Progression > 15 || (c.ProgressionMask & (1 << s.Progression)) == 0)
             return false;
         return c.SectionPhrase == 0 || c.SectionPhrase == s.SectionPhrase;
     }
