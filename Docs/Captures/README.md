@@ -3333,6 +3333,12 @@ of `floor_ref` (-54 .. -58 dB), i.e. the pluck's own waveform, not the stop. The
 -20 .. -26 dB relative (about -60 dBFS absolute); nothing in the measurement shows it as a click, but it is not the
 "volume already 0" the plan assumed.
 
+Second measurement (the reviewer's, independent of `ladderfade`, same takes): a least-squares fit of the 1/16-beat
+above-floor gain against 1 - t² gives a lag of 0.100 beat (`b405`) and 0.075 beat (`b47`). At the stop the above-floor
+signal is about -24 dB relative to its unfaded level (-55 .. -62 dBFS). The cut is a two-stage drop: about -8 dB within
+2 ms, a plateau around -73 .. -77 dBFS for about one mixer block, gone at +22 .. +24 ms; no sample discontinuity (largest
+sample-to-sample step within ±5 ms of the stop 1.8e-3, against the music's own 3.1e-3).
+
 ### Criteria (spec 7, plan Task 6 Step 3)
 
 | criterion | measured | verdict |
@@ -3340,19 +3346,28 @@ of `floor_ref` (-54 .. -58 dB), i.e. the pluck's own waveform, not the stop. The
 | Monotonic fall over the 2-beat fade: the difference to `ref` falls in each of the four half-beat windows (each <= the one before) | full mix: `b405` -0.04, -0.77, -2.66, **-0.60**; `b47` -0.07, -0.76, **-0.18**, -4.10. The 4th (`b405`) / 3rd (`b47`) window starts with a kick (beat 42 / 48, floor layer, unchanged), which dominates the window's RMS. The above-floor gain (take - rung0 against ref - rung0) does fall in every window: `b405` -0.1, -1.0, -3.2, -9.1; `b47` -0.1, -0.9, -3.7, -9.3 dB, and in every 1/8-beat step | **NOT met** as written (full-mix difference); the faded layers themselves fall monotonically |
 | Then 0: the 2 beats after the fade within ±1 dB of `rung0` at the same beats | `b405` -36.21 vs -36.21 dBFS (+0.00 dB); `b47` -37.11 vs -37.11 (+0.00); `floor` -36.21 vs -36.21 (+0.00). Above-floor residual -67 / -74 / -72 dBFS in the first half beat (the stop's last block), then silent | met |
 | Floor unchanged: `floor` take, first 30 ms RMS of the kick beats before and after the break against `ref` ±1 dB | beats 36-46: -0.21, -0.62, -0.17, -0.56, -0.19, -0.64 dB (max 0.64; `ref` has the rung-6 layers on top). Against `floor_ref` and `rung0`: 0.00 dB at every kick beat | met |
-| No clicks: `clicks` 0 in all three break takes | `b405` 0, `b47` 0, `floor` 0 (raw, fade and the half beat after it) | met |
-| Timing: `.cpu.txt` late 0 / dropped 0 / RESYNCED 0; `rung` at the floor at break + 2.0 beats (1 frame) | late / dropped / RESYNCED 0 in all six takes. Rung at the floor at: `b405` 42.5564 = fade start (40.5352) + 2.0212 = break + 2.0564; `b47` 49.0374 = start (47.0106) + 2.0269 = break + 2.0374; `floor` as `b405`. The ladder's beat advances once per mixer block (0.041 beat; largest step between two frames 0.077 beat): the drop is on the first block at or after start + 2.0, and the start on the first block at or after the break (the scenario sets the combo then; SoundManager reads it the next frame) | met |
+| No clicks: `clicks` 0 in all three break takes | `b405` 0, `b47` 0, `floor` 0 (raw, fade and the half beat after it). The detector counts a 1 ms window more than 12 dB above BOTH neighbours (the both-neighbours reading of "+12 dB against the adjacent 1 ms windows"); a stop is a drop in level, which this cannot see, so "clicks 0" is evidence about the fade, not about the end-of-fade stop. The evidence for the stop is the 2 ms table in "End of the fade" above | met (for the fade; the stop is covered there) |
+| Timing (a): `.cpu.txt` late 0 / dropped 0 / RESYNCED 0 | 0 / 0 / 0 in all six takes | met |
+| Timing (b): `rung` at the floor at break + 2.0 beats, tolerance 1 frame | `b405` 42.5564 = break + **2.0564**; `b47` 49.0374 = break + **2.0374**; `floor` as `b405`. One Unity frame during the fade is about 0.008 beat (`b405`: 2.02 beats over 253 frames), so the drop is about 5-7 frames late. Why: the ladder's beat advances once per mixer block (1024 samples = 0.041 beat at 116 BPM); the break is picked up on the first block after the break beat (fade start 40.5352 / 47.0106, SoundManager reads the combo one frame after the scenario sets it), and the fade itself lasts 2.0212 / 2.0269 beats (it ends on the first block at or after start + 2.0). Even against one mixer block (0.041 beat) instead of one frame, `b405` (+0.056) still misses; `b47` (+0.037) is within it. (The analyzer's printed "largest beat step between frames", 0.077 beat, is about two mixer blocks and is not the brief's tolerance.) | **NOT met** as written (+2.056 / +2.037 beats) |
 | Fade across a bar line (`b47`): 20 ms before / after beat 48, the take's RMS step within the `ref` step + the fade's slope | full mix: take -42.33 / -29.06 dBFS (step +13.27 dB), `ref` -40.71 / -29.00 (step +11.70); take step - ref step **+1.57 dB**, fade curve step between the window centres -0.22 dB. The before window is quiet, so the faded layers are a larger share of it than of the kick-led after window. The above-floor gain itself: -1.99 dB before, -2.18 dB after (step -0.19 dB against the curve's -0.22): no jump at the bar line; the ladder kept rung 6 across it | **NOT met** as written (full mix, +1.57 dB beyond the bound); the faded layers make no step at the bar line |
 
 Listening was not part of this task. What the numbers say a listener should hear: the layers above the floor sink
-smoothly over the 2 beats, about 40 ms behind the beat-exact curve, and are gone 2.06 beats after the break; the kick,
+smoothly over the 2 beats, about 0.08-0.10 beat (40-50 ms) behind the beat-exact curve, and are gone 2.06 beats after the break; the kick,
 snare, hat and bass do not change.
+
+### NOT met / open
+
+- Monotonic fall and fade across a bar line: NOT met as written (full-mix window RMS); the above-floor gain meets both.
+- Timing (b): the rung reaches the floor at break + 2.056 / + 2.037 beats, not break + 2.0 ± 1 frame (break picked up
+  one mixer block late, fade end on the next block after start + 2.0).
+- End-of-fade stop: spec 5.3 step 3 expects what is stopped to be inaudible; the stop happens at about -24 dB relative,
+  not at 0 — open, to be fixed in the fade code (not in this task).
 
 ### Noticed, not changed
 
-- The two "NOT met" rows fail on the measure, not on the fade: a full-mix RMS difference per window is dominated by
-  whichever floor hit (kick) falls in the window. The above-floor gain is the measure that isolates the faded layers.
-  Whether the criteria should be judged on it is a decision for the plan, not for this task.
+- The monotonic and bar-line "NOT met" rows fail on the measure, not on the fade: a full-mix RMS difference per window
+  is dominated by whichever floor hit (kick) falls in the window. The above-floor gain is the measure that isolates the
+  faded layers. Whether those criteria should be judged on it is a decision for the plan, not for this task.
 - The stop at the end of the fade cuts notes that are still at about -20 .. -26 dB relative (the fade lags its curve
   by about 0.08 beat, so the last frames' scale 0.01-0.02 has not reached the mix). No click is measurable. Not
   changed here (fade code is outside this task); options would be timing the fade from the break beat rather than the
