@@ -70,6 +70,26 @@
       (+-20 ms). Prints the median over chords of the per-chord mean gain (dB), the mean over all bins and the median
       of the per-chord minimum.
 
+  python FMOD/Tools/analyze_capture.py ladderfade <take> --break-beat B [--reference <no-break take>] [--rung0 <rung-0 take>]
+        [--edge-beat E]
+  python FMOD/Tools/analyze_capture.py ladderfade --selftest
+      Combo-ladder break fade (CaptureScenario combobreak). Half-beat windows, all buses together, cut along each take's
+      own beat log: 2 beats before the break, the 2-beat fade, 2 beats after it. Per window the take's RMS and, with
+      --reference, the reference's and the difference. In a full mix the floor layers keep playing, so the level of the
+      layers above the floor is only visible against other takes: the takes are deterministic for a seed, so the take
+      is first checked against the reference sample for sample before the break (null depth, 4-beat window diffs); with
+      --rung0 too, the above-floor signal is take - rung0 and ref - rung0 (floor layers cancel) and their ratio is the
+      fade gain, printed per window next to the 1 - t^2 curve (window mean as RMS), and per 1/8 beat. Also: the
+      monotonic check of the 4 fade windows against the reference, the 2 beats after the fade against the rung-0 take
+      (+-1 dB), clicks (1 ms windows more than 12 dB above both neighbours, raw and on the first difference) in the fade
+      and in the half beat after it, the ladder log (<take>.ladder.csv: fade start, the frame the rung reached the floor,
+      fever / guest rows), the above-floor signal in 2 ms windows around the rung drop (end-of-fade stop) and, with
+      --edge-beat, the 20 ms RMS before / after a bar line inside the fade. --selftest: a 1 kHz sine under 1 - t^2,
+      written as a take and read back; the four fade windows must match the curve within 0.5 dB.
+
+  python FMOD/Tools/analyze_capture.py kicks <take> --reference <take> [--from 36 --to 46 --ms 30]
+      RMS of the first 30 ms after every even beat (kick), take vs reference.
+
 Needs numpy and scipy. Note: numpy lives in the user site-packages here, so `python -I` (isolated mode) cannot import
 it; run with plain `python` (the WAVs are our own captures, nothing untrusted is loaded).
 """
@@ -947,6 +967,338 @@ def cmd_duck(args):
     return 0
 
 
+def beat_frame(beats, b):
+    """Capture frame of a fractional beat, interpolated between the logged whole beats around it."""
+    table = {beat: frame for beat, frame, _ in beats}
+    k = int(np.floor(b))
+    if k not in table or k + 1 not in table:
+        raise SystemExit("beat %.3f is outside the beat log" % b)
+    return table[k] + (b - k) * (table[k + 1] - table[k])
+
+
+def seg_rms(x):
+    x = x.astype(np.float64)
+    return float(np.sqrt(np.mean(x ** 2))) if x.size else 0.0
+
+
+def to_db(v):
+    return 20 * np.log10(v) if v > 0 else float("-inf")
+
+
+def fade_expected_db(t0, t1, n=10000):
+    """Window mean of the ComboFade gain (1 - t^2), as the RMS of a stationary signal under it: 10 log10 mean(g^2)."""
+    t = np.linspace(t0, t1, n)
+    return 10 * np.log10(np.mean((1 - t * t) ** 2))
+
+
+def count_clicks(mono, rate, a, b, win_ms=1.0, jump_db=12.0):
+    """1 ms windows from frame a to b whose RMS is more than jump_db above both neighbouring windows."""
+    win = max(1, int(round(rate * win_ms / 1000.0)))
+    a, b = int(round(a)), int(round(b))
+    n = (b - a) // win
+    if n < 3:
+        return 0, []
+    seg = mono[a:a + n * win].astype(np.float64).reshape(n, win)
+    lv = 10 * np.log10(np.mean(seg ** 2, axis=1) + 1e-20)
+    hits = [i for i in range(1, n - 1) if lv[i] > lv[i - 1] + jump_db and lv[i] > lv[i + 1] + jump_db]
+    return len(hits), [(a + i * win, lv[i]) for i in hits]
+
+
+class Take:
+    def __init__(self, path):
+        self.path = path
+        self.audio, self.rate = read_wav(path)
+        self.beats = read_beats(path, None)
+        self.mono = self.audio.mean(axis=1)
+
+    def frame(self, b):
+        return beat_frame(self.beats, b)
+
+    def cut(self, b0, b1, length=None):
+        """Stereo samples from beat b0 to b1 (or `length` samples from b0)."""
+        a = int(round(self.frame(b0)))
+        n = int(round(self.frame(b1))) - a if length is None else length
+        return self.audio[a:a + n]
+
+
+def ladder_rows(wav):
+    path = os.path.splitext(wav)[0] + ".ladder.csv"
+    if not os.path.isfile(path):
+        return None
+    with open(path, newline="") as f:
+        return [{k: float(v) for k, v in r.items()} for r in csv.DictReader(f)]
+
+
+def window_diff_db(take, ref, b0, b1):
+    """RMS of take minus RMS of ref (dB) over beats b0..b1, each cut along its own beat log (the ladderfade windows)."""
+    x = take.cut(b0, b1)
+    y = ref.cut(b0, b1, length=len(x))
+    return to_db(seg_rms(x)) - to_db(seg_rms(y))
+
+
+def write_wav_float(path, stereo, rate):
+    data = np.asarray(stereo, dtype="<f4").tobytes()
+    ch = stereo.shape[1]
+    fmt = (3).to_bytes(2, "little") + ch.to_bytes(2, "little") + rate.to_bytes(4, "little") + \
+        (rate * ch * 4).to_bytes(4, "little") + (ch * 4).to_bytes(2, "little") + (32).to_bytes(2, "little")
+    with open(path, "wb") as f:
+        f.write(b"RIFF" + (4 + 8 + len(fmt) + 8 + len(data)).to_bytes(4, "little") + b"WAVE")
+        f.write(b"fmt " + len(fmt).to_bytes(4, "little") + fmt + b"data" + len(data).to_bytes(4, "little") + data)
+
+
+def ladderfade_selftest():
+    """1 kHz sine at 116 BPM (beat 0 at a non-zero frame): reference constant, take under 1 - t^2 from the break beat over
+    2 beats, then 0. Both are written as WAV + .beats.csv and read back through the same Take / window code as a take."""
+    import tempfile
+    rate, bpm, brk, lead = 48000, 116.0, 4.5, 12345
+    spb = rate * 60.0 / bpm
+    n = lead + int(12 * spb)
+    t = np.arange(n) / rate
+    sine = 0.5 * np.sin(2 * np.pi * 1000.0 * t)
+    pos = (np.arange(n) - lead) / spb
+    u = np.clip((pos - brk) / 2.0, 0.0, 1.0)
+    gain = np.where(pos < brk, 1.0, 1.0 - u * u)
+    folder = tempfile.mkdtemp(prefix="ladderfade_selftest_")
+    paths = {}
+    for name, sig in (("ref", sine), ("take", sine * gain)):
+        p = os.path.join(folder, name + ".wav")
+        write_wav_float(p, np.stack([sig, sig], axis=1), rate)
+        with open(os.path.splitext(p)[0] + ".beats.csv", "w") as f:
+            f.write("beat,frame,bpm,dsp\n")
+            for b in range(12):
+                f.write("%d,%d,%.2f,%d\n" % (b, int(round(lead + b * spb)), bpm, int(round(lead + b * spb))))
+        paths[name] = p
+    take, ref = Take(paths["take"]), Take(paths["ref"])
+    print("selftest: 1 kHz sine, %.0f BPM, break at beat %.1f, take = sine * (1 - t^2) over 2 beats (temporary WAV + .beats.csv, read back like a take)" % (bpm, brk))
+    print("window (beats)   measured dB vs ref   expected dB   diff")
+    worst = 0.0
+    for i in range(4):
+        b0, b1 = brk + 0.5 * i, brk + 0.5 * (i + 1)
+        got = window_diff_db(take, ref, b0, b1)
+        exp = fade_expected_db(0.25 * i, 0.25 * (i + 1))
+        worst = max(worst, abs(got - exp))
+        print("%5.2f-%5.2f      %8.2f             %8.2f     %+.3f" % (b0, b1, got, exp, got - exp))
+    ok = worst <= 0.5
+    print("selftest %s (max |diff| %.3f dB, limit 0.5 dB)" % ("PASS" if ok else "FAIL", worst))
+    import shutil
+    shutil.rmtree(folder, ignore_errors=True)
+    return 0 if ok else 1
+
+
+def cmd_ladderfade(args):
+    if args.selftest:
+        return ladderfade_selftest()
+    if not args.wav or args.break_beat is None:
+        raise SystemExit("ladderfade needs <wav> --break-beat B (or --selftest)")
+    B = args.break_beat
+    take = Take(args.wav)
+    ref = Take(args.reference) if args.reference else None
+    r0 = Take(args.rung0) if args.rung0 else None
+    rate = take.rate
+    print("%s, break at beat %.2f%s%s" % (args.wav, B, ", reference " + args.reference if ref else "",
+                                          ", rung 0 " + args.rung0 if r0 else ""))
+
+    # Alignment: the takes are deterministic for a seed, so before the break the take must equal the reference sample
+    # for sample (cut along each take's own beat log). Null depth = RMS(take - ref) relative to RMS(ref).
+    def null_depth(other, b0, b1):
+        x = take.cut(b0, b1)
+        y = other.cut(b0, b1, length=len(x))
+        n = min(len(x), len(y))
+        return to_db(seg_rms(x[:n] - y[:n])) - to_db(seg_rms(y[:n])), to_db(seg_rms(x[:n])) - to_db(seg_rms(y[:n]))
+    if ref:
+        d, lv = null_depth(ref, 0.0, B)
+        print("alignment take vs reference, beats 0-%.2f: residual %.1f dB below the reference, level diff %+.4f dB" % (B, -d, lv))
+        worst = 0.0
+        for b0 in range(0, int(np.floor(B)) - 3, 4):
+            worst = max(worst, abs(to_db(seg_rms(take.cut(b0, b0 + 4))) - to_db(seg_rms(ref.cut(b0, b0 + 4)))))
+        print("  max |diff| of 4-beat window RMS before the break: %.3f dB" % worst)
+    if r0:
+        d, lv = null_depth(r0, 0.0, float(ComboStartBeat))
+        print("alignment take vs rung 0, beats 0-%d (combo 0 in both): residual %.1f dB below, level diff %+.4f dB" % (ComboStartBeat, -d, lv))
+
+    # Half-beat windows: 2 beats before the break, the 2-beat fade, 2 beats after it.
+    print("\nwindow  beats          part   take dBFS" + ("   ref dBFS  diff dB" if ref else "") +
+          ("  rung0 dBFS  take-r0 dB" if r0 else "") +
+          ("  above-floor gain dB  expected" if ref and r0 else ""))
+    fade_diffs, post_take, post_r0 = [], [], []
+    for i in range(12):
+        b0 = B - 2.0 + 0.5 * i
+        b1 = b0 + 0.5
+        part = "before" if i < 4 else "fade" if i < 8 else "after"
+        x = take.cut(b0, b1)
+        line = "%5d  %6.2f-%6.2f  %-6s  %9.2f" % (i, b0, b1, part, to_db(seg_rms(x)))
+        if ref:
+            y = ref.cut(b0, b1, length=len(x))
+            diff = window_diff_db(take, ref, b0, b1)
+            line += "  %9.2f  %7.2f" % (to_db(seg_rms(y)), diff)
+            if part == "fade":
+                fade_diffs.append(diff)
+        if r0:
+            z = r0.cut(b0, b1, length=len(x))
+            line += "  %10.2f  %10.2f" % (to_db(seg_rms(z)), to_db(seg_rms(x)) - to_db(seg_rms(z)))
+            if part == "after":
+                post_take.append(x)
+                post_r0.append(z)
+        if ref and r0:
+            # The layers above the floor alone: take - rung0 against ref - rung0 (floor layers cancel sample for sample).
+            n = min(len(x), len(y), len(z))
+            above_take, above_ref = x[:n] - z[:n], y[:n] - z[:n]
+            g = to_db(seg_rms(above_take)) - to_db(seg_rms(above_ref))
+            exp = 0.0 if part == "before" else fade_expected_db(0.25 * (i - 4), 0.25 * (i - 3)) if part == "fade" else float("-inf")
+            line += "  %19s  %8s" % (fmt_db(g) if np.isfinite(g) else "-inf", "%.2f" % exp if np.isfinite(exp) else "-inf")
+            if part == "after":
+                line += "  (above-floor residual %s dBFS)" % fmt_db(to_db(seg_rms(above_take)))
+        print(line)
+    if ref:
+        mono = all(fade_diffs[k] <= fade_diffs[k - 1] for k in range(1, len(fade_diffs)))
+        print("monotonic fall vs reference over the 4 fade windows: %s (%s)" % ("yes" if mono else "NO", ", ".join("%.2f" % v for v in fade_diffs)))
+    if r0:
+        tt, zz = np.concatenate(post_take), np.concatenate(post_r0)
+        print("after the fade (beats %.2f-%.2f): take %.2f dBFS, rung 0 %.2f dBFS, diff %+.2f dB (limit +-1 dB)" %
+              (B + 2, B + 4, to_db(seg_rms(tt)), to_db(seg_rms(zz)), to_db(seg_rms(tt)) - to_db(seg_rms(zz))))
+
+    # Clicks: isolated 1 ms peaks in the fade (and in the half beat after it, where the end-of-fade stop is).
+    for name, b0, b1 in (("fade", B, B + 2.0), ("end+0.5", B + 2.0, B + 2.5)):
+        for label, tk in (("take", take), ("ref", ref), ("rung0", r0)):
+            if tk is None:
+                continue
+            c, hits = count_clicks(tk.mono, rate, tk.frame(b0), tk.frame(b1))
+            c2, hits2 = count_clicks(np.diff(tk.mono, prepend=tk.mono[:1]), rate, tk.frame(b0), tk.frame(b1))
+
+            def where(hs):
+                return ", ".join("%.4f (%.1f dB)" % (b0 + (f - tk.frame(b0)) / (tk.frame(b1) - tk.frame(b0)) * (b1 - b0), lv) for f, lv in hs)
+            print("clicks %-8s %-5s: %d (raw), %d (first difference)%s%s" % (name, label, c, c2,
+                  "  raw at beats " + where(hits) if hits else "", "  first difference at beats " + where(hits2) if hits2 else ""))
+
+    # The ladder log: when the fade started (from the first scale < 1 row) and when the rung reached the floor.
+    rows = ladder_rows(args.wav)
+    end_frame = None
+    if rows:
+        # The mixer beat moves once per mixer block (several Unity frames can read the same one): the step that counts
+        # as "one frame" of the ladder is the largest beat advance between two consecutive rows.
+        steps = [rows[k + 1]["beat"] - rows[k]["beat"] for k in range(len(rows) - 1) if rows[k]["beat"] >= 0]
+        steps = [s for s in steps if s > 0]
+        step = float(np.max(steps)) if steps else 0.0
+        fading = [r for r in rows if r["beat"] >= B and r["scale"] < 1.0]
+        if fading:
+            first = fading[0]
+            start = first["beat"] - 2.0 * np.sqrt(max(0.0, 1.0 - first["scale"]))
+            drop = next((r for r in rows if r["beat"] > first["beat"] and r["rung"] <= r["floor"]), None)
+            before = [r for r in rows if r["beat"] < B]
+            print("\nladder: rung %d / floor %d at the break; fade start beat %.4f (break + %.4f beat); largest beat step between frames %.4f beat" %
+                  (before[-1]["rung"] if before else -1, before[-1]["floor"] if before else -1, start, start - B, step))
+            if drop:
+                end_frame = drop["capture_frame"]
+                print("ladder: rung %d (floor %d) at beat %.4f = fade start + %.4f beat (break + %.4f); frames with scale < 1: %d" %
+                      (drop["rung"], drop["floor"], drop["beat"], drop["beat"] - start, drop["beat"] - B,
+                       sum(1 for r in rows if first["beat"] <= r["beat"] < drop["beat"] and r["scale"] < 1.0)))
+                prev = [r for r in rows if r["beat"] < drop["beat"]][-1]
+                print("ladder: last scale before the end %.4f (%.1f dB) at beat %.4f" % (prev["scale"], to_db(prev["scale"]), prev["beat"]))
+            else:
+                print("ladder: the rung never reached the floor after the break")
+        else:
+            print("\nladder: no frame with scale < 1 after beat %.2f (no fade)" % B)
+        print("ladder: fever rows %d, guest-loop rows %d" % (sum(1 for r in rows if r["fever"]), sum(1 for r in rows if r["feature"])))
+
+    # A bar line inside the fade (--edge-beat): RMS of the 20 ms before and after it, take and reference, and the step
+    # the fade curve itself makes between the centres of the two windows (1 - t^2 from the break beat).
+    if args.edge_beat is not None and ref:
+        E, ms = args.edge_beat, 20.0
+        n = int(round(rate * ms / 1000.0))
+
+        def around(tk):
+            f = int(round(tk.frame(E)))
+            return tk.audio[f - n:f], tk.audio[f:f + n]
+        tb, ta = around(take)
+        rb, ra = around(ref)
+        jump_take = to_db(seg_rms(ta)) - to_db(seg_rms(tb))
+        jump_ref = to_db(seg_rms(ra)) - to_db(seg_rms(rb))
+        spb_before = (take.frame(E) - take.frame(E - 1)) / rate
+        spb_after = (take.frame(E + 1) - take.frame(E)) / rate
+        tc0 = (E - (ms / 2000.0) / spb_before - B) / 2.0
+        tc1 = (E + (ms / 2000.0) / spb_after - B) / 2.0
+        curve = to_db(1 - tc1 * tc1) - to_db(1 - tc0 * tc0)
+        print("\nedge at beat %.2f, 20 ms before / after: take %.2f / %.2f dBFS (step %+.2f dB), ref %.2f / %.2f dBFS (step %+.2f dB); "
+              "take step - ref step %+.2f dB; fade curve step between the window centres %+.2f dB" %
+              (E, to_db(seg_rms(tb)), to_db(seg_rms(ta)), jump_take, to_db(seg_rms(rb)), to_db(seg_rms(ra)), jump_ref,
+               jump_take - jump_ref, curve))
+        if r0:
+            zb, za = around(r0)
+            gb = to_db(seg_rms(tb - zb)) - to_db(seg_rms(rb - zb))
+            ga = to_db(seg_rms(ta - za)) - to_db(seg_rms(ra - za))
+            print("edge above-floor gain (take - rung0 vs ref - rung0): before %.2f dB, after %.2f dB, step %+.2f dB" % (gb, ga, ga - gb))
+
+    # The above-floor gain in 1/8-beat steps through the fade (take - rung0 against ref - rung0), next to the curve
+    # 1 - t^2 from the break beat (window mean as RMS), to see where the measured fade sits on the curve.
+    if ref and r0:
+        print("\nabove-floor gain in 1/8-beat windows (dB): measured / curve from the break beat")
+        cells = []
+        for k in range(18):
+            b0 = B + k * 0.125
+            x = take.cut(b0, b0 + 0.125)
+            y, z = ref.cut(b0, b0 + 0.125, length=len(x)), r0.cut(b0, b0 + 0.125, length=len(x))
+            g = to_db(seg_rms(x - z)) - to_db(seg_rms(y - z))
+            t0, t1 = min(1.0, k * 0.0625), min(1.0, (k + 1) * 0.0625)
+            exp = fade_expected_db(t0, t1) if t0 < 1.0 else float("-inf")
+            cells.append("%.3f:%s/%s" % (b0, "%.1f" % g if np.isfinite(g) else "-inf", "%.1f" % exp if np.isfinite(exp) else "-inf"))
+        for k in range(0, len(cells), 6):
+            print("  " + "  ".join(cells[k:k + 6]))
+
+    # The end-of-fade stop: the layers above the floor (take - rung0, and ref - rung0 for their level without the break)
+    # in 2 ms steps around the frame the ladder dropped the rung (its capture frame), or beat B + 2 without a ladder log.
+    if r0:
+        e = B + 2.0
+        a = take.frame(e)
+        if end_frame is not None:
+            a = end_frame
+            e = beat_of_frame(take.beats, a)
+        z0 = r0.frame(e)
+        y0 = ref.frame(e) if ref else None
+        win = int(round(rate * 0.002))
+        print("\nabove-floor signal around beat %.3f (%s), 2 ms windows, dBFS take-r0%s (offset ms):" %
+              (e, "the ladder's rung drop, main-thread capture frame" if end_frame is not None else "break + 2", " / ref-r0" if ref else ""))
+        cells = []
+        for k in range(-15, 21):
+            x = take.audio[int(round(a)) + k * win:int(round(a)) + (k + 1) * win]
+            z = r0.audio[int(round(z0)) + k * win:int(round(z0)) + (k + 1) * win]
+            cell = "%+d:%s" % (k * 2, fmt_db(to_db(seg_rms(x - z))))
+            if ref:
+                y = ref.audio[int(round(y0)) + k * win:int(round(y0)) + (k + 1) * win]
+                cell += "/" + fmt_db(to_db(seg_rms(y - z)))
+            cells.append(cell)
+        for k in range(0, len(cells), 6):
+            print("  " + "  ".join(cells[k:k + 6]))
+    return 0
+
+
+def beat_of_frame(beats, frame):
+    for (b, f, _), (b2, f2, _) in zip(beats, beats[1:]):
+        if f <= frame < f2:
+            return b + (frame - f) / float(f2 - f)
+    raise SystemExit("frame %d is outside the beat log" % frame)
+
+
+ComboStartBeat = 4  # CaptureScenario combobreak: the combo counts from beat 4, so beats 0-3 play rung 0 in every take
+
+
+def cmd_kicks(args):
+    """First 30 ms after every even beat (kick) from --from to --to: take vs reference (dB)."""
+    take, ref = Take(args.wav), Take(args.reference)
+    n = int(round(take.rate * args.ms / 1000.0))
+    print("%s vs %s: first %.0f ms after each kick beat" % (args.wav, args.reference, args.ms))
+    worst = 0.0
+    for b in range(args.from_beat, args.to_beat + 1):
+        if b % 2:
+            continue
+        x = take.audio[int(round(take.frame(b))):][:n]
+        y = ref.audio[int(round(ref.frame(b))):][:n]
+        d = to_db(seg_rms(x)) - to_db(seg_rms(y))
+        worst = max(worst, abs(d))
+        print("  beat %3d: take %7.2f  ref %7.2f  diff %+6.2f dB" % (b, to_db(seg_rms(x)), to_db(seg_rms(y)), d))
+    print("max |diff| %.2f dB (limit 1 dB)" % worst)
+    return 0 if worst <= 1.0 else 1
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     sub = parser.add_subparsers(dest="command", required=True)
@@ -1003,6 +1355,21 @@ def main():
     p.add_argument("--period", type=int, default=4)
     p.add_argument("--region", action="append", help="A-B in beats after every --period-th beat; repeatable")
     p.set_defaults(func=cmd_bands)
+    p = sub.add_parser("ladderfade")
+    p.add_argument("wav", nargs="?")
+    p.add_argument("--break-beat", type=float, default=None)
+    p.add_argument("--reference", default=None, help="the same take without the break")
+    p.add_argument("--rung0", default=None, help="the same take pinned to rung 0 (PinArrangement(0, 0))")
+    p.add_argument("--selftest", action="store_true", help="check the window arithmetic on a synthetic 1 kHz sine")
+    p.add_argument("--edge-beat", type=float, default=None, help="a bar line inside the fade: 20 ms RMS before / after it, take vs reference")
+    p.set_defaults(func=cmd_ladderfade)
+    p = sub.add_parser("kicks")
+    p.add_argument("wav")
+    p.add_argument("--reference", required=True)
+    p.add_argument("--from", dest="from_beat", type=int, default=36)
+    p.add_argument("--to", dest="to_beat", type=int, default=46)
+    p.add_argument("--ms", type=float, default=30.0)
+    p.set_defaults(func=cmd_kicks)
     args = parser.parse_args()
     sys.exit(args.func(args))
 

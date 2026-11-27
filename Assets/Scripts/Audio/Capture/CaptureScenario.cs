@@ -15,7 +15,7 @@ using UnityEngine;
 /// </summary>
 public sealed class CaptureScenario : MonoBehaviour
 {
-    public enum Scenario { baseline, heavy, spike, styles, duck, features, fever }
+    public enum Scenario { baseline, heavy, spike, styles, duck, features, fever, combobreak }
 
     [SerializeField] Scenario scenario = Scenario.baseline;
     [SerializeField] int seed = 7;
@@ -115,7 +115,25 @@ public sealed class CaptureScenario : MonoBehaviour
     [Tooltip("fever: no kills (timing / level takes of the bed alone).")]
     [SerializeField] bool feverWithoutKills;
 
+    [Header("combobreak (combo ladder Task 6)")]
+    [Tooltip("combobreak: no kills; SoundManager.ComboCount is set from the mixer beat: +1 on every beat from beat 4 " +
+             "(up to comboMax), 0 at each of these mixer beats (comma-separated, ascending), then +1 on every beat again. " +
+             "Empty = never broken. Guest loops are kept out (holdArrangement is applied: no feature loop, style 0, " +
+             "variation 0). The arrangement is the ladder's unless intensity >= 0 (then PinArrangement(intensity, 0)). " +
+             "Writes <take>.ladder.csv every frame.")]
+    [SerializeField] string comboBreakBeats = "40.5";
+    [Tooltip("combobreak: the combo stops rising at this value (10 reaches rung 6; 2 stays at rung 1).")]
+    [SerializeField] int comboMax = 10;
+
     const int Colors = 3;
+    // combobreak: first beat that adds 1, the break beats, the next one, the last whole beat counted, the combo set
+    const int ComboFirstBeat = 4;
+    double[] _comboBreaks = new double[0];
+    int _nextComboBreak;
+    int _comboCountedBeat = ComboFirstBeat - 1;
+    int _combo;
+    FieldInfo _audioBeatField;
+    readonly List<string> _ladderLog = new List<string>();
 
     string _wavPath;
     // targetFps: the previous settings, put back in OnDestroy so a capped take does not leak into the next Editor play session.
@@ -214,6 +232,16 @@ public sealed class CaptureScenario : MonoBehaviour
         _killBackend.NoteDropped += OnNoteDropped;
         _styleCurrent = typeof(SoundManager).GetField("_styleCurrent", BindingFlags.Instance | BindingFlags.NonPublic);
         _styleNext = typeof(SoundManager).GetField("_styleNext", BindingFlags.Instance | BindingFlags.NonPublic);
+        _audioBeatField = typeof(SoundManager).GetField("_audioBeat", BindingFlags.Instance | BindingFlags.NonPublic);
+        if (scenario == Scenario.combobreak && !string.IsNullOrWhiteSpace(comboBreakBeats))
+        {
+            var breaks = new List<double>();
+            foreach (var text in comboBreakBeats.Split(','))
+                if (!string.IsNullOrWhiteSpace(text))
+                    breaks.Add(double.Parse(text.Trim(), CultureInfo.InvariantCulture));
+            breaks.Sort();
+            _comboBreaks = breaks.ToArray();
+        }
         if (scenario == Scenario.spike)
         {
             _backend = new FmodOneShotBackend();
@@ -327,8 +355,10 @@ public sealed class CaptureScenario : MonoBehaviour
             }
         }
 
-        if (holdArrangement)
+        if (holdArrangement || scenario == Scenario.combobreak)
             HoldArrangement(sound);
+        if (scenario == Scenario.combobreak)
+            UpdateComboBreak(sound);
         _frameLog.Add(string.Format(CultureInfo.InvariantCulture, "{0:F6},{1:F5},{2},{3}", dt, sound.BeatPosition, sound.CurrentBpm,
             forced ? 1 : 0));
 
@@ -381,6 +411,13 @@ public sealed class CaptureScenario : MonoBehaviour
     // combo was re-applied, so the intensity there is 0 again. Called after StartMusic, which clears the pin.
     void PinArrangement(SoundManager sound, bool restart)
     {
+        // combobreak plays the ladder (its ComboCount), unless the intensity option pins a fixed rung (intensity, combo 0).
+        if (scenario == Scenario.combobreak)
+        {
+            if (intensity >= 0 && !restart)
+                sound.PinArrangement(intensity, 0);
+            return;
+        }
         int pinIntensity = restart ? 0 : scenario == Scenario.duck ? SoundManager.MaxIntensity : Math.Max(0, intensity);
         sound.PinArrangement(pinIntensity, scenario == Scenario.heavy ? 3 : 0);
     }
@@ -402,6 +439,43 @@ public sealed class CaptureScenario : MonoBehaviour
             System.Threading.Thread.Sleep(stallMs);
             _forcedPending = true;
         }
+    }
+
+    // combobreak: the combo follows the mixer beat (the beat the ladder and its fade are timed in, and the beat the WAV is
+    // cut by), in time order: a whole beat k >= ComboFirstBeat adds 1 (up to comboMax), a break beat sets 0; a break on a
+    // whole beat comes after that beat's +1. SoundManager (execution order -100) has already run this frame, so it sees the
+    // new combo on the next frame. Then one .ladder.csv row with what the ladder played this frame.
+    void UpdateComboBreak(SoundManager sound)
+    {
+        if (_clock.HasAnchor && _clock.BeatAt(FmodClock.MasterDsp(), out double now))
+        {
+            while (true)
+            {
+                int nextWhole = _comboCountedBeat + 1;
+                double nextBreak = _nextComboBreak < _comboBreaks.Length ? _comboBreaks[_nextComboBreak] : double.PositiveInfinity;
+                if (nextWhole <= nextBreak && nextWhole <= now)
+                {
+                    _comboCountedBeat = nextWhole;
+                    _combo = Math.Min(comboMax, _combo + 1);
+                }
+                else if (nextBreak < nextWhole && nextBreak <= now)
+                {
+                    _nextComboBreak++;
+                    _combo = 0;
+                    Debug.Log(string.Format(CultureInfo.InvariantCulture, "[CaptureScenario] combo break at mixer beat {0:F4} (target {1})", now, nextBreak));
+                }
+                else
+                    break;
+            }
+            sound.ComboCount = _combo;
+        }
+        if (!AudioCapture.IsCapturing)
+            return;
+        var feature = sound.CurrentFeature;
+        _ladderLog.Add(string.Format(CultureInfo.InvariantCulture, "{0},{1:F5},{2},{3},{4},{5:F5},{6:F5},{7},{8},{9}",
+            Time.frameCount, (double)_audioBeatField.GetValue(sound), sound.ComboCount, sound.LadderRung, sound.LadderFloor,
+            sound.ComboFadeScale, sound.BeatPosition, AudioCapture.FramesCaptured,
+            sound.FeverActive || sound.FeverPending ? 1 : 0, feature != null ? feature.Id : 0));
     }
 
     void BeginStopTail(SoundManager sound)
@@ -746,6 +820,7 @@ public sealed class CaptureScenario : MonoBehaviour
                     sound.QueueKillChord(color);
                 break;
             case Scenario.features:
+            case Scenario.combobreak:
                 break; // no kills
             case Scenario.fever:
                 if (beat >= feverAtBeat && (beat == feverAtBeat || (feverEveryBeats > 0 && (beat - feverAtBeat) % feverEveryBeats == 0)))
@@ -821,6 +896,9 @@ public sealed class CaptureScenario : MonoBehaviour
             File.WriteAllText(Path.ChangeExtension(path, ".oneshots.csv"),
                 "frame,backend,event,handle,now_dsp,start_dsp,...\n" + string.Join("\n", _oneShotLog) + "\n");
         }
+        if (scenario == Scenario.combobreak)
+            File.WriteAllText(Path.ChangeExtension(path, ".ladder.csv"),
+                "frame,beat,combo,rung,floor,scale,visual_beat,capture_frame,fever,feature\n" + string.Join("\n", _ladderLog) + "\n");
         if (scenario == Scenario.duck || meterFeatureDuck)
         {
             var duck = new StringBuilder("beat,rms_in,rms_out\n");

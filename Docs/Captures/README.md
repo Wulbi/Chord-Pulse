@@ -25,6 +25,8 @@ Scenarios (all start `StartMusic()` with `sectionSeed = seed`, Intensity 0):
   (3 kHz click) on beats 1..64 through `OneShotScheduler`. Record it with seed 33 and `beats` 68.
   (Since unity-music-clock Task 8 the music event, its `Spike ref` track and `SpikeRef` no longer exist; the clicks are
   measured against the clock, see "Clock-referenced accuracy" and "Task 8 (unity-music-clock)" below.)
+- `combobreak`: no kills; the screen combo is set from the mixer beat (+1 per beat from beat 4, 0 at `comboBreakBeats`)
+  and writes `.ladder.csv`. See "Combo ladder — Task 6" at the end.
 
 Beat times come from the music conductor's own FMOD-thread stamps, converted to capture frames through a line fitted to
 the mixer-block clock (`AudioCapture.FrameAt`), so they do not depend on Unity's frame rate. The beat clock starts about
@@ -3208,3 +3210,156 @@ copies cancelled by the invalidation (cancelled 43 against 7). With `PinArrangem
 instrument, bus, MIDI) is identical between the takes.
 
 Not measured here: a combo break and its fade (no scenario sets `ComboCount` yet).
+
+## Combo ladder — Task 6 (a combo break, measured)
+
+Question (spec sections 5.3 and 7): when the screen combo breaks above the floor, do the layers above the floor fade
+over 2 beats on 1 - t² and then stay silent, while the floor layers do not change, without clicks and on time?
+
+### Scenario `combobreak` (`CaptureScenario`)
+
+- No kills, no `QueueFever` (no fever). `SoundManager.ComboCount` is set by the scenario from the **mixer beat**
+  (`BeatClock.BeatAt(FmodClock.MasterDsp())`): +1 on every whole beat from beat 4, capped at `comboMax` (default 10),
+  0 at each beat of `comboBreakBeats` (default `"40.5"`, comma-separated; empty = never broken), then +1 on every beat
+  again. A break on a whole beat comes after that beat's +1. Why the mixer beat: the ladder takes the break at its
+  `_audioBeat` (the mixer beat) and times the fade in it, and the WAV is cut along the mixer's beat log, so the break
+  beat in the scenario is the break beat in the recording. The visual beat runs `visualLatencyMs` behind and would put
+  the break that much later in the mix. `SoundManager` runs first in the frame (execution order -100), so it reads the
+  new combo on the next frame, as it would a combo set by game code.
+- Guest loops: the existing `holdArrangement` already keeps them out (`FeatureSelector.CancelNext()` every frame), so
+  `combobreak` applies it always and no `featuresOff` option was added. It also holds the style at 0 (synthpop) and
+  the variation at 0, the same in every take. `.ladder.csv` confirms 0 guest-loop rows and 0 fever rows in every take.
+- The arrangement is the ladder's (`PinArrangement` is not called), unless `intensity` >= 0: then
+  `PinArrangement(intensity, 0)` (used for the rung-0 take). Other scenarios are unchanged.
+- Every frame one `.ladder.csv` row: `frame` (Unity frame), `beat` (SoundManager's `_audioBeat`, the beat the ladder
+  used this frame), `combo`, `rung` (`LadderRung`), `floor` (`LadderFloor`), `scale` (`ComboFadeScale`), and three more
+  columns: `visual_beat`, `capture_frame` (`AudioCapture.FramesCaptured` on the main thread), `fever` (fever active or
+  pending), `feature` (id of `CurrentFeature`, 0 = none). In the pinned take `rung` is the ladder's own value; the pin
+  overrides what is played.
+
+### Analysis (`analyze_capture.py ladderfade`, `kicks`)
+
+`ladderfade <take> --break-beat B --reference <no-break take> --rung0 <rung-0 take> [--edge-beat E]`: half-beat
+windows from B-2 to B+4, all buses together, each take cut along its own beat log (fractional beats interpolated
+between the logged whole beats). A full mix cannot show "the layers above the floor" by itself: the floor layers keep
+playing. The takes are deterministic, so they are compared sample for sample: the alignment check comes first, then
+`take - rung0` and `ref - rung0` are the above-floor signals (floor layers cancel), and their RMS ratio is the fade gain.
+`kicks` compares the first 30 ms after every even beat (the kick beats, `SoundManager.IsKickBeat`).
+
+Self-test (`ladderfade --selftest`: a 1 kHz sine at 116 BPM under 1 - t² from beat 4.5, written as a WAV + `.beats.csv`
+and read back through the same window code; expected = window mean of the gain as RMS, 10 log10 mean(g²)):
+
+```
+window (beats)   measured dB vs ref   expected dB   diff
+ 4.50- 5.00         -0.18                -0.18     -0.000
+ 5.00- 5.50         -1.35                -1.35     -0.000
+ 5.50- 6.00         -4.28                -4.28     +0.001
+ 6.00- 6.50        -11.64               -11.64     +0.003
+selftest PASS (max |diff| 0.003 dB, limit 0.5 dB)
+```
+
+### Takes (Editor, seed 7, 64 beats, `combobreak`, `logOneShots`, full mix, `MusicMix` 1, `scheduleOffsetSamples` 0)
+
+Auto refresh disallowed around each take, no Editor query while a take recorded, `Application.runInBackground = true`
+set at frame 2 of each take from an Editor call (runtime only; `PlayerSettings.runInBackground` read false after every
+take; ProjectSettings MD5s identical before and after the session). The scene fields were set without saving the scene.
+
+| take | settings | unforced stalls | longest frame | Studio avg / max % | Core dsp avg / max % | ONESHOTS | PATTERNS sched. / started | RESYNCED | valid |
+|---|---|---:|---|---|---|---|---|---:|---|
+| `combobreak_seed7_cl6_ref` | `comboBreakBeats` empty | 0 | 1615 ms, before the first beat | 0.86 / 1.22 | 1.68 / 2.12 | 774 / 0 / 0 / 35 | 793 / 774 | 0 | yes |
+| `combobreak_seed7_cl6_b405` | `"40.5"` | 0 | 1569 ms, before the first beat | 0.76 / 1.11 | 1.49 / 2.61 | 778 / 0 / 0 / 74 | 820 / 778 | 0 | yes |
+| `combobreak_seed7_cl6_b47` | `"47.0"` (the fade crosses bar line 48, also a phrase boundary 116 -> 108 BPM) | 0 | 1647 ms, before the first beat | 0.78 / 1.14 | 1.52 / 2.49 | 770 / 0 / 0 / 72 | 806 / 770 | 0 | yes |
+| `combobreak_seed7_cl6_floor` | `"40.5"`, `comboMax` 2 (rung 1: the fade is the pluck only) | 0 | 1591 ms, before the first beat | 0.60 / 0.83 | 0.85 / 1.07 | 481 / 0 / 0 / 23 | 493 / 481 | 0 | yes |
+| `combobreak_seed7_cl6_floor_ref` (extra) | `comboBreakBeats` empty, `comboMax` 2 | 0 | 1723 ms, before the first beat | 0.63 / 1.23 | 0.88 / 1.06 | 473 / 0 / 0 / 14 | 477 / 473 | 0 | yes |
+| `combobreak_seed7_cl6_rung0` | `comboBreakBeats` empty, `intensity` 0 (`PinArrangement(0, 0)`) | 0 | 1751 ms, before the first beat | 0.61 / 1.07 | 0.76 / 0.94 | 413 / 0 / 0 / 10 | 416 / 413 | 0 | yes |
+
+ONESHOTS = started / late / dropped / cancelled. Every take: `dropped frames 0`, dsp-to-frame mismatches 0, late 0,
+dropped 0. `floor_ref` is not in the plan's take list: the `floor` take keeps only rung 1, so the like-for-like
+reference for it is the same combo without the break (`ref` plays rung 6 there).
+
+Alignment (the condition for every difference below): before the break, `b405` and `b47` equal `ref` sample for sample
+(`b405` residual 118 dB below the reference over beats 0-40.5, `b47` identical over 0-47, every 4-beat window 0.000 dB),
+`floor` equals `floor_ref` (identical over 0-40.5), and beats 0-4 (combo 0) of every take equal `rung0` (identical).
+After the fade the break takes equal `rung0` to within -125 dB of residual, except the floor-layer notes the fade end
+re-schedules (see "Noticed" below).
+
+### Rung timeline (`.ladder.csv`, rung heard at the first frame of each bar)
+
+Rules: thresholds 2 / 3 / 5 / 6 / 8 / 10 -> rung 1..6, latched on the next bar line; floor 0 before 30 s of round time,
+then 1. Combo = beat - 3 from beat 4: combo 4 at beat 7 (rung 2), 8 at beat 11 (rung 5), 10 at beat 13 (rung 6).
+
+| take | bar 0 1 2 3 4 ... 9 10 11 12 13 14 15 | notes |
+|---|---|---|
+| `ref` | 0 0 2 5 6 ... 6 6 6 6 6 6 6 | as the rules predict; floor 0 -> 1 at beat 55.07 (30 s) |
+| `b405` | 0 0 2 5 6 ... 6 6 2 4 6 6 6 | break set at mixer beat 40.535, fade 40.535-42.556 (rung 6 kept), rung 0 at 42.556; bar 11 rung 2 (combo 3 at 43), bar 12 rung 4 (combo 7 at 47), bar 13 rung 6 |
+| `b47` | 0 0 2 5 6 ... 6 6 6 6 2 5 6 | break at 47.011, bar 12 (beat 48) keeps rung 6 inside the fade, rung 0 at 49.037, bar 13 rung 2, bar 14 rung 5 |
+| `floor` | 0 0 1 1 1 ... 1 1 1 1 1 1 1 | rung 1 from bar 2; break 40.535, rung 0 at 42.556, rung 1 again at bar 11 (beat 44) |
+| `rung0` | (pinned 0 throughout; the ladder column itself reads as `ref`) | |
+
+All match the rules. Because the scenario counts up again right after the break, `b405`'s "after" span (42.5-44.5)
+includes the first half beat of bar 11 at rung 2; its rung-2 notes (off-beat pluck, open hat at 44.5) start at 44.5, so
+42.5-44.5 still sounds rung 0 (above-floor residual -81.8 dBFS in 44.0-44.5).
+
+### Fade, measured (`ladderfade`; diff = take - `ref`; gain = above-floor gain against `ref`, expected = 1 - t² window mean)
+
+| window (beats after the break) | `b405` diff dB | `b405` gain / expected dB | `b47` diff dB | `b47` gain / expected dB |
+|---|---:|---:|---:|---:|
+| -2.0 .. 0 (4 windows) | 0.00 0.00 0.00 0.00 | 0.0 | 0.00 0.00 0.00 0.00 | 0.0 |
+| 0.0-0.5 | -0.04 | -0.1 / -0.18 | -0.07 | -0.1 / -0.18 |
+| 0.5-1.0 | -0.77 | -1.0 / -1.35 | -0.76 | -0.9 / -1.35 |
+| 1.0-1.5 | -2.66 | -3.2 / -4.28 | -0.18 | -3.7 / -4.28 |
+| 1.5-2.0 | -0.60 | -9.1 / -11.64 | -4.10 | -9.3 / -11.64 |
+| 2.0-2.5 | -3.40 | -30.0 (residual -67 dBFS) | -6.92 | -37.5 (residual -74 dBFS) |
+| 2.5-4.0 | -5.13 -7.60 -0.27 | silent, silent, -38.5 (residual -82 dBFS) | -9.64 -0.77 -4.89 | -112, -18.4, -92 (see "Noticed") |
+
+The above-floor gain follows the curve about 0.08 beat late (1/8-beat steps, `b405`: -0.5 / -0.7 at 41.0, -3.9 / -4.9
+at 41.75, -8.6 / -10.8 at 42.125, -15.8 / -23.0 at 42.375; `b47` -4.2 / -4.9 at 48.25, -12.2 / -14.8 at 48.75,
+-17.5 / -23.0 at 48.875). The lag is the timing chain:
+the break is set on the first mixer block at or after the break beat (+0.035 beat at 40.5), the ladder starts the fade
+on the next frame, and a `setVolume` reaches the mix on the next mixer block (1024 samples = 0.041 beat at 116 BPM).
+
+### End of the fade (the immediate stop above the floor)
+
+At the frame the rung drops (`SetFade(floor, 0)`, then `SilenceAbove` stops every sounding note above the floor), the
+last scale the ladder applied was 0.020 (`b405`, -33.9 dB) / 0.012 (`b47`, -38.6 dB). Because of the lag above, the
+above-floor signal in the 30 ms before the stop is not yet at the last scale but 20-26 dB below its unfaded level:
+`b405` -55 .. -62 dBFS (the same span in `ref` - `rung0`: -34 .. -37 dBFS), `b47` -57 .. -68 dBFS (ref -35 .. -44),
+`floor` -59 .. -66 dBFS (floor_ref -39 .. -42), under a mix of about -40 dBFS. In 2 ms windows from the main-thread
+frame of the drop: `b405` -62 -> -70 dBFS within 2 ms, -71 .. -76 for 20 ms (one mixer block), then below -108 dBFS from
++24 ms; `b47` the same shape (-64 -> -75, below -112 from +24 ms); `floor` -65 -> -95 within 4 ms, -120 at +6 ms. No isolated peak at the stop: `clicks` 0 (raw) in the fade and in the half beat after it, in all three break
+takes; on the first difference (a high-pass) also 0 for `b405` and `b47`; `floor` shows 2 at 42.523 / 42.552 at
+-77 / -80 dB, before the rung drop and about 23 dB below the 3 such peaks the unfaded pluck makes in the same half beat
+of `floor_ref` (-54 .. -58 dB), i.e. the pluck's own waveform, not the stop. The stop is therefore a cut from about
+-20 .. -26 dB relative (about -60 dBFS absolute); nothing in the measurement shows it as a click, but it is not the
+"volume already 0" the plan assumed.
+
+### Criteria (spec 7, plan Task 6 Step 3)
+
+| criterion | measured | verdict |
+|---|---|---|
+| Monotonic fall over the 2-beat fade: the difference to `ref` falls in each of the four half-beat windows (each <= the one before) | full mix: `b405` -0.04, -0.77, -2.66, **-0.60**; `b47` -0.07, -0.76, **-0.18**, -4.10. The 4th (`b405`) / 3rd (`b47`) window starts with a kick (beat 42 / 48, floor layer, unchanged), which dominates the window's RMS. The above-floor gain (take - rung0 against ref - rung0) does fall in every window: `b405` -0.1, -1.0, -3.2, -9.1; `b47` -0.1, -0.9, -3.7, -9.3 dB, and in every 1/8-beat step | **NOT met** as written (full-mix difference); the faded layers themselves fall monotonically |
+| Then 0: the 2 beats after the fade within ±1 dB of `rung0` at the same beats | `b405` -36.21 vs -36.21 dBFS (+0.00 dB); `b47` -37.11 vs -37.11 (+0.00); `floor` -36.21 vs -36.21 (+0.00). Above-floor residual -67 / -74 / -72 dBFS in the first half beat (the stop's last block), then silent | met |
+| Floor unchanged: `floor` take, first 30 ms RMS of the kick beats before and after the break against `ref` ±1 dB | beats 36-46: -0.21, -0.62, -0.17, -0.56, -0.19, -0.64 dB (max 0.64; `ref` has the rung-6 layers on top). Against `floor_ref` and `rung0`: 0.00 dB at every kick beat | met |
+| No clicks: `clicks` 0 in all three break takes | `b405` 0, `b47` 0, `floor` 0 (raw, fade and the half beat after it) | met |
+| Timing: `.cpu.txt` late 0 / dropped 0 / RESYNCED 0; `rung` at the floor at break + 2.0 beats (1 frame) | late / dropped / RESYNCED 0 in all six takes. Rung at the floor at: `b405` 42.5564 = fade start (40.5352) + 2.0212 = break + 2.0564; `b47` 49.0374 = start (47.0106) + 2.0269 = break + 2.0374; `floor` as `b405`. The ladder's beat advances once per mixer block (0.041 beat; largest step between two frames 0.077 beat): the drop is on the first block at or after start + 2.0, and the start on the first block at or after the break (the scenario sets the combo then; SoundManager reads it the next frame) | met |
+| Fade across a bar line (`b47`): 20 ms before / after beat 48, the take's RMS step within the `ref` step + the fade's slope | full mix: take -42.33 / -29.06 dBFS (step +13.27 dB), `ref` -40.71 / -29.00 (step +11.70); take step - ref step **+1.57 dB**, fade curve step between the window centres -0.22 dB. The before window is quiet, so the faded layers are a larger share of it than of the kick-led after window. The above-floor gain itself: -1.99 dB before, -2.18 dB after (step -0.19 dB against the curve's -0.22): no jump at the bar line; the ladder kept rung 6 across it | **NOT met** as written (full mix, +1.57 dB beyond the bound); the faded layers make no step at the bar line |
+
+Listening was not part of this task. What the numbers say a listener should hear: the layers above the floor sink
+smoothly over the 2 beats, about 40 ms behind the beat-exact curve, and are gone 2.06 beats after the break; the kick,
+snare, hat and bass do not change.
+
+### Noticed, not changed
+
+- The two "NOT met" rows fail on the measure, not on the fade: a full-mix RMS difference per window is dominated by
+  whichever floor hit (kick) falls in the window. The above-floor gain is the measure that isolates the faded layers.
+  Whether the criteria should be judged on it is a decision for the plan, not for this task.
+- The stop at the end of the fade cuts notes that are still at about -20 .. -26 dB relative (the fade lags its curve
+  by about 0.08 beat, so the last frames' scale 0.01-0.02 has not reached the mix). No click is measurable. Not
+  changed here (fade code is outside this task); options would be timing the fade from the break beat rather than the
+  frame that saw it, or stopping a mixer block after the last volume call.
+- At the fade end `RefreshArrangement` re-schedules floor-layer notes that were already scheduled. In `b47` the kick /
+  hat at beat 50 were first scheduled (frame 5854, before the phrase anchor at 48) at beat DSP 1393733 and re-scheduled
+  (frame 6239) at 1393732: the clock's `DspAt(50)` differs by 1 sample before and after the anchor. In `rung0` those two
+  notes kept the pre-anchor value. This leaves a residual of -48.5 dBFS for 1/16 beat at beat 50 (a 1-sample shift of
+  the kick, 21 µs); level within 0.00 dB.
+- `.ladder.csv` is not covered by the `Docs/Captures` ignore rules (it is not committed).
