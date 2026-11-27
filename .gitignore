@@ -129,6 +129,7 @@ FMOD/Tools/__pycache__/
 /Docs/Captures/*.studio.csv
 /Docs/Captures/*.anchors.csv
 /Docs/Captures/*.retimes.csv
+/Docs/Captures/*.ladder.csv
 
 # Unused sample candidates (restore with: python Tools/restore_sample_library.py)
 /SampleLibrary/
