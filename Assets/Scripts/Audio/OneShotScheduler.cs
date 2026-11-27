@@ -299,6 +299,28 @@ public sealed class OneShotScheduler
         return removed;
     }
 
+    /// <summary>
+    /// Removes every note with <paramref name="aboveRung"/> &lt; Rung &lt;= <paramref name="upToRung"/>, of any owner, the
+    /// same way as <see cref="SilenceAbove"/>: waiting notes are dropped, notes handed to the backend (armed or sounding)
+    /// are stopped now and released. Returns the number removed.
+    /// </summary>
+    public int SilenceBetween(int aboveRung, int upToRung)
+    {
+        ulong now = _backend.NowDsp;
+        int removed = 0;
+        for (int i = _notes.Count - 1; i >= 0; i--)
+        {
+            var note = _notes[i];
+            if (note.Rung <= aboveRung || note.Rung > upToRung)
+                continue;
+            if (note.Handle >= 0)
+                Cancel(note, now);
+            _notes.RemoveAt(i);
+            removed++;
+        }
+        return removed;
+    }
+
     enum DispatchResult { Waiting, Sent, Late, Failed }
 
     DispatchResult Dispatch(Note note, ulong now)

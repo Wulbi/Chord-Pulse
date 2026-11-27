@@ -202,8 +202,8 @@ public sealed class SoundManager : SingletonBehaviour<SoundManager>, IKillBedSta
     /// <summary>
     /// The on-screen pulse combo from the game (negative reads 0). With the round time it picks the combo ladder's rung
     /// (<see cref="ComboLadder.Rung"/>): rungs 1..3 add the intensity layers, 4..6 the combo layers (16th hats, glass pad,
-    /// bell arpeggio). A higher rung comes in on the next bar line; a combo that drops to 0 fades the layers above the
-    /// floor over <see cref="ComboFade.Beats"/> beats and then removes them (not inside the fever phrase).
+    /// bell arpeggio). A higher rung comes in on the next bar line; a combo that drops (a break) removes a pending, unheard
+    /// higher rung's notes and fades the layers above the floor over <see cref="ComboFade.Beats"/> beats and then removes them (not inside the fever phrase).
     /// </summary>
     public int ComboCount { get => _comboCount; set => _comboCount = Math.Max(0, value); }
     /// <summary>Rung being played: during a fade the rung from before the break, after it the floor's.</summary>
@@ -855,6 +855,10 @@ public sealed class SoundManager : SingletonBehaviour<SoundManager>, IKillBedSta
     {
         var result = _ladder.Update(_comboCount, _roundSeconds, _audioBeat,
             (int)Math.Floor(_audioBeat / BeatsPerBar), feverPhrase);
+        // A break also drops a higher rung that was pending but never heard: notes the schedulers already took for it
+        // (inside the onset safety, so a refresh would keep them) are removed. Guest-loop notes are left to the fade.
+        if (result.Broke)
+            Shots.SilenceBetween(result.HeardRungAtBreak, ComboLadder.MaxRung);
         if (result.FadeStarted || _ladder.Fade.Active)
             Shots.SetFade(result.Floor, result.Scale);
         if (!result.FadeEnded)

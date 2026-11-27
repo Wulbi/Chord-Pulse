@@ -591,6 +591,44 @@ public class OneShotSchedulerTests
     }
 
     [Test]
+    public void SilenceBetween_RemovesOnlyTheRungRange()
+    {
+        var (clock, backend, scheduler) = Make();
+        clock.Anchor(0, 0, 120);
+        backend.Now = 20000; // beat 1 (24000) inside the window
+        scheduler.Schedule(N(61, 1, 4, 0f, 0, rung: 1), Owner); // will be sounding
+        scheduler.Schedule(N(63, 1, 4, 0f, 0, rung: 3), Owner); // will be sounding
+        Assert.AreEqual(2, backend.Starts.Count);
+        int sounding3 = backend.Starts[1].handle;
+        backend.Now = 30000; // both started; beat 1.5 (36000) inside the window
+        scheduler.Schedule(N(65, 1.5, 1, 0f, 0, rung: 5), Owner); // handed, not started
+        scheduler.Schedule(N(67, 1.5, 1, 0f, 0, rung: 7), Owner); // handed, not started
+        Assert.AreEqual(4, backend.Starts.Count);
+        int armed5 = backend.Starts[2].handle;
+        scheduler.Schedule(N(71, 4, 1, 0f, 0, rung: 1), Owner); // waiting
+        scheduler.Schedule(N(73, 4, 1, 0f, 0, rung: 3), Owner); // waiting
+        scheduler.Schedule(N(75, 4, 1, 0f, 0, rung: 5), Owner); // waiting
+        scheduler.Schedule(N(77, 4, 1, 0f, 0, rung: 7), Owner); // waiting
+        int stopsBefore = backend.Stops.Count;
+
+        Assert.AreEqual(4, scheduler.SilenceBetween(1, 6));
+
+        Assert.AreEqual(stopsBefore + 2, backend.Stops.Count);
+        Assert.Contains((sounding3, 30000UL), backend.Stops);
+        Assert.Contains((armed5, 30000UL), backend.Stops);
+        Assert.AreEqual(2, backend.Releases.Count);
+        Assert.Contains(sounding3, backend.Releases);
+        Assert.Contains(armed5, backend.Releases);
+        Assert.AreEqual(4, scheduler.ActiveCount);
+
+        backend.Now = 90000; // beat 4 (96000) inside the window
+        scheduler.Update();
+        Assert.AreEqual(6, backend.Starts.Count);
+        CollectionAssert.AreEquivalent(new[] { 71, 77 }, new[] { backend.Starts[4].midi, backend.Starts[5].midi },
+            "only the rung-1 and rung-7 waiting notes are dispatched");
+    }
+
+    [Test]
     public void SetFade_ClampsScale()
     {
         var (clock, backend, scheduler) = Make();

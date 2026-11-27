@@ -176,6 +176,51 @@ public class LadderStateTests
             Assert.AreEqual(f.Beat < 8 - 1e-6 ? 0 : 1, f.HeardRung, "beat " + f.Beat);
     }
 
+    [Test] public void DropWithoutAZeroFrame_IsABreak()
+    {
+        var state = AtRungFive(10);
+        var frames = Run(state, 1, 40, 10, 18);   // 8 -> 1 between two frames, no frame at 0
+        var start = At(frames, 10.0);
+        Assert.IsTrue(start.Step.FadeStarted);
+        Assert.AreEqual(1, start.Step.Floor);
+        Assert.AreEqual(1, frames.FindAll(f => f.Step.FadeStarted).Count, "one fade");
+        foreach (var f in frames.FindAll(f => f.Beat < 12.0 - 1e-6))
+            Assert.AreEqual(5, f.HeardRung, "beat " + f.Beat);
+        Assert.IsTrue(At(frames, 12.0).Step.FadeEnded);
+        // The combo that remains (1, rung 0) counts toward the next bar line: the floor stays.
+        foreach (var f in frames.FindAll(f => f.Beat > 11.99))
+            Assert.AreEqual(1, f.HeardRung, "beat " + f.Beat);
+    }
+
+    [Test] public void ComboRisingOrEqual_IsNotABreak()
+    {
+        var state = new LadderState();
+        Run(state, 0, 40, 0, 1);
+        Run(state, 5, 40, 1, 6);
+        var frames = Run(state, 5, 40, 6, 7);
+        frames.AddRange(Run(state, 6, 40, 7, 9));
+        Assert.IsFalse(frames.Exists(f => f.Step.FadeStarted || f.Step.Broke), "no break");
+        Assert.AreEqual(4, state.HeardRung);
+    }
+
+    [Test] public void Break_WithAPendingHigherRung_ReportsTheHeardRung()
+    {
+        var state = new LadderState();
+        Run(state, 0, 40, 0, 1);
+        Run(state, 0, 40, 1, 5);                      // heard 1 (the floor)
+        Run(state, 8, 40, 5, 7.9);                    // live 5, enters at beat 8
+        Assert.AreEqual((1, 5), (state.HeardRung, state.LiveRung), "setup");
+        var frames = Run(state, 2, 40, 7.9, 10);     // drop 8 -> 2 just before the bar line
+        var brk = frames[0];
+        Assert.IsFalse(brk.Step.FadeStarted, "nothing above the floor is heard");
+        Assert.IsTrue(brk.Step.Broke);
+        Assert.AreEqual(1, brk.Step.HeardRungAtBreak);
+        Assert.AreEqual(ComboLadder.Rung(2, 40), brk.LiveRung, "live rung follows the remaining combo");
+        Assert.IsFalse(frames.Exists(f => f.Step.FadeStarted));
+        Assert.AreEqual(1, frames.FindAll(f => f.Step.Broke).Count, "one break");
+        Assert.AreEqual(ComboLadder.Rung(2, 40), At(frames, 8.0).HeardRung);
+    }
+
     [Test] public void Reset_ClearsAFadeInProgress()
     {
         var state = AtRungFive(10);

@@ -3,7 +3,7 @@ using System;
 /// <summary>
 /// The combo ladder as it is played (pure; SoundManager calls <see cref="Update"/> once per frame at the mixer's beat).
 /// The rung (<see cref="ComboLadder.Rung"/> of the screen combo and the round time) rises on the next bar line; a broken
-/// combo above the floor starts a <see cref="ComboFade"/>, during which the arrangement keeps the rung from before the
+/// combo (any drop of the combo) above the floor starts a <see cref="ComboFade"/>, during which the arrangement keeps the rung from before the
 /// break, and when it ends the rung drops to the floor at once. Inside the fever phrase a break starts no fade.
 /// </summary>
 public sealed class LadderState
@@ -19,6 +19,11 @@ public sealed class LadderState
         public int Floor;
         /// <summary>Fade value now (1 = whole, 0 = gone; 0 on the frame the fade ends); 1 without a fade.</summary>
         public float Scale;
+        /// <summary>The combo dropped this frame outside the fever phrase and outside a fade (fade started or not).</summary>
+        public bool Broke;
+        /// <summary>With <see cref="Broke"/>: the rung heard at the break. Notes above it (up to
+        /// <see cref="ComboLadder.MaxRung"/>) were never heard and are to be removed.</summary>
+        public int HeardRungAtBreak;
     }
 
     int _previousCombo;
@@ -57,7 +62,8 @@ public sealed class LadderState
     public Step Update(int combo, double seconds, double beat, int bar, bool feverPhrase)
     {
         combo = Math.Max(0, combo);
-        bool broke = _previousCombo > 0 && combo == 0;
+        // Any drop is a break: a reset and a new kill can fall into one frame, so 0 itself may never be seen.
+        bool broke = combo < _previousCombo;
         _previousCombo = combo;
         bool feverEnded = _wasFeverPhrase && !feverPhrase;
         _wasFeverPhrase = feverPhrase;
@@ -102,7 +108,13 @@ public sealed class LadderState
             RungBar = bar;
         }
 
-        if (broke && !feverPhrase && HeardRung > Floor)
+        if (broke && !feverPhrase)
+        {
+            step.Broke = true;
+            step.HeardRungAtBreak = HeardRung;
+        }
+
+        if (step.Broke && HeardRung > Floor)
         {
             Fade.Begin(beat, HeardRung, Floor);
             LiveRung = AppliedRung = Fade.FromRung;
