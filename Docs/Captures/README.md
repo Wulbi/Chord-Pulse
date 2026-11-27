@@ -3225,7 +3225,9 @@ over 2 beats on 1 - t² and then stay silent, while the floor layers do not chan
   `_audioBeat` (the mixer beat) and times the fade in it, and the WAV is cut along the mixer's beat log, so the break
   beat in the scenario is the break beat in the recording. The visual beat runs `visualLatencyMs` behind and would put
   the break that much later in the mix. `SoundManager` runs first in the frame (execution order -100), so it reads the
-  new combo on the next frame, as it would a combo set by game code.
+  new combo on the next frame. Game code does the same since the final fix wave (S1): `ChordPulsePrototype` sets
+  `ComboCount` again after the frame's wave resolutions and core hits, so a break reaches the ladder one frame after it
+  happens there too (before that fix it could take two frames).
 - Guest loops: the existing `holdArrangement` already keeps them out (`FeatureSelector.CancelNext()` every frame), so
   `combobreak` applies it always and no `featuresOff` option was added. It also holds the style at 0 (synthpop) and
   the variation at 0, the same in every take. `.ladder.csv` confirms 0 guest-loop rows and 0 fever rows in every take.
@@ -3377,4 +3379,104 @@ snare, hat and bass do not change.
   (frame 6239) at 1393732: the clock's `DspAt(50)` differs by 1 sample before and after the anchor. In `rung0` those two
   notes kept the pre-anchor value. This leaves a residual of -48.5 dBFS for 1/16 beat at beat 50 (a 1-sample shift of
   the kick, 21 µs); level within 0.00 dB.
-- `.ladder.csv` is not covered by the `Docs/Captures` ignore rules (it is not committed).
+- `.ladder.csv` is not covered by the `Docs/Captures` ignore rules (it is not committed). (Covered since the final
+  fix wave.)
+
+## Combo ladder — final fix wave (the end-of-fade stop, measured)
+
+Question: after the fix (M1), are the notes above the floor silent before they are stopped at the end of a fade?
+
+What changed (code): at the fade end `OneShotScheduler.SilenceAbove` no longer stops the handed notes in the same
+Studio command flush as their volume-0 call. It mutes them (`setVolume` 0) and keeps them; `Update` stops them once
+`SilenceHoldSamples` have passed, counted from the second scheduler `Update` after the mute (the first runs in the
+mute's own frame, before FMOD's `RuntimeManager.Update` has sent the volume command). `SoundManager` sets the hold to
+3 mixer blocks (`3 * getDSPBufferSize` = 3072 samples, 64 ms at 48 kHz). `SilenceBetween` (a break) uses the same
+path. Also in this wave: a break never removes the notes the time floor owes (S2), and the game sets `ComboCount`
+again after the frame's resolutions (S1; this scenario sets the combo itself, so S1 changes nothing here).
+
+### Scenario and analysis changes
+
+- `.ladder.csv` has an 11th column, `muted`: `MutedCount` of SoundManager's shared scheduler (notes held at volume 0,
+  not yet stopped). It rises at the rung drop and returns to 0 on the frame that stops them.
+- `ladderfade`: the 2 ms table around the rung drop now runs to +120 ms (was +40). New lines: `muted N at the rung
+  drop; back to 0 at ... = rung drop + X ms (the stop)` and the above-floor signal (take - rung0) in the 30 ms before
+  the stop, in the last mixer block (1024 samples) before it and in the 30 ms after it.
+
+### Takes (Editor, seed 7, 64 beats, `combobreak`, `logOneShots`, full mix, `MusicMix` 1, `scheduleOffsetSamples` 0)
+
+Recorded as the cl6 takes: auto refresh disallowed around each take, no Editor query while a take recorded,
+`Application.runInBackground = true` set at frame 2 of each take from an Editor call (runtime only;
+`PlayerSettings.runInBackground` read false after every take; ProjectSettings MD5s identical before and after the
+session; the scene file unchanged, fields set without saving).
+
+| take | settings | unforced stalls | longest frame | Studio avg / max % | Core dsp avg / max % | ONESHOTS | PATTERNS sched. / started | RESYNCED | valid |
+|---|---|---:|---|---|---|---|---|---:|---|
+| `combobreak_seed7_cl8_b405` | `"40.5"` | 0 | 1746 ms, before the first beat | 0.79 / 1.33 | 1.50 / 2.12 | 780 / 0 / 0 / 76 | 822 / 780 | 0 | yes |
+| `combobreak_seed7_cl8_b47` | `"47.0"` | 0 | 1850 ms, before the first beat | 0.81 / 1.25 | 1.56 / 2.21 | 774 / 0 / 0 / 76 | 810 / 774 | 0 | yes |
+| `combobreak_seed7_cl8_floor` | `"40.5"`, `comboMax` 2 | **1** (113 ms at beat 14.09) | 1685 ms, before the first beat | 0.59 / 0.78 | 0.85 / 1.03 | 481 / 0 / 0 / 23 | 493 / 481 | 0 | **no** (kept, not used) |
+| `combobreak_seed7_cl8_floor_r2` | `"40.5"`, `comboMax` 2 | 0 | 1661 ms, before the first beat | 0.60 / 0.86 | 0.86 / 1.08 | 481 / 0 / 0 / 23 | 493 / 481 | 0 | yes |
+
+ONESHOTS = started / late / dropped / cancelled. Every take: `dropped frames 0`, dsp-to-frame mismatches 0.
+References: the cl6 `ref`, `floor_ref` and `rung0` takes. They still null before the break, so they were not
+re-recorded: `b405` vs `cl6_ref` residual 104.3 dB below over beats 0-40.5, `b47` vs `cl6_ref` 118.8 dB below over
+0-47, `floor_r2` vs `cl6_floor_ref` identical over 0-40.5; every 4-beat window 0.000 dB; beats 0-4 of every take
+identical to `cl6_rung0`.
+
+### The stop, before and after (above-floor signal take - rung0, 2 ms windows from the rung drop's capture frame, dBFS)
+
+| offset ms | -2 | +0 | +2 | +4 | +6 | +8..+20 | +22 | +24 | +26 | +28 | +30..+120 |
+|---|---:|---:|---:|---:|---:|---|---:|---:|---:|---:|---|
+| `cl6_b405` (stop with the volume 0) | -60.8 | -62.0 | -69.9 | -75.7 | -74.3 | -70.6 .. -75.8 | -86.6 | -108.8 | -128.3 | -128.8 | -120 .. silent |
+| `cl8_b405` (muted, stopped after the hold) | -60.8 | -62.0 | -69.1 | -69.6 | -70.9 | -68.6 .. -72.3 | -75.4 | -86.4 | -99.0 | -114.2 | -121 .. silent |
+| `cl6_b47` | -62.7 | -64.1 | -75.4 | -81.9 | -74.9 | -74.7 .. -80.6 | -87.4 | -112.3 | -136.2 | -141.0 | -133 .. -146 |
+| `cl8_b47` | -62.7 | -64.1 | -75.4 | -81.9 | -74.9 | -74.5 .. -80.9 | -84.0 | -99.2 | -113.6 | -128.1 | -136 .. silent |
+| `cl6_floor` | -63.7 | -65.0 | -71.2 | -95.2 | -119.9 | -134.0 .. -138.9 | -131.8 | -136.1 | -139.5 | -138.4 | -131 .. silent |
+| `cl8_floor_r2` | -63.7 | -65.1 | -70.8 | -73.2 | -73.4 | -72.7 .. -76.7 | -82.4 | -122.2 | -130.6 | -130.9 | -121 .. silent |
+
+The stop itself (`muted` back to 0) is at rung drop + 64.0 ms in all three cl8 takes (3072 samples):
+
+| take | muted at the drop | above-floor 30 ms before the stop | last mixer block before it | 30 ms after it |
+|---|---:|---:|---:|---:|
+| `cl8_b405` | 15 | -125.2 dBFS | -124.2 dBFS | -136.2 dBFS |
+| `cl8_b47` | 14 | -140.4 dBFS | -140.0 dBFS | -148.4 dBFS |
+| `cl8_floor_r2` | 1 | -126.5 dBFS | -125.7 dBFS | -140.0 dBFS |
+
+(In the cl6 takes the stop was the rung drop itself; the 30 ms before it read -55 .. -62 dBFS for `b405`, -57 .. -68
+for `b47` and -59 .. -66 for `floor`, README Task 6.)
+
+What the table shows: the step at +0 .. +2 ms is still there and is not the stop. The plateau after it (`b405` -68.6 ..
+-72.3 dBFS for one mixer block) is `ref` - `rung0` at the same offsets (-35 .. -38 dBFS) times the last fade scale the
+ladder sent (0.0202, -33.9 dB): the last `SetFade` call reaching the mix. The volume 0 of the mute reaches the mix one
+block later, at +22 .. +28 ms, as a descent over about 6 ms (cl6 `b405` / `b47`: the same block, cut within about
+4 ms; cl6 `floor`: cut at +2 .. +6 ms). In `floor` the plateau is new: before the fix the stop cut the pluck one
+block earlier. Up to +20 ms `cl8_b47` reads the same as `cl6_b47` (same last fade scale), so the change is in the
+block that carries the volume 0: a ramp to silence instead of a cut.
+
+### Expectations (final fix brief)
+
+| expectation | measured | verdict |
+|---|---|---|
+| 2 ms table: no step at +0 | `b405` -62.0 -> -69.1 dBFS (+0 -> +2 ms), `b47` -64.1 -> -75.4, `floor_r2` -65.1 -> -70.8; then a plateau for one mixer block at the last fade scale (see above) | **NOT met** (the step is the last fade scale reaching the mix, not the stop) |
+| one descent to -100 dBFS or lower by about +45 ms | `b405` -99.0 at +26, -114.2 at +28; `b47` -99.2 at +24, -113.6 at +26; `floor_r2` -122.2 at +24. One descent after the plateau, not one from +0 | met (-100 by +24 .. +28 ms); not "one descent" from +0 (see the row above) |
+| nothing at the stop offset | stop at +64.0 ms: 30 ms after it -136.2 / -148.4 / -140.0 dBFS, already below -120 before it | met |
+| at the stop, above-floor level in the 30 ms before it -100 dBFS or lower (was -55 .. -62) | -125.2 / -140.4 / -126.5 dBFS | met |
+| silence at least one mixer block before the stop (else raise the multiplier 3) | last block before the stop -124.2 / -140.0 / -125.7 dBFS; silent (< -100) from +28 / +26 / +24 ms, about 36-40 ms (1.7-1.9 blocks) before the stop | met; multiplier stays 3 |
+| unchanged: "after the fade" +0.00 dB vs rung0 | `b405` -36.21 vs -36.21 (+0.00), `b47` -37.11 vs -37.11 (+0.00), `floor_r2` -36.21 vs -36.21 (+0.00) | met |
+| unchanged: clicks 0 | raw 0 in the fade and the half beat after it in all three; first difference 0 (`b405`, `b47`), `floor_r2` 2 at 42.5232 / 42.5522 (-77.0 / -79.7 dB), the same two as cl6 `floor` (the pluck's own waveform, before the rung drop) | met (as in Task 6) |
+| unchanged: late / dropped / RESYNCED 0 | 0 / 0 / 0 in all three valid takes (and in the invalid `floor`) | met |
+| unchanged: fade start about +0.035, rung drop +2.04 .. 2.06 beats | `b405` +0.0352 / +2.0564, `b47` +0.0106 / +2.0374, `floor_r2` +0.0352 / +2.0564 (identical to cl6) | met |
+| may move: the 42.500 1/8-beat cell and the window-8 residual | `b405` 42.500 cell -25.2 dB (cl6 -25.3), window 8 residual -67.3 dBFS (cl6 -67); `b47` 49.000 cell -30.2, residual -74.2 (cl6 -74); `floor_r2` 42.625 cell -88.0 (cl6 -97.9) | moved by up to 10 dB in `floor` only (the tail is no longer cut), as allowed |
+
+### NOT met / open
+
+- "No step at +0": NOT met (-62.0 -> -69.1 / -64.1 -> -75.4 / -65.1 -> -70.8 dBFS within 2 ms). The measurement says
+  the step belongs to the fade, not to the stop: it is the last `SetFade` value (scale 0.0202) arriving about one
+  mixer block after it was sent (the fade's 40-50 ms lag, README Task 6, not addressed in this wave). The removal is
+  now silent: the volume 0 is mixed one block later and the stop comes 64 ms after the drop, 36-40 ms after silence.
+
+### Noticed, not changed
+
+- `b405` and `b47` list 2 / 4 more `.patterns.csv` rows than their cl6 takes (drum notes at beat 17 in `b405`, before
+  the break; beats 56 and 61 in `b47`): the same notes scheduled twice with the first copy cancelled (cancelled 76
+  against 74 / 72). It depends on the frame timing of a bar-line invalidation; the audio nulls against `cl6_ref` before
+  the break and against `rung0` after the fade.

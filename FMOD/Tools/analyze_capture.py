@@ -1173,6 +1173,7 @@ def cmd_ladderfade(args):
     # The ladder log: when the fade started (from the first scale < 1 row) and when the rung reached the floor.
     rows = ladder_rows(args.wav)
     end_frame = None
+    stop_frame = None
     if rows:
         # The mixer beat moves once per mixer block (several Unity frames can read the same one): the step that counts
         # as "one frame" of the ladder is the largest beat advance between two consecutive rows.
@@ -1194,6 +1195,18 @@ def cmd_ladderfade(args):
                        sum(1 for r in rows if first["beat"] <= r["beat"] < drop["beat"] and r["scale"] < 1.0)))
                 prev = [r for r in rows if r["beat"] < drop["beat"]][-1]
                 print("ladder: last scale before the end %.4f (%.1f dB) at beat %.4f" % (prev["scale"], to_db(prev["scale"]), prev["beat"]))
+                # The muted column (final fix wave M1): notes held at volume 0 from the rung drop; the first row after it
+                # with muted back at 0 is the frame that stopped them.
+                if "muted" in drop:
+                    back = next((r for r in rows if r["capture_frame"] > drop["capture_frame"] and r["muted"] == 0), None)
+                    if back:
+                        stop_frame = back["capture_frame"]
+                        print("ladder: muted %d at the rung drop; back to 0 at beat %.4f, capture frame %d = rung drop + %.1f ms (the stop)" %
+                              (drop["muted"], back["beat"], stop_frame, (stop_frame - end_frame) * 1000.0 / rate))
+                    else:
+                        print("ladder: muted %d at the rung drop and never back to 0" % drop["muted"])
+                else:
+                    print("ladder: no muted column (take recorded before the final fix wave)")
             else:
                 print("ladder: the rung never reached the floor after the break")
         else:
@@ -1258,7 +1271,7 @@ def cmd_ladderfade(args):
         print("\nabove-floor signal around beat %.3f (%s), 2 ms windows, dBFS take-r0%s (offset ms):" %
               (e, "the ladder's rung drop, main-thread capture frame" if end_frame is not None else "break + 2", " / ref-r0" if ref else ""))
         cells = []
-        for k in range(-15, 21):
+        for k in range(-15, 61):
             x = take.audio[int(round(a)) + k * win:int(round(a)) + (k + 1) * win]
             z = r0.audio[int(round(z0)) + k * win:int(round(z0)) + (k + 1) * win]
             cell = "%+d:%s" % (k * 2, fmt_db(to_db(seg_rms(x - z))))
@@ -1268,6 +1281,17 @@ def cmd_ladderfade(args):
             cells.append(cell)
         for k in range(0, len(cells), 6):
             print("  " + "  ".join(cells[k:k + 6]))
+        if stop_frame is not None:
+            # The stop of the muted notes (muted back to 0): the above-floor signal in the 30 ms and in the one mixer
+            # block (1024 samples) before it, and in the 30 ms after it.
+            s = int(round(stop_frame))
+            zs = int(round(z0 + (stop_frame - a)))
+            n30, blk = int(round(rate * 0.030)), 1024
+
+            def above(f0, f1):
+                return fmt_db(to_db(seg_rms(take.audio[s + f0:s + f1] - r0.audio[zs + f0:zs + f1]))) if f1 > f0 else "n/a"
+            print("above-floor at the stop (rung drop + %.1f ms): 30 ms before %s dBFS, last block before %s dBFS, 30 ms after %s dBFS" %
+                  ((stop_frame - a) * 1000.0 / rate, above(-n30, 0), above(-blk, 0), above(0, n30)))
     return 0
 
 

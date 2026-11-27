@@ -472,10 +472,12 @@ public sealed class CaptureScenario : MonoBehaviour
         if (!AudioCapture.IsCapturing)
             return;
         var feature = sound.CurrentFeature;
-        _ladderLog.Add(string.Format(CultureInfo.InvariantCulture, "{0},{1:F5},{2},{3},{4},{5:F5},{6:F5},{7},{8},{9}",
+        // muted: notes the shared scheduler holds at volume 0 before it stops them (final fix wave M1); 0 again = stopped.
+        var shots = _killSchedulerField?.GetValue(sound) as OneShotScheduler;
+        _ladderLog.Add(string.Format(CultureInfo.InvariantCulture, "{0},{1:F5},{2},{3},{4},{5:F5},{6:F5},{7},{8},{9},{10}",
             Time.frameCount, (double)_audioBeatField.GetValue(sound), sound.ComboCount, sound.LadderRung, sound.LadderFloor,
             sound.ComboFadeScale, sound.BeatPosition, AudioCapture.FramesCaptured,
-            sound.FeverActive || sound.FeverPending ? 1 : 0, feature != null ? feature.Id : 0));
+            sound.FeverActive || sound.FeverPending ? 1 : 0, feature != null ? feature.Id : 0, shots != null ? shots.MutedCount : -1));
     }
 
     void BeginStopTail(SoundManager sound)
@@ -898,7 +900,7 @@ public sealed class CaptureScenario : MonoBehaviour
         }
         if (scenario == Scenario.combobreak)
             File.WriteAllText(Path.ChangeExtension(path, ".ladder.csv"),
-                "frame,beat,combo,rung,floor,scale,visual_beat,capture_frame,fever,feature\n" + string.Join("\n", _ladderLog) + "\n");
+                "frame,beat,combo,rung,floor,scale,visual_beat,capture_frame,fever,feature,muted\n" + string.Join("\n", _ladderLog) + "\n");
         if (scenario == Scenario.duck || meterFeatureDuck)
         {
             var duck = new StringBuilder("beat,rms_in,rms_out\n");
