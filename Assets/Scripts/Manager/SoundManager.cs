@@ -528,9 +528,49 @@ public sealed class SoundManager : SingletonBehaviour<SoundManager>, IKillBedSta
         if (!MusicPaused)
             return;
         MusicPaused = false;
-        SetMasterPaused(false);
+        if (!_focusPaused)
+            SetMasterPaused(false);
         // It was interpolating the clock against real time, which ran on during the pause.
         _dspSmoother.Reset();
+    }
+
+    // The application lost focus / was paused (no "run in background"): FMOD's RuntimeManager pauses the Studio master
+    // bus and suspends the mixer, but the master channel group's DSP clock - the clock every beat and one-shot is timed
+    // on - runs on meanwhile, while the clocks of the bus groups below it stand still. After the return every start
+    // time (a master-clock value handed to setDelay on a group under those buses) then lay the whole time away in the
+    // future: all notes sounded that much late, kill chords long after their kills. So the master channel group is
+    // paused too, like PauseMusic: its clock stops with the buses and the music continues on the same sample.
+    bool _focusPaused;
+    bool _focusResumePending;
+    bool _afterFocusPause;
+
+    void OnApplicationPause(bool paused)
+    {
+        if (paused)
+        {
+            _focusResumePending = false;
+            if (!_focusPaused && SetMasterPaused(true))
+                _focusPaused = true;
+        }
+        else if (_focusPaused)
+        {
+            // Unpaused in Update: by then RuntimeManager's own handler has resumed the mixer and the master bus.
+            _focusResumePending = true;
+        }
+    }
+
+    void EndFocusPause()
+    {
+        _focusResumePending = false;
+        _focusPaused = false;
+        // The bus unpause is a Studio command: it must be in effect before the master clock runs again, or the bus
+        // clocks fall behind it by the difference.
+        if (RuntimeManager.IsInitialized)
+            RuntimeManager.StudioSystem.flushCommands();
+        if (!MusicPaused)
+            SetMasterPaused(false);
+        _dspSmoother.Reset();
+        _afterFocusPause = true;
     }
 
     static bool SetMasterPaused(bool paused)
@@ -758,6 +798,8 @@ public sealed class SoundManager : SingletonBehaviour<SoundManager>, IKillBedSta
 
     void Update()
     {
+        if (_focusResumePending)
+            EndFocusPause();
         // Paused: the clock stands still, and the on-screen beat must not creep on (FollowBeat never stops by itself).
         if (!_musicPlaying || MusicPaused)
             return;
@@ -785,7 +827,10 @@ public sealed class SoundManager : SingletonBehaviour<SoundManager>, IKillBedSta
         _transport.BeatAt(
             _dspSmoother.Sample(dsp, System.Diagnostics.Stopwatch.GetTimestamp() / (double)System.Diagnostics.Stopwatch.Frequency),
             out double clockBeat);
-        _visualBeat = DspClockSmoother.FollowBeat(_visualBeat, clockBeat - latencyBeats, Time.unscaledDeltaTime * bpm / 60.0);
+        // The frame after a focus pause has the whole time away as its delta, but the clock stood still: no step.
+        double frameBeats = _afterFocusPause ? 0.0 : Time.unscaledDeltaTime * bpm / 60.0;
+        _afterFocusPause = false;
+        _visualBeat = DspClockSmoother.FollowBeat(_visualBeat, clockBeat - latencyBeats, frameBeats);
         if (_visualBeat >= 0)
             _roundSeconds += Time.deltaTime;
 
@@ -1089,6 +1134,8 @@ public sealed class SoundManager : SingletonBehaviour<SoundManager>, IKillBedSta
 
     void OnDestroy()
     {
+        if (_focusPaused)
+            EndFocusPause();
         StopMusic();
         if (_ownsBank)
             RuntimeManager.UnloadBank(BankName);
