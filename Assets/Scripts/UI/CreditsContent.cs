@@ -30,7 +30,7 @@ public static class CreditsContent
         text.AppendLine();
 
         Section(text, "SAMPLES");
-        text.AppendLine("All samples are released under CC0 1.0 Universal");
+        text.AppendLine("All third-party samples are released under CC0 1.0 Universal");
         text.AppendLine();
 
         Source(text, "Audio Tools Sample Packs", "Audio Tools (Digital Hub)", "audiotools.com.ar/samplepack",
@@ -42,12 +42,15 @@ public static class CreditsContent
             "Thrum - guitar");
         Source(text, "VSCO 2 Community Edition", "Versilian Studios (Sam Gossner) and contributors",
             "github.com/sgossner/VSCO-2-CE",
-            "trumpet, flute, harp,",
+            "trumpet, French horn, tenor trombone,",
+            "flute, clarinet, harp,",
             "glockenspiel, marimba, xylophone");
         Source(text, "Versilian Community Sample Library", "Versilian Studios (Sam Gossner) and contributors",
             "github.com/sgossner/VCSL",
-            "vibraphone, FM keys (Yamaha TX81Z),",
-            "agogo, bongos, claves, conga, cowbell, guiro");
+            "vibraphone, kalimba, FM keys (Yamaha TX81Z), tenor saxophone,",
+            "agogo, bongos, claves, conga, cowbell, guiro,",
+            "triangle, tambourine, sleigh bells, woodblock,",
+            "slit drum, anvil, slapstick, siren whistle");
 
         text.AppendLine();
         text.AppendLine("<size=38>Thank you for playing</size>");
