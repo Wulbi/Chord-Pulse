@@ -48,9 +48,9 @@ public sealed class FeatureSelector
     /// <summary>Generated from FMOD/Tools/feature_loops.py together with the notes, so it cannot drift from FMOD.</summary>
     static Loop[] Loops => FeatureLoopNotes.Loops;
 
-    // A guest should feel like an event: roughly one phrase in four, never two phrases in a row,
-    // and not in the first two phrases while the player is still finding the beat.
-    const double Chance = 0.32;
+    // A guest should feel like an event: its chance follows the arrangement rung (ComboLadder.GuestChance),
+    // two phrases in a row only from the rung where ComboLadder.GuestsMayRepeat, and never in the first two
+    // phrases while the player is still finding the beat.
     const int FirstPhrase = 2;
     const int RecentMemory = 4;
 
@@ -74,11 +74,13 @@ public sealed class FeatureSelector
     /// <param name="energy">Target energy 0..3 (difficulty): busier, longer loops get likelier.</param>
     /// <param name="allowed">False when fever is queued or playing during the next phrase.</param>
     /// <param name="excludeId">A loop that would clash with the next phrase's bed style (0 = none).</param>
-    public Loop Advance(SectionSelector.Phrase next, int energy, bool allowed, int excludeId = 0)
+    /// <param name="rung">The combo ladder's rung when the phrase starts: sets the chance and whether guests may follow each other.</param>
+    public Loop Advance(SectionSelector.Phrase next, int energy, bool allowed, int rung, int excludeId = 0)
     {
         Current = Next;
         _phrase++;
-        Next = allowed && !next.Breath && Current == null && _phrase >= FirstPhrase && _random.NextDouble() < Chance
+        Next = allowed && !next.Breath && (Current == null || ComboLadder.GuestsMayRepeat(rung))
+               && _phrase >= FirstPhrase && _random.NextDouble() < ComboLadder.GuestChance(rung)
             ? Choose(energy, excludeId)
             : null;
         if (Next != null)

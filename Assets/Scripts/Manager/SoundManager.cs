@@ -817,7 +817,9 @@ public sealed class SoundManager : SingletonBehaviour<SoundManager>, IKillBedSta
         _variationNext = ChooseVariation(next.Breath);
         _progressions.Advance(next.Breath, feverNext, _tension, _styleNext == StyleDreamy);
         // The latin bed already is a percussion groove: the Latin Groove guest would only double it.
-        _features.Advance(next, _intensity, allowed: !feverNext,
+        // A pinned arrangement (measurement scenes) uses rung 3 (30% guests, closest to the former fixed 32%).
+        bool pinned = _pinIntensity >= 0 || _pinCombo >= 0;
+        _features.Advance(next, _intensity, allowed: !feverNext, rung: pinned ? 3 : LadderRung,
             excludeId: _styleNext == StyleLatin ? LatinGrooveLoopId : 0);
     }
 

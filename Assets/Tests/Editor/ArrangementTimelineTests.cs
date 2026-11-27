@@ -166,7 +166,7 @@ public class ArrangementTimelineTests
         var phrase = new SectionSelector.Phrase();
         for (int i = 0; i < 2000; i++)
         {
-            var loop = selector.Advance(phrase, 3, allowed: true);
+            var loop = selector.Advance(phrase, 3, allowed: true, rung: 6);
             Assert.IsTrue(loop == null || !loop.Fever, $"phrase {i}: {loop?.Name}");
         }
     }
