@@ -27,7 +27,6 @@ public sealed class BeatClock
     public int SampleRate => _sampleRate;
     public bool HasAnchor => _anchored;
     public int AnchorBeat => _anchorBeat;
-    public ulong AnchorDsp => _anchorDsp;
     public double Bpm => _bpm;
 
     public void Anchor(int beat, ulong dspClock, double bpm)

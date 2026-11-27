@@ -25,5 +25,4 @@ public class BasePanel : MonoBehaviour
     }
 
     public virtual void OnOpenEffect() { }
-    public virtual void OnBackButton() { }
 }

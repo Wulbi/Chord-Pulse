@@ -11,8 +11,6 @@ public class UIManager : SingletonBehaviour<UIManager>
     readonly Dictionary<UIPanelType, BasePanel> _panelDict = new Dictionary<UIPanelType, BasePanel>();
     readonly Stack<BasePanel> _panelStack = new Stack<BasePanel>();
 
-    public UIPanelType CurrentPanel { get; private set; }
-
     public Transform CanvasTransform
     {
         get
@@ -49,7 +47,6 @@ public class UIManager : SingletonBehaviour<UIManager>
 
     public void PushPanel(UIPanelType panelType, params object[] datas)
     {
-        CurrentPanel = panelType;
         var panel = GetPanel(panelType);
         if (panel == null)
         {
@@ -88,7 +85,6 @@ public class UIManager : SingletonBehaviour<UIManager>
         if (next == null)
             return;
 
-        CurrentPanel = next.TypeOfPanel;
         if (topPanel == null || topPanel.TypeOfPanelStyle != UIPanelStyleType.WINDOW)
             next.OnResume();
     }

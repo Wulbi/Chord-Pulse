@@ -120,38 +120,10 @@ namespace GameLogic.Core
             _allInstances = null;
         }
 
-        public GameObject Reuse()
-        {
-            return GetInstance().gameObject;
-        }
-
-        public GameObject Reuse(Transform parent)
-        {
-            var instance = GetInstance();
-            instance.transform.SetParent(parent);
-            return instance.gameObject;
-        }
-
-        public GameObject Reuse(Transform parent, bool worldPositionStays)
-        {
-            var instance = GetInstance();
-            instance.transform.SetParent(parent, worldPositionStays);
-            return instance.gameObject;
-        }
-
         public GameObject Reuse(Vector3 position, Quaternion rotation)
         {
             var instance = GetInstance();
             instance.transform.SetPositionAndRotation(position, rotation);
-            return instance.gameObject;
-        }
-
-        public GameObject Reuse(Vector3 position, Quaternion rotation, Transform parent)
-        {
-            var instance = GetInstance();
-            var instanceTransform = instance.transform;
-            instanceTransform.SetPositionAndRotation(position, rotation);
-            instanceTransform.SetParent(parent);
             return instance.gameObject;
         }
 

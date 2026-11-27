@@ -9,8 +9,6 @@ using UnityEngine;
 [DefaultExecutionOrder(-9999), DisallowMultipleComponent]
 public sealed class PoolManager : SingletonBehaviour<PoolManager>
 {
-    public const string FallingBlockKey = "FallingBlock";
-
     [SerializeField] List<PoolContainer> pools = new List<PoolContainer>();
 
     readonly Dictionary<string, PoolContainer> _lookup = new Dictionary<string, PoolContainer>();

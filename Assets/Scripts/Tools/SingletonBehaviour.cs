@@ -46,19 +46,6 @@ public partial class SingletonBehaviour<T> : MonoBehaviour where T : MonoBehavio
     }
 
     public static bool HasInstance => instance != null;
-
-    public static void DestroyInstance()
-    {
-        if (null == instance)
-            return;
-
-        if (Application.isPlaying)
-            Object.Destroy(instance.gameObject);
-        else
-            Object.DestroyImmediate(instance.gameObject);
-
-        instance = null;
-    }
 }
 
 public partial class SingletonBehaviour<T>

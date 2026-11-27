@@ -156,7 +156,7 @@ public sealed class CaptureScenario : MonoBehaviour
     bool _stopping, _restarted;
     long _stopFrame = -1, _restartFrame = -1;
     int _restartQueued = -1;
-    float _stopAt, _restartBeatsStartTime;
+    float _stopAt;
     readonly SortedDictionary<int, (ulong dsp, double bpm)> _beats2 = new SortedDictionary<int, (ulong, double)>();
     const int RestartBeats = 8;
     // spike
