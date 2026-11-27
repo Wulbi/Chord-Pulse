@@ -250,9 +250,9 @@ public sealed class BedLayerVisuals : MonoBehaviour
             Place(_ticks[i], a, radius + 0.08f, 0.07f + 0.05f * _tick, TickColor, _tick * 0.8f * guest * pluck);
         }
 
-        // Walking bass dot (hidden under a percussion guest: both would be dots going round the rim).
+        // Walking bass dot (hidden under a percussion guest: both would be dots going round the rim; back as the guest fades).
         float walkAngle = Mathf.PI * 0.5f - _walk * (2f * Mathf.PI / WalkSteps);
-        Place(_walker, walkAngle, radius, 0.13f, WalkColor, _walkVisible * 0.85f * guest * (percussionGuest ? 0f : 1f));
+        Place(_walker, walkAngle, radius, 0.13f, WalkColor, _walkVisible * 0.85f * guest * (percussionGuest ? 1f - GuestPresence : 1f));
 
         // Tresillo stabs: three points a third of a turn apart, turning a little with each bar.
         float bar = Mathf.Floor((float)_phraseBeat / SoundManager.BeatsPerBar);
@@ -290,7 +290,7 @@ public sealed class BedLayerVisuals : MonoBehaviour
         for (int i = 0; i < BellPool; i++)
         {
             float t = _bellAge[i] / 0.5f;
-            float alpha = t < 1f ? (1f - t) * _combo[3] * guest * (malletGuest ? 0f : 1f) : 0f;
+            float alpha = t < 1f ? (1f - t) * _combo[3] * guest * (malletGuest ? 1f - GuestPresence : 1f) : 0f;
             Place(_bells[i], _bellAngle[i], radius + HaloGap, 0.14f * (1.2f - 0.5f * Mathf.Min(1f, t)),
                 Color.Lerp(GlassColor, Color.white, 0.5f), alpha);
         }

@@ -305,7 +305,8 @@ public sealed class ChordPulsePrototype : MonoBehaviour
         }
 
         int beat = _soundManager.CurrentBeat;
-        // The arrangement fills in as the round gets harder; slower music later can still lower density on its own.
+        // The round's difficulty steers the music's section choice, pattern-variation weights and guest-loop length (the
+        // layers follow the combo ladder, not this).
         _soundManager.Intensity = SpawnDirector.Difficulty(_soundManager.RoundSeconds);
         _soundManager.Tension = TensionMeter.Compute(_enemyStates, CoreRadius, _arenaRadius, _health, MaxHealth);
         _soundManager.Danger = _health == 1;
@@ -399,6 +400,9 @@ public sealed class ChordPulsePrototype : MonoBehaviour
             }
             enemy.Instance.transform.position = transform.position + (Vector3)position;
         }
+        // Again after this frame's wave resolutions and core hits (the last places the combo changes): SoundManager reads
+        // it in its next Update, one frame later, not two.
+        _soundManager.ComboCount = _pulseCombo;
 
         var spawnContext = new SpawnContext
         {
