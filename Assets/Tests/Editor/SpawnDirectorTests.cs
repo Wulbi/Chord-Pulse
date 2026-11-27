@@ -309,6 +309,48 @@ public class SpawnDirectorTests
       Assert.Greater(splitters.Count, s.Count * 0.05); Assert.Less(splitters.Count, s.Count * 0.2);
       foreach (var x in splitters) { Assert.IsFalse(x.order.Hidden); Assert.AreEqual(-1, x.order.SecondColorIndex); } }
 
+    static SpawnStage Stage(double seconds) => GameplayTuning.SpawnStages[SpawnDirector.StageIndex(seconds)];
+
+    [Test]
+    public void StageIndex_PicksTheLastStartedRow()
+    {
+        Assert.AreEqual(0, SpawnDirector.StageIndex(-5));
+        Assert.AreEqual(0, SpawnDirector.StageIndex(0));
+        Assert.AreEqual(0, SpawnDirector.StageIndex(14.99));
+        Assert.AreEqual(1, SpawnDirector.StageIndex(15));
+        Assert.AreEqual(GameplayTuning.SpawnStages.Length - 1, SpawnDirector.StageIndex(3600));
+    }
+
+    [Test]
+    public void SpawnStages_KeepTheRulesOfTheTable()
+    {
+        var rows = GameplayTuning.SpawnStages;
+        Assert.AreEqual(0.0, rows[0].StartSeconds);
+        for (int i = 0; i < rows.Length; i++)
+        {
+            var r = rows[i];
+            if (i > 0) Assert.Greater(r.StartSeconds, rows[i - 1].StartSeconds, "row " + i);
+            Assert.GreaterOrEqual(r.IntervalSteps, SpawnDirector.StepsPerBeat, "row " + i);   // pulse cooldown = 1 beat
+            Assert.GreaterOrEqual(r.RunMin, 1, "row " + i);
+            Assert.GreaterOrEqual(r.RunMax, r.RunMin, "row " + i);
+            Assert.LessOrEqual(r.PairChance + r.TripleChance, 1.0, "row " + i);
+            foreach (double p in new[] { r.PairChance, r.TripleChance, r.HiddenChance, r.ChordPairChance, r.ChargerChance, r.SplitterChance })
+            { Assert.GreaterOrEqual(p, 0.0, "row " + i); Assert.LessOrEqual(p, 1.0, "row " + i); }
+        }
+    }
+
+    [Test]
+    public void SpawnStages_LearningRowsHaveNoSpecialsAndNoGroups()
+    {
+        foreach (double t in new[] { 0.0, 20.0 })
+        {
+            var r = Stage(t);
+            Assert.AreEqual(0.0, r.PairChance + r.TripleChance + r.HiddenChance + r.ChordPairChance + r.ChargerChance + r.SplitterChance);
+        }
+        Assert.Greater(Stage(0).IntervalSteps, Stage(20).IntervalSteps);
+        Assert.Greater(Stage(20).IntervalSteps, Stage(40).IntervalSteps);
+    }
+
     [Test]
     public void DensityLevel_CombinesDifficultyAndSection()
     {

@@ -164,6 +164,16 @@ public sealed class SpawnDirector
         };
     }
 
+    /// Row of GameplayTuning.SpawnStages in force: the last one whose StartSeconds has passed (0 before the first).
+    public static int StageIndex(double roundSeconds)
+    {
+        var stages = GameplayTuning.SpawnStages;
+        int index = 0;
+        for (int i = 1; i < stages.Length && roundSeconds >= stages[i].StartSeconds; i++)
+            index = i;
+        return index;
+    }
+
     /// Number of DifficultyThresholds the round time has passed, 0..3.
     public static int Difficulty(double roundSeconds)
     {
