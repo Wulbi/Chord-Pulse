@@ -124,7 +124,8 @@ public sealed class OneShotScheduler
 
     /// <summary>
     /// Notes waiting for the dispatch window plus notes handed to the backend that are still sounding or pending
-    /// (stop time not passed; for zero-length notes, not yet reported finished by the backend).
+    /// (stop time not passed; for zero-length notes, not yet reported finished by the backend). Notes muted by
+    /// <see cref="SilenceAbove"/> / <see cref="SilenceBetween"/> are counted until they are stopped after the hold.
     /// </summary>
     public int ActiveCount => _notes.Count;
 

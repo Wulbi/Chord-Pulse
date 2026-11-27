@@ -61,6 +61,23 @@ public sealed class ComboFade
 {
     public const double Beats = 2.0;
 
+    /// <summary>
+    /// How many mixer blocks ahead of its curve the fade's volume is sent (SoundManager: Shots.SetFade gets
+    /// Scale(beat + LeadBeats(LeadBlocks, ...))). Measured: a SetFade value reaches the mix about 1.5-2 mixer blocks
+    /// after it was computed (Docs/Captures/README.md "Combo ladder — final fix wave": the last sent scale 0.0202 heard as a
+    /// one-block plateau after the rung drop). Only the sent volume leads; the fade's start, end and Scale are unchanged.
+    /// </summary>
+    public const int LeadBlocks = 2;
+
+    /// <summary><paramref name="blocks"/> mixer blocks of <paramref name="blockSamples"/> samples at
+    /// <paramref name="sampleRate"/> as beats at <paramref name="bpm"/>; 0 when any input is 0 or negative.</summary>
+    public static double LeadBeats(int blocks, uint blockSamples, int sampleRate, double bpm)
+    {
+        if (sampleRate <= 0 || blockSamples == 0 || blocks <= 0 || bpm <= 0)
+            return 0.0;
+        return blocks * blockSamples / (double)sampleRate * bpm / 60.0;
+    }
+
     double _start;
 
     public bool Active { get; private set; }

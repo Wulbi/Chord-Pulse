@@ -142,6 +142,8 @@ public sealed class SoundManager : SingletonBehaviour<SoundManager>, IKillBedSta
     // Beat position as FMOD is mixing it (drives audio scheduling) and as the player hears it (drives visuals).
     double _audioBeat = -1;
     double _visualBeat = -1;
+    // FMOD's mixer block (getDSPBufferSize at StartMusic; 1024 if that call failed): the mute hold and the fade's lead.
+    uint _dspBlockSamples = 1024;
     readonly DspClockSmoother _dspSmoother = new DspClockSmoother(48000);
     double _roundSeconds;
 
@@ -453,8 +455,9 @@ public sealed class SoundManager : SingletonBehaviour<SoundManager>, IKillBedSta
         }
         _clock.Reset(rate);
         // A muted note (combo break) is held silent for 3 mixer blocks before it is stopped.
-        if (RuntimeManager.CoreSystem.getDSPBufferSize(out uint block, out _) == FMOD.RESULT.OK && block > 0)
-            Shots.SilenceHoldSamples = 3UL * block;
+        _dspBlockSamples = RuntimeManager.CoreSystem.getDSPBufferSize(out uint block, out _) == FMOD.RESULT.OK && block > 0
+            ? block : 1024u;
+        Shots.SilenceHoldSamples = 3UL * _dspBlockSamples;
         _dspSmoother.Reset(rate);
         _transport.Start(startDsp + (ulong)Math.Round(StartLeadSeconds * rate),
             SectionSelector.Bpm(_sections.Current.Section), SectionSelector.Bpm(_sections.Next.Section));
@@ -862,11 +865,18 @@ public sealed class SoundManager : SingletonBehaviour<SoundManager>, IKillBedSta
         var result = _ladder.Update(_comboCount, _roundSeconds, _audioBeat,
             (int)Math.Floor(_audioBeat / BeatsPerBar), feverPhrase);
         // A break also drops a higher rung that was pending but never heard: notes the schedulers already took for it
-        // (inside the onset safety, so a refresh would keep them) are removed. Guest-loop notes are left to the fade.
+        // (inside the onset safety, so a refresh would keep them) are muted now and stopped after the hold
+        // (SilenceHoldSamples). Guest-loop notes are left to the fade.
         if (result.Broke)
             Shots.SilenceBetween(result.HeardRungAtBreak, ComboLadder.MaxRung);
+        // The volume is sent ComboFade.LeadBlocks mixer blocks ahead of the curve (at the tempo being mixed), because a
+        // setVolume reaches the mix that much later: what is heard now is the curve's value for now, and the sent
+        // value is already 0 that long before the fade ends. The fade's start / end and ComboFadeScale are not led.
         if (result.FadeStarted || _ladder.Fade.Active)
-            Shots.SetFade(result.Floor, result.Scale);
+        {
+            double lead = ComboFade.LeadBeats(ComboFade.LeadBlocks, _dspBlockSamples, _clock.SampleRate, _transport.Bpm);
+            Shots.SetFade(result.Floor, _ladder.Fade.Scale(_audioBeat + lead));
+        }
         if (!result.FadeEnded)
             return;
         // Muted now, stopped by Shots.Update after the hold (SilenceHoldSamples), once the volume 0 has been mixed.

@@ -72,4 +72,29 @@ public class ComboLadderTests
         Assert.AreEqual(0.75f, f.Presence(4, 5, 11.0), 1e-6f); Assert.AreEqual(0.75f, f.Presence(ComboLadder.GuestRung, ComboLadder.GuestRung, 11.0), 1e-6f);
         Assert.AreEqual(0f, f.Presence(6, 5, 11.0));
     }
+
+    [Test] public void LeadBeats_ConvertsMixerBlocksToBeats()
+    {
+        double atRate120 = 2 * 1024 / 48000.0 * 2;
+        Assert.AreEqual(atRate120, ComboFade.LeadBeats(2, 1024, 48000, 120), 1e-9);
+        Assert.AreEqual(0.085333333333, atRate120, 1e-9);
+        Assert.AreEqual(atRate120 / 2, ComboFade.LeadBeats(2, 1024, 48000, 60), 1e-9);
+        Assert.AreEqual(0.0, ComboFade.LeadBeats(0, 1024, 48000, 120));
+        Assert.AreEqual(0.0, ComboFade.LeadBeats(-1, 1024, 48000, 120));
+        Assert.AreEqual(0.0, ComboFade.LeadBeats(2, 0, 48000, 120));
+        Assert.AreEqual(0.0, ComboFade.LeadBeats(2, 1024, 0, 120));
+        Assert.AreEqual(0.0, ComboFade.LeadBeats(2, 1024, -48000, 120));
+        Assert.AreEqual(0.0, ComboFade.LeadBeats(2, 1024, 48000, 0));
+        Assert.AreEqual(0.0, ComboFade.LeadBeats(2, 1024, 48000, -120));
+    }
+
+    [Test] public void LedScale_ReachesZeroOneLeadBeforeTheEnd()
+    {
+        var f = new ComboFade();
+        f.Begin(10.0, 5, 1);
+        double lead = ComboFade.LeadBeats(2, 1024, 48000, 116);
+        Assert.AreEqual(0f, f.Scale(12.0 - lead + lead));
+        Assert.Greater(f.Scale(12.0 - lead - 0.001 + lead), 0f);
+        Assert.Greater(f.Scale(10.0 + lead), 0.99f);
+    }
 }
