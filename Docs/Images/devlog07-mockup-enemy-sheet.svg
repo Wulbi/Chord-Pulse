@@ -1,0 +1,54 @@
+<svg width="680" height="480" font-family="Malgun Gothic, sans-serif" viewBox="0 0 680 480" xmlns="http://www.w3.org/2000/svg" role="img"><style>.th{font:700 14px "Malgun Gothic",sans-serif;fill:#0b0b0b}.ts{font:12px "Malgun Gothic",sans-serif;fill:#52514e}</style><rect width="680" height="480" fill="#fcfcfb"/>
+<title>적 유형별 모양 시안</title>
+<desc>가로는 빨강 삼각형, 파랑 원, 노랑 마름모. 세로는 기본, 돌격형, 분열형, 화음 적(이어진 쌍). 분열형 새끼는 같은 색. 모든 적은 아래쪽 코어를 향해 이동한다.</desc>
+<defs>
+</defs>
+<text class="ts" x="210" y="18" text-anchor="middle">빨강 · 삼각형</text>
+<text class="ts" x="395" y="18" text-anchor="middle">파랑 · 원</text>
+<text class="ts" x="580" y="18" text-anchor="middle">노랑 · 마름모</text>
+<rect x="120" y="30" width="550" height="440" rx="12" fill="#141a26"/>
+<line x1="120" y1="135" x2="670" y2="135" stroke="#2a3446" stroke-width="1"/>
+<line x1="120" y1="245" x2="670" y2="245" stroke="#2a3446" stroke-width="1"/>
+<line x1="120" y1="355" x2="670" y2="355" stroke="#2a3446" stroke-width="1"/>
+<text class="th" x="8" y="80">기본</text>
+<text class="ts" x="8" y="100">지금 그대로</text>
+<text class="th" x="8" y="185">돌격형</text>
+<text class="ts" x="8" y="205">가늘게 + 잔상</text>
+<text class="th" x="8" y="295">분열형</text>
+<text class="ts" x="8" y="315">테두리 + 새끼</text>
+<text class="th" x="8" y="405">화음</text>
+<text class="ts" x="8" y="425">이어진 쌍</text>
+<polygon points="210,107 189,65 231,65" fill="#FF4A59"/>
+<circle cx="395" cy="84" r="21" fill="#4AB8FF"/>
+<polygon points="580,60 603,84 580,108 557,84" fill="#FFD440"/>
+<polygon points="210,222 198,178 222,178" fill="#FF4A59"/>
+<polyline points="198,166 210,174 222,166" fill="none" stroke="#FF4A59" stroke-width="3" opacity="0.55"/>
+<polyline points="198,154 210,162 222,154" fill="none" stroke="#FF4A59" stroke-width="3" opacity="0.25"/>
+<ellipse cx="395" cy="200" rx="11" ry="21" fill="#4AB8FF"/>
+<path d="M384 172 A11 11 0 0 1 406 172" fill="none" stroke="#4AB8FF" stroke-width="3" opacity="0.55"/>
+<path d="M384 160 A11 11 0 0 1 406 160" fill="none" stroke="#4AB8FF" stroke-width="3" opacity="0.25"/>
+<polygon points="580,176 591,200 580,226 569,200" fill="#FFD440"/>
+<polyline points="569,176 580,164 591,176" fill="none" stroke="#FFD440" stroke-width="3" opacity="0.55"/>
+<polyline points="569,164 580,152 591,164" fill="none" stroke="#FFD440" stroke-width="3" opacity="0.25"/>
+<polygon points="210,340 174,272 246,272" fill="none" stroke="#FF4A59" stroke-width="4" stroke-linejoin="round"/>
+<polygon points="199,300 191,284.8 207,284.8" fill="#FF4A59"/>
+<polygon points="221,300 213,284.8 229,284.8" fill="#FF4A59"/>
+<circle cx="395" cy="300" r="33" fill="none" stroke="#4AB8FF" stroke-width="4"/>
+<circle cx="383" cy="300" r="8" fill="#4AB8FF"/>
+<circle cx="407" cy="300" r="8" fill="#4AB8FF"/>
+<polygon points="580,262 618,300 580,338 542,300" fill="none" stroke="#FFD440" stroke-width="4" stroke-linejoin="round"/>
+<polygon points="568,291 577,300 568,309 559,300" fill="#FFD440"/>
+<polygon points="592,291 601,300 592,309 583,300" fill="#FFD440"/>
+<line x1="188" y1="404" x2="232" y2="404" stroke="#cfd6e4" stroke-width="4"/>
+<polygon points="184,419 169,390.5 199,390.5" fill="#FF4A59"/>
+<circle cx="236" cy="404" r="15" fill="#4AB8FF"/>
+<line x1="373" y1="404" x2="417" y2="404" stroke="#cfd6e4" stroke-width="4"/>
+<circle cx="369" cy="404" r="15" fill="#4AB8FF"/>
+<polygon points="421,389 436,404 421,419 406,404" fill="#FFD440"/>
+<line x1="558" y1="404" x2="602" y2="404" stroke="#cfd6e4" stroke-width="4"/>
+<polygon points="554,389 569,404 554,419 539,404" fill="#FFD440"/>
+<polygon points="606,419 591,390.5 621,390.5" fill="#FF4A59"/>
+<text class="ts" x="210" y="458" text-anchor="middle" style="fill:#B4B2A9">빨강 + 파랑</text>
+<text class="ts" x="395" y="458" text-anchor="middle" style="fill:#B4B2A9">파랑 + 노랑</text>
+<text class="ts" x="580" y="458" text-anchor="middle" style="fill:#B4B2A9">노랑 + 빨강</text>
+</svg>

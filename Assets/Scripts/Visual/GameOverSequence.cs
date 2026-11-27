@@ -150,6 +150,11 @@ public sealed class GameOverSequence : MonoBehaviour
     {
         Time.timeScale = 1f;
         _phase = Phase.Idle;
+        // Put every trembled object back where it was. Without this the core ring kept its last tremble offset after
+        // a full game over, so on Restart it sat off-centre from the shape inside it - and since Play records the
+        // current position as home, the offset grew with every game over.
+        foreach (var s in _shaken)
+            RestoreHome(s);
         _targets.Clear();
         _shaken.Clear();
         _burst.Clear();
@@ -282,8 +287,17 @@ public sealed class GameOverSequence : MonoBehaviour
             if (_burst[i] || _targets[i].Distance > radius)
                 continue;
             _burst[i] = true;
+            // The tremble stops here; leave the object at home, not at its last shaken offset.
+            RestoreHome(_shaken[i]);
             _targets[i].Burst?.Invoke();
         }
+    }
+
+    static void RestoreHome(Shaken s)
+    {
+        // Unity's null check also catches transforms destroyed during the sequence (pulse rings).
+        if (s != null && s.Transform != null)
+            s.Transform.localPosition = s.Home;
     }
 
     void BreakBoundary()

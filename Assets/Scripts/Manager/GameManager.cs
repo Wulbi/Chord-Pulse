@@ -22,6 +22,15 @@ public class GameManager : SingletonBehaviour<GameManager>
     public bool IsPlaying { get; private set; } = true;
     public bool IsGameOver { get; private set; }
     public int Score { get; private set; }
+    /// <summary>The finished round's score and highest combo, for the game-over screen (set by the game at game over).</summary>
+    public int ResultScore { get; private set; }
+    public int ResultMaxCombo { get; private set; }
+
+    public void SetRoundResult(int score, int maxCombo)
+    {
+        ResultScore = score;
+        ResultMaxCombo = maxCombo;
+    }
 
     float _score;
     bool _presentationDelayed;

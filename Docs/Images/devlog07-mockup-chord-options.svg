@@ -1,0 +1,28 @@
+<svg width="680" height="250" font-family="Malgun Gothic, sans-serif" viewBox="0 0 680 250" xmlns="http://www.w3.org/2000/svg" role="img"><style>.th{font:700 14px "Malgun Gothic",sans-serif;fill:#0b0b0b}.ts{font:12px "Malgun Gothic",sans-serif;fill:#52514e}</style><rect width="680" height="250" fill="#fcfcfb"/>
+<title>화음 적 모양 대안 세 가지</title>
+<desc>빨강과 파랑 화음 적 예시. 가: 서로 다른 도형 반반. 나: 하나의 원을 두 색으로 나누고 각 반쪽에 도형 아이콘. 다: 작은 삼각형과 원을 막대로 이은 쌍.</desc>
+<defs>
+<clipPath id="ca"><rect x="60" y="60" width="53.5" height="110"/></clipPath>
+<clipPath id="cb"><rect x="116.500" y="60" width="60" height="110"/></clipPath>
+<clipPath id="cc"><rect x="280" y="60" width="58.500" height="110"/></clipPath>
+<clipPath id="cd"><rect x="341.500" y="60" width="60" height="110"/></clipPath>
+</defs>
+<text class="th" x="115" y="20" text-anchor="middle">가. 도형 반반</text>
+<text class="th" x="340" y="20" text-anchor="middle">나. 한 도형, 두 색</text>
+<text class="th" x="565" y="20" text-anchor="middle">다. 이어진 쌍</text>
+<rect x="0" y="34" width="680" height="206" rx="12" fill="#141a26"/>
+<line x1="227" y1="34" x2="227" y2="240" stroke="#2a3446" stroke-width="1"/>
+<line x1="453" y1="34" x2="453" y2="240" stroke="#2a3446" stroke-width="1"/>
+<polygon points="115,150 86,92 144,92" fill="#FF4A59" clip-path="url(#ca)"/>
+<circle cx="115" cy="118" r="28" fill="#4AB8FF" clip-path="url(#cb)"/>
+<circle cx="340" cy="118" r="30" fill="#FF4A59" clip-path="url(#cc)"/>
+<circle cx="340" cy="118" r="30" fill="#4AB8FF" clip-path="url(#cd)"/>
+<polygon points="324,127 317,112 331,112" fill="#141a26"/>
+<circle cx="356" cy="118" r="7" fill="#141a26"/>
+<line x1="543" y1="118" x2="587" y2="118" stroke="#cfd6e4" stroke-width="4"/>
+<polygon points="541,137 523,103 559,103" fill="#FF4A59"/>
+<circle cx="589" cy="118" r="17" fill="#4AB8FF"/>
+<text class="ts" x="115" y="205" text-anchor="middle" style="fill:#B4B2A9">현재 안</text>
+<text class="ts" x="340" y="205" text-anchor="middle" style="fill:#B4B2A9">윤곽은 항상 원</text>
+<text class="ts" x="565" y="205" text-anchor="middle" style="fill:#B4B2A9">도형이 온전함</text>
+</svg>

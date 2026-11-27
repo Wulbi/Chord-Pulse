@@ -188,6 +188,7 @@ public sealed class ChordPulsePrototype : MonoBehaviour
     int _killStreak;
     int _health;
     int _pulseCombo;
+    int _maxPulseCombo;   // highest pulse combo of the round (game-over screen)
     int _feverCharge;
     int _lastHudBeat;
     bool _wasFeverActive;
@@ -268,11 +269,17 @@ public sealed class ChordPulsePrototype : MonoBehaviour
         _killStreak = 0;
         _health = MaxHealth;
         _pulseCombo = 0;
+        _maxPulseCombo = 0;
         _feverCharge = 0;
         _lastHudBeat = -1;
         _wasFeverActive = false;
         _roundStartFrame = Time.frameCount;
         _gameOverSequence.ResetVisuals();
+        // The core, its colour shape and the cooldown arc all sit on the arena centre; a game over trembles the core,
+        // so re-centre them explicitly (they must never drift apart).
+        _core.transform.localPosition = Vector3.zero;
+        _coreIcon.transform.localPosition = Vector3.zero;
+        _cooldownArc.transform.localPosition = Vector3.zero;
         _core.enabled = true;
         _visuals.ResetVisuals();
         _bedStyleVisuals.ResetVisuals();
@@ -518,6 +525,8 @@ public sealed class ChordPulsePrototype : MonoBehaviour
     void AddPulseCombo(bool feverPulse)
     {
         _pulseCombo++;
+        if (_pulseCombo > _maxPulseCombo)
+            _maxPulseCombo = _pulseCombo;
         if (!feverPulse && !_soundManager.FeverActive && !_soundManager.FeverPending &&
             ++_feverCharge >= PulseComboForFever)
             _soundManager.QueueFever();
@@ -808,6 +817,7 @@ public sealed class ChordPulsePrototype : MonoBehaviour
     void HandleGameOver()
     {
         _gameManager.DelayGameOverPresentation();
+        _gameManager.SetRoundResult(_score, _maxPulseCombo);
         _soundManager.FadeOutMusic(GameOverSequence.TotalSeconds - 0.2f);
         if (_targetMarkers != null)
             _targetMarkers.Hide();
