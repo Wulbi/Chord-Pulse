@@ -34,7 +34,8 @@ public class ArrangementTimelineTests
     {
         PhraseStartStep = 32, StyleCurrent = 1, StyleNext = 2, VariationCurrent = 3, VariationNext = 4,
         SectionPhraseCurrent = 1, SectionPhraseNext = 2, FeatureCurrent = 5, FeatureNext = 6,
-        Intensity = 2, LiveCombo = 3, AppliedCombo = 1, ComboBar = 5, FeverStart = -1,
+        // Intensity pinned at 2 (independent of the combo part); combo 1 (rung 4) latched up to bar 5, combo 3 (rung 6) after.
+        PinIntensity = 2, AppliedRung = 4, LiveRung = 6, RungBar = 5, FeverStart = -1,
     };
 
     [Test]
@@ -205,7 +206,7 @@ public class ArrangementTimelineTests
     {
         var a = Inputs();
         var b = Inputs();
-        b.Intensity = 3;
+        b.PinIntensity = 3;
         Assert.AreEqual(40, ArrangementTimeline.FirstDifferentStep(in a, in b, 40, 70));
     }
 
@@ -214,7 +215,7 @@ public class ArrangementTimelineTests
     {
         var a = Inputs();
         var b = Inputs();
-        b.LiveCombo = 0; // hurt / combo drop: bar 5 is latched, bar 6 on changes
+        b.LiveRung = 3; // hurt / combo drop (combo 0; intensity is pinned): bar 5 is latched, bar 6 on changes
         Assert.AreEqual(48, ArrangementTimeline.FirstDifferentStep(in a, in b, 41, 70));
     }
 
@@ -248,5 +249,101 @@ public class ArrangementTimelineTests
         var b = Inputs();
         b.FeverStart = 96;
         Assert.AreEqual(88, ArrangementTimeline.FirstDifferentStep(in a, in b, 70, 100));
+    }
+
+    // ---- Combo ladder Task 3: intensity and combo come from one bar-latched rung ----
+
+    // One phrase from step 0, nothing pinned, no fever; the rung is latched as given.
+    static ArrangementInputs RungInputs(int appliedRung, int rungBar, int liveRung) => new ArrangementInputs
+    {
+        PhraseStartStep = 0, SectionPhraseCurrent = 1, SectionPhraseNext = 2,
+        AppliedRung = appliedRung, RungBar = rungBar, LiveRung = liveRung, FeverStart = -1,
+    };
+
+    [Test]
+    public void Rung_GivesIntensityAndCombo_LatchedOnTheBarLine()
+    {
+        var x = RungInputs(2, 3, 5);
+        Assert.AreEqual(-1, x.PinIntensity, "nothing pinned by default");
+        Assert.AreEqual(-1, x.PinCombo, "nothing pinned by default");
+        for (int step = 24; step < 32; step++) // bar 3: latched rung 2
+        {
+            Assert.AreEqual(2, ArrangementTimeline.RungAt(step, in x), $"step {step}");
+            var s = ArrangementTimeline.At(step, in x);
+            Assert.AreEqual((2f, 0), (s.Intensity, s.Combo), $"step {step}");
+        }
+        Assert.AreEqual(5, ArrangementTimeline.RungAt(32, in x));
+        var after = ArrangementTimeline.At(32, in x); // bar 4: the live rung 5
+        Assert.AreEqual((3f, 2), (after.Intensity, after.Combo));
+    }
+
+    [Test]
+    public void Rung_NoneLatched_IsZeroUpToTheBar()
+    {
+        var x = RungInputs(-1, 3, 5);
+        Assert.AreEqual(0, ArrangementTimeline.RungAt(31, in x));
+        Assert.AreEqual((0f, 0), (ArrangementTimeline.At(31, in x).Intensity, ArrangementTimeline.At(31, in x).Combo));
+    }
+
+    [Test]
+    public void Breath_ZeroesIntensity_KeepsTheComboPart()
+    {
+        var x = RungInputs(5, 3, 5);
+        x.BreathCurrent = true;
+        var s = ArrangementTimeline.At(10, in x);
+        Assert.AreEqual((0f, 2), (s.Intensity, s.Combo));
+    }
+
+    [Test]
+    public void BuildBar_TakesIntensityFromTheRung_ComboZero()
+    {
+        var x = RungInputs(5, -1, 5);
+        x.FeverStart = 64; // build-up bar 56..63, fever 64..95
+        for (int step = 56; step < 64; step++)
+        {
+            var s = ArrangementTimeline.At(step, in x);
+            Assert.AreEqual((3f, 0, FeverPhaseMask.Build), (s.Intensity, s.Combo, s.Fever), $"step {step}");
+        }
+        x.AppliedRung = x.LiveRung = 1;
+        for (int step = 56; step < 64; step++)
+            Assert.AreEqual(1f, ArrangementTimeline.At(step, in x).Intensity, $"rung 1, step {step}");
+        foreach (int rung in new[] { 5, 0 })
+        {
+            x.AppliedRung = x.LiveRung = rung;
+            for (int step = 64; step < 96; step++)
+            {
+                var s = ArrangementTimeline.At(step, in x);
+                Assert.AreEqual((3f, 0), (s.Intensity, s.Combo), $"rung {rung}, step {step}");
+            }
+        }
+    }
+
+    [Test]
+    public void Pin_OverridesTheLadder()
+    {
+        var x = RungInputs(0, -1, 0);
+        x.PinIntensity = 1;
+        x.PinCombo = 3;
+        var s = ArrangementTimeline.At(10, in x);
+        Assert.AreEqual((1f, 3), (s.Intensity, s.Combo));
+
+        x.BreathCurrent = true; // breath still zeroes the intensity
+        s = ArrangementTimeline.At(10, in x);
+        Assert.AreEqual((0f, 3), (s.Intensity, s.Combo));
+
+        x.BreathCurrent = false;
+        x.FeverStart = 64; // build-up bar: pinned intensity, combo 0; fever phrase: max intensity, combo 0
+        s = ArrangementTimeline.At(60, in x);
+        Assert.AreEqual((1f, 0), (s.Intensity, s.Combo));
+        s = ArrangementTimeline.At(70, in x);
+        Assert.AreEqual((3f, 0), (s.Intensity, s.Combo));
+    }
+
+    [Test]
+    public void FirstDifferentStep_SeesARungDrop()
+    {
+        var before = RungInputs(5, 3, 5);
+        var after = RungInputs(1, 3, 1);
+        Assert.AreEqual(24, ArrangementTimeline.FirstDifferentStep(in before, in after, 24, 40));
     }
 }

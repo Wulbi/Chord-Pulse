@@ -643,10 +643,10 @@ public sealed class SoundManager : SingletonBehaviour<SoundManager>, IKillBedSta
             FeatureNext = _features.Next != null ? _features.Next.Id : 0,
             SectionPhraseCurrent = _sectionPhraseCurrent,
             SectionPhraseNext = _sectionPhraseNext,
-            Intensity = _intensity,
-            LiveCombo = _combo,
-            AppliedCombo = _appliedCombo,
-            ComboBar = _comboBar,
+            // Combo ladder Task 3: the game's intensity and its bar-latched combo are still independent, so both are
+            // passed through as pins (the rung is unused); Task 4 replaces them with the ladder's rung.
+            PinIntensity = _intensity,
+            PinCombo = Math.Max(0, _appliedCombo),
             FeverStart = _feverStart,
             FeverVariant = _feverStart >= 0 ? _fever.Variant : 0,
             FeverGuest = _feverStart >= 0 && _fever.Guest != null ? _fever.Guest.Id : 0,
@@ -874,7 +874,7 @@ public sealed class SoundManager : SingletonBehaviour<SoundManager>, IKillBedSta
             if (Check(SetMusicParameter("Hurt", 1f, true)))
                 Check(SetMusicParameter("Hurt", 0f));
         }
-        // The level is latched per bar (ArrangementInputs.AppliedCombo / ComboBar).
+        // The level is latched per bar (passed to ArrangementInputs.PinCombo until the ladder's rung latch takes over).
         int bar = (int)Math.Floor(step / StepsPerBar);
         if (bar == _comboBar)
             return;

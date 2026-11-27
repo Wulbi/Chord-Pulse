@@ -60,6 +60,9 @@ public sealed class PatternScheduler
     /// <summary>A note was handed to the one-shot scheduler; the second argument is its absolute beat.</summary>
     public event Action<PatternNote, double> NoteScheduled;
 
+    /// <summary>Like <see cref="NoteScheduled"/>, with the third argument the note's <see cref="OneShotNote.Rung"/>.</summary>
+    public event Action<PatternNote, double, int> NoteRung;
+
     /// <summary>
     /// Hands over the notes in (scheduledUntil, nowBeat + lookahead]; notes at or before nowBeat are never scheduled and
     /// nothing before beat 0 is. A first call with nowBeat &lt; 0 takes beat 0's notes, so to hear them the caller must
@@ -116,21 +119,38 @@ public sealed class PatternScheduler
                     int stateIndex = (int)Math.Floor(beat * StepsPerBeat) - loStep;
                     if (!PatternMatch.Matches(in clips[c], in _states[stateIndex]))
                         continue;
-                    ScheduleNote(notes[i], beat);
+                    ScheduleNote(notes[i], beat, RungOf(in clips[c], in _states[stateIndex]));
                 }
             }
         }
     }
 
-    void ScheduleNote(in PatternNote n, double beat)
+    const FeverPhaseMask FeverPhrase = FeverPhaseMask.Impact | FeverPhaseMask.Fever | FeverPhaseMask.Outro;
+
+    /// <summary>
+    /// Combo-ladder rung a note needs (<see cref="OneShotNote.Rung"/>): 0 in the fever phrase (Impact / Fever / Outro; the
+    /// build-up bar keeps its clips' rungs), <see cref="ComboLadder.GuestRung"/> for a guest-loop clip, otherwise the rung
+    /// of the clip's intensity / combo condition.
+    /// </summary>
+    static int RungOf(in PatternClip clip, in ArrangementState state)
+    {
+        if ((state.Fever & FeverPhrase) != 0)
+            return 0;
+        if (clip.FeatureLoop != 0)
+            return ComboLadder.GuestRung;
+        return ComboLadder.RequiredRung(clip.IntensityMin, clip.ComboMin);
+    }
+
+    void ScheduleNote(in PatternNote n, double beat, int rung)
     {
         double window = _dispatchWindow > 0 ? _dispatchWindow : KillChordPlanner.DispatchWindow((int)Math.Floor(beat));
         var shot = new OneShotNote(n.Instrument, n.Bus, n.Midi, beat, n.LengthBeats, n.HoldSeconds, n.GainDb,
-            InstrumentTable.OnsetSeconds(n.Instrument, n.Midi));
+            InstrumentTable.OnsetSeconds(n.Instrument, n.Midi), rung);
         if (!_shots.Schedule(in shot, this, window))
             return;
         ScheduledCount++;
         NoteScheduled?.Invoke(n, beat);
+        NoteRung?.Invoke(n, beat, shot.Rung);
     }
 
     /// <summary>

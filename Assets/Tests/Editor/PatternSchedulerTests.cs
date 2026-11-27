@@ -49,6 +49,7 @@ public class PatternSchedulerTests
     ArrangementState _state;
     FakeArrangement _arr;
     List<(PatternNote note, double beat)> _events;
+    List<(PatternNote note, double beat, int rung)> _rungs; // OneShotNote.Rung of each note handed over (NoteRung)
 
     [SetUp]
     public void SetUp()
@@ -60,12 +61,14 @@ public class PatternSchedulerTests
         _state = new ArrangementState { Style = 0, Variation = 0, Combo = 0, Intensity = 1f, Fever = FeverPhaseMask.None, SectionPhrase = 1 };
         _arr = new FakeArrangement { F = step => _state };
         _events = new List<(PatternNote, double)>();
+        _rungs = new List<(PatternNote, double, int)>();
     }
 
     PatternScheduler Make(double lookahead = 1.0, ulong mask = ulong.MaxValue, double window = 0, IOneShotBackend unused = null)
     {
         var p = new PatternScheduler(_shots, _arr, lookahead, mask, window);
         p.NoteScheduled += (n, b) => _events.Add((n, b));
+        p.NoteRung += (n, b, r) => _rungs.Add((n, b, r));
         return p;
     }
 
@@ -800,7 +803,7 @@ public class PatternSchedulerTests
     static ArrangementInputs FeverInputs(int feverStartStep, int style) => new ArrangementInputs
     {
         PhraseStartStep = 0, StyleCurrent = style, StyleNext = style, SectionPhraseCurrent = 1, SectionPhraseNext = 2,
-        Intensity = 1, ComboBar = int.MaxValue, FeverStart = feverStartStep,
+        AppliedRung = 1, RungBar = int.MaxValue, FeverStart = feverStartStep, // rung 1: intensity 1, combo 0
     };
 
     static readonly string[] LatinClips = { "LatinBass", "LatinMarimba", "LatinConga", "LatinCowbell", "LatinBongo", "LatinClaves", "LatinShaker" };
@@ -888,5 +891,110 @@ public class PatternSchedulerTests
         for (int i = startsBefore; i < _backend.Starts.Count; i++)
             Assert.IsFalse(_backend.Starts[i].inst == Instrument.Drums && _backend.Starts[i].midi == Kick, "a kick handed over again");
         Assert.Greater(CountDrum(Snare, b => b >= 12 && b < 16), 0, "the core snare of the build-up bar is re-stated");
+    }
+
+    // ---- Combo ladder Task 3: every note handed over carries the rung its clip needs ----
+
+    // Rungs of the handed-over notes of a clip (by name; matched like CountOf).
+    List<int> RungsOf(string clipName)
+    {
+        var rungs = new List<int>();
+        foreach (var e in _rungs)
+            if (IsNoteOf(clipName, e.note, e.beat))
+                rungs.Add(e.rung);
+        return rungs;
+    }
+
+    [Test]
+    public void Notes_CarryTheRungTheirClipNeeds()
+    {
+        // Rung 6: intensity 3, combo 3; style 0, progression 0.
+        _state.Intensity = 3f;
+        _state.Combo = 3;
+        Assert.AreEqual(2, PatternTable.Clips[ClipIndex("ComboPad")].ComboMin);
+        Assert.AreEqual(0.5f, PatternTable.Clips[ClipIndex("PluckA1")].IntensityMin);
+        Assert.AreEqual(0, PatternTable.Clips[ClipIndex("BassA")].ComboMin);
+        Assert.AreEqual(0f, PatternTable.Clips[ClipIndex("BassA")].IntensityMin);
+        var p = Make(lookahead: 16.0);
+        At(0);
+        p.Update(-0.01); // the whole phrase from beat 0
+        Assert.AreEqual(_events.Count, _rungs.Count, "a rung for every note handed over");
+        foreach (var (clip, rung) in new[] { ("ComboPad", 5), ("PluckA1", 1), ("BassA", 0) })
+        {
+            var rungs = RungsOf(clip);
+            Assert.Greater(rungs.Count, 0, clip + " notes handed over");
+            foreach (int r in rungs)
+                Assert.AreEqual(rung, r, clip);
+        }
+    }
+
+    [Test]
+    public void FeverPhraseNotes_AreRungZero_EvenFromGatedClips()
+    {
+        Assert.AreEqual(2.5f, PatternTable.Clips[ClipIndex("ClapLayer")].IntensityMin);
+        _state.Intensity = 3f;
+        foreach (var phase in new[] { FeverPhaseMask.Impact, FeverPhaseMask.Fever, FeverPhaseMask.Outro })
+        {
+            _state.Fever = phase;
+            _rungs.Clear();
+            var p = Make(lookahead: 16.0);
+            At(0);
+            p.Update(-0.01);
+            Assert.Greater(RungsOf("ClapLayer").Count, 0, "clap layer in " + phase);
+            foreach (var e in _rungs)
+                Assert.AreEqual(0, e.rung, $"{phase}: {e.note.Instrument} {e.note.Midi} at {e.beat}");
+        }
+
+        // Outside the fever phrase (and in its build-up bar) the same clip needs rung 3.
+        foreach (var phase in new[] { FeverPhaseMask.None, FeverPhaseMask.Build })
+        {
+            _state.Fever = phase;
+            _rungs.Clear();
+            var p = Make(lookahead: 16.0);
+            At(0);
+            p.Update(-0.01);
+            var rungs = RungsOf("ClapLayer");
+            Assert.Greater(rungs.Count, 0, "clap layer in " + phase);
+            foreach (int r in rungs)
+                Assert.AreEqual(3, r, "clap layer in " + phase);
+        }
+    }
+
+    [Test]
+    public void GuestLoopNotes_CarryGuestRung_ButNotInTheFeverPhrase()
+    {
+        _state.FeatureLoop = 2;
+        var p = Make(lookahead: 16.0);
+        At(0);
+        p.Update(-0.01);
+        int guests = 0;
+        foreach (var e in _rungs)
+            if (InstrumentCoverageTests.FeatureFlag(e.note.Bus) != 0)
+            {
+                guests++;
+                Assert.AreEqual(ComboLadder.GuestRung, e.rung, $"loop 2 note at {e.beat}");
+            }
+        Assert.AreEqual(12, guests, "loop 2's 12 notes");
+
+        // A fever guest in the fever phrase: rung 0 like every fever note.
+        _state.Fever = FeverPhaseMask.Fever;
+        _state.Intensity = 3f;
+        int feverGuests = 0;
+        foreach (var loop in FeatureLoopNotes.Loops)
+        {
+            if (!loop.Fever)
+                continue;
+            _state.FeatureLoop = loop.Id;
+            _rungs.Clear();
+            p.Reset();
+            p.Update(-0.01);
+            foreach (var e in _rungs)
+                if (InstrumentCoverageTests.FeatureFlag(e.note.Bus) != 0)
+                {
+                    feverGuests++;
+                    Assert.AreEqual(0, e.rung, $"fever guest {loop.Id} note at {e.beat}");
+                }
+        }
+        Assert.Greater(feverGuests, 0, "fever guest notes handed over");
     }
 }

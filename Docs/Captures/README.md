@@ -3126,3 +3126,41 @@ Verdict: **met**. Calling `setVolume` every frame on armed and sounding one-shot
 
 Not measured: whether a scale below 1 lands on the intended level (the probe keeps the level unchanged), and the
 `SilenceAbove` stop path. Neither was asked for here.
+
+## Combo ladder — Task 3 (arrangement from one rung; notes carry their rung)
+
+Question: after `ArrangementInputs` moved to `LiveRung` / `AppliedRung` / `RungBar` (with `PinIntensity` / `PinCombo`,
+which `SoundManager` fills from its old intensity and latched combo in this task) and pattern notes carry
+`OneShotNote.Rung`, does the game sound exactly as before?
+
+Settings for every take: Editor, `baseline`, seed 7, 128 beats, `logOneShots`, full mix, `scheduleOffsetSamples` 0,
+`fadeProbe` off (the `baseline_seed7_s9f` settings). Auto refresh disallowed around each take, no Editor query while a
+take recorded, `Application.runInBackground = true` set at frame 2 of each take from an Editor call (runtime only;
+`PlayerSettings.runInBackground` read false afterwards, no settings file changed).
+
+| take | code | unforced stalls | longest frame | Studio avg / max % | Core dsp avg / max % | ONESHOTS | PATTERNS sched. / started | valid |
+|---|---|---:|---|---|---|---|---|---|
+| `baseline_seed7_cl3` | Task 3 | 0 | 1671 ms, before the first beat | 0.79 / 1.33 | 1.44 / 3.08 | 1468 / 0 / 0 / 6 | 1184 / 1180 | yes |
+| `baseline_seed7_cl3_headref` | `1614a9a` (Task 3 taken out of the working tree) | **1** | 1661 ms | 0.78 / 1.89 | 1.43 / 3.53 | 1472 / 0 / 0 / 10 | 1189 / 1184 | **no** |
+| `baseline_seed7_cl3_headref_r2` | `1614a9a` (same) | 0 | 1714 ms, before the first beat | 0.85 / 1.31 | 1.51 / 3.30 | 1468 / 0 / 0 / 10 | 1184 / 1180 | yes |
+| `baseline_seed7_cl3_repeat` | Task 3 | 0 | 1874 ms, before the first beat | 0.83 / 1.26 | 1.49 / 3.15 | 1472 / 0 / 0 / 10 | 1189 / 1184 | yes |
+
+ONESHOTS = started / late / dropped / cancelled. RESYNCED 0, dsp-to-frame mismatches 0, CHANNELS 34 / 30 in every take.
+The started / cancelled counts vary between takes of the same code (1468 / 1472, 6 / 10), so they are not a code
+difference.
+
+| criterion | result | verdict |
+|---|---|---|
+| `baseline_seed7_cl3` against `baseline_seed7_s9f` (`rms --compare`, 4-beat windows), every window within ±0.1 dB | max \|diff\| **2.199 dB**, 18 of 31 windows outside ±0.1 dB (windows 8-11, 14-18, 20-22, 24-29; windows 0-7 at 0.00) | **NOT met** |
+| `baseline_seed7_cl3` against `baseline_seed7_cl3_headref_r2` (same take at the commit before this task), every window within ±0.1 dB | max \|diff\| **0.000 dB** over 31 windows; the `.patterns.csv` note lists (beat, instrument, bus, MIDI) are identical, 1184 notes each | met |
+| `baseline_seed7_cl3_repeat` against `baseline_seed7_cl3_headref_r2` | max \|diff\| 0.000 dB over 31 windows | met |
+
+Cause of the `s9f` difference (not this task): `s9f` was recorded before the commits after `0a166fa` that added feature
+loops, the fever selector and the progression selector (`d282224`, `ecf3674`, ...). From beat 32 on the two takes pick
+different feature loops (`s9f`: PowerChord in phrase 2 and Trumpet in phrase 7; now: FeaturePerc and Whistle) and play
+the tension layers on other pitches (another chord progression). `s9f` is therefore no reference for the current code;
+the reference for this task is `baseline_seed7_cl3_headref_r2`, recorded in the same session from `1614a9a` (the Task 3
+changes were taken out of the working tree with `git apply -R` of their diff and put back afterwards, nothing committed
+in between).
+
+Verdict: no audible change from Task 3 (0.000 dB against the same code without it; the same pattern notes).

@@ -56,7 +56,7 @@ public class ProgressionTests
     [Test]
     public void Timeline_ProgressionSwitchesExactlyOnThePhraseBoundary()
     {
-        var x = new ArrangementInputs { PhraseStartStep = 32, ProgressionCurrent = 2, ProgressionNext = 5, FeverStart = -1, ComboBar = -1 };
+        var x = new ArrangementInputs { PhraseStartStep = 32, ProgressionCurrent = 2, ProgressionNext = 5, FeverStart = -1, RungBar = -1 };
         Assert.AreEqual(2, ArrangementTimeline.At(63, in x).Progression);
         Assert.AreEqual(5, ArrangementTimeline.At(64, in x).Progression);
         var y = x;

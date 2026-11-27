@@ -12,12 +12,22 @@ public struct ArrangementInputs
     /// <summary>Feature loop id of the phrase (0 = none).</summary>
     public int FeatureCurrent, FeatureNext;
     public int SectionPhraseCurrent, SectionPhraseNext;
-    /// <summary>The game's target intensity (0..3).</summary>
-    public int Intensity;
-    /// <summary>The game's combo level; it applies from the bar after <see cref="ComboBar"/>.</summary>
-    public int LiveCombo;
-    /// <summary>Combo level latched for bars up to and including <see cref="ComboBar"/> (-1: none latched).</summary>
-    public int AppliedCombo, ComboBar;
+    /// <summary>The game's combo-ladder rung (0..<see cref="ComboLadder.MaxRung"/>); it applies from the bar after <see cref="RungBar"/>.</summary>
+    public int LiveRung;
+    /// <summary>Rung latched for bars up to and including <see cref="RungBar"/> (-1: none latched, plays as rung 0).</summary>
+    public int AppliedRung, RungBar;
+
+    // Stored as value + 1 so that a default (zeroed) struct reads -1: nothing pinned.
+    int _pinIntensityPlus1, _pinComboPlus1;
+
+    /// <summary>
+    /// Intensity used in place of the ladder's (<see cref="ComboLadder.Intensity"/> of the rung) when 0 or above
+    /// (default -1: not pinned). For measurement scenes and the transition to the ladder.
+    /// </summary>
+    public int PinIntensity { readonly get => _pinIntensityPlus1 - 1; set => _pinIntensityPlus1 = value + 1; }
+
+    /// <summary>Combo level used in place of the ladder's (<see cref="ComboLadder.ComboLevel"/>) when 0 or above (default -1).</summary>
+    public int PinCombo { readonly get => _pinComboPlus1 - 1; set => _pinComboPlus1 = value + 1; }
     /// <summary>First step of fever (-1: none queued); its build-up bar is the bar before.</summary>
     public int FeverStart;
     /// <summary>Fever bed variant of the queued fever (FeverSelector), and its fever guest loop id (0 = none).</summary>
@@ -82,6 +92,12 @@ public static class ArrangementTimeline
         return step >= x.PhraseStartStep + StepsPerPhrase ? x.FeatureNext : x.FeatureCurrent;
     }
 
+    static int BarOf(int step) => step >= 0 ? step / StepsPerBar : (step - StepsPerBar + 1) / StepsPerBar;
+
+    /// <summary>Combo-ladder rung at a step: the latched rung up to <see cref="ArrangementInputs.RungBar"/>, the live one after.</summary>
+    public static int RungAt(int step, in ArrangementInputs x) =>
+        BarOf(step) > x.RungBar ? x.LiveRung : System.Math.Max(0, x.AppliedRung);
+
     public static ArrangementState At(int step, in ArrangementInputs x)
     {
         bool next = step >= x.PhraseStartStep + StepsPerPhrase;
@@ -89,13 +105,15 @@ public static class ArrangementTimeline
         var phase = FeverPhase(step, in x);
         bool fever = phase != FeverPhaseMask.None && phase != FeverPhaseMask.Build;
         bool breath = next ? x.BreathNext : x.BreathCurrent;
-        int bar = step >= 0 ? step / StepsPerBar : (step - StepsPerBar + 1) / StepsPerBar;
+        int rung = RungAt(step, in x);
+        int intensity = x.PinIntensity >= 0 ? x.PinIntensity : ComboLadder.Intensity(rung);
+        int combo = x.PinCombo >= 0 ? x.PinCombo : ComboLadder.ComboLevel(rung);
         return new ArrangementState
         {
             Style = zone ? 0 : next ? x.StyleNext : x.StyleCurrent,
             Variation = zone ? 0 : next ? x.VariationNext : x.VariationCurrent,
-            Combo = zone ? 0 : bar > x.ComboBar ? x.LiveCombo : System.Math.Max(0, x.AppliedCombo),
-            Intensity = fever ? MaxIntensity : breath ? 0 : x.Intensity,
+            Combo = zone ? 0 : combo,
+            Intensity = fever ? MaxIntensity : breath ? 0 : intensity,
             Fever = phase,
             FeatureLoop = FeatureLoopAt(step, in x),
             SectionPhrase = next ? x.SectionPhraseNext : x.SectionPhraseCurrent,
