@@ -26,6 +26,7 @@ public class PatternSchedulerTests
         public void Stop(int handle, ulong dspStop) => Stops.Add((handle, dspStop));
         public void Release(int handle) => Releases.Add(handle);
         public bool IsFinished(int handle) => false;
+        public void SetVolume(int handle, float gainDb, float scale) { }
     }
 
     sealed class FakeArrangement : IArrangement

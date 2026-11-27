@@ -10,6 +10,8 @@ public interface IOneShotBackend
     void Release(int handle);
     /// <summary>True once the note has ended on its own (or is unknown): its sample played to the end.</summary>
     bool IsFinished(int handle);
+    /// <summary>Sets the note's instance volume to 10^(gainDb/20) * scale. Unknown handles are ignored.</summary>
+    void SetVolume(int handle, float gainDb, float scale);
     /// <summary>Current DSP clock of the master channel group.</summary>
     ulong NowDsp { get; }
 }
@@ -29,12 +31,14 @@ public readonly struct OneShotNote
     public readonly double HoldSeconds;
     public readonly float GainDb;
     public readonly double OnsetSeconds;
+    /// <summary>Combo ladder rung this note needs (0 = always plays); see <see cref="OneShotScheduler.SetFade"/>.</summary>
+    public readonly int Rung;
 
     public OneShotNote(Instrument instrument, OutputBus bus, int midi, double beat, double lengthBeats, double holdSeconds,
-        float gainDb, double onsetSeconds)
+        float gainDb, double onsetSeconds, int rung = 0)
     {
         Instrument = instrument; Bus = bus; Midi = midi; Beat = beat; LengthBeats = lengthBeats;
-        HoldSeconds = holdSeconds; GainDb = gainDb; OnsetSeconds = onsetSeconds;
+        HoldSeconds = holdSeconds; GainDb = gainDb; OnsetSeconds = onsetSeconds; Rung = rung;
     }
 }
 
@@ -81,6 +85,7 @@ public sealed class OneShotScheduler
         public float GainDb;
         public double OnsetSeconds;
         public double WindowBeats;
+        public int Rung;
         public int Handle = -1; // >= 0 once handed to the backend
         public ulong Start;
         public ulong Stop;
@@ -137,7 +142,7 @@ public sealed class OneShotScheduler
         {
             Inst = note.Instrument, Bus = note.Bus, Owner = owner, HoldSeconds = Math.Max(0, note.HoldSeconds),
             Midi = note.Midi, Beat = note.Beat, LengthBeats = Math.Max(0, note.LengthBeats), GainDb = note.GainDb,
-            OnsetSeconds = note.OnsetSeconds, WindowBeats = Math.Max(0, dispatchWindowBeats),
+            OnsetSeconds = note.OnsetSeconds, WindowBeats = Math.Max(0, dispatchWindowBeats), Rung = note.Rung,
         };
         return ScheduleNote(n);
     }
@@ -248,6 +253,52 @@ public sealed class OneShotScheduler
         _notes.Clear();
     }
 
+    // SetFade: notes with Rung > _fadeAboveRung get their volume scaled by _fadeScale (only while _fading).
+    bool _fading;
+    int _fadeAboveRung;
+    float _fadeScale = 1f;
+
+    /// <summary>
+    /// Scales the volume of every note with Rung &gt; <paramref name="aboveRung"/> that is already handed to the backend
+    /// (instance volume GainDb * <paramref name="scale"/>), and remembers the setting so notes handed over later get the
+    /// same call right after their Start. <paramref name="scale"/> is clamped to 0..1. Waiting notes are not touched
+    /// until they are handed over.
+    /// </summary>
+    public void SetFade(int aboveRung, float scale)
+    {
+        _fading = true;
+        _fadeAboveRung = aboveRung;
+        _fadeScale = Math.Max(0f, Math.Min(1f, scale));
+        foreach (var note in _notes)
+            if (note.Handle >= 0 && note.Rung > aboveRung)
+                _backend.SetVolume(note.Handle, note.GainDb, _fadeScale);
+    }
+
+    /// <summary>Forgets the <see cref="SetFade"/> setting: notes handed over later get no volume call. Notes already
+    /// scaled keep their volume.</summary>
+    public void ClearFade() => _fading = false;
+
+    /// <summary>
+    /// Removes every note with Rung &gt; <paramref name="rung"/>, of any owner: waiting notes are dropped, notes handed to
+    /// the backend (armed or sounding) are stopped now and released. Returns the number removed.
+    /// </summary>
+    public int SilenceAbove(int rung)
+    {
+        ulong now = _backend.NowDsp;
+        int removed = 0;
+        for (int i = _notes.Count - 1; i >= 0; i--)
+        {
+            var note = _notes[i];
+            if (note.Rung <= rung)
+                continue;
+            if (note.Handle >= 0)
+                Cancel(note, now);
+            _notes.RemoveAt(i);
+            removed++;
+        }
+        return removed;
+    }
+
     enum DispatchResult { Waiting, Sent, Late, Failed }
 
     DispatchResult Dispatch(Note note, ulong now)
@@ -265,6 +316,8 @@ public sealed class OneShotScheduler
         int handle = _backend.Start(note.Inst, note.Bus, note.Midi, note.GainDb, (ulong)start);
         if (handle < 0)
             return DispatchResult.Failed;
+        if (_fading && note.Rung > _fadeAboveRung)
+            _backend.SetVolume(handle, note.GainDb, _fadeScale);
         note.Handle = handle;
         note.Start = (ulong)start;
         note.Stop = (ulong)Math.Max(stop, start);
@@ -501,6 +554,15 @@ public sealed class FmodOneShotBackend : IOneShotBackend
         if (!n.Instance.isValid())
             return true;
         return n.Instance.getPlaybackState(out var state) != FMOD.RESULT.OK || state == FMOD.Studio.PLAYBACK_STATE.STOPPED;
+    }
+
+    /// <summary>Instance volume 10^(gainDb/20) * scale (the same gain as <see cref="Start"/>). Only setVolume: the
+    /// start / stop times are not touched. Unknown handles are ignored.</summary>
+    public void SetVolume(int handle, float gainDb, float scale)
+    {
+        if (!_notes.TryGetValue(handle, out var n))
+            return;
+        n.Instance.setVolume((float)(Math.Pow(10.0, gainDb / 20.0) * scale));
     }
 
     public void Stop(int handle, ulong dspStop)

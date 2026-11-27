@@ -26,6 +26,7 @@ public class TransportSchedulingTests
         public void Stop(int handle, ulong dspStop) { }
         public void Release(int handle) { }
         public bool IsFinished(int handle) => false;
+        public void SetVolume(int handle, float gainDb, float scale) { }
     }
 
     sealed class FixedArrangement : IArrangement

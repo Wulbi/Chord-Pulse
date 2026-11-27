@@ -10,6 +10,7 @@ public class OneShotSchedulerTests
         public readonly HashSet<int> Finished = new HashSet<int>();
         public readonly List<(int handle, ulong dspStop)> Stops = new List<(int, ulong)>();
         public readonly List<int> Releases = new List<int>();
+        public readonly List<(int handle, float gainDb, float scale)> Volumes = new List<(int, float, float)>();
         public ulong Now;
         /// <summary>Added to Now after every NowDsp read (simulates the mixer clock running between reads).</summary>
         public ulong AdvancePerRead;
@@ -35,6 +36,7 @@ public class OneShotSchedulerTests
         public void Stop(int handle, ulong dspStop) => Stops.Add((handle, dspStop));
         public void Release(int handle) => Releases.Add(handle);
         public bool IsFinished(int handle) => Finished.Contains(handle);
+        public void SetVolume(int handle, float gainDb, float scale) => Volumes.Add((handle, gainDb, scale));
     }
 
     const int Rate = 48000;
@@ -42,8 +44,8 @@ public class OneShotSchedulerTests
 
     static readonly object Owner = new object();
 
-    static OneShotNote N(int midi, double beat, double length, float gain, double onset, double hold = 0, OutputBus bus = OutputBus.KillChords) =>
-        new OneShotNote(Inst, bus, midi, beat, length, hold, gain, onset);
+    static OneShotNote N(int midi, double beat, double length, float gain, double onset, double hold = 0, OutputBus bus = OutputBus.KillChords, int rung = 0) =>
+        new OneShotNote(Inst, bus, midi, beat, length, hold, gain, onset, rung);
 
     static (BeatClock clock, FakeBackend backend, OneShotScheduler scheduler) Make()
     {
@@ -493,5 +495,112 @@ public class OneShotSchedulerTests
         Assert.AreEqual(1, backend.Starts.Count);
         Assert.AreEqual(0, backend.Stops.Count);
         Assert.AreEqual(1, scheduler.ActiveCount);
+    }
+
+    // Combo ladder Task 1: per-note rung, fade and silence above a rung.
+
+    [Test]
+    public void SetFade_ScalesOnlyHandedNotesAboveTheRung()
+    {
+        var (clock, backend, scheduler) = Make();
+        clock.Anchor(0, 0, 120);
+        backend.Now = 40000; // beat 2 (48000) inside the window
+        scheduler.Schedule(N(60, 2, 1, -1f, 0, rung: 0), Owner);
+        scheduler.Schedule(N(62, 2, 1, -2f, 0, rung: 2), Owner);
+        scheduler.Schedule(N(64, 2, 1, -5f, 0, rung: 5), Owner);
+        scheduler.Schedule(N(66, 8, 1, -6f, 0, rung: 5), Owner); // still waiting: not handed
+        Assert.AreEqual(3, backend.Starts.Count);
+        int rung5 = backend.Starts[2].handle;
+
+        scheduler.SetFade(2, 0.5f);
+
+        Assert.AreEqual(1, backend.Volumes.Count);
+        Assert.AreEqual((rung5, -5f, 0.5f), backend.Volumes[0]);
+    }
+
+    [Test]
+    public void SetFade_AppliesToNotesHandedLater()
+    {
+        var (clock, backend, scheduler) = Make();
+        clock.Anchor(0, 0, 120);
+        backend.Now = 0;
+        scheduler.SetFade(0, 0.25f);
+        Assert.AreEqual(0, backend.Volumes.Count);
+        scheduler.Schedule(N(60, 2, 1, -4f, 0, rung: 3), Owner);
+        scheduler.Schedule(N(62, 2, 1, -1f, 0, rung: 0), Owner);
+        Assert.AreEqual(0, backend.Starts.Count);
+
+        backend.Now = 36000; // half a beat before beat 2
+        scheduler.Update();
+
+        Assert.AreEqual(2, backend.Starts.Count);
+        int rung3 = backend.Starts.Find(s => s.midi == 60).handle;
+        Assert.AreEqual(1, backend.Volumes.Count);
+        Assert.AreEqual((rung3, -4f, 0.25f), backend.Volumes[0]);
+    }
+
+    [Test]
+    public void ClearFade_StopsScalingNewNotes()
+    {
+        var (clock, backend, scheduler) = Make();
+        clock.Anchor(0, 0, 120);
+        backend.Now = 0;
+        scheduler.SetFade(0, 0.25f);
+        scheduler.ClearFade();
+        scheduler.Schedule(N(60, 2, 1, -4f, 0, rung: 3), Owner);
+        backend.Now = 36000;
+        scheduler.Update();
+        Assert.AreEqual(1, backend.Starts.Count);
+        Assert.AreEqual(0, backend.Volumes.Count);
+    }
+
+    [Test]
+    public void SilenceAbove_DropsWaitingAndStopsHandedNotes()
+    {
+        var (clock, backend, scheduler) = Make();
+        clock.Anchor(0, 0, 120);
+        var other = new object(); // not owner-scoped
+        backend.Now = 20000; // beat 1 (24000) inside the window
+        scheduler.Schedule(N(70, 1, 4, 0f, 0, rung: 4), Owner); // will be sounding
+        scheduler.Schedule(N(71, 1, 4, 0f, 0, rung: 0), other); // will be sounding
+        Assert.AreEqual(2, backend.Starts.Count);
+        int sounding4 = backend.Starts[0].handle;
+        backend.Now = 30000; // both started; beat 1.5 (36000) inside the window
+        scheduler.Schedule(N(72, 1.5, 1, 0f, 0, rung: 4), other); // handed, not started
+        Assert.AreEqual(3, backend.Starts.Count);
+        int armed4 = backend.Starts[2].handle;
+        scheduler.Schedule(N(73, 4, 1, 0f, 0, rung: 1), Owner); // waiting
+        scheduler.Schedule(N(74, 4, 1, 0f, 0, rung: 4), Owner); // waiting
+        Assert.AreEqual(3, backend.Starts.Count);
+        int stopsBefore = backend.Stops.Count;
+
+        Assert.AreEqual(3, scheduler.SilenceAbove(1));
+
+        Assert.AreEqual(stopsBefore + 2, backend.Stops.Count);
+        Assert.Contains((sounding4, 30000UL), backend.Stops);
+        Assert.Contains((armed4, 30000UL), backend.Stops);
+        Assert.Contains(sounding4, backend.Releases);
+        Assert.Contains(armed4, backend.Releases);
+        Assert.AreEqual(2, backend.Releases.Count);
+        Assert.AreEqual(2, scheduler.ActiveCount);
+
+        backend.Now = 90000; // beat 4 (96000) inside the window
+        scheduler.Update();
+        Assert.AreEqual(4, backend.Starts.Count);
+        Assert.AreEqual(73, backend.Starts[3].midi, "the rung-4 waiting note is not dispatched");
+    }
+
+    [Test]
+    public void SetFade_ClampsScale()
+    {
+        var (clock, backend, scheduler) = Make();
+        clock.Anchor(0, 0, 120);
+        backend.Now = 40000;
+        scheduler.Schedule(N(60, 2, 1, 0f, 0, rung: 1), Owner);
+        scheduler.SetFade(0, 1.7f);
+        scheduler.SetFade(0, -0.2f);
+        Assert.AreEqual(2, backend.Volumes.Count);
+        Assert.AreEqual(1f, backend.Volumes[0].scale);
+        Assert.AreEqual(0f, backend.Volumes[1].scale);
     }
 }
