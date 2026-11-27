@@ -54,7 +54,7 @@ public static class GameplayTuning
     public const float BaseEnemySpeed = 0.4f;          // 기존 0.65
     public const float EnemySpeedJitter = 0.15f;       // 속도 = Base * (1 ± Jitter)
     public const float BaseEnemyHalfSize = 0.21f;
-    public const int EnemyPoolSize = 48;
+    public const int EnemyPoolSize = 96;               // 미리 만들어 두는 수 (모자라면 풀이 더 만든다)
     // 스폰 (스텝 = 반 박)
     public const int BreathIntervalSteps = 8;
     public const int BreathRunMax = 2;

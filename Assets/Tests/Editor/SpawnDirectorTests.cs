@@ -433,4 +433,37 @@ public class SpawnDirectorTests
         Assert.AreEqual(2, SpawnDirector.Difficulty(40));
         Assert.AreEqual(3, SpawnDirector.Difficulty(60));
     }
+
+    [Test]
+    public void Count_IsOne_WhereGroupsAreNotAllowed()
+    {
+        Assert.IsTrue(Collect(0, 2000, Ctx(seconds: 29)).All(x => x.order.Count == 1));
+        _dir.Reset();
+        Assert.IsTrue(Collect(0, 400, Ctx(fever: true, seconds: 600)).All(x => x.order.Count == 1));
+        _dir.Reset();
+        Assert.IsTrue(Collect(0, 4000, Ctx(breath: true, seconds: 600)).All(x => x.order.Count == 1));
+        _dir.Reset();
+        var s = Collect(0, 8000, Ctx(seconds: 600));
+        Assert.IsTrue(s.Take(3).All(x => x.order.Count == 1));
+        Assert.IsTrue(s.Where(x => x.order.Kind == EnemyKind.Charger).All(x => x.order.Count == 1));
+    }
+
+    [Test]
+    public void Count_FollowsTheTable()
+    {
+        var s = NoChargers(AfterOpening(Collect(0, 8000, Ctx(seconds: 600))));
+        Assert.IsTrue(s.All(x => x.order.Count >= 1 && x.order.Count <= GameplayTuning.MaxGroupSize));
+        Assert.AreEqual(Stage(600).PairChance, s.Count(x => x.order.Count == 2) / (double)s.Count, 0.05);
+        Assert.AreEqual(Stage(600).TripleChance, s.Count(x => x.order.Count == 3) / (double)s.Count, 0.05);
+    }
+
+    [Test]
+    public void Count_DoesNotChangeRunLengthOrInterval()
+    {
+        var s = NoChargers(AfterOpening(Collect(0, 8000, Ctx(seconds: 600))));
+        Assert.AreEqual(Stage(600).IntervalSteps, MinGap(s));
+        var runs = RunsOf(s);
+        foreach (var r in runs.Skip(1).Take(runs.Count - 2))
+        { Assert.GreaterOrEqual(r.Length, Stage(600).RunMin); Assert.LessOrEqual(r.Length, Stage(600).RunMax); }
+    }
 }

@@ -14,6 +14,9 @@ public struct SpawnOrder
     public float Speed;
     public int SecondColorIndex;   // chord pair: second colour; otherwise -1
     public EnemyKind Kind;         // default Basic
+    /// Enemies of this slot, 1..GameplayTuning.MaxGroupSize: same colour and speed, from different directions.
+    /// Hidden / SecondColorIndex / Kind describe the first one only; the others are plain Basic enemies.
+    public int Count;
 }
 
 /// Decides when and what to spawn, following the music (flow and breath). Pure rules, no Unity types.
@@ -128,6 +131,12 @@ public sealed class SpawnDirector
             && stage.SplitterChance > 0 && _random.NextDouble() < stage.SplitterChance)
             kind = EnemyKind.Splitter;
         order = MakeOrder(_runColor, hidden, secondColor, kind);
+        // Groups only in flow: a breath phrase is a rest. One draw decides between 1, 2 and 3.
+        if (!context.Breath && stage.PairChance + stage.TripleChance > 0)
+        {
+            double roll = _random.NextDouble();
+            order.Count = roll < stage.TripleChance ? 3 : roll < stage.TripleChance + stage.PairChance ? 2 : 1;
+        }
         _runRemaining--;
 
         if (_runRemaining <= 0
@@ -154,6 +163,7 @@ public sealed class SpawnDirector
             Speed = (float)(baseSpeed * (1.0 + jitter)),
             SecondColorIndex = secondColor,
             Kind = kind,
+            Count = 1,
         };
     }
 

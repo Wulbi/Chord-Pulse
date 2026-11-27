@@ -408,7 +408,17 @@ public sealed class ChordPulsePrototype : MonoBehaviour
             RoundSeconds = _soundManager.RoundSeconds
         };
         if (_spawnDirector.TryNext(spawnContext, out var order))
+        {
             SpawnFromNewDirection(order);
+            // The rest of the slot: plain enemies of the same colour and speed from other directions, so one pulse
+            // takes the whole group. Only the first one can be gray, a chord pair or a special kind.
+            var mate = order;
+            mate.Hidden = false;
+            mate.SecondColorIndex = -1;
+            mate.Kind = EnemyKind.Basic;
+            for (int i = 1; i < order.Count; i++)
+                SpawnFromNewDirection(mate);
+        }
 
         UpdateTargetMarkers(fever);
     }
