@@ -13,6 +13,8 @@ using UnityEngine;
 /// <item>Combo 2 (glass pad): a soft halo that breathes once a bar</item>
 /// <item>Combo 3 (bells): a sparkle on the halo for each bell note, its angle set by pitch</item>
 /// </list>
+/// A layer's decoration is scaled by how much of that layer is heard (<see cref="SoundManager.LayerPresence"/> of the
+/// combo ladder rung it needs), so after a combo break it fades on the sound's own curve.
 /// Ring-wide changes go through <see cref="ArenaStage"/> requests; the decorations are drawn after
 /// <see cref="MusicReactiveVisuals"/> so they follow the ring's pulse.
 /// </summary>
@@ -129,14 +131,15 @@ public sealed class BedLayerVisuals : MonoBehaviour
 
         FireNotes();
 
-        // Combo level: smooth fade in/out over about a beat, flash the ring when it climbs.
+        // Combo level: smooth fade in over about a beat, flash the ring when it climbs. Going out it never stays above
+        // the layer's presence (combo level n = ladder rung 3 + n): a combo break fades it on the sound's curve.
         int combo = _sound.CurrentCombo;
         if (combo > _lastCombo)
             _comboUp = 1f;
         _lastCombo = combo;
         float rate = dt / Mathf.Max(0.05f, (float)_sound.BeatSeconds);
         for (int level = 1; level <= 3; level++)
-            _combo[level] = Mathf.MoveTowards(_combo[level], combo >= level ? 1f : 0f, rate);
+            _combo[level] = Mathf.Min(Mathf.MoveTowards(_combo[level], combo >= level ? 1f : 0f, rate), Presence(3 + level));
 
         int variation = _sound.HeardVariation;
         _walkVisible = Mathf.MoveTowards(_walkVisible, BedNotes.UsesBassWalk(variation) ? 1f : 0f, rate);
@@ -193,6 +196,13 @@ public sealed class BedLayerVisuals : MonoBehaviour
 
     bool Crossing(BedNotes.Note note) => note.Beat > _lastPhraseBeat && note.Beat <= _phraseBeat;
 
+    // How much of a layer that needs ladder rung requiredRung is heard (1 = whole, 0 = gone). Fever plays its own full
+    // arrangement whatever the ladder says, so nothing is scaled there.
+    float Presence(int requiredRung) => _sound.FeverActive ? 1f : _sound.LayerPresence(requiredRung);
+
+    // How much of the guest loop is heard (it fades with the layers after a combo break; not in fever).
+    float GuestPresence => _sound.FeverActive ? 1f : _sound.GuestPresence;
+
     /// <summary>Distinct beats crossed this frame (a stab's three voices count once).</summary>
     int Crossed(BedNotes.Note[] notes)
     {
@@ -223,8 +233,10 @@ public sealed class BedLayerVisuals : MonoBehaviour
         if (_sound == null || _stage == null)
             return;
         float radius = _stage.RingRadius;
-        // Guests take the foreground: decorations dim while one plays (plan 3-4).
-        float guest = _sound.FeatureSounding ? 0.7f : 1f;
+        // Guests take the foreground: decorations dim while one plays (plan 3-4), less as the guest fades out.
+        float guest = _sound.FeatureSounding ? 1f - 0.3f * GuestPresence : 1f;
+        // The off-beat pluck and the tresillo stabs are the pluck layer (intensity 1 = ladder rung 1).
+        float pluck = Presence(1);
         var feature = _sound.CurrentFeature;
         bool percussionGuest = _sound.FeatureSounding && feature != null &&
                                (feature.Instruments & FeatureSelector.Instrument.Percussion) != 0;
@@ -235,7 +247,7 @@ public sealed class BedLayerVisuals : MonoBehaviour
         for (int i = 0; i < Ticks; i++)
         {
             float a = i * Mathf.PI * 0.5f;
-            Place(_ticks[i], a, radius + 0.08f, 0.07f + 0.05f * _tick, TickColor, _tick * 0.8f * guest);
+            Place(_ticks[i], a, radius + 0.08f, 0.07f + 0.05f * _tick, TickColor, _tick * 0.8f * guest * pluck);
         }
 
         // Walking bass dot (hidden under a percussion guest: both would be dots going round the rim).
@@ -247,7 +259,7 @@ public sealed class BedLayerVisuals : MonoBehaviour
         for (int i = 0; i < Stabs; i++)
         {
             float a = Mathf.PI * 0.5f + bar * 0.3f + i * (2f * Mathf.PI / Stabs);
-            Place(_stabs[i], a, radius, 0.1f + 0.1f * _stab, StabColor, _stab * guest);
+            Place(_stabs[i], a, radius, 0.1f + 0.1f * _stab, StabColor, _stab * guest * pluck);
         }
 
         // Combo 1: dotted ring turning one step per 16th.

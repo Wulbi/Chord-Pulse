@@ -220,8 +220,10 @@ public sealed class BedStyleVisuals : MonoBehaviour
             return;
         double beat = Mathf.Max(0f, (float)_sound.BeatPosition);
         bool running = _sound.BeatPosition >= 0;
-        // Guests take the foreground: the motif steps back while one plays (plan 3-4).
-        float motif = MotifAlpha * (_sound.FeatureSounding ? 0.5f : 1f);
+        // Guests take the foreground: the motif steps back while one plays (plan 3-4), less as the guest fades out after
+        // a combo break (not in fever: fever's guest does not fade).
+        float guest = _sound.FeverActive ? 1f : _sound.GuestPresence;
+        float motif = MotifAlpha * (_sound.FeatureSounding ? 1f - 0.5f * guest : 1f);
         // Danger drains colour: cached line colours must be rewritten only when the drain moves.
         _drainChanged = Mathf.Abs(_stage.AppliedDesaturate - _lastDesaturate) > 0.01f || Mathf.Abs(_stage.AppliedDim - _lastDim) > 0.01f;
         if (_drainChanged)
@@ -289,13 +291,14 @@ public sealed class BedStyleVisuals : MonoBehaviour
         float inBar = (float)(beat % SoundManager.BeatsPerBar);
         int lit = Mathf.FloorToInt(inBar * 4f) % Segments;
         float litAge = inBar * 4f - Mathf.Floor(inBar * 4f);
-        // Clean guitar chops on beats 2 and 4 from Intensity 2 (bed_style.py funk).
+        // Clean guitar chops on beats 2 and 4 from Intensity 2 (bed_style.py funk), as much as that layer (ladder rung 2)
+        // is heard: a combo break fades them on the sound's curve (fever has its own arrangement: not scaled).
         float chop = 0f;
         if (running && _sound.ArrangementIntensity >= 2)
         {
             int beatInBar = Mathf.FloorToInt(inBar);
             if (beatInBar % 2 == 1)
-                chop = Mathf.Exp(-10f * (inBar - beatInBar));
+                chop = Mathf.Exp(-10f * (inBar - beatInBar)) * (_sound.FeverActive ? 1f : _sound.LayerPresence(2));
         }
         // The segments sit on a unit circle; the root follows the ring's pulse.
         float radius = _stage.RingRadius;

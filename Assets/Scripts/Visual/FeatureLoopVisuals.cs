@@ -98,9 +98,12 @@ public sealed class FeatureLoopVisuals : MonoBehaviour
             _announced = false;
         }
 
+        // After a combo break the guest loop fades with the layers (SoundManager.GuestPresence) and is then dropped
+        // (CurrentFeature null): its notes come out smaller on the same curve. Fever's guest does not fade.
+        float presence = _sound.FeverActive ? 1f : _sound.GuestPresence;
         var loop = _sound.CurrentFeature;
         var notes = loop != null && loop.Id < FeatureLoopNotes.ById.Length ? FeatureLoopNotes.ById[loop.Id] : null;
-        if (notes != null)
+        if (notes != null && presence > 0.01f)
         {
             var data = _library.Find(loop.Id);
             foreach (var note in notes)
@@ -108,15 +111,16 @@ public sealed class FeatureLoopVisuals : MonoBehaviour
                 if (note.Beat <= _lastPhraseBeat || note.Beat > phraseBeat)
                     continue;
                 var voice = FeatureLoopLibrary.VoiceFor(data, note.Instrument);
-                EmitterFor(_library.StyleFor(data, note.Instrument)).Emit(note, voice.SizeScale, (int)voice.side);
+                EmitterFor(_library.StyleFor(data, note.Instrument)).Emit(note, voice.SizeScale * presence, (int)voice.side);
             }
         }
 
         EmitFever(phraseBeat);
 
-        // One beat before a guest loop arrives, the screen edges twinkle where its visuals will come from.
+        // One beat before a guest loop arrives, the screen edges twinkle where its visuals will come from. Not while a
+        // combo-break fade runs: the loop chosen for the next phrase is dropped when the fade ends.
         const float beatsPerPhrase = SoundManager.StepsPerPhrase / (float)SoundManager.StepsPerBeat;
-        if (!_announced && phraseBeat >= beatsPerPhrase - 1f && _sound.UpcomingFeature != null)
+        if (!_announced && phraseBeat >= beatsPerPhrase - 1f && _sound.UpcomingFeature != null && presence >= 1f)
         {
             _announced = true;
             _sparkles.Twinkle(_library.AccentFor(_sound.UpcomingFeature));
