@@ -185,6 +185,46 @@ public class PulseResolverTests
       foreach (var ev in _events) Assert.AreNotEqual(PulseEventType.Boost, ev.Type); }
     [Test] public void BasicEnemy_WrongColor_NeverSpeedsUp()
     { var b = E(1, 1f); float speed = b.Speed; Run(P(0), L(b)); Assert.AreEqual(speed, b.Speed); Assert.AreEqual(0, b.Boosts); }
+    // Run-on (GameplayTuning.PulsePassThrough): after its first stop a pulse goes a little further before ending.
+    [Test] public void WrongColor_RunOn_KillsAMatchingEnemyJustBehind()
+    { var e = L(E(1, 2f), E(0, 2.3f)); var p = P(0);
+      Assert.AreEqual(PulseOutcome.Blocked, Run(p, e));
+      Assert.IsTrue(p.HitWrongColor); Assert.AreEqual(1, p.Kills); Assert.AreEqual(1, e.Count); Assert.AreEqual(1, e[0].ColorIndex); }
+    [Test] public void WrongColor_RunOn_StopsBeforeAFartherEnemy()
+    { var e = L(E(1, 2f), E(0, 2.6f)); var p = P(0);
+      Assert.AreEqual(PulseOutcome.Blocked, Run(p, e)); Assert.AreEqual(0, p.Kills); Assert.AreEqual(2, e.Count); }
+    [Test] public void Reveal_RunOn_KillsAMatchingEnemyJustBehind()
+    { var e = L(E(1, 2f, true), E(0, 2.3f)); var p = P(0);
+      Assert.AreEqual(PulseOutcome.Blocked, Run(p, e)); Assert.AreEqual(1, p.Kills); Assert.IsFalse(p.HitWrongColor); }
+    [Test] public void Reveal_TheRevealedEnemyIsNotHitAgainByTheSamePulse()
+    { var gray = E(0, 2f, true); var e = L(gray); var p = P(0);
+      Assert.AreEqual(PulseOutcome.Blocked, Run(p, e));
+      Assert.AreEqual(1, e.Count); Assert.IsFalse(gray.IsHidden); Assert.AreEqual(0, p.Kills); }
+    [Test] public void Strip_TheSurvivingHalfIsNotAWrongColorForTheSamePulse()
+    { var pair = Pair(0, 1, 2f); var p = P(0);
+      Assert.AreEqual(PulseOutcome.Blocked, Run(p, L(pair))); Assert.IsFalse(p.HitWrongColor); }
+    [Test] public void Charger_IsBoostedOncePerPulse()
+    { var c = Charger(1, 2f); Run(P(0), L(c)); Assert.AreEqual(1, c.Boosts); }
+    [Test] public void RunOn_PastTheEdge_IsStillBlocked()
+    { var e = L(E(1, 4.9f)); var p = P(0);
+      Assert.AreEqual(PulseOutcome.Blocked, Run(p, e)); Assert.IsTrue(p.HitWrongColor); }
+    [Test] public void ContactRadius_MatchesWhatThePulseHitsFirst()
+    { var small = E(0, 2f); var big = E(1, 2.1f); big.HalfSize = 0.4f; var p = P(0);
+      Assert.Less(PulseResolver.ContactRadius(big, 0.42f, 8f), PulseResolver.ContactRadius(small, 0.42f, 8f));
+      Run(p, L(small, big)); Assert.IsTrue(p.HitWrongColor); }
+
+    // HitProgress: what keeps the combo when a pulse kills nothing.
+    [Test] public void Reveal_WithAWrongColorMateAlongside_IsProgress()
+    { var e = L(E(1, 2f, true), E(1, 2f)); var p = P(0);
+      Run(p, e); Assert.IsTrue(p.HitProgress); Assert.IsTrue(p.HitWrongColor); Assert.AreEqual(0, p.Kills); }
+    [Test] public void Strip_WithAWrongColorMateAlongside_IsProgress()
+    { var e = L(Pair(0, 1, 2f), E(0, 2f)); var p = P(1);
+      Run(p, e); Assert.IsTrue(p.HitProgress); Assert.IsTrue(p.HitWrongColor); Assert.AreEqual(0, p.Kills); }
+    [Test] public void WrongColorOnly_IsNotProgress()
+    { var p = P(0); Run(p, L(E(1, 2f))); Assert.IsFalse(p.HitProgress); }
+    [Test] public void PairHitByAThirdColor_IsNotProgress()
+    { var p = P(2); Run(p, L(Pair(0, 1, 2f))); Assert.IsFalse(p.HitProgress); }
+
     [Test] public void NoEnemies_ZeroDelta_KeepsTravelling()
     { var p = P(0); Assert.AreEqual(PulseOutcome.Travelling, _resolver.Advance(p, L(), 8f, 5f, 0f, _events)); Assert.AreEqual(0, _events.Count); }
 }

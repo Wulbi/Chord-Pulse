@@ -73,7 +73,7 @@ public sealed class BedLayerVisuals : MonoBehaviour
         _sound = SoundManager.Instance;
         _stage = stage;
         _material = material;
-        _dot = CreateDot();
+        _dot = DotSprite.Create("Bed Dot");
         for (int i = 0; i < Ticks; i++)
             _ticks.Add(MakeSprite("Bed Tick"));
         for (int i = 0; i < Stabs; i++)
@@ -323,29 +323,5 @@ public sealed class BedLayerVisuals : MonoBehaviour
         return sprite;
     }
 
-    static Sprite CreateDot()
-    {
-        const int size = 32;
-        var texture = new Texture2D(size, size, TextureFormat.RGBA32, false) { name = "Bed Dot", wrapMode = TextureWrapMode.Clamp };
-        var pixels = new Color[size * size];
-        float r = (size - 1) * 0.5f;
-        for (int y = 0; y < size; y++)
-            for (int x = 0; x < size; x++)
-            {
-                float d = Mathf.Sqrt((x - r) * (x - r) + (y - r) * (y - r)) / r;
-                pixels[y * size + x] = new Color(1f, 1f, 1f, Mathf.Clamp01((1f - d) * 2.5f));
-            }
-        texture.SetPixels(pixels);
-        texture.Apply();
-        return Sprite.Create(texture, new Rect(0, 0, size, size), new Vector2(0.5f, 0.5f), size);
-    }
-
-    void OnDestroy()
-    {
-        if (_dot != null)
-        {
-            Destroy(_dot.texture);
-            Destroy(_dot);
-        }
-    }
+    void OnDestroy() => DotSprite.Destroy(_dot);
 }

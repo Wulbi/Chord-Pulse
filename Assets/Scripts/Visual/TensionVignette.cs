@@ -33,6 +33,9 @@ public sealed class TensionVignette : MonoBehaviour
     float _tension;
     float _danger;
     bool _shaking;
+    float _shakeStart;
+    float _shakeSeconds;
+    float _shakeStrength;
 
     public void Init(Camera playCamera, ArenaStage stage, float arenaRadius)
     {
@@ -48,9 +51,18 @@ public sealed class TensionVignette : MonoBehaviour
         _vignette.color = Color.clear;
     }
 
+    /// <summary>Shakes the camera for <paramref name="seconds"/>, starting at <paramref name="strength"/> world units and easing to 0.</summary>
+    public void Shake(float seconds, float strength)
+    {
+        _shakeStart = Time.time;
+        _shakeSeconds = seconds;
+        _shakeStrength = strength;
+    }
+
     public void ResetVisuals()
     {
         _lastHurt = 0f;
+        _shakeSeconds = 0f;
         _shaking = false;
         if (_camera != null)
             _camera.transform.localPosition = _cameraHome;
@@ -139,11 +151,15 @@ public sealed class TensionVignette : MonoBehaviour
         _vignette.transform.localPosition = new Vector3(_cameraHome.x, _cameraHome.y, 0f);
         _vignette.transform.localScale = Vector3.one * scale;
 
-        // Hurt: a 0.15 s shake.
+        // Hurt: a 0.15 s shake from the music's Hurt dip, or a longer gameplay shake (Shake), whichever is stronger now.
         float sinceHurt = Time.time - _lastHurt;
-        if (_lastHurt > 0f && sinceHurt < 0.15f)
+        float hurtShake = _lastHurt > 0f && sinceHurt < 0.15f ? 0.12f * (1f - sinceHurt / 0.15f) : 0f;
+        float sinceShake = Time.time - _shakeStart;
+        float gameShake = _shakeSeconds > 0f && sinceShake < _shakeSeconds
+            ? _shakeStrength * (1f - sinceShake / _shakeSeconds) : 0f;
+        if (hurtShake > 0f || gameShake > 0f)
         {
-            float k = 0.12f * (1f - sinceHurt / 0.15f);
+            float k = Mathf.Max(hurtShake, gameShake);
             _camera.transform.localPosition = _cameraHome + new Vector3(Random.Range(-k, k), Random.Range(-k, k), 0f);
             _shaking = true;
         }

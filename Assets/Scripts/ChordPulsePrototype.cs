@@ -146,17 +146,19 @@ public sealed class ChordPulsePrototype : MonoBehaviour
     readonly PulseCooldown _pulseCooldown = new PulseCooldown();
     readonly SpawnDirector _spawnDirector = new SpawnDirector(new System.Random());
 
-    // Hue wheel turns per second on the core during fever.
-    const float RainbowSpinSpeed = 1.5f;
-    static readonly GradientAlphaKey[] RainbowAlpha = { new GradientAlphaKey(1f, 0f), new GradientAlphaKey(1f, 1f) };
+    // Fever: the cracked core ring itself turns (one turn per bar), carrying its cracks and chips round.
+    const float FeverTurnsPerBar = 1f;
+    // Beat flash: the core whitens on every beat and fades within this long; the kick flashes harder.
+    const float BeatFlashSeconds = 0.09f;
+    const float RingFlash = 0.55f;
+    const float IconFlash = 0.85f;
     readonly GradientColorKey[] _rainbowKeys = new GradientColorKey[8];
     readonly Gradient _rainbow = new Gradient();
 
-    // Enemies within this distance of the nearest one get marked too (the same pulse front reaches them).
-    const float SameTargetDistance = 0.06f;
     readonly List<TargetMarkers.Target> _targets = new List<TargetMarkers.Target>();
     TargetMarkers _targetMarkers;
     GameOverSequence _gameOverSequence;
+    CoreDamageVisuals _coreDamage;
     readonly List<GameOverSequence.Target> _gameOverTargets = new List<GameOverSequence.Target>();
 
     PoolManager _poolManager;
@@ -170,6 +172,10 @@ public sealed class ChordPulsePrototype : MonoBehaviour
     LineRenderer _core;
     LineRenderer _cooldownArc;
     SpriteRenderer _coreIcon;
+    float _coreSpin;
+    readonly Gradient _coreSolid = new Gradient();
+    readonly GradientColorKey[] _coreSolidKeys = new GradientColorKey[2];
+    Color _coreAppliedColor = Color.clear;
     LineRenderer _boundary;
     MusicReactiveVisuals _visuals;
     BedStyleVisuals _bedStyleVisuals;
@@ -183,6 +189,13 @@ public sealed class ChordPulsePrototype : MonoBehaviour
     float _spawnAngle;
     int _spawnGroup;
     readonly CoreHitRule _coreHits = new CoreHitRule();
+    // Core hit: invincible for this long (the core blinks), the screen shakes and the field is cleared.
+    const float InvincibleSeconds = 1.5f;
+    const float InvincibleBlinkRate = 8f;   // blinks per second
+    const float HitShakeSeconds = 0.4f;
+    const float HitShakeStrength = 0.25f;   // world units at the start, easing to 0
+    float _invincibleUntil;
+    bool _clearAfterHit;
     int _score;
     int _health;
     int _pulseCombo;
@@ -221,6 +234,9 @@ public sealed class ChordPulsePrototype : MonoBehaviour
         _gameOverSequence = gameObject.AddComponent<GameOverSequence>();
         _gameOverSequence.Init(playCamera, _visuals.Stage, _boundary, BoundaryColor, _arenaRadius, _ringMaterial);
         CreateShatterEffect();
+        _coreDamage = gameObject.AddComponent<CoreDamageVisuals>();
+        _coreDamage.Init(_core, CoreRadius, 0.12f, _ringMaterial, Shatter,
+            () => _soundManager.FeverActive ? Color.white : Colors[_selectedColor]);
         _targetMarkers = gameObject.AddComponent<TargetMarkers>();
         _targetMarkers.Init(_ringMaterial);
 
@@ -265,6 +281,8 @@ public sealed class ChordPulsePrototype : MonoBehaviour
         _spawnAngle = Random.Range(0f, 360f);
         _spawnGroup = 0;
         _coreHits.Reset();
+        _invincibleUntil = 0f;
+        _clearAfterHit = false;
         _score = 0;
         _health = MaxHealth;
         _pulseCombo = 0;
@@ -274,9 +292,12 @@ public sealed class ChordPulsePrototype : MonoBehaviour
         _wasFeverActive = false;
         _roundStartFrame = Time.frameCount;
         _gameOverSequence.ResetVisuals();
+        _coreDamage.ResetVisuals();
         // The core, its colour shape and the cooldown arc all sit on the arena centre; a game over trembles the core,
         // so re-centre them explicitly (they must never drift apart).
         _core.transform.localPosition = Vector3.zero;
+        _core.transform.localRotation = Quaternion.identity;
+        _coreSpin = 0f;
         _coreIcon.transform.localPosition = Vector3.zero;
         _cooldownArc.transform.localPosition = Vector3.zero;
         _core.enabled = true;
@@ -286,7 +307,7 @@ public sealed class ChordPulsePrototype : MonoBehaviour
         _tensionVignette.ResetVisuals();
         _featureVisuals.ResetVisuals();
         _soundManager.StartMusic();
-        SetSolidColor(_core, Colors[0]);
+        SetCoreColor(Colors[0]);
         _coreIcon.enabled = true;
         ShowSelectedColor();
         _cooldownArc.enabled = false;
@@ -329,12 +350,11 @@ public sealed class ChordPulsePrototype : MonoBehaviour
             if (!fever)
             {
                 _feverCharge = 0;
-                SetSolidColor(_core, Colors[_selectedColor]);
+                SetCoreColor(Colors[_selectedColor]);
             }
             UpdateHud();
         }
-        if (fever)
-            DrawRainbowCore();
+        UpdateCoreLook(fever, beatPosition);
         if (beat != _lastHudBeat)
         {
             _lastHudBeat = beat;
@@ -346,7 +366,7 @@ public sealed class ChordPulsePrototype : MonoBehaviour
         {
             _selectedColor = (_selectedColor + 1) % Colors.Length;
             if (!fever)
-                SetSolidColor(_core, Colors[_selectedColor]);
+                SetCoreColor(Colors[_selectedColor]);
             ShowSelectedColor();
             UpdateHud();
         }
@@ -371,13 +391,20 @@ public sealed class ChordPulsePrototype : MonoBehaviour
             state.Distance = Mathf.Max(0f, state.Distance - state.Speed * deltaTime);
             if (state.Distance <= CoreRadius + state.HalfSize)
             {
-                _poolManager.ReturnToPool(enemy.Instance);
                 _enemyStates.RemoveAt(i);
                 _enemyViews.Remove(state);
+                // Invincible after a hit: it just breaks on the core, no damage (ShatterEnemyView pools it).
+                if (Time.time < _invincibleUntil)
+                {
+                    ShatterEnemyView(enemy);
+                    continue;
+                }
+                _poolManager.ReturnToPool(enemy.Instance);
                 // The rest of a group that already cost a health point: gone, no second penalty.
                 if (!_coreHits.CostsHealth(state.Group))
                     continue;
                 _health--;
+                _coreDamage.SetHealth(_health, MaxHealth);
                 ResetPulseCombo();
                 _soundManager.Hurt();
                 UpdateHud();
@@ -386,6 +413,8 @@ public sealed class ChordPulsePrototype : MonoBehaviour
                     _gameManager.GameOver();
                     return;
                 }
+                _invincibleUntil = Time.time + InvincibleSeconds;
+                _clearAfterHit = true;
                 continue;
             }
 
@@ -400,6 +429,13 @@ public sealed class ChordPulsePrototype : MonoBehaviour
             }
             enemy.Instance.transform.position = transform.position + (Vector3)position;
         }
+        if (_clearAfterHit)
+        {
+            _clearAfterHit = false;
+            ClearEnemiesAfterHit();
+        }
+        DrawInvincibleCore();
+
         // Again after this frame's wave resolutions and core hits (the last places the combo changes): SoundManager reads
         // it in its next Update, one frame later, not two.
         _soundManager.ComboCount = _pulseCombo;
@@ -480,21 +516,34 @@ public sealed class ChordPulsePrototype : MonoBehaviour
             return;
         }
 
-        // A pulse hits an enemy's leading edge, so "nearest" is measured to the edge, not the centre.
-        float nearest = float.MaxValue;
-        float nearestHalfSize = 0f;
+        // "First" is decided exactly as the pulse resolver decides it: where a pulse fired now would meet each enemy
+        // (size and speed included), with the same tie band. Shoot a marked enemy's color and that enemy dies.
+        float waveSpeed = PulseSpeed;
+        if (!(waveSpeed > 0f) || float.IsInfinity(waveSpeed))
+        {
+            _targetMarkers.Hide();
+            return;
+        }
+        float first = float.MaxValue;
+        EnemyState nearestState = null;
         foreach (var state in _enemyStates)
         {
-            float edge = state.Distance - state.HalfSize;
-            if (edge < nearest)
+            float contact = PulseResolver.ContactRadius(state, CoreRadius, waveSpeed);
+            if (contact >= 0f && contact < first)
             {
-                nearest = edge;
-                nearestHalfSize = state.HalfSize;
+                first = contact;
+                nearestState = state;
             }
+        }
+        if (nearestState == null)
+        {
+            _targetMarkers.Hide();
+            return;
         }
         foreach (var state in _enemyStates)
         {
-            if (state.Distance - state.HalfSize > nearest + SameTargetDistance)
+            float contact = PulseResolver.ContactRadius(state, CoreRadius, waveSpeed);
+            if (contact < 0f || contact > first + PulseResolver.SimultaneousContactTolerance)
                 continue;
             var view = _enemyViews[state];
             // A stripped pair keeps only one shape, off to one side of the root: mark that shape.
@@ -516,9 +565,9 @@ public sealed class ChordPulsePrototype : MonoBehaviour
             });
         }
 
-        float contact = CoreRadius + nearestHalfSize;
-        float outer = Mathf.Max(contact + 0.01f, _arenaRadius * GameplayTuning.TensionOuterRadius);
-        float danger = 1f - Mathf.Clamp01((nearest + nearestHalfSize - contact) / (outer - contact));
+        float touch = CoreRadius + nearestState.HalfSize;
+        float outer = Mathf.Max(touch + 0.01f, _arenaRadius * GameplayTuning.TensionOuterRadius);
+        float danger = 1f - Mathf.Clamp01((nearestState.Distance - touch) / (outer - touch));
         int beat = _soundManager.CurrentBeat;
         float sinceBeat = beat >= 0 ? (float)(_soundManager.BeatPosition - beat) : 1f;
         _targetMarkers.Show(_targets, danger, sinceBeat);
@@ -547,33 +596,70 @@ public sealed class ChordPulsePrototype : MonoBehaviour
     }
 
     // Fever: the core turns into a full hue wheel that spins around the ring.
-    void DrawRainbowCore()
+    // The fever rainbow is fixed on the ring (the ring itself turns, see UpdateCoreLook); flash whitens it.
+    void DrawRainbowCore(float flash)
     {
-        float phase = Mathf.Repeat(Time.time * RainbowSpinSpeed, 1f);
         for (int i = 0; i < _rainbowKeys.Length; i++)
         {
             float t = i / (_rainbowKeys.Length - 1f);
-            _rainbowKeys[i] = new GradientColorKey(Color.HSVToRGB(Mathf.Repeat(phase + t, 1f), 0.75f, 1f), t);
+            var hue = Color.HSVToRGB(t, 0.75f, 1f);
+            _rainbowKeys[i] = new GradientColorKey(Color.Lerp(hue, Color.white, RingFlash * flash), t);
         }
-        _rainbow.SetKeys(_rainbowKeys, RainbowAlpha);
+        // Alpha from the core damage: its chips show as gaps in the rainbow too.
+        _rainbow.SetKeys(_rainbowKeys, _coreDamage.AlphaKeys);
+        _coreDamage.AlphaDirty = false;
         _core.colorGradient = _rainbow;
     }
 
-    // startColor/endColor only recolor a gradient's first and last keys, so after the rainbow they would
-    // leave its middle keys showing. Replace the whole gradient instead.
-    static void SetSolidColor(LineRenderer ring, Color color)
+    // The core's colour as a whole new gradient (startColor/endColor only recolor a gradient's first and last keys,
+    // so after the rainbow they would leave its middle keys showing), keeping the chips its damage cut out of the
+    // ring as alpha keys.
+    void SetCoreColor(Color color)
     {
-        var solid = new Gradient();
-        solid.SetKeys(
-            new[] { new GradientColorKey(color, 0f), new GradientColorKey(color, 1f) },
-            new[] { new GradientAlphaKey(color.a, 0f), new GradientAlphaKey(color.a, 1f) });
-        ring.colorGradient = solid;
+        // Called every frame for the beat flash: reuse one gradient and skip when nothing changed.
+        if (color == _coreAppliedColor && !_coreDamage.AlphaDirty)
+            return;
+        _coreAppliedColor = color;
+        _coreSolidKeys[0] = new GradientColorKey(color, 0f);
+        _coreSolidKeys[1] = new GradientColorKey(color, 1f);
+        _coreSolid.SetKeys(_coreSolidKeys, _coreDamage.AlphaKeys);
+        _core.colorGradient = _coreSolid;
+        _coreDamage.AlphaDirty = false;
     }
+
+    // Every frame: the beat flash (ring and centre shape whiten on each beat, harder on the kick) and, in fever,
+    // the rainbow ring turning as a whole.
+    void UpdateCoreLook(bool fever, double beatPosition)
+    {
+        float flash = 0f;
+        if (beatPosition >= 0)
+        {
+            int beat = (int)System.Math.Floor(beatPosition);
+            float since = (float)((beatPosition - beat) * _soundManager.BeatSeconds);
+            flash = Mathf.Exp(-since / BeatFlashSeconds) * (_soundManager.KickOn(beat) ? 1f : 0.6f);
+            if (flash < 0.01f)
+                flash = 0f;
+        }
+        if (fever)
+        {
+            float barSeconds = (float)_soundManager.BeatSeconds * SoundManager.BeatsPerBar;
+            _coreSpin = Mathf.Repeat(_coreSpin - 360f * FeverTurnsPerBar / Mathf.Max(0.1f, barSeconds) * Time.deltaTime, 360f);
+            _core.transform.localRotation = Quaternion.Euler(0f, 0f, _coreSpin);
+            DrawRainbowCore(flash);
+            _coreAppliedColor = Color.clear;   // the solid colour must be rewritten after fever
+        }
+        else
+            SetCoreColor(Color.Lerp(Colors[_selectedColor], Color.white, RingFlash * flash));
+        _coreIcon.color = Color.Lerp(Colors[_selectedColor], Color.white, IconFlash * flash);
+    }
+
+    float PulseMaxRadius => _arenaRadius + GameplayTuning.BaseEnemyHalfSize + PulseResolver.WaveHitPadding * 2f;
+    float PulseSpeed => (PulseMaxRadius - CoreRadius) / (PulseBeats * (float)_soundManager.BeatSeconds);
 
     void AdvanceWaves(float deltaTime)
     {
-        float maxRadius = _arenaRadius + GameplayTuning.BaseEnemyHalfSize + PulseResolver.WaveHitPadding * 2f;
-        float waveSpeed = (maxRadius - CoreRadius) / (PulseBeats * (float)_soundManager.BeatSeconds);
+        float maxRadius = PulseMaxRadius;
+        float waveSpeed = PulseSpeed;
 
         for (int i = 0; i < _waves.Count;)
         {
@@ -641,12 +727,11 @@ public sealed class ChordPulsePrototype : MonoBehaviour
 
             if (outcome != PulseOutcome.Travelling)
             {
-                // Pulse combo: a pulse that killed something already scored +1. One that only revealed gray enemies
-                // keeps the combo, and so does one that only stripped a half off a chord pair; one that hit a wrong
-                // color or reached the edge without a kill breaks it.
+                // Pulse combo: a pulse that killed something already scored +1. One that revealed a gray enemy or
+                // stripped a chord pair keeps the combo (no +1), even if it also hit a wrong color (their slot mates
+                // come in at the same distance). One that only hit a wrong color, or reached the edge, breaks it.
                 // A fever pulse that kills nothing keeps it too.
-                bool onlyRevealed = outcome == PulseOutcome.Blocked && !pulse.HitWrongColor;
-                if (!pulse.IsFever && pulse.Kills == 0 && !onlyRevealed)
+                if (!pulse.IsFever && pulse.Kills == 0 && !pulse.HitProgress)
                     ResetPulseCombo();
                 Destroy(wave.Ring.gameObject);
                 _waves.RemoveAt(i);
@@ -657,6 +742,13 @@ public sealed class ChordPulsePrototype : MonoBehaviour
                 // Fever pulses spin the same hue wheel as the core.
                 if (pulse.IsFever)
                     wave.Ring.colorGradient = _rainbow;
+                // A stopped pulse fades out over its short run-on.
+                if (pulse.IsStopping && !pulse.IsFever)
+                {
+                    var color = Colors[pulse.ColorIndex];
+                    color.a = Mathf.Clamp01((pulse.StopRadius - pulse.Radius) / GameplayTuning.PulsePassThrough);
+                    wave.Ring.startColor = wave.Ring.endColor = color;
+                }
                 i++;
             }
         }
@@ -881,8 +973,32 @@ public sealed class ChordPulsePrototype : MonoBehaviour
         for (int i = 0; i < 3; i++)
             Shatter(_core.transform.position, color);
         _core.enabled = false;
+        _coreDamage.HideCracks();
         _coreIcon.enabled = false;
         _cooldownArc.enabled = false;
+    }
+
+    // A core hit (that left health): the screen shakes and every enemy on the field breaks apart, so the player gets
+    // a clean restart under the invincibility window. No score, combo or kill chord for these.
+    void ClearEnemiesAfterHit()
+    {
+        _tensionVignette.Shake(HitShakeSeconds, HitShakeStrength);
+        foreach (var state in _enemyStates)
+            ShatterEnemyView(_enemyViews[state]);
+        _enemyStates.Clear();
+        _enemyViews.Clear();
+    }
+
+    // Invincible: the core blinks until the window ends.
+    void DrawInvincibleCore()
+    {
+        bool invincible = Time.time < _invincibleUntil;
+        bool visible = !invincible || Mathf.Repeat(Time.time * InvincibleBlinkRate, 1f) < 0.6f;
+        if (_core.enabled != visible)
+        {
+            _core.enabled = visible;
+            _coreIcon.enabled = visible && !_soundManager.FeverActive;
+        }
     }
 
     // A live enemy caught by the game-over shockwave: shards from every shape it shows, in its colours.

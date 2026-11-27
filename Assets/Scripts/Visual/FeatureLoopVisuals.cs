@@ -34,7 +34,7 @@ public sealed class FeatureLoopVisuals : MonoBehaviour
             Camera = playCamera,
             ArenaRadius = arenaRadius,
             Material = material,
-            Dot = CreateDot(),
+            Dot = DotSprite.Create("Feature Dot", glow: true),
             Square = Sprite.Create(Texture2D.whiteTexture, new Rect(0, 0, 4, 4), new Vector2(0.5f, 0.5f), 4),
             Root = transform,
             SortingOrder = SortingOrder,
@@ -156,33 +156,10 @@ public sealed class FeatureLoopVisuals : MonoBehaviour
         return emitter;
     }
 
-    static Sprite CreateDot()
-    {
-        const int size = 32;
-        var texture = new Texture2D(size, size, TextureFormat.RGBA32, false) { name = "Feature Dot", wrapMode = TextureWrapMode.Clamp };
-        var pixels = new Color[size * size];
-        float r = (size - 1) * 0.5f;
-        for (int y = 0; y < size; y++)
-            for (int x = 0; x < size; x++)
-            {
-                float d = Mathf.Sqrt((x - r) * (x - r) + (y - r) * (y - r)) / r;
-                float a = Mathf.Clamp01(1f - d);
-                pixels[y * size + x] = new Color(1f, 1f, 1f, a * a);
-            }
-        texture.SetPixels(pixels);
-        texture.Apply();
-        return Sprite.Create(texture, new Rect(0, 0, size, size), new Vector2(0.5f, 0.5f), size);
-    }
-
     void OnDestroy()
     {
         _library?.DestroyIfDefault();
-        var dot = _context?.Dot;
-        if (dot != null)
-        {
-            Destroy(dot.texture);
-            Destroy(dot);
-        }
+        DotSprite.Destroy(_context?.Dot);
         // The square uses Unity's shared white texture: destroy only the sprite.
         if (_context?.Square != null)
             Destroy(_context.Square);

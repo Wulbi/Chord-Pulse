@@ -21,40 +21,36 @@ public sealed class PulseResolver
         float nextRadius = pulse.Radius + waveSpeed * deltaTime;
         if (nextRadius > maxRadius)
             nextRadius = maxRadius;
+        if (nextRadius > pulse.StopRadius)
+            nextRadius = pulse.StopRadius;
         _contacts.Clear();
 
         for (int i = 0; i < enemies.Count; i++)
         {
             var enemy = enemies[i];
-            if (enemy.ImmuneTo == pulse)
+            if (enemy.ImmuneTo == pulse || pulse.Touched.Contains(enemy))
                 continue;
-            float tolerance = enemy.HalfSize + WaveHitPadding;
-            if (enemy.Distance + tolerance < pulse.Radius)
-                continue;
-
-            // Both move during the frame. Solve for when their leading edges meet.
-            float gap = enemy.Distance - tolerance - pulse.Radius;
-            float contactTime = (gap > 0f ? gap : 0f) / (waveSpeed + enemy.Speed);
-            float contactRadius = pulse.Radius + waveSpeed * contactTime;
-            if (contactRadius <= nextRadius + SimultaneousContactTolerance)
+            float contactRadius = ContactRadius(enemy, pulse.Radius, waveSpeed);
+            if (contactRadius >= 0f && contactRadius <= nextRadius + SimultaneousContactTolerance)
                 _contacts.Add(new Contact { Enemy = enemy, Radius = contactRadius });
         }
 
         SortByRadius();
 
-        bool blocked = false;
         float contactLimit = nextRadius;
         for (int i = 0; i < _contacts.Count; i++)
         {
             var contact = _contacts[i];
             if (contact.Radius > contactLimit)
                 break;
+            pulse.Touched.Add(contact.Enemy);
 
             // A gray enemy has two hits: a colored pulse only strips the gray, a fever pulse kills it outright.
             bool reveal = contact.Enemy.IsHidden && !pulse.IsFever;
             if (reveal)
             {
                 contact.Enemy.IsHidden = false;
+                pulse.HitProgress = true;
                 events.Add(new PulseEvent(PulseEventType.Reveal, contact.Enemy, 0));
             }
 
@@ -75,6 +71,7 @@ public sealed class PulseResolver
                 {
                     enemy.StrippedColorIndex = pulse.ColorIndex;
                     enemy.SecondColorIndex = -1;
+                    pulse.HitProgress = true;
                     events.Add(new PulseEvent(PulseEventType.Strip, enemy, 0));
                 }
             }
@@ -92,11 +89,13 @@ public sealed class PulseResolver
                         events.Add(new PulseEvent(PulseEventType.Boost, hit, 0));
                     }
                 }
-                // Resolve the whole contact band before ending the pulse.
-                if (!blocked)
+                // The first stop: the pulse runs on a little further (PulsePassThrough) and can still kill a matching
+                // enemy in that stretch, then ends. Later stops in the stretch do not extend it.
+                if (!pulse.IsStopping)
                 {
-                    blocked = true;
-                    contactLimit = contact.Radius + SimultaneousContactTolerance;
+                    pulse.StopRadius = contact.Radius + GameplayTuning.PulsePassThrough;
+                    if (contactLimit > pulse.StopRadius)
+                        contactLimit = pulse.StopRadius;
                 }
                 continue;
             }
@@ -122,13 +121,26 @@ public sealed class PulseResolver
             events.Add(new PulseEvent(PulseEventType.Kill, contact.Enemy, ++pulse.Kills));
         }
 
-        if (blocked)
+        // A pulse that was stopped ends as Blocked even if its run-on reaches the edge.
+        if (pulse.IsStopping && (nextRadius >= pulse.StopRadius || nextRadius >= maxRadius))
             return PulseOutcome.Blocked;
         if (nextRadius >= maxRadius)
             return PulseOutcome.ReachedEdge;
 
         pulse.Radius = nextRadius;
         return PulseOutcome.Travelling;
+    }
+
+    /// Pulse radius at which a pulse now at <paramref name="pulseRadius"/> meets this enemy's leading edge (both move),
+    /// or -1 if the pulse is already past it. The target markers use this too, so they mark exactly what a pulse hits first.
+    public static float ContactRadius(EnemyState enemy, float pulseRadius, float waveSpeed)
+    {
+        float tolerance = enemy.HalfSize + WaveHitPadding;
+        if (enemy.Distance + tolerance < pulseRadius)
+            return -1f;
+        float gap = enemy.Distance - tolerance - pulseRadius;
+        float contactTime = (gap > 0f ? gap : 0f) / (waveSpeed + enemy.Speed);
+        return pulseRadius + waveSpeed * contactTime;
     }
 
     // Stable insertion sort: contact lists are tiny and this avoids comparison-delegate allocations.

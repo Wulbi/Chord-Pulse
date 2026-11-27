@@ -35,6 +35,13 @@ public sealed class PulseState
     public bool IsFever;
     public int Kills;           // cumulative kills of this pulse
     public bool HitWrongColor;
+    /// Revealed a gray enemy or stripped a chord pair: progress, so a pulse with no kill still keeps the combo.
+    public bool HitProgress;
+    /// Set by the first enemy that stops this pulse (wrong colour, reveal or strip): the pulse runs on to here, then ends.
+    public float StopRadius = float.PositiveInfinity;
+    public bool IsStopping => StopRadius < float.PositiveInfinity;
+    /// Enemies this pulse already dealt with; a pulse that runs on past an enemy must not hit it again.
+    public readonly System.Collections.Generic.HashSet<EnemyState> Touched = new System.Collections.Generic.HashSet<EnemyState>();
 }
 
 public enum PulseEventType { Kill, Reveal, Strip, Split, Boost }

@@ -90,7 +90,7 @@ public sealed class BedStyleVisuals : MonoBehaviour
         _camera = playCamera;
         _stage = stage;
         _material = material;
-        _dot = CreateDot();
+        _dot = DotSprite.Create("Style Dot");
         // Measured before any fever zoom, so the motif layout stays fixed.
         _baseHalfHeight = playCamera.orthographicSize;
         _baseHalfWidth = _baseHalfHeight * playCamera.aspect;
@@ -502,29 +502,5 @@ public sealed class BedStyleVisuals : MonoBehaviour
         return sprite;
     }
 
-    static Sprite CreateDot()
-    {
-        const int size = 32;
-        var texture = new Texture2D(size, size, TextureFormat.RGBA32, false) { name = "Style Dot", wrapMode = TextureWrapMode.Clamp };
-        var pixels = new Color[size * size];
-        float r = (size - 1) * 0.5f;
-        for (int y = 0; y < size; y++)
-            for (int x = 0; x < size; x++)
-            {
-                float d = Mathf.Sqrt((x - r) * (x - r) + (y - r) * (y - r)) / r;
-                pixels[y * size + x] = new Color(1f, 1f, 1f, Mathf.Clamp01((1f - d) * 2.5f));
-            }
-        texture.SetPixels(pixels);
-        texture.Apply();
-        return UnityEngine.Sprite.Create(texture, new Rect(0, 0, size, size), new Vector2(0.5f, 0.5f), size);
-    }
-
-    void OnDestroy()
-    {
-        if (_dot != null)
-        {
-            Destroy(_dot.texture);
-            Destroy(_dot);
-        }
-    }
+    void OnDestroy() => DotSprite.Destroy(_dot);
 }
