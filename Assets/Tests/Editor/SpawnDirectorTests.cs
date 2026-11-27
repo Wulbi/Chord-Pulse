@@ -137,22 +137,14 @@ public class SpawnDirectorTests
     }
 
     [Test]
-    public void Flow_Level3_SpawnsEveryBeatWithinARun()
-    {
-        var s = AfterOpening(Collect(0, 400, Ctx(section: 3, seconds: 60)));
-        Assert.AreEqual(GameplayTuning.FlowIntervalSteps[3], MinGap(s));
-        Assert.LessOrEqual(MaxGap(s), GameplayTuning.FlowIntervalSteps[3] + GameplayTuning.RunGapSteps);
-    }
-
-    [Test]
     public void Runs_AreOneColor_AndNeighbouringRunsDiffer()
     {
-        var runs = RunsOf(AfterOpening(Collect(0, 800, Ctx(section: 3, seconds: 60))));
+        var runs = RunsOf(NoChargers(AfterOpening(Collect(0, 800, Ctx(section: 3, seconds: 60)))));
         Assert.Greater(runs.Count, 5);
         foreach (var r in runs.Skip(1).Take(runs.Count - 2))
         {
-            Assert.GreaterOrEqual(r.Length, GameplayTuning.RunMin[3]);
-            Assert.LessOrEqual(r.Length, GameplayTuning.RunMax[3]);
+            Assert.GreaterOrEqual(r.Length, Stage(60).RunMin);
+            Assert.LessOrEqual(r.Length, Stage(60).RunMax);
         }
         for (int i = 1; i < runs.Count; i++) Assert.AreNotEqual(runs[i - 1].Color, runs[i].Color);
     }
@@ -168,7 +160,7 @@ public class SpawnDirectorTests
     [Test]
     public void Speed_StaysInsideJitterRange()
     {
-        var all = Collect(0, 400, Ctx(section: 3, seconds: 60));
+        var all = NoChargers(Collect(0, 400, Ctx(section: 3, seconds: 60)));
         Assert.IsNotEmpty(all);
         foreach (var x in all)
         {
@@ -209,17 +201,12 @@ public class SpawnDirectorTests
     { Assert.IsTrue(Collect(0, 800, Ctx(section: 3, seconds: 60)).Any(x => x.order.SecondColorIndex >= 0)); }
 
     [Test] public void Pair_OpensARun_AndBridgesThePreviousRunsColor()
-    { var s = AfterOpening(Collect(0, 800, Ctx(section: 3, seconds: 60)));
+    { var s = NoChargers(AfterOpening(Collect(0, 800, Ctx(section: 3, seconds: 60))));
       for (int i = 1; i < s.Count; i++)
       { var o = s[i].order; if (o.SecondColorIndex < 0) continue;
         Assert.AreNotEqual(o.ColorIndex, o.SecondColorIndex);
         Assert.AreEqual(s[i - 1].order.ColorIndex, o.SecondColorIndex);
         Assert.IsFalse(o.Hidden); } }
-
-    [Test] public void Pairs_AreRoughlyHalfOfRunStarts()
-    { var s = AfterOpening(Collect(0, 4000, Ctx(section: 3, seconds: 60)));
-      int runs = RunsOf(s).Count; int pairs = s.Count(x => x.order.SecondColorIndex >= 0);
-      Assert.Greater(runs, 100); Assert.Greater(pairs, runs * 0.3); Assert.Less(pairs, runs * 0.7); }
 
     [Test]
     public void FirstRunAfterFever_IsNeverAPair()
@@ -244,9 +231,6 @@ public class SpawnDirectorTests
         return spawns.Where(x => x.order.Kind != EnemyKind.Charger).ToList();
     }
 
-    [Test] public void NoSpecialKinds_BeforeTheirStartTimes()
-    { Assert.IsTrue(Collect(0, 2000, Ctx(section: 3, seconds: 69)).All(x => x.order.Kind == EnemyKind.Basic));
-      _dir.Reset(); Assert.IsFalse(Collect(0, 2000, Ctx(section: 3, seconds: 79)).Any(x => x.order.Kind == EnemyKind.Splitter)); }
     [Test] public void NoSpecialKinds_InFever()
     { Assert.IsTrue(Collect(0, 400, Ctx(fever: true, seconds: 120)).All(x => x.order.Kind == EnemyKind.Basic)); }
     [Test] public void Chargers_AreFastPlainAndOutsideRuns()
@@ -259,8 +243,8 @@ public class SpawnDirectorTests
       var runs = RunsOf(NoChargers(s)); Assert.Greater(runs.Count, 100);
       for (int i = 1; i < runs.Count; i++) Assert.AreNotEqual(runs[i - 1].Color, runs[i].Color);
       foreach (var r in runs.Skip(1).Take(runs.Count - 2))
-      { Assert.GreaterOrEqual(r.Length, GameplayTuning.RunMin[3]); Assert.LessOrEqual(r.Length, GameplayTuning.RunMax[3]); }
-      Assert.Greater(chargers.Count, runs.Count * 0.15); Assert.Less(chargers.Count, runs.Count * 0.45); }
+      { Assert.GreaterOrEqual(r.Length, Stage(120).RunMin); Assert.LessOrEqual(r.Length, Stage(120).RunMax); }
+      Assert.AreEqual(Stage(120).ChargerChance, chargers.Count / (double)runs.Count, 0.08); }
     [Test] public void Chargers_UseAllThreeColours()
     { var colours = AfterOpening(Collect(0, 4000, Ctx(section: 3, seconds: 120)))
         .Where(x => x.order.Kind == EnemyKind.Charger).Select(x => x.order.ColorIndex).Distinct().Count();
@@ -306,7 +290,7 @@ public class SpawnDirectorTests
     [Test] public void Splitters_AreRunMembers_NeverGrayOrPairs()
     { var s = NoChargers(AfterOpening(Collect(0, 4000, Ctx(section: 3, seconds: 120))));
       var splitters = s.Where(x => x.order.Kind == EnemyKind.Splitter).ToList();
-      Assert.Greater(splitters.Count, s.Count * 0.05); Assert.Less(splitters.Count, s.Count * 0.2);
+      Assert.Greater(splitters.Count, 0);
       foreach (var x in splitters) { Assert.IsFalse(x.order.Hidden); Assert.AreEqual(-1, x.order.SecondColorIndex); } }
 
     static SpawnStage Stage(double seconds) => GameplayTuning.SpawnStages[SpawnDirector.StageIndex(seconds)];
@@ -352,11 +336,101 @@ public class SpawnDirectorTests
     }
 
     [Test]
-    public void DensityLevel_CombinesDifficultyAndSection()
+    public void Flow_UsesTheRowsInterval()
     {
-        Assert.AreEqual(0, SpawnDirector.DensityLevel(0, 0));
-        Assert.AreEqual(1, SpawnDirector.DensityLevel(2, 0));
-        Assert.AreEqual(2, SpawnDirector.DensityLevel(0, 40));
-        Assert.AreEqual(3, SpawnDirector.DensityLevel(3, 60));
+        foreach (double t in new[] { 10.0, 20.0, 60.0 })
+        {
+            _dir.Reset();
+            var s = AfterOpening(Collect(0, 800, Ctx(seconds: t)));
+            Assert.AreEqual(Stage(t).IntervalSteps, MinGap(s), "seconds " + t);
+            Assert.LessOrEqual(MaxGap(s), Stage(t).IntervalSteps + GameplayTuning.RunGapSteps, "seconds " + t);
+        }
+    }
+
+    [Test]
+    public void LearningRow_ShortRunsNoSpecials()
+    {
+        var s = AfterOpening(Collect(0, 800, Ctx(seconds: 10)));
+        Assert.IsTrue(s.All(x => x.order.Kind == EnemyKind.Basic && !x.order.Hidden && x.order.SecondColorIndex < 0));
+        var runs = RunsOf(s);
+        foreach (var r in runs.Skip(1).Take(runs.Count - 2))
+        { Assert.GreaterOrEqual(r.Length, 2); Assert.LessOrEqual(r.Length, 3); }
+    }
+
+    [Test]
+    public void NoSpecials_BeforeTheirRows()
+    {
+        Assert.IsTrue(Collect(0, 2000, Ctx(seconds: 29)).All(x => !x.order.Hidden));
+        _dir.Reset();
+        Assert.IsTrue(Collect(0, 2000, Ctx(seconds: 59)).All(x => x.order.Kind == EnemyKind.Basic && x.order.SecondColorIndex < 0));
+    }
+
+    [Test]
+    public void Hidden_FollowsTheTable()
+    {
+        var s = NoChargers(AfterOpening(Collect(0, 8000, Ctx(seconds: 120)))).Where(x => x.order.SecondColorIndex < 0).ToList();
+        double share = s.Count(x => x.order.Hidden) / (double)s.Count;
+        Assert.AreEqual(Stage(120).HiddenChance, share, 0.05);
+    }
+
+    [Test]
+    public void Pairs_FollowTheTable()
+    {
+        var s = NoChargers(AfterOpening(Collect(0, 8000, Ctx(seconds: 120))));
+        double share = s.Count(x => x.order.SecondColorIndex >= 0) / (double)RunsOf(s).Count;
+        Assert.AreEqual(Stage(120).ChordPairChance, share, 0.08);
+    }
+
+    [Test]
+    public void Splitters_FollowTheTable()
+    {
+        var eligible = NoChargers(AfterOpening(Collect(0, 8000, Ctx(seconds: 300))))
+            .Where(x => !x.order.Hidden && x.order.SecondColorIndex < 0).ToList();
+        double share = eligible.Count(x => x.order.Kind == EnemyKind.Splitter) / (double)eligible.Count;
+        Assert.AreEqual(Stage(300).SplitterChance, share, 0.04);
+    }
+
+    [Test]
+    public void LateRows_HaveMoreSpecialsThanEarlyRows()
+    {
+        int Specials(double t)
+        {
+            _dir.Reset();
+            return Collect(0, 8000, Ctx(seconds: t)).Count(x => x.order.Hidden || x.order.SecondColorIndex >= 0 || x.order.Kind != EnemyKind.Basic);
+        }
+        int at60 = Specials(60), at180 = Specials(180), at600 = Specials(600);
+        Assert.Greater(at180, at60);
+        Assert.Greater(at600, at180);
+    }
+
+    [Test]
+    public void Section_NoLongerChangesSpawns()
+    {
+        var a = Collect(0, 800, Ctx(section: 0, seconds: 20));
+        _dir = new SpawnDirector(new System.Random(1234));
+        var b = Collect(0, 800, Ctx(section: 3, seconds: 20));
+        CollectionAssert.AreEqual(Steps(a), Steps(b));
+        CollectionAssert.AreEqual(Colors(a), Colors(b));
+    }
+
+    [Test]
+    public void RowChange_MidRun_KeepsSpawning()
+    {
+        for (int seed = 0; seed < 20; seed++)
+        {
+            var dir = new SpawnDirector(new System.Random(seed));
+            int count = 0;
+            for (int step = 0; step < 2000; step++)
+                if (dir.TryNext(Ctx(step: step, seconds: step * 0.4), out var o)) { count++; Assert.GreaterOrEqual(o.ColorIndex, 0); }
+            Assert.Greater(count, 300, "seed " + seed);
+        }
+    }
+
+    [Test]
+    public void Difficulty_StillFollowsItsThresholds()
+    {
+        Assert.AreEqual(0, SpawnDirector.Difficulty(0));
+        Assert.AreEqual(2, SpawnDirector.Difficulty(40));
+        Assert.AreEqual(3, SpawnDirector.Difficulty(60));
     }
 }

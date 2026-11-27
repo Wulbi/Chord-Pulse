@@ -3,7 +3,7 @@ public struct SpawnContext
     public int Step;            // SoundManager.CurrentStep (half-beat units, one bar = 8)
     public bool Fever;
     public bool Breath;         // SoundManager.IsBreath
-    public int Section;         // SoundManager.SectionIndex 0..3
+    public int Section;         // SoundManager.SectionIndex 0..3 (not read by SpawnDirector: intervals are in beats, so tempo already scales the rate)
     public double RoundSeconds;
 }
 
@@ -29,7 +29,6 @@ public sealed class SpawnDirector
     int _nextStep;
     int _runRemaining;
     int _runColor;
-    int _spawnNumber;
     bool _prevFever;
     bool _noPairNextRun;
     bool _chargerPending;
@@ -46,7 +45,6 @@ public sealed class SpawnDirector
         _nextStep = 0;
         _runRemaining = 0;
         _runColor = -1;
-        _spawnNumber = 0;
         _prevFever = false;
         _noPairNextRun = false;
         _chargerPending = false;
@@ -88,7 +86,8 @@ public sealed class SpawnDirector
 
         if (step < _nextStep) return false;
 
-        int level = DensityLevel(context.Section, context.RoundSeconds);
+        // The row in force now. A run drawn under an earlier row keeps its remaining length; interval and chances follow this row.
+        var stage = GameplayTuning.SpawnStages[StageIndex(context.RoundSeconds)];
 
         if (_chargerPending)
         {
@@ -96,9 +95,9 @@ public sealed class SpawnDirector
             // Breath phrases have no chargers: drop the reservation and go on with the normal run logic below.
             if (!context.Breath)
             {
-                // A charger sits between two runs: it leaves the run state and spawn counter untouched.
+                // A charger sits between two runs: it leaves the run state untouched.
                 order = MakeOrder(_random.Next(ColorCount), false, -1, EnemyKind.Charger);
-                _nextStep = step + GameplayTuning.FlowIntervalSteps[level];
+                _nextStep = step + stage.IntervalSteps;
                 return true;
             }
         }
@@ -110,39 +109,33 @@ public sealed class SpawnDirector
             _runColor = (_runColor + 1 + _random.Next(ColorCount - 1)) % ColorCount;
             _runRemaining = context.Breath
                 ? _random.Next(1, GameplayTuning.BreathRunMax + 1)
-                : _random.Next(GameplayTuning.RunMin[level], GameplayTuning.RunMax[level] + 1);
-            // Drawn only when a pair is possible, so the random sequence before SpecialEnemyStart is unchanged.
+                : _random.Next(stage.RunMin, stage.RunMax + 1);
+            // Every chance is drawn only when it is above 0, so rows without a special leave the random sequence alone.
             // Never right after a fever phrase: the previous colour is stale then.
             if (_noPairNextRun)
                 _noPairNextRun = false;
-            else if (context.RoundSeconds >= GameplayTuning.SpecialEnemyStart
-                && _random.NextDouble() < GameplayTuning.ChordPairChance)
+            else if (stage.ChordPairChance > 0 && _random.NextDouble() < stage.ChordPairChance)
                 secondColor = previousColor;
         }
 
         if (context.Breath && _runRemaining > GameplayTuning.BreathRunMax)
             _runRemaining = GameplayTuning.BreathRunMax;
 
-        _spawnNumber++;
-        bool hidden = secondColor < 0
-                      && context.RoundSeconds >= GameplayTuning.HiddenEnemyStart
-                      && _spawnNumber % GameplayTuning.HiddenEvery == 0;
-        // Drawn only when the conditions hold, so earlier random sequences are unchanged.
+        // One special at most per slot: chord pair, else gray, else splitter.
+        bool hidden = secondColor < 0 && stage.HiddenChance > 0 && _random.NextDouble() < stage.HiddenChance;
         var kind = EnemyKind.Basic;
         if (!hidden && secondColor < 0
-            && context.RoundSeconds >= GameplayTuning.SplitterStart
-            && _random.NextDouble() < GameplayTuning.SplitterChance)
+            && stage.SplitterChance > 0 && _random.NextDouble() < stage.SplitterChance)
             kind = EnemyKind.Splitter;
         order = MakeOrder(_runColor, hidden, secondColor, kind);
         _runRemaining--;
 
         if (_runRemaining <= 0
             && !context.Breath
-            && context.RoundSeconds >= GameplayTuning.ChargerStart
-            && _random.NextDouble() < GameplayTuning.ChargerChance)
+            && stage.ChargerChance > 0 && _random.NextDouble() < stage.ChargerChance)
             _chargerPending = true;
 
-        int interval = context.Breath ? GameplayTuning.BreathIntervalSteps : GameplayTuning.FlowIntervalSteps[level];
+        int interval = context.Breath ? GameplayTuning.BreathIntervalSteps : stage.IntervalSteps;
         if (_runRemaining <= 0) interval += GameplayTuning.RunGapSteps;
         _nextStep = step + interval;
         return true;
@@ -174,18 +167,12 @@ public sealed class SpawnDirector
         return index;
     }
 
-    /// Number of DifficultyThresholds the round time has passed, 0..3.
+    /// Number of DifficultyThresholds the round time has passed, 0..3. Drives the music's arrangement density, not the spawns.
     public static int Difficulty(double roundSeconds)
     {
         int d = 0;
         foreach (double t in GameplayTuning.DifficultyThresholds)
             if (roundSeconds >= t) d++;
         return d;
-    }
-
-    public static int DensityLevel(int section, double roundSeconds)
-    {
-        int level = Difficulty(roundSeconds) + (section >= GameplayTuning.DenseSection ? 1 : 0);
-        return level > 3 ? 3 : level;
     }
 }
